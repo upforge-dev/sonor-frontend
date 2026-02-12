@@ -442,11 +442,11 @@ export const engageApi = {
     portalApi.post(`/engage/elements/${id}/duplicate`),
   
   // Chat config
-  getChatConfig: () => 
-    portalApi.get('/engage/chat/config'),
+  getChatConfig: (projectId) => 
+    portalApi.get('/engage/chat/config', { params: { projectId } }),
   
-  updateChatConfig: (data) => 
-    portalApi.put('/engage/chat/config', data),
+  updateChatConfig: (projectId, data) => 
+    portalApi.put('/engage/chat/config', { projectId, ...data }),
   
   // Chat sessions
   getChatSessions: (params = {}) => 
@@ -509,6 +509,13 @@ export const engageApi = {
   
   deleteEchoConfig: (id) =>
     portalApi.delete(`/engage/echo-config/${id}`),
+
+  // Nudge helper endpoints
+  getNudgePages: (projectId) =>
+    portalApi.get('/engage/echo-config/pages', { params: { projectId } }),
+  
+  getNudgeSignalStatus: (projectId) =>
+    portalApi.get('/engage/echo-config/signal-status', { params: { projectId } }),
   
   // Media library
   getMedia: (projectId) =>
@@ -1968,7 +1975,7 @@ export const crmApi = {
    * @param {Object} options - { maxEmails, forceRefresh }
    */
   syncFullInbox: (options = {}) =>
-    portalApi.post('/crm/gmail/inbox/sync', null, { 
+    portalApi.post('/crm/gmail/inbox/sync', {}, { 
       params: { 
         maxEmails: options.maxEmails || 100,
         forceRefresh: options.forceRefresh ? 'true' : undefined
@@ -2056,6 +2063,30 @@ export const crmApi = {
    */
   getTeamAssignmentStats: () =>
     portalApi.get('/crm/assignments/stats'),
+
+  // ==================== CLIENTS ====================
+
+  /**
+   * List clients with health metrics
+   * @param {Object} params - { health, search, sortBy, sortOrder, limit, offset }
+   */
+  listClients: (params = {}) =>
+    portalApi.get('/crm/clients', { params }),
+
+  /**
+   * Import clients from CSV data
+   * @param {Object} data - { clients: [...], skipDuplicates }
+   */
+  importClients: (data) =>
+    portalApi.post('/crm/clients/import', data),
+
+  /**
+   * Get org-wide email threads for a contact (cross-user visibility)
+   * @param {string} contactId - Contact ID
+   * @param {Object} params - { limit, offset, threadId }
+   */
+  getContactEmails: (contactId, params = {}) =>
+    portalApi.get(`/crm/clients/${contactId}/emails`, { params }),
 }
 
 // ============================================================================
@@ -2352,6 +2383,86 @@ export const emailApi = {
 
   disconnectGmail: (projectId) =>
     portalApi.delete('/email/gmail/disconnect', { params: { project_id: projectId } }),
+}
+
+// ============================================================================
+// User Workspace Integrations API (per-user Google integration for CRM + Sync + Drive)
+// ============================================================================
+
+export const workspaceIntegrationsApi = {
+  /**
+   * Get the user's Google workspace connection status.
+   * Returns gmail + calendar connection status for the current user.
+   */
+  getGoogleStatus: () =>
+    portalApi.get('/integrations/workspace/google/status').then(r => r.data),
+
+  /**
+   * Initiate Google workspace OAuth (Gmail + Calendar + Drive together).
+   * Uses popup flow - returns { authUrl }.
+   */
+  connectGoogle: (returnUrl) =>
+    portalApi.post('/integrations/workspace/google/connect', { returnUrl, popupMode: true }).then(r => r.data),
+
+  /**
+   * Disconnect Google workspace integration.
+   * Removes Gmail, Calendar, and Drive access.
+   */
+  disconnectGoogle: () =>
+    portalApi.post('/integrations/workspace/google/disconnect').then(r => r.data),
+
+  /**
+   * Get all workspace integrations for the current user.
+   * Returns connections grouped by provider.
+   */
+  getAll: () =>
+    portalApi.get('/integrations/workspace').then(r => r.data),
+
+  /**
+   * Sync Google Calendar events now.
+   */
+  /**
+   * Fetch Google Calendar events for a date range.
+   */
+  getCalendarEvents: (startDate, endDate) =>
+    portalApi.get('/integrations/workspace/google/calendar/events', {
+      params: { startDate, endDate }
+    }).then(r => r.data),
+
+  /**
+   * Push a new event to the user's Google Calendar.
+   * Returns { googleEventId } on success.
+   */
+  pushCalendarEvent: (eventData) =>
+    portalApi.post('/integrations/workspace/google/calendar/events', eventData).then(r => r.data),
+
+  /**
+   * Update an existing Google Calendar event.
+   */
+  updateCalendarEvent: (eventId, eventData) =>
+    portalApi.put(`/integrations/workspace/google/calendar/events/${eventId}`, eventData).then(r => r.data),
+
+  /**
+   * Delete a Google Calendar event.
+   */
+  deleteCalendarEvent: (eventId) =>
+    portalApi.delete(`/integrations/workspace/google/calendar/events/${eventId}`).then(r => r.data),
+
+  syncCalendar: () =>
+    portalApi.post('/integrations/workspace/google/calendar/sync').then(r => r.data),
+
+  /**
+   * Get Google Calendar sync settings for the user.
+   */
+  getCalendarSettings: () =>
+    portalApi.get('/integrations/workspace/google/calendar/settings').then(r => r.data),
+
+  /**
+   * Update Google Calendar sync settings.
+   * @param {Object} settings - { syncDirection, syncFrequencyMinutes, selectedCalendars }
+   */
+  updateCalendarSettings: (settings) =>
+    portalApi.put('/integrations/workspace/google/calendar/settings', settings).then(r => r.data),
 }
 
 // ============================================================================
@@ -2657,33 +2768,33 @@ export const adminApi = {
 }
 
 // ============================================================================
-// Drive API - Google Drive file management
+// Drive API - Google Drive file management (per-user workspace OAuth)
 // ============================================================================
 
 export const driveApi = {
-  // List files
+  // List files (per-user workspace integration)
   listFiles: (params = {}) => 
-    portalApi.get('/files/drive', { params }),
+    portalApi.get('/integrations/workspace/google/drive/files', { params }),
   
   // Search files
   searchFiles: (query) => 
-    portalApi.get('/files/drive/search', { params: { query } }),
+    portalApi.get('/integrations/workspace/google/drive/files', { params: { query } }),
   
-  // Upload file
+  // Upload file (TODO: implement multipart upload via workspace integration)
   uploadFile: (data) => 
     portalApi.post('/files/drive/upload', data),
   
   // Download file
   downloadFile: (fileId) => 
-    portalApi.get(`/files/drive/${fileId}/download`),
+    portalApi.get(`/integrations/workspace/google/drive/${fileId}/download`),
   
-  // Delete file (backend: DELETE /files/drive with body { fileId, permanent })
+  // Delete file
   deleteFile: (fileId, permanent = false) =>
-    portalApi.delete('/files/drive', { data: { fileId, permanent } }),
+    portalApi.delete('/integrations/workspace/google/drive', { data: { fileId, permanent } }),
 
   // Create folder
   createFolder: (name, parentId = null) =>
-    portalApi.post('/files/drive/folder', { name, parentId }),
+    portalApi.post('/integrations/workspace/google/drive/folder', { name, parentId }),
 }
 
 // ============================================================================

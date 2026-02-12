@@ -2,11 +2,10 @@
  * PipelineKanban - Glass-styled kanban board for sales pipeline
  * Uses pipelineStages from CRM module (same config as sidebar; "Configure pipeline" customizes colors).
  */
-import { useMemo, useRef, useState } from 'react'
+import { useMemo, useRef, useState, useCallback } from 'react'
 import { cn } from '@/lib/utils'
 import { ChevronDown, ChevronUp, CheckCheck, XCircle } from 'lucide-react'
 import { UptradeSpinner } from '@/components/UptradeLoading'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { Button } from '@/components/ui/button'
 import ProspectCard from './ProspectCard'
 import { GlassEmptyState } from './ui'
@@ -59,14 +58,14 @@ function PipelineColumn({
 
   return (
     <div 
-      className="flex flex-col min-w-0 snap-start"
+      className="flex flex-col snap-start h-full flex-1 min-w-[280px]"
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
       {/* Column Header - Fully rounded, separated */}
       <div 
-        className="rounded-xl p-3 mb-2 bg-[var(--glass-bg)] border"
+        className="flex-shrink-0 rounded-xl p-3 mb-2 bg-[var(--glass-bg)] border"
         style={{ borderColor: config.borderColor }}
       >
         <div className="flex items-center justify-between">
@@ -95,15 +94,19 @@ function PipelineColumn({
         </div>
       </div>
       
-      {/* Column Content - Separate from header */}
-      <ScrollArea className={cn(
-        'flex-1 min-h-0 rounded-xl border bg-[var(--glass-bg)]/50',
-        'transition-all duration-200',
-        isDragOver && 'ring-2 ring-[var(--brand-primary)] bg-[var(--brand-primary)]/5'
-      )}
-      style={{ borderColor: config.borderColor }}
+      {/* Column Content - native vertical scroll, hidden scrollbar */}
+      <div
+        data-column-scroll
+        className={cn(
+          'flex-1 min-h-0 overflow-y-auto rounded-xl border bg-[var(--glass-bg)]/50',
+          'transition-all duration-200',
+          // Hide scrollbar across browsers
+          'scrollbar-none [&::-webkit-scrollbar]:hidden',
+          isDragOver && 'ring-2 ring-[var(--brand-primary)] bg-[var(--brand-primary)]/5'
+        )}
+        style={{ borderColor: config.borderColor, scrollbarWidth: 'none' }}
       >
-        <div className="p-3 space-y-3">
+        <div className="p-2 space-y-2">
           {prospects.length === 0 ? (
             <GlassEmptyState
               icon={StageIcon}
@@ -132,7 +135,7 @@ function PipelineColumn({
             ))
           )}
         </div>
-      </ScrollArea>
+      </div>
     </div>
   )
 }
@@ -251,8 +254,8 @@ export default function PipelineKanban({
   const pipelineStages = pipelineStagesProp || DEFAULT_PIPELINE_STAGES
   const scrollRef = useRef(null)
   const [isScrollDragging, setIsScrollDragging] = useState(false)
-  const [startX, setStartX] = useState(0)
-  const [scrollLeft, setScrollLeft] = useState(0)
+  const dragIntent = useRef(null) // 'horizontal' | 'vertical' | null — decided after first move
+  const startPos = useRef({ x: 0, y: 0, scrollLeft: 0 })
   const [draggingProspectId, setDraggingProspectId] = useState(null)
 
   // Active stage keys (exclude closed) from current config
@@ -303,27 +306,56 @@ export default function PipelineKanban({
     setDraggingProspectId(null)
   }
 
-  // Mouse drag scrolling (for horizontal scroll, not card drag)
-  const handleMouseDown = (e) => {
-    // Don't start scroll drag if we're dragging a card
+  // Mouse drag scrolling — supports both horizontal drag-to-scroll AND
+  // vertical column scrolling.  On mousedown we record the start position.
+  // On the first mousemove we decide intent: if the user moves more
+  // horizontally → drag-scroll the board; more vertically → let the column
+  // handle native vertical scroll.  This way both gestures coexist.
+
+  const handleMouseDown = useCallback((e) => {
     if (draggingProspectId) return
     if (!scrollRef.current) return
+    // Ignore clicks on buttons / interactive elements
+    if (e.target.closest('button, [role="menuitem"], input, [data-radix-collection-item]')) return
+
+    dragIntent.current = null // undecided
+    startPos.current = {
+      x: e.pageX,
+      y: e.pageY,
+      scrollLeft: scrollRef.current.scrollLeft,
+    }
     setIsScrollDragging(true)
-    setStartX(e.pageX - scrollRef.current.offsetLeft)
-    setScrollLeft(scrollRef.current.scrollLeft)
-  }
+  }, [draggingProspectId])
 
-  const handleMouseMove = (e) => {
+  const handleMouseMove = useCallback((e) => {
     if (!isScrollDragging || !scrollRef.current) return
-    e.preventDefault()
-    const x = e.pageX - scrollRef.current.offsetLeft
-    const walk = (x - startX) * 1.5
-    scrollRef.current.scrollLeft = scrollLeft - walk
-  }
 
-  const handleMouseUp = () => {
+    const dx = Math.abs(e.pageX - startPos.current.x)
+    const dy = Math.abs(e.pageY - startPos.current.y)
+
+    // Decide intent after a small movement threshold (5px)
+    if (!dragIntent.current && (dx > 5 || dy > 5)) {
+      dragIntent.current = dx >= dy ? 'horizontal' : 'vertical'
+    }
+
+    // Vertical intent → stop tracking, let native column scroll work
+    if (dragIntent.current === 'vertical') {
+      setIsScrollDragging(false)
+      return
+    }
+
+    // Horizontal intent → drag-scroll the board
+    if (dragIntent.current === 'horizontal') {
+      e.preventDefault()
+      const walk = (e.pageX - startPos.current.x) * 1.5
+      scrollRef.current.scrollLeft = startPos.current.scrollLeft - walk
+    }
+  }, [isScrollDragging])
+
+  const handleMouseUp = useCallback(() => {
     setIsScrollDragging(false)
-  }
+    dragIntent.current = null
+  }, [])
 
   if (isLoading) {
     return (
@@ -335,52 +367,53 @@ export default function PipelineKanban({
 
   return (
     <div className={cn('flex flex-col h-full', className)} onDragEnd={handleDragEnd}>
-      {/* Kanban Board - Horizontally scrollable, fills vertical space */}
-      <div 
-        ref={scrollRef}
-        className={cn(
-          'flex-1 overflow-x-auto overflow-y-hidden pb-4 -mx-4 px-4 select-none',
-          'scroll-smooth snap-x snap-mandatory touch-pan-x',
-          isScrollDragging ? 'cursor-grabbing' : 'cursor-grab'
-        )}
-        style={{ scrollbarWidth: 'thin', scrollbarColor: 'var(--glass-border) transparent' }}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
-      >
+      {/* Kanban Board — relative wrapper gives the absolutely-positioned
+          scroll container a real pixel height so columns can scroll. */}
+      <div className="flex-1 min-h-0 relative">
         <div 
-          className="grid gap-4 h-full select-none"
-          style={{ 
-            gridTemplateColumns: `repeat(${activeStageKeys.length}, minmax(280px, 1fr))`,
-            minWidth: `${activeStageKeys.length * 300}px`
-          }}
+          ref={scrollRef}
+          className={cn(
+            'absolute inset-0 overflow-x-auto overflow-y-hidden pl-2 pr-4 pb-2 select-none',
+            'scroll-smooth snap-x snap-mandatory touch-pan-x',
+            isScrollDragging ? 'cursor-grabbing' : 'cursor-grab'
+          )}
+          style={{ scrollbarWidth: 'thin', scrollbarColor: 'var(--glass-border) transparent' }}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
         >
-          {activeStageKeys.map((stage, index) => (
-            <PipelineColumn
-              key={stage}
-              stage={stage}
-              config={pipelineStages[stage]}
-              prospects={prospectsByStage[stage] || []}
-              selectedProspects={selectedProspects}
-              onSelectProspect={onSelectProspect}
-              onProspectClick={onProspectClick}
-              onMoveNext={handleMoveNext}
-              onEmail={onEmail}
-              onCall={onCall}
-              onViewWebsite={onViewWebsite}
-              onArchive={onArchive}
-              onDrop={handleDrop}
-              onDragStart={handleDragStart}
-              draggingProspectId={draggingProspectId}
-              isLast={index === activeStageKeys.length - 1}
-            />
-          ))}
+          {/* Flex row — each column is a fixed-width flex child at full height */}
+          <div 
+            className="flex gap-4 h-full"
+            style={{ minWidth: `${activeStageKeys.length * 300}px` }}
+          >
+            {activeStageKeys.map((stage, index) => (
+              <PipelineColumn
+                key={stage}
+                stage={stage}
+                config={pipelineStages[stage]}
+                prospects={prospectsByStage[stage] || []}
+                selectedProspects={selectedProspects}
+                onSelectProspect={onSelectProspect}
+                onProspectClick={onProspectClick}
+                onMoveNext={handleMoveNext}
+                onEmail={onEmail}
+                onCall={onCall}
+                onViewWebsite={onViewWebsite}
+                onArchive={onArchive}
+                onDrop={handleDrop}
+                onDragStart={handleDragStart}
+                draggingProspectId={draggingProspectId}
+                isLast={index === activeStageKeys.length - 1}
+              />
+            ))}
+          </div>
         </div>
       </div>
       
       {/* Closed Deals Section */}
-      <div className="flex-shrink-0 pt-4">
+      <div className="flex-shrink-0 pt-4 px-2">
       <ClosedDealsSummary
         wonProspects={prospectsByStage.closed_won || []}
         lostProspects={prospectsByStage.closed_lost || []}

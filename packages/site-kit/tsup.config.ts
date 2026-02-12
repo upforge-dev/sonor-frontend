@@ -39,6 +39,7 @@ export default defineConfig({
     
     // Images module
     'images/index': 'src/images/index.ts',
+    'images/server': 'src/images/server.ts',
     
     // Reputation module
     'reputation/index': 'src/reputation/index.ts',
@@ -69,6 +70,7 @@ export default defineConfig({
       'sitemap/index': 'src/sitemap/index.ts',
       'redirects/index': 'src/redirects/index.ts',
       'images/index': 'src/images/index.ts',
+      'images/server': 'src/images/server.ts',
       'reputation/index': 'src/reputation/index.ts',
       'llms/index': 'src/llms/index.ts',
     },
@@ -119,7 +121,7 @@ export default defineConfig({
       }
     }
     
-    // Add 'use client' directive to client-side modules
+    // Add 'use client' directive to client-side entry modules
     // This is needed because tsup strips the directive during bundling
     const clientModules = [
       'dist/forms/index.js',
@@ -139,6 +141,26 @@ export default defineConfig({
         
         // Only add if not already present
         if (!content.startsWith("'use client'") && !content.startsWith('"use client"')) {
+          content = "'use client';\n" + content
+          await fs.writeFile(fullPath, content, 'utf-8')
+        }
+      } catch {
+        // File might not exist
+      }
+    }
+
+    // Also add 'use client' to shared chunks that contain React hooks
+    // (needed for Turbopack when using linked packages with expanded root)
+    const { glob: globFn } = await import('glob')
+    const chunkFiles = await globFn('dist/chunk-*.{js,mjs}', { cwd: process.cwd() })
+    const hookPatterns = /\bimport\s*\{[^}]*(useState|useEffect|useCallback|useRef|useContext|useMemo|useReducer)/
+    
+    for (const file of chunkFiles) {
+      try {
+        const fullPath = path.join(process.cwd(), file)
+        let content = await fs.readFile(fullPath, 'utf-8')
+        
+        if (hookPatterns.test(content) && !content.startsWith("'use client'") && !content.startsWith('"use client"')) {
           content = "'use client';\n" + content
           await fs.writeFile(fullPath, content, 'utf-8')
         }

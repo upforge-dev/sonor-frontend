@@ -4,8 +4,9 @@
 
 import { useState, useRef } from 'react'
 import useAuthStore from '@/lib/auth-store'
-import { useCustomers, customersKeys } from '@/lib/hooks'
+import { useCreateCustomer, customersKeys } from '@/lib/hooks'
 import { useQueryClient } from '@tanstack/react-query'
+import portalApi from '@/lib/portal-api'
 import {
   Dialog,
   DialogContent,
@@ -41,7 +42,8 @@ import { toast } from '@/lib/toast'
 
 export default function CustomerImportExport({ open, onOpenChange }) {
   const { currentProject } = useAuthStore()
-  const { fetchCustomers } = useCommerceStore()
+  const queryClient = useQueryClient()
+  const createCustomerMutation = useCreateCustomer()
   
   const [activeTab, setActiveTab] = useState('import')
   
@@ -188,7 +190,10 @@ export default function CustomerImportExport({ open, onOpenChange }) {
       const customer = parsedData[i]
       
       try {
-        await createCustomer(currentProject.id, customer)
+        await createCustomerMutation.mutateAsync({
+          projectId: currentProject.id,
+          data: customer
+        })
         results.created++
       } catch (err) {
         if (err.response?.status === 409) {
@@ -206,7 +211,7 @@ export default function CustomerImportExport({ open, onOpenChange }) {
     setImporting(false)
     
     // Refresh customer list
-    fetchCustomers(currentProject.id)
+    queryClient.invalidateQueries({ queryKey: customersKeys.list(currentProject.id, {}) })
     
     if (results.errors.length === 0) {
       toast.success(`Imported ${results.created} customers (${results.skipped} already existed)`)
@@ -220,7 +225,10 @@ export default function CustomerImportExport({ open, onOpenChange }) {
     
     try {
       // Fetch all customers
-      const customers = await getCustomers(currentProject.id, { limit: 10000 })
+      const params = new URLSearchParams({ limit: '10000' })
+      const response = await portalApi.get(`/commerce/customers/${currentProject.id}?${params}`)
+      const result = response.data
+      const customers = Array.isArray(result) ? result : result.data || []
       
       if (!customers || customers.length === 0) {
         toast.error('No customers to export')

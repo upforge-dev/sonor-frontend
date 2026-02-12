@@ -4,7 +4,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate, Link, useSearchParams } from 'react-router-dom'
-import { useCreateCommerceOffering, useCreateCommerceSchedule, useUploadCommerceImage, commerceKeys } from '@/lib/hooks'
+import { useCreateCommerceOffering, useCreateCommerceSchedule, useUploadCommerceImage, useCommerceSettings, commerceKeys } from '@/lib/hooks'
 import { useForms, formsKeys } from '@/lib/hooks'
 import { useSeoPages } from '@/hooks/seo'
 import { useQueryClient } from '@tanstack/react-query'
@@ -71,8 +71,11 @@ export default function OfferingCreate({ type: propType, embedded = false, onBac
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const { currentProject } = useAuthStore()
-  const { createOffering, settings } = useCommerceStore()
-  const { forms, fetchForms, isLoading: formsLoading } = useFormsStore()
+  const createOfferingMutation = useCreateCommerceOffering()
+  const { data: settings } = useCommerceSettings(currentProject?.id)
+  const { data: forms = [], isLoading: formsLoading } = useForms(currentProject?.id ? { projectId: currentProject.id } : {}, { enabled: !!currentProject?.id })
+  const uploadImageMutation = useUploadCommerceImage()
+  const createScheduleMutation = useCreateCommerceSchedule()
   // Use React Query hook for SEO pages
   const { data: seoPagesResponse, isLoading: pagesLoading } = useSeoPages(currentProject?.id, { limit: 200 })
   const seoPages = seoPagesResponse?.data?.pages || seoPagesResponse?.pages || []
@@ -156,15 +159,7 @@ export default function OfferingCreate({ type: propType, embedded = false, onBac
   const [images, setImages] = useState([]) // { id, file, preview }
   const [isDragging, setIsDragging] = useState(false)
 
-  // Load forms and SEO pages for this project
-  useEffect(() => {
-    if (currentProject?.id) {
-      fetchForms({ projectId: currentProject.id }).catch(err => {
-        console.warn('Failed to fetch forms:', err)
-      })
-      // SEO pages are now fetched via React Query hook automatically
-    }
-  }, [currentProject?.id, fetchForms])
+  // Forms and SEO pages are now fetched via React Query hooks automatically
 
   // Image upload handlers
   const handleDragOver = useCallback((e) => {
@@ -297,7 +292,7 @@ export default function OfferingCreate({ type: propType, embedded = false, onBac
       }
 
       // Create the offering first (without images)
-      const offering = await createOffering(currentProject.id, data)
+      const offering = await createOfferingMutation.mutateAsync({ projectId: currentProject.id, data })
       
       // Now upload images to the offering using the commerce API
       // This properly associates images with the offering and handles featured_image_id
@@ -307,7 +302,7 @@ export default function OfferingCreate({ type: propType, embedded = false, onBac
           for (let i = 0; i < imagesToUpload.length; i++) {
             const img = imagesToUpload[i]
             const isFeatured = i === 0 // First image is featured
-            await uploadOfferingImage(offering.id, img.file, isFeatured)
+            await uploadImageMutation.mutateAsync({ offeringId: offering.id, file: img.file, isFeatured })
           }
         } catch (imageError) {
           console.error('Failed to upload some images:', imageError)
@@ -331,11 +326,14 @@ export default function OfferingCreate({ type: propType, embedded = false, onBac
             endsAt.setDate(endsAt.getDate() + 1)
           }
           
-          await createSchedule(offering.id, {
-            starts_at: startsAt.toISOString(),
-            ends_at: endsAt.toISOString(),
-            capacity: data.capacity || null,
-            spots_remaining: data.capacity || null,
+          await createScheduleMutation.mutateAsync({
+            offeringId: offering.id,
+            data: {
+              starts_at: startsAt.toISOString(),
+              ends_at: endsAt.toISOString(),
+              capacity: data.capacity || null,
+              spots_remaining: data.capacity || null,
+            }
           })
         } catch (scheduleError) {
           console.error('Failed to create schedule:', scheduleError)

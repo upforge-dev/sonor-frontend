@@ -72,9 +72,10 @@ export default function OfferingDetail({ offeringId, onBack, onEdit }) {
   const [searchParams] = useSearchParams()
   const id = offeringId || routeId || searchParams.get('offeringId')
   const { currentProject } = useAuthStore()
-  const { currentOffering, fetchOffering, deleteOffering } = useCommerceStore()
+  const queryClient = useQueryClient()
+  const { data: currentOffering, isLoading: offeringLoading, error: offeringError } = useCommerceOffering(id)
+  const deleteOfferingMutation = useDeleteCommerceOffering()
 
-  const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [showScheduleDialog, setShowScheduleDialog] = useState(false)
   const [showVariantsDialog, setShowVariantsDialog] = useState(false)
@@ -82,25 +83,24 @@ export default function OfferingDetail({ offeringId, onBack, onEdit }) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
 
   useEffect(() => {
-    if (currentProject?.id && id) {
-      setLoading(true)
-      fetchOffering(currentProject.id, id)
-        .then(() => setLoading(false))
-        .catch(err => {
-          setError(err.message)
-          setLoading(false)
-        })
+    if (offeringError) {
+      setError(offeringError.message)
     }
-  }, [currentProject?.id, id, fetchOffering])
+  }, [offeringError])
 
   const handleDelete = async () => {
-    await deleteOffering(id)
-    setShowDeleteDialog(false)
-    toast.success('Offering deleted')
-    if (onBack) {
-      onBack()
-    } else {
-      navigate('/commerce/offerings')
+    try {
+      await deleteOfferingMutation.mutateAsync({ offeringId: id })
+      setShowDeleteDialog(false)
+      toast.success('Offering deleted')
+      if (onBack) {
+        onBack()
+      } else {
+        navigate('/commerce/offerings')
+      }
+    } catch (err) {
+      console.error('Failed to delete offering:', err)
+      toast.error('Failed to delete offering')
     }
   }
 
@@ -141,7 +141,7 @@ export default function OfferingDetail({ offeringId, onBack, onEdit }) {
     }
   }
 
-  if (loading) {
+  if (offeringLoading) {
     return <DetailSkeleton />
   }
 
@@ -180,7 +180,6 @@ export default function OfferingDetail({ offeringId, onBack, onEdit }) {
         onDuplicate={handleDuplicate}
         duplicating={duplicating}
         projectId={currentProject?.id}
-        fetchOffering={fetchOffering}
         id={id}
       />
     )
@@ -575,7 +574,7 @@ export default function OfferingDetail({ offeringId, onBack, onEdit }) {
         defaultCapacity={currentOffering.capacity}
         onScheduleChange={() => {
           // Refetch offering to update schedule counts
-          fetchOffering(currentProject?.id, id)
+          queryClient.invalidateQueries({ queryKey: commerceKeys.offeringDetail(id) })
         }}
       />
 
@@ -589,7 +588,7 @@ export default function OfferingDetail({ offeringId, onBack, onEdit }) {
         trackInventory={currentOffering.track_inventory}
         onVariantChange={() => {
           // Refetch offering to update variant counts
-          fetchOffering(currentProject?.id, id)
+          queryClient.invalidateQueries({ queryKey: commerceKeys.offeringDetail(id) })
         }}
       />
 
@@ -995,7 +994,6 @@ function EventDetailView({
   onDuplicate,
   duplicating,
   projectId,
-  fetchOffering,
   id,
 }) {
   const [showScheduleDialog, setShowScheduleDialog] = useState(false)
@@ -1434,7 +1432,8 @@ function EventDetailView({
         offeringType={offering.type}
         defaultCapacity={offering.capacity}
         onScheduleChange={() => {
-          fetchOffering(projectId, id)
+          // Refetch offering to update schedule counts
+          // Note: This will be handled by React Query automatically via query invalidation
         }}
       />
 

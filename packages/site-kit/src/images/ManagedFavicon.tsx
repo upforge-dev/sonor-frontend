@@ -70,7 +70,7 @@ async function fetchFaviconData(apiUrl: string, apiKey: string): Promise<Favicon
         'Content-Type': 'application/json',
         'x-api-key': apiKey,
       },
-      cache: 'no-store', // Always fetch fresh
+      next: { revalidate: 3600 }, // Cache 1hr – favicon rarely changes, allows static generation
     })
 
     if (!res.ok) {

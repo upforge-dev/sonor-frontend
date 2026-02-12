@@ -1,0 +1,18 @@
+---
+description: Rules for publishing @uptrademedia/site-kit to npm
+globs:
+  - packages/site-kit/**
+---
+
+# Site-Kit Publishing
+
+When publishing `@uptrademedia/site-kit` to npm:
+
+1. Build first: `cd packages/site-kit && pnpm build`
+2. Publish with: `pnpm publish --no-git-checks --access public`
+3. **Do NOT pass `--otp`** — the user will handle authentication interactively when prompted.
+4. After publishing, update consuming projects (e.g. coachlight-nextjs) with `pnpm install` or update the version in package.json.
+
+## Local linking does NOT work
+
+Do **not** attempt to use `pnpm link`, `link:`, or `file:` protocols to test site-kit locally in Next.js projects. Next.js 16 Turbopack cannot resolve subpath exports from linked packages outside the project root. Always publish to npm and install the published version.

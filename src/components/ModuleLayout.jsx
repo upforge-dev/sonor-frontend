@@ -392,7 +392,7 @@ function ModuleLayoutRoot({
                 role="complementary"
                 aria-label="Left panel"
               >
-                <div className={cn('flex flex-col w-full min-w-0 min-h-0 flex-1 overflow-hidden', MODULE_SIDEBAR_TYPOGRAPHY)}>
+                <div className={cn('flex flex-col w-full min-w-0 min-h-0 flex-1 overflow-y-auto', MODULE_SIDEBAR_TYPOGRAPHY)}>
                   {renderLeftContent ? leftSidebar : null}
                 </div>
                 {/* Resize handle for left sidebar */}

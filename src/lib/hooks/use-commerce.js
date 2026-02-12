@@ -159,7 +159,7 @@ export function useDeleteOffering() {
   const queryClient = useQueryClient()
   
   return useMutation({
-    mutationFn: async (offeringId) => {
+    mutationFn: async ({ offeringId }) => {
       const response = await portalApi.delete(`/commerce/offering/${offeringId}`)
       return response.data
     },

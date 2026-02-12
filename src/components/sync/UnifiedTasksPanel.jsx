@@ -468,7 +468,7 @@ function Section({ title, icon: Icon, count, children, collapsible = true, defau
 // MAIN COMPONENT
 // ============================================================================
 
-export default function UnifiedTasksPanel({ projectId, className, onTaskClick }) {
+export default function UnifiedTasksPanel({ projectId, className, onTaskClick, onShowShortcuts }) {
   const { user } = useAuthStore()
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -529,7 +529,7 @@ export default function UnifiedTasksPanel({ projectId, className, onTaskClick })
     onReject: (task) => handleRejectClick(task),
     onAutoSchedule: (task) => setAutoScheduleTask(task),
     onView: (task) => onTaskClick?.(task),
-    onShowHelp: () => setShowShortcutsHelp(true),
+    onShowHelp: () => onShowShortcuts ? onShowShortcuts() : setShowShortcutsHelp(true),
     onJumpToSection: (section) => {
       // Scroll to section
       const el = document.getElementById(`sync-section-${section}`)
@@ -736,20 +736,6 @@ export default function UnifiedTasksPanel({ projectId, className, onTaskClick })
                 <Plus className="h-4 w-4 mr-1" />
                 Add Task
               </Button>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button 
-                      variant="ghost" 
-                      size="icon"
-                      onClick={() => setShowShortcutsHelp(true)}
-                    >
-                      <span className="text-xs font-mono">?</span>
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Keyboard shortcuts</TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
               <Button 
                 variant="ghost" 
                 size="icon"

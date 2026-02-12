@@ -60,6 +60,7 @@ import {
   Copy,
   Archive,
   MessageSquare,
+  Globe,
 } from 'lucide-react'
 import {
   DropdownMenu,
@@ -86,12 +87,13 @@ import { format, formatDistanceToNow, isValid, subDays } from 'date-fns'
 
 // Import view components
 import FormsListView from './components/FormsListView'
-import SubmissionsView from './components/SubmissionsView'
+import SubmissionsView, { SubmissionDetailPanel } from './components/SubmissionsView'
 import AnalyticsView from './components/AnalyticsView'
 import DeliveryRulesView from './components/DeliveryRulesView'
 import HighlightsView from './components/HighlightsView'
 import FormDefaultsView from './components/FormDefaultsView'
 import FormsSettingsView from './components/FormsSettingsView'
+import OrgTemplatesView from './components/OrgTemplatesView'
 
 // =============================================================================
 // CONSTANTS
@@ -154,12 +156,17 @@ const QUALITY_TIER_CONFIG = {
 // =============================================================================
 
 export default function FormsDashboard() {
-  const { currentProject, currentOrg } = useAuthStore()
+  const { currentProject, currentOrg, isSuperAdmin, accessLevel } = useAuthStore()
   const navigate = useNavigate()
   const brandColors = useBrandColors()
   const { hasSignal, isLoading: signalLoading } = useSignalAccess()
   
   const projectId = currentProject?.id
+  
+  // Can the user manage org templates?
+  const canManageOrgTemplates = isSuperAdmin || 
+    accessLevel === 'organization' || 
+    currentOrg?.org_type === 'agency'
   
   // View state
   const [currentView, setCurrentView] = useState('highlights')
@@ -186,6 +193,9 @@ export default function FormsDashboard() {
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [error, setError] = useState(null)
   
+  // Submission detail sidebar state
+  const [selectedSubmission, setSelectedSubmission] = useState(null)
+
   // Form editor state
   const [isFormEditorOpen, setIsFormEditorOpen] = useState(false)
   const [editingFormId, setEditingFormId] = useState(null)
@@ -362,6 +372,10 @@ export default function FormsDashboard() {
   function setView(view, filter = 'all') {
     setCurrentView(view)
     setCurrentFilter(filter)
+    // Close submission detail sidebar when switching views
+    if (view !== 'submissions') {
+      setSelectedSubmission(null)
+    }
   }
 
   function setFormFilter(filter) {
@@ -451,6 +465,58 @@ export default function FormsDashboard() {
     } catch (err) {
       console.error('Failed to delete form:', err)
       toast.error('Failed to delete form')
+    }
+  }
+
+  // ==========================================================================
+  // SUBMISSION ACTIONS
+  // ==========================================================================
+
+  async function handleUpdateSubmissionStatus(id, status) {
+    try {
+      await formsApi.updateSubmission(id, { status })
+      setSubmissions(prev => prev.map(s => s.id === id ? { ...s, status } : s))
+      toast.success(`Submission marked as ${status}`)
+    } catch (err) {
+      console.error('Failed to update submission:', err)
+      toast.error('Failed to update submission status')
+    }
+  }
+
+  async function handleDeleteSubmission(id) {
+    if (!confirm('Delete this submission? This cannot be undone.')) return
+    try {
+      await formsApi.deleteSubmission(id)
+      setSubmissions(prev => prev.filter(s => s.id !== id))
+      toast.success('Submission deleted')
+    } catch (err) {
+      console.error('Failed to delete submission:', err)
+      toast.error('Failed to delete submission')
+    }
+  }
+
+  async function handleBulkDeleteSubmissions(ids) {
+    if (!confirm(`Delete ${ids.length} submission${ids.length > 1 ? 's' : ''}? This cannot be undone.`)) return
+    try {
+      await Promise.all(ids.map(id => formsApi.deleteSubmission(id)))
+      setSubmissions(prev => prev.filter(s => !ids.includes(s.id)))
+      toast.success(`${ids.length} submission${ids.length > 1 ? 's' : ''} deleted`)
+    } catch (err) {
+      console.error('Failed to bulk delete submissions:', err)
+      toast.error('Failed to delete some submissions')
+      loadSubmissions()
+    }
+  }
+
+  async function handleBulkUpdateSubmissionStatus(ids, status) {
+    try {
+      await Promise.all(ids.map(id => formsApi.updateSubmission(id, { status })))
+      setSubmissions(prev => prev.map(s => ids.includes(s.id) ? { ...s, status } : s))
+      toast.success(`${ids.length} submission${ids.length > 1 ? 's' : ''} marked as ${status}`)
+    } catch (err) {
+      console.error('Failed to bulk update submissions:', err)
+      toast.error('Failed to update some submissions')
+      loadSubmissions()
     }
   }
 
@@ -711,6 +777,23 @@ export default function FormsDashboard() {
                   Templates
                 </button>
 
+                {/* Org Templates - only for org/agency users */}
+                {canManageOrgTemplates && (
+                  <button
+                    type="button"
+                    onClick={() => setView('org-templates')}
+                    className={cn(
+                      "w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all duration-200",
+                      currentView === 'org-templates'
+                        ? "bg-[var(--brand-primary)]/10 text-[var(--text-primary)] font-medium" 
+                        : "text-[var(--text-secondary)] hover:bg-[var(--glass-bg-hover)] hover:text-[var(--text-primary)]"
+                    )}
+                  >
+                    <Globe className={cn("h-4 w-4", currentView === 'org-templates' && "text-[var(--brand-primary)]")} />
+                    Org Templates
+                  </button>
+                )}
+
                 {/* Delivery Rules Section */}
                 <Collapsible open={deliveryOpen} onOpenChange={setDeliveryOpen}>
                   <CollapsibleTrigger asChild>
@@ -787,7 +870,27 @@ export default function FormsDashboard() {
 
   return (
     <TooltipProvider>
-      <ModuleLayout ariaLabel="Forms" leftSidebar={leftSidebarContent} defaultLeftSidebarOpen={true}>
+      <ModuleLayout 
+        ariaLabel="Forms" 
+        leftSidebar={leftSidebarContent} 
+        defaultLeftSidebarOpen={true}
+        rightSidebar={selectedSubmission ? (
+          <SubmissionDetailPanel
+            submission={selectedSubmission}
+            hasSignal={hasSignal}
+            onClose={() => setSelectedSubmission(null)}
+            onUpdateStatus={(id, status) => {
+              handleUpdateSubmissionStatus(id, status)
+              // Update the selected submission in place
+              setSelectedSubmission(prev => prev?.id === id ? { ...prev, status } : prev)
+            }}
+          />
+        ) : null}
+        rightSidebarOpen={!!selectedSubmission}
+        onRightSidebarOpenChange={(open) => { if (!open) setSelectedSubmission(null) }}
+        rightSidebarTitle="Submission Detail"
+        rightSidebarWidth={420}
+      >
         <ModuleLayout.Header title="Forms" icon={MODULE_ICONS.forms} subtitle={headerSubtitle} actions={headerActions} />
         <ModuleLayout.Content>
           <ScrollArea className="flex-1 h-full">
@@ -799,8 +902,16 @@ export default function FormsDashboard() {
                 stats={stats}
                 isLoading={isLoading}
                 hasSignal={hasSignal}
-                onViewForm={(id) => {}}
-                onViewSubmission={(id) => {}}
+                onViewForm={(id) => navigate(`/forms/${id}`)}
+                onViewSubmission={(id) => {
+                  setCurrentView('submissions')
+                  setSubmissionsTab('all')
+                }}
+                onViewAllSubmissions={() => {
+                  setCurrentView('submissions')
+                  setSubmissionsTab('all')
+                  setSubmissionsOpen(true)
+                }}
               />
             )}
             
@@ -828,6 +939,13 @@ export default function FormsDashboard() {
               />
             )}
             
+            {currentView === 'org-templates' && canManageOrgTemplates && (
+              <OrgTemplatesView
+                orgId={currentOrg?.id}
+                orgName={currentOrg?.name}
+              />
+            )}
+            
             {currentView === 'submissions' && (
               <SubmissionsView
                 submissions={submissions}
@@ -835,8 +953,12 @@ export default function FormsDashboard() {
                 viewMode={viewMode}
                 filter={submissionsTab}
                 hasSignal={hasSignal}
-                onView={(id) => {}}
-                onUpdateStatus={(id, status) => {}}
+                onView={(submission) => setSelectedSubmission(submission)}
+                onUpdateStatus={handleUpdateSubmissionStatus}
+                onDelete={handleDeleteSubmission}
+                onBulkDelete={handleBulkDeleteSubmissions}
+                onBulkUpdateStatus={handleBulkUpdateSubmissionStatus}
+                selectedSubmissionId={selectedSubmission?.id}
               />
             )}
             

@@ -30,8 +30,6 @@ import {
   CheckCircle,
   Info,
   ExternalLink,
-  Copy,
-  Check,
   MessageSquare,
   HelpCircle,
   User,
@@ -40,7 +38,7 @@ import {
   Plus
 } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import EchoNudgeSettings from './EchoNudgeSettings'
+// EchoNudgeSettings is now a standalone view at /engage → Page Nudges
 
 // Widget icon options
 const WIDGET_ICONS = [
@@ -104,7 +102,6 @@ export default function EngageChatSettings({ projectId, onClose }) {
   const [loadingMembers, setLoadingMembers] = useState(false)
   const [signalEnabled, setSignalEnabled] = useState(false)
   const [project, setProject] = useState(null)
-  const [copied, setCopied] = useState(false)
   const [activeTab, setActiveTab] = useState('general')
 
   // Fetch config on mount
@@ -117,21 +114,24 @@ export default function EngageChatSettings({ projectId, onClose }) {
   const fetchConfig = async () => {
     try {
       setLoading(true)
-      const { data } = await engageApi.getChatConfig(projectId)
+      const { data: responseData } = await engageApi.getChatConfig(projectId)
+      // Backend returns { success, data: { config, signalEnabled, project } }
+      const payload = responseData?.data || responseData
+      const rawConfig = payload?.config || {}
       
       // Initialize business_hours if null
       const configWithDefaults = {
-        ...data.config,
-        business_hours: data.config.business_hours || DEFAULT_BUSINESS_HOURS
+        ...rawConfig,
+        business_hours: rawConfig.business_hours || DEFAULT_BUSINESS_HOURS
       }
       
       setConfig(configWithDefaults)
-      setSignalEnabled(data.signalEnabled)
-      setProject(data.project)
+      setSignalEnabled(payload?.signalEnabled ?? false)
+      setProject(payload?.project ?? null)
       
       // Fetch team members if org is available
-      if (data.project?.org?.id) {
-        fetchTeamMembers(data.project.org.id)
+      if (payload?.project?.org?.id) {
+        fetchTeamMembers(payload.project.org.id)
       }
     } catch (error) {
       console.error('Failed to fetch chat config:', error)
@@ -237,14 +237,6 @@ export default function EngageChatSettings({ projectId, onClose }) {
     return 'hidden'
   }
 
-  const copyEmbedCode = () => {
-    const code = `<script src="${window.location.origin}/engage-widget.js" data-project="${projectId}" async></script>`
-    navigator.clipboard.writeText(code)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-    toast.success('Embed code copied!')
-  }
-
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -305,95 +297,43 @@ export default function EngageChatSettings({ projectId, onClose }) {
 
       {config.is_enabled && (
         <>
-          {/* Chat Mode */}
+          {/* Chat Mode (auto-derived from Signal status) */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Sparkles className="w-5 h-5" />
-                Chat Mode
-              </CardTitle>
-              <CardDescription>
-                Choose how visitors interact with your chat widget
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid gap-4">
-                {/* Live Chat Only */}
-                <div
-                  className={cn(
-                    'p-4 rounded-lg border-2 cursor-pointer transition-colors',
-                    config.chat_mode === 'live_only'
-                      ? 'border-primary bg-primary/5'
-                      : 'border-border hover:border-muted-foreground/50'
-                  )}
-                  onClick={() => updateConfig({ chat_mode: 'live_only' })}
-                >
-                  <div className="flex items-start gap-3">
-                    <div className={cn(
-                      'w-4 h-4 rounded-full border-2 mt-0.5 flex-shrink-0',
-                      config.chat_mode === 'live_only'
-                        ? 'border-primary bg-primary'
-                        : 'border-muted-foreground'
-                    )}>
-                      {config.chat_mode === 'live_only' && (
-                        <Check className="w-3 h-3 text-white" />
-                      )}
-                    </div>
-                    <div>
-                      <div className="font-medium">Live Chat Only</div>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        Visitors fill out a form, and you respond from the portal.
-                        Simple and effective for human-only support.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* AI Chat with Handoff */}
-                <div
-                  className={cn(
-                    'p-4 rounded-lg border-2 transition-colors',
-                    !signalEnabled && 'opacity-60',
-                    config.chat_mode === 'ai'
-                      ? 'border-primary bg-primary/5'
-                      : 'border-border',
-                    signalEnabled && 'cursor-pointer hover:border-muted-foreground/50'
-                  )}
-                  onClick={() => signalEnabled && updateConfig({ chat_mode: 'ai' })}
-                >
-                  <div className="flex items-start gap-3">
-                    <div className={cn(
-                      'w-4 h-4 rounded-full border-2 mt-0.5 flex-shrink-0',
-                      config.chat_mode === 'ai'
-                        ? 'border-primary bg-primary'
-                        : 'border-muted-foreground'
-                    )}>
-                      {config.chat_mode === 'ai' && (
-                        <Check className="w-3 h-3 text-white" />
-                      )}
-                    </div>
-                    <div className="flex-1">
-                      <div className="font-medium flex items-center gap-2">
-                        AI Chat with Handoff
-                        <Badge variant="outline" className="text-xs">
-                          Signal
-                        </Badge>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  {signalEnabled ? (
+                    <>
+                      <div className="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                        <Sparkles className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                       </div>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        AI responds instantly using your knowledge base.
-                        Visitors can request human handoff anytime.
-                      </p>
-                      {!signalEnabled && (
-                        <Alert className="mt-3">
-                          <Info className="h-4 w-4" />
-                          <AlertDescription>
-                            Enable Signal for this project to use AI chat.
-                          </AlertDescription>
-                        </Alert>
-                      )}
-                    </div>
-                  </div>
+                      <div>
+                        <div className="font-medium flex items-center gap-2">
+                          AI Chat with Handoff
+                          <Badge variant="outline" className="text-xs">Signal</Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          AI responds instantly. Visitors can request human handoff anytime.
+                        </p>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                        <Users className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                      </div>
+                      <div>
+                        <div className="font-medium">Live Chat Only</div>
+                        <p className="text-sm text-muted-foreground">
+                          Visitors connect directly with your team. Enable Signal to add AI chat.
+                        </p>
+                      </div>
+                    </>
+                  )}
                 </div>
+                <Badge variant={signalEnabled ? 'default' : 'secondary'}>
+                  {signalEnabled ? 'AI Enabled' : 'Live Only'}
+                </Badge>
               </div>
             </CardContent>
           </Card>
@@ -416,10 +356,6 @@ export default function EngageChatSettings({ projectId, onClose }) {
               <TabsTrigger value="routing">
                 <Users className="w-4 h-4 mr-2" />
                 Routing
-              </TabsTrigger>
-              <TabsTrigger value="nudges">
-                <Sparkles className="w-4 h-4 mr-2" />
-                Nudges
               </TabsTrigger>
             </TabsList>
 
@@ -496,8 +432,8 @@ export default function EngageChatSettings({ projectId, onClose }) {
                 </CardContent>
               </Card>
 
-              {/* AI Settings (only show when chat_mode is 'ai') */}
-              {config.chat_mode === 'ai' && (
+              {/* AI Settings (only show when Signal is enabled) */}
+              {signalEnabled && (
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
@@ -533,10 +469,124 @@ export default function EngageChatSettings({ projectId, onClose }) {
                   </CardContent>
                 </Card>
               )}
+
+              {/* Welcome Screen Settings */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <MessageCircle className="w-5 h-5" />
+                    Welcome Screen
+                  </CardTitle>
+                  <CardDescription>
+                    What visitors see before they start chatting
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>Show welcome screen</Label>
+                      <p className="text-xs text-muted-foreground">
+                        Display a greeting with quick-action prompts before the chat starts
+                      </p>
+                    </div>
+                    <Switch
+                      checked={config.welcome_screen_enabled ?? true}
+                      onCheckedChange={(checked) => updateConfig({ welcome_screen_enabled: checked })}
+                    />
+                  </div>
+
+                  {config.welcome_screen_enabled !== false && (
+                    <>
+                      <Separator />
+
+                      <div className="space-y-2">
+                        <Label>Quick Action Prompts</Label>
+                        <p className="text-xs text-muted-foreground">
+                          Suggested questions visitors can click to start a conversation
+                        </p>
+                        {(config.welcome_quick_actions || []).map((action, index) => (
+                          <div key={index} className="flex items-center gap-2">
+                            <Input
+                              value={action}
+                              onChange={(e) => {
+                                const updated = [...(config.welcome_quick_actions || [])]
+                                updated[index] = e.target.value
+                                updateConfig({ welcome_quick_actions: updated })
+                              }}
+                              placeholder="e.g. What apartments are available?"
+                            />
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => {
+                                const updated = (config.welcome_quick_actions || []).filter((_, i) => i !== index)
+                                updateConfig({ welcome_quick_actions: updated })
+                              }}
+                            >
+                              <X className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        ))}
+                        {(config.welcome_quick_actions || []).length < 6 && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              updateConfig({
+                                welcome_quick_actions: [...(config.welcome_quick_actions || []), '']
+                              })
+                            }}
+                          >
+                            <Plus className="w-4 h-4 mr-2" />
+                            Add prompt
+                          </Button>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Offline Behavior */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Offline Messaging</CardTitle>
+                  <CardDescription>
+                    What visitors see when no agents are available
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Offline Heading</Label>
+                    <Input
+                      placeholder="No agents available right now"
+                      value={config.offline_heading || ''}
+                      onChange={(e) => updateConfig({ offline_heading: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Offline Subheading</Label>
+                    <Textarea
+                      placeholder="Leave us a message and we'll get back to you!"
+                      value={config.offline_subheading || ''}
+                      onChange={(e) => updateConfig({ offline_subheading: e.target.value })}
+                      rows={2}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
             </TabsContent>
 
             {/* Appearance Tab */}
             <TabsContent value="appearance" className="space-y-4 mt-4">
+              <Alert>
+                <Info className="h-4 w-4" />
+                <AlertDescription>
+                  The widget automatically uses your project's <strong>brand colors</strong> and <strong>logo</strong> from{' '}
+                  <span className="font-medium">Project Settings</span>. The accent color below is used as an optional override.
+                </AlertDescription>
+              </Alert>
+
               <Card>
                 <CardHeader>
                   <CardTitle>Widget Style</CardTitle>
@@ -643,9 +693,9 @@ export default function EngageChatSettings({ projectId, onClose }) {
                 <CardHeader>
                   <CardTitle>Contact Form</CardTitle>
                   <CardDescription>
-                    {config.chat_mode === 'ai' 
+                    {signalEnabled
                       ? 'Shown when visitors request human handoff'
-                      : 'Shown when visitors open the chat widget'}
+                      : 'Shown when no agents are available (offline form)'}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -969,7 +1019,9 @@ export default function EngageChatSettings({ projectId, onClose }) {
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="show_form">Show "Leave a message" form</SelectItem>
-                            <SelectItem value="ai_only">AI chat only (no handoff option)</SelectItem>
+                            {signalEnabled && (
+                              <SelectItem value="ai_only">AI chat only (no handoff option)</SelectItem>
+                            )}
                             <SelectItem value="hide_handoff">Hide handoff button</SelectItem>
                           </SelectContent>
                         </Select>
@@ -992,40 +1044,52 @@ export default function EngageChatSettings({ projectId, onClose }) {
               </Card>
             </TabsContent>
 
-            {/* Echo Nudges Tab */}
-            <TabsContent value="nudges" className="space-y-4 mt-4">
-              <EchoNudgeSettings projectId={projectId} />
-            </TabsContent>
           </Tabs>
 
-          {/* Embed Code */}
+          {/* Site-Kit Installation */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <ExternalLink className="w-5 h-5" />
-                Embed Code
+                Installation
               </CardTitle>
               <CardDescription>
-                Add this script to your website to display the chat widget
+                The chat widget is automatically included when you use @uptrademedia/site-kit
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="relative">
-                <pre className="p-4 bg-muted rounded-lg text-sm overflow-x-auto">
-                  <code>{`<script src="${window.location.origin}/engage-widget.js" data-project="${projectId}" async></script>`}</code>
-                </pre>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="absolute top-2 right-2"
-                  onClick={copyEmbedCode}
-                >
-                  {copied ? (
-                    <Check className="w-4 h-4" />
-                  ) : (
-                    <Copy className="w-4 h-4" />
-                  )}
-                </Button>
+            <CardContent className="space-y-4">
+              <Alert>
+                <MessageCircle className="h-4 w-4" />
+                <AlertDescription>
+                  The chat widget is built into Site-Kit and will automatically appear on your website once installed. 
+                  No manual embed code needed.
+                </AlertDescription>
+              </Alert>
+              
+              <div className="space-y-3">
+                <div>
+                  <Label className="text-xs text-muted-foreground mb-2 block">Site-Kit Package</Label>
+                  <div className="relative">
+                    <pre className="p-3 bg-muted rounded-lg text-xs overflow-x-auto">
+                      <code>@uptrademedia/site-kit</code>
+                    </pre>
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="text-xs text-muted-foreground mb-2 block">Usage Example</Label>
+                  <div className="relative">
+                    <pre className="p-3 bg-muted rounded-lg text-xs overflow-x-auto font-mono">
+                      <code>{`import { ChatWidget } from '@uptrademedia/site-kit/engage'
+
+<ChatWidget projectId="${projectId}" />`}</code>
+                    </pre>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Add the ChatWidget component to your layout (typically in a floating action component). 
+                    All configuration is managed here in the Portal and automatically synced.
+                  </p>
+                </div>
               </div>
             </CardContent>
           </Card>

@@ -36,7 +36,35 @@ interface FormFieldProps {
   classPrefix?: string
 }
 
+/**
+ * Normalize options from various DB formats into [{value, label}]
+ * Handles:
+ *  - [{value, label}] → pass through
+ *  - {choices: ["A", "B"]} → [{value: "A", label: "A"}, ...]
+ *  - ["A", "B"] → [{value: "A", label: "A"}, ...]
+ */
+function normalizeOptions(options: unknown): { value: string; label: string }[] {
+  if (!options) return []
+  if (Array.isArray(options)) {
+    return options.map((opt) => {
+      if (typeof opt === 'string') return { value: opt, label: opt }
+      if (typeof opt === 'object' && opt !== null && 'value' in opt && 'label' in opt) return opt as { value: string; label: string }
+      if (typeof opt === 'object' && opt !== null && 'label' in opt) return { value: (opt as any).label, label: (opt as any).label }
+      return { value: String(opt), label: String(opt) }
+    })
+  }
+  if (typeof options === 'object' && options !== null) {
+    const obj = options as Record<string, unknown>
+    if (Array.isArray(obj.choices)) return normalizeOptions(obj.choices)
+    if (Array.isArray(obj.items)) return normalizeOptions(obj.items)
+    if (Array.isArray(obj.options)) return normalizeOptions(obj.options)
+  }
+  return []
+}
+
 export function FormField({ field, value, error, onChange, classPrefix = 'uptrade-form' }: FormFieldProps) {
+  // Normalize options once
+  const options = normalizeOptions(field.options)
   // Use CSS variables with inline style fallbacks
   const baseInputStyle: React.CSSProperties = {
     width: '100%',
@@ -70,9 +98,9 @@ export function FormField({ field, value, error, onChange, classPrefix = 'uptrad
     marginTop: 4,
   }
   
-  // Heading (display only)
-  if (field.field_type === 'heading') {
-    return <h3 className={`${classPrefix}__heading`} style={{ margin: '16px 0 8px' }}>{field.label}</h3>
+  // Heading / Section Header (display only)
+  if (field.field_type === 'heading' || field.field_type === 'section_header') {
+    return <h3 className={`${classPrefix}__heading`} style={{ margin: '16px 0 8px', fontWeight: 600, fontSize: 18 }}>{field.label}</h3>
   }
   
   // Paragraph (display only)
@@ -92,11 +120,11 @@ export function FormField({ field, value, error, onChange, classPrefix = 'uptrad
         {field.is_required && <span style={{ color: 'var(--uptrade-error-color, #ef4444)' }}> *</span>}
       </label>
       
-      {/* Text, Email, Phone, Number */}
-      {['text', 'email', 'phone', 'number'].includes(field.field_type) && (
+      {/* Text, Email, Phone/Tel, Number */}
+      {['text', 'email', 'phone', 'tel', 'number'].includes(field.field_type) && (
         <input
           className={`${classPrefix}__input`}
-          type={field.field_type === 'phone' ? 'tel' : field.field_type}
+          type={field.field_type === 'phone' || field.field_type === 'tel' ? 'tel' : field.field_type}
           name={field.slug}
           value={String(value || '')}
           placeholder={field.placeholder}
@@ -131,7 +159,7 @@ export function FormField({ field, value, error, onChange, classPrefix = 'uptrad
           style={baseInputStyle}
         >
           <option value="">{field.placeholder || 'Select an option'}</option>
-          {field.options?.map((option) => (
+          {options.map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}
             </option>
@@ -153,7 +181,7 @@ export function FormField({ field, value, error, onChange, classPrefix = 'uptrad
           }}
           style={{ ...baseInputStyle, height: 120 }}
         >
-          {field.options?.map((option) => (
+          {options.map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}
             </option>
@@ -164,7 +192,7 @@ export function FormField({ field, value, error, onChange, classPrefix = 'uptrad
       {/* Radio */}
       {field.field_type === 'radio' && (
         <div className={`${classPrefix}__radio-group`} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {field.options?.map((option) => (
+          {options.map((option) => (
             <label key={option.value} className={`${classPrefix}__radio-option`} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <input
                 type="radio"
@@ -180,7 +208,7 @@ export function FormField({ field, value, error, onChange, classPrefix = 'uptrad
       )}
       
       {/* Checkbox (single) */}
-      {field.field_type === 'checkbox' && (!field.options || field.options.length === 0) && (
+      {field.field_type === 'checkbox' && options.length === 0 && (
         <label className={`${classPrefix}__checkbox`} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <input
             type="checkbox"
@@ -193,9 +221,9 @@ export function FormField({ field, value, error, onChange, classPrefix = 'uptrad
       )}
       
       {/* Checkbox (multiple options) */}
-      {field.field_type === 'checkbox' && field.options && field.options.length > 0 && (
+      {field.field_type === 'checkbox' && options.length > 0 && (
         <div className={`${classPrefix}__checkbox-group`} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {field.options.map((option) => {
+          {options.map((option) => {
             const selectedValues = Array.isArray(value) ? value : []
             const isChecked = selectedValues.includes(option.value)
             

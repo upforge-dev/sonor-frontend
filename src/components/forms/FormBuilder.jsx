@@ -100,16 +100,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle
-} from '@/components/ui/sheet'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import { useCommerceOfferings } from '@/lib/hooks'
-import { engageApi } from '@/lib/portal-api'
+import portalApi, { engageApi } from '@/lib/portal-api'
+import useAuthStore from '@/lib/auth-store'
 
 // =============================================================================
 // CONSTANTS
@@ -465,7 +460,7 @@ function FieldWithDropZones({ field, fieldIndex, children, onSideDrop }) {
 // SORTABLE FIELD ITEM - Live preview with drag handle
 // =============================================================================
 
-function SortableFieldItem({ field, isSelected, onSelect, onDelete, onDuplicate, onWidthChange }) {
+function SortableFieldItem({ field, isSelected, isMultiSelected, onSelect, onDelete, onDuplicate, onWidthChange }) {
   const {
     attributes,
     listeners,
@@ -482,6 +477,7 @@ function SortableFieldItem({ field, isSelected, onSelect, onDelete, onDuplicate,
 
   const fieldType = FIELD_TYPES.find(f => f.type === field.field_type)
   const isLayoutField = field.field_type === 'heading' || field.field_type === 'paragraph'
+  const highlighted = isSelected || isMultiSelected
 
   return (
     <div
@@ -490,11 +486,11 @@ function SortableFieldItem({ field, isSelected, onSelect, onDelete, onDuplicate,
       className={cn(
         "group relative rounded-xl transition-all duration-200",
         isDragging && "opacity-50 scale-[1.02] shadow-2xl z-50",
-        isSelected 
+        highlighted 
           ? "ring-2 ring-[var(--brand-primary)] ring-offset-2 ring-offset-[var(--surface-page)]" 
           : "hover:ring-2 hover:ring-[var(--brand-primary)]/30 hover:ring-offset-2 hover:ring-offset-[var(--surface-page)]"
       )}
-      onClick={() => onSelect(field)}
+      onClick={(e) => onSelect(field, e)}
     >
       {/* Live Form Field Preview */}
       <div className={cn(
@@ -560,8 +556,15 @@ function SortableFieldItem({ field, isSelected, onSelect, onDelete, onDuplicate,
         )}
       </div>
       
-      {/* Floating Action Bar - appears on selection */}
-      {isSelected && (
+      {/* Multi-select indicator */}
+      {isMultiSelected && (
+        <div className="absolute -top-2 left-3 flex h-5 w-5 items-center justify-center rounded-full bg-[var(--brand-primary)] shadow-lg z-10">
+          <Check className="h-3 w-3 text-white" />
+        </div>
+      )}
+      
+      {/* Floating Action Bar - appears on single selection */}
+      {isSelected && !isMultiSelected && (
         <div className="absolute -top-3 right-4 flex items-center gap-1 bg-[var(--brand-primary)] rounded-lg px-2 py-1 shadow-lg z-10">
           {/* Width controls */}
           <Tooltip>
@@ -1486,7 +1489,7 @@ function FieldPropertyEditor({ field, onUpdate, onClose }) {
 // FORM CANVAS - Live preview form builder
 // =============================================================================
 
-function FormCanvas({ form, fields, selectedField, onSelect, onDelete, onDuplicate, onWidthChange, currentStep, totalSteps, previewMode, onPreviewModeChange, canUndo, canRedo, onUndo, onRedo, onFormUpdate }) {
+function FormCanvas({ form, fields, selectedField, selectedFieldIds, onSelect, onDelete, onDuplicate, onWidthChange, currentStep, totalSteps, previewMode, onPreviewModeChange, canUndo, canRedo, onUndo, onRedo, onFormUpdate, steps, onMoveFieldsToStep, onClearSelection }) {
   // Droppable area for palette items
   const { setNodeRef, isOver } = useDroppable({
     id: 'form-canvas-drop'
@@ -1606,6 +1609,14 @@ function FormCanvas({ form, fields, selectedField, onSelect, onDelete, onDuplica
                     <div className="flex justify-between gap-4">
                       <span>Duplicate field</span>
                       <kbd className="font-mono bg-white/10 px-1.5 py-0.5 rounded">⌘D</kbd>
+                    </div>
+                    <div className="flex justify-between gap-4">
+                      <span>Select all</span>
+                      <kbd className="font-mono bg-white/10 px-1.5 py-0.5 rounded">⌘A</kbd>
+                    </div>
+                    <div className="flex justify-between gap-4">
+                      <span>Multi-select</span>
+                      <kbd className="font-mono bg-white/10 px-1.5 py-0.5 rounded">⇧ Click</kbd>
                     </div>
                     <div className="flex justify-between gap-4">
                       <span>Undo</span>
@@ -1728,7 +1739,8 @@ function FormCanvas({ form, fields, selectedField, onSelect, onDelete, onDuplica
                         <FieldWithDropZones field={field} fieldIndex={index}>
                           <SortableFieldItem
                             field={field}
-                            isSelected={selectedField?.id === field.id}
+                            isSelected={selectedField?.id === field.id && selectedFieldIds.size === 0}
+                            isMultiSelected={selectedFieldIds.has(field.id)}
                             onSelect={onSelect}
                             onDelete={onDelete}
                             onDuplicate={onDuplicate}
@@ -1739,6 +1751,47 @@ function FormCanvas({ form, fields, selectedField, onSelect, onDelete, onDuplica
                     ))}
                   </div>
                 </SortableContext>
+              )}
+              
+              {/* Multi-select Bulk Action Bar */}
+              {selectedFieldIds.size > 0 && steps.length > 1 && (
+                <div className="mx-6 mb-4 p-3 rounded-xl bg-[var(--brand-primary)]/10 border border-[var(--brand-primary)]/30">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--brand-primary)] text-white text-xs font-bold">
+                        {selectedFieldIds.size}
+                      </div>
+                      <span className="text-sm font-medium text-[var(--text-primary)]">field{selectedFieldIds.size > 1 ? 's' : ''} selected</span>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                      onClick={onClearSelection}
+                    >
+                      <X className="h-3 w-3 mr-1" />
+                      Clear
+                    </Button>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-[var(--text-secondary)] shrink-0">Move to:</span>
+                    {steps.map((step, idx) => (
+                      idx !== currentStep - 1 && (
+                        <Button
+                          key={idx}
+                          variant="outline"
+                          size="sm"
+                          className="h-7 text-xs border-[var(--brand-primary)]/30 hover:bg-[var(--brand-primary)]/20 hover:border-[var(--brand-primary)] text-[var(--text-primary)]"
+                          onClick={() => onMoveFieldsToStep(idx)}
+                        >
+                          <ArrowRight className="h-3 w-3 mr-1" />
+                          {step.name}
+                        </Button>
+                      )
+                    ))}
+                  </div>
+                  <p className="text-[10px] text-[var(--text-tertiary)] mt-2">Shift+Click to select multiple fields · ⌘A to select all</p>
+                </div>
               )}
               
               {/* Submit Button Preview */}
@@ -1774,7 +1827,7 @@ function FormCanvas({ form, fields, selectedField, onSelect, onDelete, onDuplica
 // STEP MANAGER - Multi-step form navigation
 // =============================================================================
 
-function StepManager({ steps, currentStep, onStepChange, onAddStep, onRemoveStep, onRenameStep }) {
+function StepManager({ steps, currentStep, onStepChange, onAddStep, onRemoveStep, onRenameStep, selectedFieldCount, onMoveFieldsToStep }) {
   const [editingStep, setEditingStep] = useState(null)
   const [stepName, setStepName] = useState('')
   
@@ -1843,7 +1896,20 @@ function StepManager({ steps, currentStep, onStepChange, onAddStep, onRemoveStep
               </span>
             )}
             
-            {steps.length > 1 && (
+            {selectedFieldCount > 0 && currentStep !== index ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 px-2 text-[10px] font-medium bg-[var(--brand-primary)]/10 text-[var(--brand-primary)] hover:bg-[var(--brand-primary)]/20 rounded-md"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onMoveFieldsToStep(index)
+                }}
+              >
+                <ArrowRight className="h-3 w-3 mr-0.5" />
+                Move
+              </Button>
+            ) : steps.length > 1 && (
               <Button
                 variant="ghost"
                 size="icon"
@@ -1878,6 +1944,13 @@ function StepManager({ steps, currentStep, onStepChange, onAddStep, onRemoveStep
 // =============================================================================
 
 export default function FormBuilder({ formId, projectId, initialData, onSave, onCancel }) {
+  const { currentOrg, isSuperAdmin, accessLevel } = useAuthStore()
+  
+  // Can the user promote forms to org templates?
+  const canManageOrgTemplates = isSuperAdmin || 
+    accessLevel === 'organization' || 
+    currentOrg?.org_type === 'agency'
+  
   // Initialize form from initialData or defaults
   const [form, setForm] = useState(() => {
     if (initialData) {
@@ -2021,6 +2094,7 @@ export default function FormBuilder({ formId, projectId, initialData, onSave, on
   }
   const [currentStep, setCurrentStep] = useState(0)
   const [selectedField, setSelectedField] = useState(null)
+  const [selectedFieldIds, setSelectedFieldIds] = useState(new Set())
   const [isSaving, setIsSaving] = useState(false)
   const [paletteCollapsed, setPaletteCollapsed] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
@@ -2073,6 +2147,7 @@ export default function FormBuilder({ formId, projectId, initialData, onSave, on
     setSteps(JSON.parse(history[newIndex]))
     setHistoryIndex(newIndex)
     setSelectedField(null)
+    setSelectedFieldIds(new Set())
   }, [canUndo, history, historyIndex])
   
   const redo = useCallback(() => {
@@ -2082,59 +2157,72 @@ export default function FormBuilder({ formId, projectId, initialData, onSave, on
     setSteps(JSON.parse(history[newIndex]))
     setHistoryIndex(newIndex)
     setSelectedField(null)
+    setSelectedFieldIds(new Set())
   }, [canRedo, history, historyIndex])
-  
-  // Keyboard shortcuts
-  const handleSaveRef = useRef(null)
-  
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      // Save (Cmd/Ctrl + S) - works even in inputs
-      if ((e.metaKey || e.ctrlKey) && e.key === 's') {
-        e.preventDefault()
-        handleSaveRef.current?.()
-        return
-      }
-      
-      // Don't trigger other shortcuts if user is typing in an input
-      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return
-      
-      // Delete selected field
-      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedField) {
-        e.preventDefault()
-        deleteField(selectedField.id)
-      }
-      
-      // Duplicate (Cmd/Ctrl + D)
-      if ((e.metaKey || e.ctrlKey) && e.key === 'd' && selectedField) {
-        e.preventDefault()
-        duplicateField(selectedField)
-      }
-      
-      // Undo (Cmd/Ctrl + Z)
-      if ((e.metaKey || e.ctrlKey) && e.key === 'z' && !e.shiftKey) {
-        e.preventDefault()
-        undo()
-      }
-      
-      // Redo (Cmd/Ctrl + Shift + Z or Cmd/Ctrl + Y)
-      if ((e.metaKey || e.ctrlKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
-        e.preventDefault()
-        redo()
-      }
-      
-      // Escape to deselect
-      if (e.key === 'Escape') {
-        setSelectedField(null)
-      }
-    }
-    
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [selectedField, undo, redo])
   
   // Get current step fields
   const currentFields = steps[currentStep]?.fields || []
+  
+  // Multi-select field handler: Shift+Click toggles multi-selection, regular click selects one
+  const handleFieldSelect = useCallback((field, event) => {
+    if (event?.shiftKey) {
+      // Shift+Click: toggle field in multi-selection
+      setSelectedFieldIds(prev => {
+        const next = new Set(prev)
+        // If we had a single selectedField, start multi-select from it
+        if (selectedField && next.size === 0) {
+          next.add(selectedField.id)
+        }
+        if (next.has(field.id)) {
+          next.delete(field.id)
+        } else {
+          next.add(field.id)
+        }
+        return next
+      })
+      // Keep selectedField for property editor (last clicked)
+      setSelectedField(field)
+    } else {
+      // Regular click: single select, clear multi-selection
+      setSelectedFieldIds(new Set())
+      setSelectedField(field)
+    }
+  }, [selectedField])
+  
+  // Move selected fields to a different step
+  const moveFieldsToStep = useCallback((targetStepIndex) => {
+    if (selectedFieldIds.size === 0) return
+    
+    setSteps(prev => {
+      const newSteps = prev.map(s => ({ ...s, fields: [...s.fields] }))
+      const idsToMove = selectedFieldIds
+      
+      // Extract fields from current step
+      const fieldsToMove = newSteps[currentStep].fields.filter(f => idsToMove.has(f.id))
+      newSteps[currentStep] = {
+        ...newSteps[currentStep],
+        fields: newSteps[currentStep].fields.filter(f => !idsToMove.has(f.id))
+      }
+      
+      // Add to target step
+      newSteps[targetStepIndex] = {
+        ...newSteps[targetStepIndex],
+        fields: [...newSteps[targetStepIndex].fields, ...fieldsToMove]
+      }
+      
+      return newSteps
+    })
+    
+    const count = selectedFieldIds.size
+    setSelectedFieldIds(new Set())
+    setSelectedField(null)
+    toast.success(`Moved ${count} field${count > 1 ? 's' : ''} to ${steps[targetStepIndex]?.name}`)
+  }, [selectedFieldIds, currentStep, steps])
+  
+  const clearSelection = useCallback(() => {
+    setSelectedFieldIds(new Set())
+    setSelectedField(null)
+  }, [])
   
   // Add field to current step
   const addField = useCallback((fieldType) => {
@@ -2442,6 +2530,73 @@ export default function FormBuilder({ formId, projectId, initialData, onSave, on
     sum + step.fields.filter(f => f.is_required).length, 0
   )
   
+  // Keyboard shortcuts
+  const handleSaveRef = useRef(null)
+  
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Save (Cmd/Ctrl + S) - works even in inputs
+      if ((e.metaKey || e.ctrlKey) && e.key === 's') {
+        e.preventDefault()
+        handleSaveRef.current?.()
+        return
+      }
+      
+      // Don't trigger other shortcuts if user is typing in an input
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return
+      
+      // Select all fields (Cmd/Ctrl + A)
+      if ((e.metaKey || e.ctrlKey) && e.key === 'a') {
+        e.preventDefault()
+        const allIds = new Set(currentFields.map(f => f.id))
+        setSelectedFieldIds(allIds)
+        return
+      }
+      
+      // Delete selected field(s)
+      if ((e.key === 'Delete' || e.key === 'Backspace') && (selectedField || selectedFieldIds.size > 0)) {
+        e.preventDefault()
+        if (selectedFieldIds.size > 0) {
+          // Delete all multi-selected fields
+          selectedFieldIds.forEach(id => deleteField(id))
+          setSelectedFieldIds(new Set())
+          setSelectedField(null)
+        } else if (selectedField) {
+          deleteField(selectedField.id)
+        }
+      }
+      
+      // Duplicate (Cmd/Ctrl + D)
+      if ((e.metaKey || e.ctrlKey) && e.key === 'd' && selectedField && selectedFieldIds.size === 0) {
+        e.preventDefault()
+        duplicateField(selectedField)
+      }
+      
+      // Undo (Cmd/Ctrl + Z)
+      if ((e.metaKey || e.ctrlKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault()
+        undo()
+      }
+      
+      // Redo (Cmd/Ctrl + Shift + Z or Cmd/Ctrl + Y)
+      if ((e.metaKey || e.ctrlKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+        e.preventDefault()
+        redo()
+      }
+      
+      // Escape to deselect
+      if (e.key === 'Escape') {
+        if (selectedFieldIds.size > 0) {
+          setSelectedFieldIds(new Set())
+        }
+        setSelectedField(null)
+      }
+    }
+    
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [selectedField, selectedFieldIds, currentFields, undo, redo, deleteField, duplicateField])
+  
   // DnD sensors for palette + canvas
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -2548,8 +2703,10 @@ export default function FormBuilder({ formId, projectId, initialData, onSave, on
         onDragEnd={(e) => { handleDragEnd(e); setActiveId(null); setActivePaletteType(null) }}
         onDragCancel={handleDragCancel}
       >
-        {/* Full-screen inline container - fills parent */}
-        <div className="h-full w-full flex flex-col bg-[var(--surface-page)] overflow-hidden rounded-2xl m-4 border border-[var(--glass-border)]">
+        {/* Positioned wrapper to anchor the inset container */}
+        <div className="relative flex-1 min-h-0 w-full h-full">
+        {/* Full-screen inline container - fills parent with inset spacing */}
+        <div className="absolute inset-4 flex flex-col bg-[var(--surface-page)] overflow-hidden rounded-2xl border border-[var(--glass-border)]">
         {/* Top Header Bar */}
         <div className="shrink-0 border-b border-[var(--glass-border)] bg-[var(--glass-bg)] dark:bg-[var(--glass-bg-dark)] backdrop-blur-xl rounded-t-2xl">
           <div className="flex items-center justify-between px-6 py-4">
@@ -2596,34 +2753,36 @@ export default function FormBuilder({ formId, projectId, initialData, onSave, on
             </div>
             
             {/* Center: Form Type Selector */}
-            <div className="flex items-center gap-3">
-              {Object.entries(FORM_TYPES).map(([key, config]) => (
-                <Tooltip key={key}>
-                  <TooltipTrigger asChild>
-                    <button
-                      onClick={() => setForm(prev => ({ ...prev, form_type: key }))}
-                      className={cn(
-                        "flex items-center gap-2 px-4 py-2 rounded-xl transition-all border-2",
-                        form.form_type === key
-                          ? "border-[var(--brand-primary)] bg-[var(--brand-primary)]/10"
-                          : "border-transparent hover:bg-[var(--surface-page)]"
-                      )}
-                    >
-                      <config.icon 
-                        className="h-4 w-4" 
-                        style={{ color: form.form_type === key ? 'var(--brand-primary)' : 'var(--text-tertiary)' }}
-                      />
-                      <span className={cn(
-                        "text-sm font-medium",
-                        form.form_type === key ? "text-[var(--brand-primary)]" : "text-[var(--text-secondary)]"
-                      )}>
-                        {config.label}
-                      </span>
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent>{config.description}</TooltipContent>
-                </Tooltip>
-              ))}
+            <div className="flex items-center gap-1">
+              {Object.entries(FORM_TYPES).map(([key, config]) => {
+                const isSelected = form.form_type === key
+                return (
+                  <Tooltip key={key}>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={() => setForm(prev => ({ ...prev, form_type: key }))}
+                        className={cn(
+                          "flex items-center gap-2 py-2 rounded-xl transition-all border-2",
+                          isSelected
+                            ? "px-4 border-[var(--brand-primary)] bg-[var(--brand-primary)]/10"
+                            : "px-2.5 border-transparent hover:bg-[var(--surface-page)]"
+                        )}
+                      >
+                        <config.icon 
+                          className="h-4 w-4 shrink-0" 
+                          style={{ color: isSelected ? 'var(--brand-primary)' : 'var(--text-tertiary)' }}
+                        />
+                        {isSelected && (
+                          <span className="text-sm font-medium text-[var(--brand-primary)] whitespace-nowrap">
+                            {config.label}
+                          </span>
+                        )}
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent>{isSelected ? config.description : config.label}</TooltipContent>
+                  </Tooltip>
+                )
+              })}
             </div>
             
             {/* Right: Actions */}
@@ -2645,23 +2804,104 @@ export default function FormBuilder({ formId, projectId, initialData, onSave, on
                 Cancel
               </Button>
               
-              <Button
-                onClick={handleSave}
-                disabled={isSaving || totalFields === 0}
-                className="h-10 px-6 rounded-xl bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] hover:opacity-90"
-              >
-                {isSaving ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Saving...
-                  </>
-                ) : (
-                  <>
-                    <Save className="h-4 w-4 mr-2" />
-                    Save Form
-                  </>
-                )}
-              </Button>
+              {canManageOrgTemplates ? (
+                <DropdownMenu>
+                  <div className="flex items-center rounded-xl overflow-hidden" style={{ background: 'linear-gradient(to right, var(--brand-primary), var(--brand-secondary))' }}>
+                    <button
+                      onClick={handleSave}
+                      disabled={isSaving || totalFields === 0}
+                      className="h-10 px-5 flex items-center gap-2 text-white text-sm font-medium hover:brightness-110 transition-all disabled:opacity-50 disabled:pointer-events-none"
+                    >
+                      {isSaving ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Save className="h-4 w-4" />
+                      )}
+                      {isSaving ? 'Saving...' : 'Save Form'}
+                    </button>
+                    <div className="w-px h-5 bg-white/25" />
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        disabled={isSaving || totalFields === 0}
+                        className="h-10 px-2.5 flex items-center text-white hover:brightness-110 transition-all disabled:opacity-50 disabled:pointer-events-none"
+                      >
+                        <ChevronDown className="h-4 w-4" />
+                      </button>
+                    </DropdownMenuTrigger>
+                  </div>
+                  <DropdownMenuContent align="end" className="w-64">
+                    <DropdownMenuLabel className="text-xs text-[var(--text-tertiary)]">
+                      Organization
+                    </DropdownMenuLabel>
+                    <DropdownMenuItem
+                      onClick={async () => {
+                        if (!currentOrg?.id) return
+                        try {
+                          await portalApi.post('/forms/templates', {
+                            orgId: currentOrg.id,
+                            slug: form.slug,
+                            name: form.name,
+                            description: form.description || null,
+                            formType: form.form_type || 'custom',
+                            successMessage: form.success_message,
+                            submitButtonText: form.submit_button_text || 'Submit',
+                            layout: form.layout || 'stacked',
+                            isActive: true,
+                            fields: (fields || []).filter(f => f.label).map(f => ({
+                              slug: f.slug,
+                              label: f.label,
+                              fieldType: f.field_type,
+                              placeholder: f.placeholder,
+                              helpText: f.help_text,
+                              isRequired: f.is_required,
+                              validation: f.validation,
+                              options: f.options,
+                              conditional: f.conditional,
+                              width: f.width || 'full',
+                              sortOrder: f.sort_order,
+                            })),
+                          })
+                          toast.success('Promoted to org template — auto-clones to new projects')
+                        } catch (err) {
+                          console.error('Failed to promote to org template:', err)
+                          if (err?.response?.status === 409 || err?.response?.data?.message?.includes('duplicate')) {
+                            toast.error('An org template with this slug already exists')
+                          } else {
+                            toast.error('Failed to create org template')
+                          }
+                        }
+                      }}
+                      className="cursor-pointer"
+                    >
+                      <Globe className="h-4 w-4 mr-2 text-[var(--brand-primary)]" />
+                      <div>
+                        <p className="font-medium">Promote to Org Template</p>
+                        <p className="text-xs text-[var(--text-tertiary)]">
+                          Auto-clone to all {currentOrg?.name || 'org'} projects
+                        </p>
+                      </div>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                <Button
+                  onClick={handleSave}
+                  disabled={isSaving || totalFields === 0}
+                  className="h-10 px-6 rounded-xl bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] hover:opacity-90 text-white"
+                >
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-4 w-4 mr-2" />
+                      Save Form
+                    </>
+                  )}
+                </Button>
+              )}
             </div>
           </div>
         </div>
@@ -2675,10 +2915,12 @@ export default function FormBuilder({ formId, projectId, initialData, onSave, on
               <StepManager
                 steps={steps}
                 currentStep={currentStep}
-                onStepChange={setCurrentStep}
+                onStepChange={(idx) => { setCurrentStep(idx); setSelectedFieldIds(new Set()); setSelectedField(null); }}
                 onAddStep={addStep}
                 onRemoveStep={removeStep}
                 onRenameStep={renameStep}
+                selectedFieldCount={selectedFieldIds.size}
+                onMoveFieldsToStep={moveFieldsToStep}
               />
             )}
             
@@ -2714,7 +2956,8 @@ export default function FormBuilder({ formId, projectId, initialData, onSave, on
             form={form}
             fields={currentFields}
             selectedField={selectedField}
-            onSelect={setSelectedField}
+            selectedFieldIds={selectedFieldIds}
+            onSelect={handleFieldSelect}
             onDelete={deleteField}
             onDuplicate={duplicateField}
             onWidthChange={changeFieldWidth}
@@ -2727,318 +2970,330 @@ export default function FormBuilder({ formId, projectId, initialData, onSave, on
             onUndo={undo}
             onRedo={redo}
             onFormUpdate={(updates) => setForm(prev => ({ ...prev, ...updates }))}
+            steps={steps}
+            onMoveFieldsToStep={moveFieldsToStep}
+            onClearSelection={clearSelection}
           />
           
-          {/* Right Panel: Properties Editor */}
-          <div className="w-80 shrink-0 border-l border-[var(--glass-border)] bg-[var(--glass-bg)] relative">
-            <FieldPropertyEditor
-              field={selectedField}
-              onUpdate={updateField}
-              onClose={() => setSelectedField(null)}
-            />
-            
-            {/* AI Suggest Panel (slides over properties) */}
-            <AISuggestPanel
-              isOpen={showAISuggest}
-              onClose={() => setShowAISuggest(false)}
-              formType={form.form_type}
-              currentFields={currentFields}
-              form={form}
-              onApplySuggestions={applyAISuggestions}
-            />
+          {/* Right Panel: Properties Editor or Form Settings */}
+          <div className="w-80 shrink-0 border-l border-[var(--glass-border)] bg-[var(--glass-bg)] relative overflow-hidden">
+            {showSettings ? (
+              /* Form Settings Panel — inline in the right sidebar */
+              <div className="absolute inset-0 flex flex-col overflow-hidden">
+                {/* Settings Header */}
+                <div className="px-4 py-3 border-b border-[var(--glass-border)] flex items-center justify-between shrink-0">
+                  <div className="flex items-center gap-2">
+                    <Settings className="h-4 w-4 text-[var(--brand-primary)]" />
+                    <h3 className="font-semibold text-sm text-[var(--text-primary)]">Form Settings</h3>
+                  </div>
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setShowSettings(false)}>
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+                
+                {/* Scrollable Settings Content */}
+                <div className="flex-1 overflow-y-auto min-h-0">
+                  <div className="px-4 py-4 space-y-5">
+                    <div className="space-y-2">
+                      <Label className="text-[var(--text-primary)] text-xs">Form Name</Label>
+                      <Input
+                        value={form.name}
+                        onChange={(e) => {
+                          const newName = e.target.value
+                          setForm(prev => ({
+                            ...prev,
+                            name: newName,
+                            slug: !prev.slug || prev.slug === prev.name?.toLowerCase().replace(/\s+/g, '-') || prev.slug === 'form'
+                              ? newName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+                              : prev.slug
+                          }))
+                        }}
+                        className="bg-[var(--surface-page)] border-[var(--glass-border)]"
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label className="text-[var(--text-primary)] text-xs flex items-center gap-2">
+                        <span>Slug</span>
+                        <span className="text-[var(--text-tertiary)] font-normal">(URL identifier)</span>
+                      </Label>
+                      <Input
+                        value={form.slug || ''}
+                        onChange={(e) => {
+                          const slug = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '')
+                          setForm(prev => ({ ...prev, slug }))
+                        }}
+                        placeholder="contact-form"
+                        className="bg-[var(--surface-page)] border-[var(--glass-border)] font-mono text-sm"
+                      />
+                      <p className="text-[11px] text-[var(--text-tertiary)]">
+                        Used to embed the form. Only lowercase letters, numbers, and hyphens.
+                      </p>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label className="text-[var(--text-primary)] text-xs">Description</Label>
+                      <Textarea
+                        value={form.description || ''}
+                        onChange={(e) => setForm(prev => ({ ...prev, description: e.target.value }))}
+                        placeholder="Optional form description..."
+                        className="bg-[var(--surface-page)] border-[var(--glass-border)] min-h-[60px]"
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label className="text-[var(--text-primary)] text-xs">Instructions</Label>
+                      <Textarea
+                        value={form.instructions || ''}
+                        onChange={(e) => setForm(prev => ({ ...prev, instructions: e.target.value }))}
+                        placeholder="Detailed instructions or notes shown before the form..."
+                        className="bg-[var(--surface-page)] border-[var(--glass-border)] min-h-[80px]"
+                      />
+                      <p className="text-[11px] text-[var(--text-tertiary)]">
+                        This text appears above the form. Use it for longer instructions, requirements, or important notes.
+                      </p>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label className="text-[var(--text-primary)] text-xs">Submit Button Text</Label>
+                      <Input
+                        value={form.submit_text || 'Submit'}
+                        onChange={(e) => setForm(prev => ({ ...prev, submit_text: e.target.value }))}
+                        className="bg-[var(--surface-page)] border-[var(--glass-border)]"
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label className="text-[var(--text-primary)] text-xs">Success Message</Label>
+                      <Textarea
+                        value={form.success_message || ''}
+                        onChange={(e) => setForm(prev => ({ ...prev, success_message: e.target.value }))}
+                        placeholder="Message shown after successful submission..."
+                        className="bg-[var(--surface-page)] border-[var(--glass-border)] min-h-[60px]"
+                      />
+                    </div>
+                    
+                    {/* Post-Submit Action Section */}
+                    <div className="space-y-3 p-3 rounded-lg bg-[var(--surface-page)] border border-[var(--glass-border)]">
+                      <div className="flex items-center gap-2">
+                        <Zap className="h-4 w-4 text-[var(--brand-primary)]" />
+                        <Label className="text-[var(--text-primary)] text-xs font-medium">Post-Submit Action</Label>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label className="text-[11px] text-[var(--text-secondary)]">What happens after submission?</Label>
+                        <Select
+                          value={form.success_action || 'message'}
+                          onValueChange={(v) => setForm(prev => ({ 
+                            ...prev, 
+                            success_action: v,
+                            success_engage_element_id: v === 'engage_element' || v === 'both' ? prev.success_engage_element_id : null
+                          }))}
+                        >
+                          <SelectTrigger className="bg-[var(--surface-secondary)] border-[var(--glass-border)]">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="message">Show success message</SelectItem>
+                            <SelectItem value="redirect">Redirect to URL</SelectItem>
+                            <SelectItem value="engage_element">Show popup/nudge</SelectItem>
+                            <SelectItem value="both">Message + popup/nudge</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      {(form.success_action === 'engage_element' || form.success_action === 'both') && (
+                        <div className="space-y-2">
+                          <Label className="text-[11px] text-[var(--text-secondary)]">Select Engage Element</Label>
+                          <Select
+                            value={form.success_engage_element_id || 'none'}
+                            onValueChange={(v) => setForm(prev => ({ 
+                              ...prev, 
+                              success_engage_element_id: v === 'none' ? null : v 
+                            }))}
+                            disabled={loadingEngageElements}
+                          >
+                            <SelectTrigger className="bg-[var(--surface-secondary)] border-[var(--glass-border)]">
+                              <SelectValue placeholder={loadingEngageElements ? 'Loading...' : 'Select popup or nudge...'} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="none">None selected</SelectItem>
+                              {engageElements.length === 0 && !loadingEngageElements && (
+                                <div className="px-2 py-3 text-xs text-[var(--text-tertiary)] text-center">
+                                  No active popups or nudges found.
+                                  <br />
+                                  <a href="/engage" className="text-[var(--brand-primary)] hover:underline">
+                                    Create one in Engage →
+                                  </a>
+                                </div>
+                              )}
+                              {engageElements.map(element => (
+                                <SelectItem key={element.id} value={element.id}>
+                                  <div className="flex items-center gap-2">
+                                    <Badge variant="outline" className="text-[10px] px-1">
+                                      {element.element_type}
+                                    </Badge>
+                                    {element.name}
+                                  </div>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <p className="text-[11px] text-[var(--text-tertiary)]">
+                            The selected popup or nudge will be shown after form submission
+                          </p>
+                        </div>
+                      )}
+                      
+                      {form.success_action === 'redirect' && (
+                        <div className="space-y-2">
+                          <Label className="text-[11px] text-[var(--text-secondary)]">Redirect URL</Label>
+                          <Input
+                            value={form.redirect_url || ''}
+                            onChange={(e) => setForm(prev => ({ ...prev, redirect_url: e.target.value }))}
+                            placeholder="https://example.com/thank-you"
+                            className="bg-[var(--surface-secondary)] border-[var(--glass-border)]"
+                          />
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="flex items-center justify-between p-3 rounded-lg bg-[var(--surface-page)] border border-[var(--glass-border)]">
+                      <div>
+                        <span className="text-sm text-[var(--text-primary)]">Form Active</span>
+                        <p className="text-[11px] text-[var(--text-tertiary)]">Accept new submissions</p>
+                      </div>
+                      <Switch
+                        checked={form.is_active !== false}
+                        onCheckedChange={(checked) => setForm(prev => ({ ...prev, is_active: checked }))}
+                      />
+                    </div>
+                    
+                    {/* Confirmation Email Section */}
+                    <div className="space-y-3 p-3 rounded-lg bg-[var(--surface-page)] border border-[var(--glass-border)]">
+                      <div className="flex items-center gap-2">
+                        <Mail className="h-4 w-4 text-[var(--brand-primary)]" />
+                        <Label className="text-[var(--text-primary)] text-xs font-medium">Confirmation Email</Label>
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <span className="text-sm text-[var(--text-primary)]">Send Confirmation</span>
+                          <p className="text-[11px] text-[var(--text-tertiary)]">Email submitter a confirmation</p>
+                        </div>
+                        <Switch
+                          checked={form.send_confirmation !== false}
+                          onCheckedChange={(checked) => setForm(prev => ({ ...prev, send_confirmation: checked }))}
+                        />
+                      </div>
+                      
+                      {form.send_confirmation !== false && (
+                        <div className="space-y-3 pt-2 border-t border-[var(--glass-border)]">
+                          <p className="text-[11px] text-[var(--text-tertiary)]">
+                            Using default "Form Confirmation" template. 
+                            <a 
+                              href="/email/templates" 
+                              className="text-[var(--brand-primary)] hover:underline ml-1"
+                              target="_blank"
+                            >
+                              Customize template →
+                            </a>
+                          </p>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="w-full gap-2 text-xs"
+                            onClick={() => {
+                              window.open(`/email/templates?action=copy-for-form&formId=${formId}&formName=${encodeURIComponent(form.name)}`, '_blank')
+                            }}
+                          >
+                            <Copy className="h-3 w-3" />
+                            Create Custom Template
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Service Association */}
+                    <div className="space-y-2">
+                      <Label className="text-[var(--text-primary)] text-xs flex items-center gap-2">
+                        <Wrench className="h-3.5 w-3.5" />
+                        Linked Service
+                      </Label>
+                      <Select
+                        value={form.offering_id || 'none'}
+                        onValueChange={(v) => setForm(prev => ({ ...prev, offering_id: v === 'none' ? null : v }))}
+                      >
+                        <SelectTrigger className="bg-[var(--surface-page)] border-[var(--glass-border)]">
+                          <SelectValue placeholder="Select a service..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">No linked service</SelectItem>
+                          {services.map(service => (
+                            <SelectItem key={service.id} value={service.id}>
+                              {service.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-[11px] text-[var(--text-tertiary)]">
+                        Link this form to a service for intent categorization and Signal optimization
+                      </p>
+                    </div>
+
+                    {/* Page Association - Unified Logic */}
+                    <div className="space-y-2">
+                      <Label className="text-[var(--text-primary)] text-xs flex items-center gap-2">
+                        <Globe className="h-3.5 w-3.5" />
+                        Website Page
+                      </Label>
+                      {form.offering_id ? (
+                        (() => {
+                          const linkedService = services.find(s => s.id === form.offering_id)
+                          return (
+                            <div className="p-2.5 rounded-lg bg-muted/50 border border-[var(--glass-border)]">
+                              <p className="text-sm text-[var(--text-primary)] font-medium">
+                                {linkedService?.page_path || 'No page set on service'}
+                              </p>
+                              <p className="text-[11px] text-[var(--text-tertiary)] mt-1">
+                                Inherited from "{linkedService?.name}". Change the page in the service settings.
+                              </p>
+                            </div>
+                          )
+                        })()
+                      ) : (
+                        <div className="p-2.5 rounded-lg bg-muted/50 border border-dashed border-[var(--glass-border)]">
+                          <p className="text-[11px] text-[var(--text-tertiary)]">
+                            Page tracking: Link to a service above, or use `page_paths[]` field in advanced settings for standalone forms appearing on multiple pages.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              /* Default: Field Properties Editor */
+              <>
+                <FieldPropertyEditor
+                  field={selectedFieldIds.size > 0 ? null : selectedField}
+                  onUpdate={updateField}
+                  onClose={() => { setSelectedField(null); setSelectedFieldIds(new Set()) }}
+                />
+                
+                {/* AI Suggest Panel (slides over properties) */}
+                <AISuggestPanel
+                  isOpen={showAISuggest}
+                  onClose={() => setShowAISuggest(false)}
+                  formType={form.form_type}
+                  currentFields={currentFields}
+                  form={form}
+                  onApplySuggestions={applyAISuggestions}
+                />
+              </>
+            )}
           </div>
         </div>
-        
-        {/* Form Settings Sheet */}
-        <Sheet open={showSettings} onOpenChange={setShowSettings}>
-          <SheetContent className="w-[400px] sm:max-w-[400px] bg-[var(--glass-bg)] border-[var(--glass-border)] px-6">
-            <SheetHeader>
-              <SheetTitle className="text-[var(--text-primary)]">Form Settings</SheetTitle>
-            </SheetHeader>
-            <div className="mt-6 space-y-6">
-              <div className="space-y-2">
-                <Label className="text-[var(--text-primary)]">Form Name</Label>
-                <Input
-                  value={form.name}
-                  onChange={(e) => {
-                    const newName = e.target.value
-                    setForm(prev => ({
-                      ...prev,
-                      name: newName,
-                      // Auto-generate slug from name if slug is empty or matches old auto-generated slug
-                      slug: !prev.slug || prev.slug === prev.name?.toLowerCase().replace(/\s+/g, '-') || prev.slug === 'form'
-                        ? newName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
-                        : prev.slug
-                    }))
-                  }}
-                  className="bg-[var(--surface-page)] border-[var(--glass-border)]"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label className="text-[var(--text-primary)] flex items-center gap-2">
-                  <span>Slug</span>
-                  <span className="text-xs text-[var(--text-tertiary)] font-normal">(URL identifier)</span>
-                </Label>
-                <Input
-                  value={form.slug || ''}
-                  onChange={(e) => {
-                    const slug = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '')
-                    setForm(prev => ({ ...prev, slug }))
-                  }}
-                  placeholder="contact-form"
-                  className="bg-[var(--surface-page)] border-[var(--glass-border)] font-mono text-sm"
-                />
-                <p className="text-xs text-[var(--text-tertiary)]">
-                  Used to embed the form. Only lowercase letters, numbers, and hyphens.
-                </p>
-              </div>
-              
-              <div className="space-y-2">
-                <Label className="text-[var(--text-primary)]">Description</Label>
-                <Textarea
-                  value={form.description || ''}
-                  onChange={(e) => setForm(prev => ({ ...prev, description: e.target.value }))}
-                  placeholder="Optional form description..."
-                  className="bg-[var(--surface-page)] border-[var(--glass-border)] min-h-[80px]"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label className="text-[var(--text-primary)]">Instructions</Label>
-                <Textarea
-                  value={form.instructions || ''}
-                  onChange={(e) => setForm(prev => ({ ...prev, instructions: e.target.value }))}
-                  placeholder="Detailed instructions or notes shown before the form (e.g., application requirements, deadlines)..."
-                  className="bg-[var(--surface-page)] border-[var(--glass-border)] min-h-[100px]"
-                />
-                <p className="text-xs text-[var(--text-tertiary)]">
-                  This text appears above the form. Use it for longer instructions, requirements, or important notes.
-                </p>
-              </div>
-              
-              <div className="space-y-2">
-                <Label className="text-[var(--text-primary)]">Submit Button Text</Label>
-                <Input
-                  value={form.submit_text || 'Submit'}
-                  onChange={(e) => setForm(prev => ({ ...prev, submit_text: e.target.value }))}
-                  className="bg-[var(--surface-page)] border-[var(--glass-border)]"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label className="text-[var(--text-primary)]">Success Message</Label>
-                <Textarea
-                  value={form.success_message || ''}
-                  onChange={(e) => setForm(prev => ({ ...prev, success_message: e.target.value }))}
-                  placeholder="Message shown after successful submission..."
-                  className="bg-[var(--surface-page)] border-[var(--glass-border)] min-h-[80px]"
-                />
-              </div>
-              
-              {/* Post-Submit Action Section */}
-              <div className="space-y-3 p-4 rounded-lg bg-[var(--surface-page)] border border-[var(--glass-border)]">
-                <div className="flex items-center gap-2">
-                  <Zap className="h-4 w-4 text-[var(--brand-primary)]" />
-                  <Label className="text-[var(--text-primary)] font-medium">Post-Submit Action</Label>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label className="text-xs text-[var(--text-secondary)]">What happens after submission?</Label>
-                  <Select
-                    value={form.success_action || 'message'}
-                    onValueChange={(v) => setForm(prev => ({ 
-                      ...prev, 
-                      success_action: v,
-                      // Clear engage element if not using it
-                      success_engage_element_id: v === 'engage_element' || v === 'both' ? prev.success_engage_element_id : null
-                    }))}
-                  >
-                    <SelectTrigger className="bg-[var(--surface-secondary)] border-[var(--glass-border)]">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="message">Show success message</SelectItem>
-                      <SelectItem value="redirect">Redirect to URL</SelectItem>
-                      <SelectItem value="engage_element">Show popup/nudge</SelectItem>
-                      <SelectItem value="both">Message + popup/nudge</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                {(form.success_action === 'engage_element' || form.success_action === 'both') && (
-                  <div className="space-y-2">
-                    <Label className="text-xs text-[var(--text-secondary)]">Select Engage Element</Label>
-                    <Select
-                      value={form.success_engage_element_id || 'none'}
-                      onValueChange={(v) => setForm(prev => ({ 
-                        ...prev, 
-                        success_engage_element_id: v === 'none' ? null : v 
-                      }))}
-                      disabled={loadingEngageElements}
-                    >
-                      <SelectTrigger className="bg-[var(--surface-secondary)] border-[var(--glass-border)]">
-                        <SelectValue placeholder={loadingEngageElements ? 'Loading...' : 'Select popup or nudge...'} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">None selected</SelectItem>
-                        {engageElements.length === 0 && !loadingEngageElements && (
-                          <div className="px-2 py-3 text-xs text-[var(--text-tertiary)] text-center">
-                            No active popups or nudges found.
-                            <br />
-                            <a href="/engage" className="text-[var(--brand-primary)] hover:underline">
-                              Create one in Engage →
-                            </a>
-                          </div>
-                        )}
-                        {engageElements.map(element => (
-                          <SelectItem key={element.id} value={element.id}>
-                            <div className="flex items-center gap-2">
-                              <Badge variant="outline" className="text-[10px] px-1">
-                                {element.element_type}
-                              </Badge>
-                              {element.name}
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <p className="text-xs text-[var(--text-tertiary)]">
-                      The selected popup or nudge will be shown after form submission
-                    </p>
-                  </div>
-                )}
-                
-                {form.success_action === 'redirect' && (
-                  <div className="space-y-2">
-                    <Label className="text-xs text-[var(--text-secondary)]">Redirect URL</Label>
-                    <Input
-                      value={form.redirect_url || ''}
-                      onChange={(e) => setForm(prev => ({ ...prev, redirect_url: e.target.value }))}
-                      placeholder="https://example.com/thank-you"
-                      className="bg-[var(--surface-secondary)] border-[var(--glass-border)]"
-                    />
-                  </div>
-                )}
-              </div>
-              
-              <div className="flex items-center justify-between p-3 rounded-lg bg-[var(--surface-page)] border border-[var(--glass-border)]">
-                <div>
-                  <span className="text-sm text-[var(--text-primary)]">Form Active</span>
-                  <p className="text-xs text-[var(--text-tertiary)]">Accept new submissions</p>
-                </div>
-                <Switch
-                  checked={form.is_active !== false}
-                  onCheckedChange={(checked) => setForm(prev => ({ ...prev, is_active: checked }))}
-                />
-              </div>
-              
-              {/* Confirmation Email Section */}
-              <div className="space-y-3 p-4 rounded-lg bg-[var(--surface-page)] border border-[var(--glass-border)]">
-                <div className="flex items-center gap-2">
-                  <Mail className="h-4 w-4 text-[var(--brand-primary)]" />
-                  <Label className="text-[var(--text-primary)] font-medium">Confirmation Email</Label>
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <div>
-                    <span className="text-sm text-[var(--text-primary)]">Send Confirmation</span>
-                    <p className="text-xs text-[var(--text-tertiary)]">Email submitter a confirmation</p>
-                  </div>
-                  <Switch
-                    checked={form.send_confirmation !== false}
-                    onCheckedChange={(checked) => setForm(prev => ({ ...prev, send_confirmation: checked }))}
-                  />
-                </div>
-                
-                {form.send_confirmation !== false && (
-                  <div className="space-y-3 pt-2 border-t border-[var(--glass-border)]">
-                    <p className="text-xs text-[var(--text-tertiary)]">
-                      Using default "Form Confirmation" template. 
-                      <a 
-                        href="/email/templates" 
-                        className="text-[var(--brand-primary)] hover:underline ml-1"
-                        target="_blank"
-                      >
-                        Customize template →
-                      </a>
-                    </p>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="w-full gap-2"
-                      onClick={() => {
-                        // Navigate to email templates with form context
-                        window.open(`/email/templates?action=copy-for-form&formId=${formId}&formName=${encodeURIComponent(form.name)}`, '_blank')
-                      }}
-                    >
-                      <Copy className="h-3 w-3" />
-                      Create Custom Template for This Form
-                    </Button>
-                  </div>
-                )}
-              </div>
-              
-              {/* Service Association */}
-              <div className="space-y-2">
-                <Label className="text-[var(--text-primary)] flex items-center gap-2">
-                  <Wrench className="h-4 w-4" />
-                  Linked Service
-                </Label>
-                <Select
-                  value={form.offering_id || 'none'}
-                  onValueChange={(v) => setForm(prev => ({ ...prev, offering_id: v === 'none' ? null : v }))}
-                >
-                  <SelectTrigger className="bg-[var(--surface-page)] border-[var(--glass-border)]">
-                    <SelectValue placeholder="Select a service..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">No linked service</SelectItem>
-                    {services.map(service => (
-                      <SelectItem key={service.id} value={service.id}>
-                        {service.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-[var(--text-tertiary)]">
-                  Link this form to a service for intent categorization and Signal optimization
-                </p>
-              </div>
-
-              {/* Page Association - Unified Logic */}
-              <div className="space-y-2">
-                <Label className="text-[var(--text-primary)] flex items-center gap-2">
-                  <Globe className="h-4 w-4" />
-                  Website Page
-                </Label>
-                {form.offering_id ? (
-                  // Form is linked to a service - show inherited page (read-only)
-                  (() => {
-                    const linkedService = services.find(s => s.id === form.offering_id)
-                    return (
-                      <div className="p-3 rounded-lg bg-muted/50 border border-[var(--glass-border)]">
-                        <p className="text-sm text-[var(--text-primary)] font-medium">
-                          {linkedService?.page_path || 'No page set on service'}
-                        </p>
-                        <p className="text-xs text-[var(--text-tertiary)] mt-1">
-                          Inherited from "{linkedService?.name}". Change the page in the service settings.
-                        </p>
-                      </div>
-                    )
-                  })()
-                ) : (
-                  // No service linked - allow direct page selection (future enhancement)
-                  <div className="p-3 rounded-lg bg-muted/50 border border-dashed border-[var(--glass-border)]">
-                    <p className="text-xs text-[var(--text-tertiary)]">
-                      Page tracking: Link to a service above, or use `page_paths[]` field in advanced settings for standalone forms appearing on multiple pages.
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </SheetContent>
-        </Sheet>
         
         {/* Drag Overlay */}
         <DragOverlay>
@@ -3059,6 +3314,7 @@ export default function FormBuilder({ formId, projectId, initialData, onSave, on
             </div>
           )}
         </DragOverlay>
+        </div>
         </div>
       </DndContext>
     </TooltipProvider>

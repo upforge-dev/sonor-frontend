@@ -25,6 +25,7 @@ export {
   fetchNextEvent,
   registerForEvent,
   createCheckoutSession,
+  fetchActiveProcessor,
 } from './api'
 
 // Components

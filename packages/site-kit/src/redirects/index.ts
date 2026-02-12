@@ -55,7 +55,7 @@ export async function fetchRedirectRules(config: RedirectConfig): Promise<Redire
     const baseUrl = config.portalApiUrl || 'https://api.uptrademedia.com'
     // Use domain-based lookup from public endpoint (no auth required)
     const domain = config.domain || ''
-    const url = `${baseUrl}/public/seo/redirects?domain=${encodeURIComponent(domain)}`
+    const url = `${baseUrl}/api/public/seo/redirects?domain=${encodeURIComponent(domain)}`
 
     const res = await fetch(url, {
       headers: { 'Content-Type': 'application/json' },
@@ -141,7 +141,7 @@ export async function handleManagedRedirects(
 async function trackRedirectHit(config: RedirectConfig, fromPath: string): Promise<void> {
   try {
     const baseUrl = config.portalApiUrl || 'https://api.uptrademedia.com'
-    await fetch(`${baseUrl}/public/seo/redirects/hit`, {
+    await fetch(`${baseUrl}/api/public/seo/redirects/hit`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ domain: config.domain, from_path: fromPath }),

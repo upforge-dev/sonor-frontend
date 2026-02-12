@@ -52,6 +52,8 @@ import EngageSidebar from '@/components/engage/dashboard/EngageSidebar'
 import EngageOverview from '@/components/engage/dashboard/EngageOverview'
 import EngageElementsGrid from '@/components/engage/dashboard/EngageElementsGrid'
 import EngageChatInbox from '@/components/engage/EngageChatInbox'
+import EngageChatSettings from '@/components/engage/EngageChatSettings'
+import EchoNudgeSettings from '@/components/engage/EchoNudgeSettings'
 import EngageAnalytics from '@/components/engage/EngageAnalytics'
 import EngageTemplates from '@/components/engage/editor/EngageTemplates'
 import EngageTargeting from '@/components/engage/EngageTargeting'
@@ -208,6 +210,10 @@ export default function EngageDashboard() {
     switch (currentView) {
       case 'chat':
         return <EngageChatInbox projectId={projectId} />
+      case 'chat-settings':
+        return <EngageChatSettings projectId={projectId} onClose={() => setCurrentView('chat')} />
+      case 'page-nudges':
+        return <EchoNudgeSettings projectId={projectId} />
       case 'analytics':
         return <EngageAnalytics projectId={projectId} />
       case 'targeting':
@@ -407,6 +413,7 @@ export default function EngageDashboard() {
             setToastsOpen={setToastsOpen}
             slideInsOpen={slideInsOpen}
             setSlideInsOpen={setSlideInsOpen}
+            onOpenSettings={() => setCurrentView('chat-settings')}
           />
         }
         rightSidebar={rightSidebarContent}

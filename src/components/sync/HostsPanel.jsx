@@ -80,7 +80,7 @@ const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
   return { value: time, label: display }
 })
 
-export default function HostsPanel({ isOpen, onClose }) {
+export default function HostsPanel({ isOpen, onClose, inline = false }) {
   const [hosts, setHosts] = useState([])
   const [loading, setLoading] = useState(true)
   const [editingHost, setEditingHost] = useState(null)
@@ -93,10 +93,10 @@ export default function HostsPanel({ isOpen, onClose }) {
   const [showExceptions, setShowExceptions] = useState(false)
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen || inline) {
       fetchHosts()
     }
-  }, [isOpen])
+  }, [isOpen, inline])
 
   const fetchHosts = async () => {
     try {
@@ -208,20 +208,9 @@ export default function HostsPanel({ isOpen, onClose }) {
     ))
   }
 
-  return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[700px] max-h-[85vh] overflow-hidden flex flex-col">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <User className="h-5 w-5" />
-            Hosts
-          </DialogTitle>
-          <DialogDescription>
-            Manage team members who can accept bookings
-          </DialogDescription>
-        </DialogHeader>
-
-        <ScrollArea className="flex-1 -mx-6 px-6">
+  const content = (
+    <>
+        <ScrollArea className={inline ? "flex-1" : "flex-1 -mx-6 px-6"}>
           {loading ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -319,22 +308,6 @@ export default function HostsPanel({ isOpen, onClose }) {
             </div>
           )}
         </ScrollArea>
-
-        <DialogFooter className="border-t pt-4 flex-wrap gap-2">
-          <Button 
-            variant="outline" 
-            className="mr-auto"
-            onClick={() => setShowExceptions(true)}
-          >
-            <CalendarOff className="h-4 w-4 mr-2" />
-            PTO & Holidays
-          </Button>
-          <Button variant="outline" onClick={onClose}>Close</Button>
-          <Button onClick={handleCreateHost}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Host
-          </Button>
-        </DialogFooter>
 
         {/* Edit Host Modal */}
         <AnimatePresence>
@@ -514,6 +487,66 @@ export default function HostsPanel({ isOpen, onClose }) {
           onClose={() => setShowExceptions(false)}
           hosts={hosts}
         />
+    </>
+  )
+
+  if (inline) {
+    return (
+      <div className="flex-1 flex flex-col h-full min-h-0 overflow-hidden">
+        <div className="flex items-center justify-between px-6 py-4 border-b">
+          <div>
+            <h2 className="text-lg font-semibold flex items-center gap-2">
+              <User className="h-5 w-5" />
+              Hosts
+            </h2>
+            <p className="text-sm text-muted-foreground">Manage team members who can accept bookings</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => setShowExceptions(true)}>
+              <CalendarOff className="h-4 w-4 mr-2" />
+              PTO & Holidays
+            </Button>
+            <Button onClick={handleCreateHost}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Host
+            </Button>
+          </div>
+        </div>
+        <div className="flex-1 overflow-auto px-6">
+          {content}
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[700px] max-h-[85vh] overflow-hidden flex flex-col">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <User className="h-5 w-5" />
+            Hosts
+          </DialogTitle>
+          <DialogDescription>
+            Manage team members who can accept bookings
+          </DialogDescription>
+        </DialogHeader>
+        {content}
+        <DialogFooter className="border-t pt-4 flex-wrap gap-2">
+          <Button 
+            variant="outline" 
+            className="mr-auto"
+            onClick={() => setShowExceptions(true)}
+          >
+            <CalendarOff className="h-4 w-4 mr-2" />
+            PTO & Holidays
+          </Button>
+          <Button variant="outline" onClick={onClose}>Close</Button>
+          <Button onClick={handleCreateHost}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Host
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )

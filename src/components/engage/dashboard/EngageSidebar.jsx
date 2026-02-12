@@ -182,54 +182,20 @@ export default function EngageSidebar({
           </CollapsibleContent>
         </Collapsible>
 
-        {/* Nudges Dropdown */}
-        <Collapsible open={nudgesOpen} onOpenChange={setNudgesOpen}>
-          <CollapsibleTrigger asChild>
-            <button
-              type="button"
-              className={cn(
-                "w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all duration-200",
-                currentView?.startsWith('nudge')
-                  ? "bg-[var(--brand-primary)]/10 text-[var(--text-primary)] font-medium" 
-                  : "text-[var(--text-secondary)] hover:bg-[var(--glass-bg-hover)] hover:text-[var(--text-primary)]"
-              )}
-            >
-              <div className="flex items-center gap-2">
-                <Sparkles className={cn("h-4 w-4", currentView?.startsWith('nudge') && "text-[var(--brand-primary)]")} />
-                Nudges
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-[var(--text-tertiary)]">{nudgeCounts.all}</span>
-                <ChevronDown className={cn(
-                  "h-3 w-3 text-[var(--text-tertiary)] transition-transform duration-200",
-                  nudgesOpen && "rotate-180"
-                )} />
-              </div>
-            </button>
-          </CollapsibleTrigger>
-          <CollapsibleContent className="pl-4 mt-1 space-y-0.5">
-            {[
-              { id: 'nudge-all', label: 'All Nudges', count: nudgeCounts.all },
-              { id: 'nudge-active', label: 'Active', count: nudgeCounts.active },
-              { id: 'nudge-inactive', label: 'Inactive', count: nudgeCounts.inactive },
-            ].map((item) => (
-              <button
-                type="button"
-                key={item.id}
-                onClick={() => onViewChange(item.id)}
-                className={cn(
-                  "w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-sm transition-all duration-200",
-                  currentView === item.id 
-                    ? "text-[var(--brand-primary)] font-medium" 
-                    : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
-                )}
-              >
-                {item.label}
-                <span className="text-xs text-[var(--text-tertiary)]">{item.count}</span>
-              </button>
-            ))}
-          </CollapsibleContent>
-        </Collapsible>
+        {/* Page Nudges (standalone, not Engage Studio) */}
+        <button
+          type="button"
+          onClick={() => onViewChange('page-nudges')}
+          className={cn(
+            "w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all duration-200",
+            currentView === 'page-nudges'
+              ? "bg-[var(--brand-primary)]/10 text-[var(--text-primary)] font-medium" 
+              : "text-[var(--text-secondary)] hover:bg-[var(--glass-bg-hover)] hover:text-[var(--text-primary)]"
+          )}
+        >
+          <Sparkles className={cn("h-4 w-4", currentView === 'page-nudges' && "text-[var(--brand-primary)]")} />
+          Nudges
+        </button>
 
         {/* Toasts Dropdown */}
         <Collapsible open={toastsOpen} onOpenChange={setToastsOpen}>
@@ -348,6 +314,20 @@ export default function EngageSidebar({
         >
           <Inbox className={cn("h-4 w-4", currentView === 'chat' && "text-[var(--brand-primary)]")} />
           Chat Inbox
+        </button>
+
+        <button
+          type="button"
+          onClick={() => onViewChange('chat-settings')}
+          className={cn(
+            "w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all duration-200",
+            currentView === 'chat-settings'
+              ? "bg-[var(--brand-primary)]/10 text-[var(--text-primary)] font-medium" 
+              : "text-[var(--text-secondary)] hover:bg-[var(--glass-bg-hover)] hover:text-[var(--text-primary)]"
+          )}
+        >
+          <Settings className={cn("h-4 w-4", currentView === 'chat-settings' && "text-[var(--brand-primary)]")} />
+          Chat Settings
         </button>
         
         <button

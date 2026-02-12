@@ -1,6 +1,6 @@
 /**
- * ProspectCard - Glass-styled prospect card for pipeline kanban
- * Features: Hover states, quick actions, lead score, last contact info
+ * ProspectCard - Compact kanban card for sales pipeline
+ * Fixed height, no hover resize. All info + actions always visible.
  */
 import { memo } from 'react'
 import { cn } from '@/lib/utils'
@@ -13,7 +13,7 @@ import {
   MoreHorizontal,
   Globe
 } from 'lucide-react'
-import { GlassAvatar, LeadQualityBadge } from './ui'
+import { LeadQualityBadge } from './ui'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
@@ -62,11 +62,6 @@ const ProspectCard = memo(function ProspectCard({
   isDragging = false,
   className
 }) {
-  const handleCheckboxClick = (e) => {
-    e.stopPropagation()
-    onSelect?.(prospect.id)
-  }
-
   const handleQuickAction = (e, action) => {
     e.stopPropagation()
     action?.()
@@ -78,217 +73,165 @@ const ProspectCard = memo(function ProspectCard({
     onDragStart?.(prospect)
   }
 
+  const lastActivity = prospect.last_call?.created_at || prospect.updated_at || prospect.created_at
+
   return (
     <div
       draggable
       onDragStart={handleDragStart}
       className={cn(
-        // Base card styling - modern rounded-xl; select-none so drag wins over text selection
-        'group relative p-3 cursor-grab select-none transition-all duration-200 rounded-xl',
+        'group relative px-2.5 py-2 cursor-grab select-none rounded-lg transition-colors duration-150',
         'bg-[var(--glass-bg)] border border-[var(--glass-border)]',
-        // Hover state
-        'hover:shadow-md hover:border-[var(--text-tertiary)]',
-        // Dragging state
+        'hover:border-[var(--text-tertiary)]',
         isDragging && 'opacity-50 scale-95',
-        // Selected state
-        isSelected && 'ring-2 ring-offset-2 ring-offset-[var(--bg-primary)]',
+        isSelected && 'ring-2 ring-offset-1 ring-offset-[var(--bg-primary)]',
         className
       )}
       style={isSelected ? { '--tw-ring-color': stageConfig?.color || 'var(--brand-primary)' } : undefined}
       onClick={() => onClick?.(prospect)}
     >
-      <div>
-        {/* Header: Avatar, Name, Score */}
-        <div className="flex items-start gap-3">
-          {/* Selection checkbox - appears on hover or when selected */}
-          <div className={cn(
-            'transition-opacity duration-200',
+      {/* Row 1: Checkbox + Name + Lead quality + Overflow menu */}
+      <div className="flex items-center gap-1.5">
+        {/* Checkbox - always in layout to prevent shift, visually hidden until hover/selected */}
+        <Checkbox
+          checked={isSelected}
+          onCheckedChange={() => onSelect?.(prospect.id)}
+          onClick={(e) => e.stopPropagation()}
+          className={cn(
+            'h-3.5 w-3.5 flex-shrink-0 transition-opacity duration-150',
             isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-          )}>
-            <Checkbox
-              checked={isSelected}
-              onCheckedChange={() => onSelect?.(prospect.id)}
-              onClick={handleCheckboxClick}
-              className="mt-0.5"
-            />
-          </div>
-          
-          {/* Avatar - hidden when checkbox is visible */}
-          <div className={cn(
-            'transition-opacity duration-200',
-            isSelected ? 'hidden' : 'group-hover:hidden'
-          )}>
-            <GlassAvatar 
-              name={prospect.name} 
-              src={prospect.avatar}
-              size="md"
-              gradient={prospect.pipeline_stage === 'closed_won' ? 'brand' : 'blue'}
-            />
-          </div>
-          
-          <div className="flex-1 min-w-0">
-            <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0">
-                <h4 className="font-semibold text-[var(--text-primary)] truncate leading-tight">
-                  {prospect.name}
-                </h4>
-                {prospect.company && (
-                  <p className="text-xs text-[var(--text-tertiary)] truncate flex items-center gap-1 mt-0.5">
-                    <Building2 className="h-3 w-3 flex-shrink-0" />
-                    {prospect.company}
-                  </p>
-                )}
-              </div>
-              
-              <LeadQualityBadge score={prospect.avg_lead_quality} />
-            </div>
-          </div>
-        </div>
-        
-        {/* Contact info row */}
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-3 text-xs text-[var(--text-tertiary)]">
-          {prospect.email && (
-            <span className="flex items-center gap-1 truncate max-w-[140px]">
-              <Mail className="h-3 w-3 flex-shrink-0" />
-              <span className="truncate">{prospect.email}</span>
-            </span>
           )}
-          {prospect.phone && (
-            <span className="flex items-center gap-1">
-              <Phone className="h-3 w-3" />
-              {prospect.phone}
-            </span>
-          )}
-        </div>
-        
-        {/* Footer: Stats & Quick Actions - Only visible on hover */}
-        <div className={cn(
-          'flex items-center justify-between pt-3 border-t transition-all duration-200',
-          'opacity-0 max-h-0 mt-0 overflow-hidden border-transparent',
-          'group-hover:opacity-100 group-hover:max-h-20 group-hover:mt-3 group-hover:border-[var(--glass-border)]'
-        )}>
-          {/* Activity stats */}
-          <div className="flex items-center gap-3 text-xs text-[var(--text-tertiary)]">
-            {prospect.call_count > 0 && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span className="flex items-center gap-1">
-                    <Phone className="h-3 w-3" />
-                    {prospect.call_count}
-                  </span>
-                </TooltipTrigger>
-                <TooltipContent>{prospect.call_count} calls</TooltipContent>
-              </Tooltip>
-            )}
-            {prospect.last_call?.created_at && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span className="flex items-center gap-1">
-                    <Clock className="h-3 w-3" />
-                    {formatRelativeTime(prospect.last_call.created_at)}
-                  </span>
-                </TooltipTrigger>
-                <TooltipContent>Last contact</TooltipContent>
-              </Tooltip>
-            )}
-          </div>
-          
-          {/* Quick actions */}
-          <div className="flex items-center gap-0.5">
-            {prospect.email && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 w-7 p-0 text-[var(--text-tertiary)] hover:text-[var(--brand-primary)]"
-                    onClick={(e) => handleQuickAction(e, () => onEmail?.(prospect))}
-                  >
-                    <Mail className="h-3.5 w-3.5" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Send Email</TooltipContent>
-              </Tooltip>
-            )}
-            
-            {prospect.phone && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 w-7 p-0 text-[var(--text-tertiary)] hover:text-[var(--brand-primary)]"
-                    onClick={(e) => handleQuickAction(e, () => onCall?.(prospect))}
-                  >
-                    <Phone className="h-3.5 w-3.5" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Call</TooltipContent>
-              </Tooltip>
-            )}
-            
+        />
+
+        <h4 className="flex-1 min-w-0 font-medium text-sm text-[var(--text-primary)] truncate leading-tight">
+          {prospect.name}
+        </h4>
+
+        <LeadQualityBadge score={prospect.avg_lead_quality} />
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+            <button className="flex-shrink-0 p-0.5 rounded text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] hover:bg-[var(--glass-border)]/50 transition-colors">
+              <MoreHorizontal className="h-3.5 w-3.5" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-44">
+            <DropdownMenuItem onClick={() => onViewDetails?.(prospect)}>
+              View Details
+            </DropdownMenuItem>
             {prospect.website && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 w-7 p-0 text-[var(--text-tertiary)] hover:text-[var(--brand-primary)]"
-                    onClick={(e) => handleQuickAction(e, () => onViewWebsite?.(prospect))}
-                  >
-                    <Globe className="h-3.5 w-3.5" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>View Website</TooltipContent>
-              </Tooltip>
+              <DropdownMenuItem onClick={() => window.open(prospect.website, '_blank')}>
+                Open Website
+              </DropdownMenuItem>
             )}
-            
-            {onMoveNext && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 w-7 p-0 text-[var(--text-tertiary)] hover:text-[var(--brand-primary)]"
-                    onClick={(e) => handleQuickAction(e, () => onMoveNext?.(prospect))}
-                  >
-                    <ArrowRight className="h-3.5 w-3.5" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Move to next stage</TooltipContent>
-              </Tooltip>
-            )}
-            
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 w-7 p-0 text-[var(--text-tertiary)]"
-                >
-                  <MoreHorizontal className="h-3.5 w-3.5" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem onClick={() => onViewDetails?.(prospect)}>
-                  View Details
-                </DropdownMenuItem>
-                {prospect.website && (
-                  <DropdownMenuItem onClick={() => window.open(prospect.website, '_blank')}>
-                    Open Website
-                  </DropdownMenuItem>
-                )}
-                <DropdownMenuSeparator />
-                <DropdownMenuItem 
-                  className="text-red-600"
-                  onClick={() => onArchive?.(prospect)}
-                >
-                  Archive
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem 
+              className="text-red-600"
+              onClick={() => onArchive?.(prospect)}
+            >
+              Archive
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
+      {/* Row 2: Company + Last activity */}
+      <div className="flex items-center justify-between gap-2 mt-1 text-[11px] text-[var(--text-tertiary)] leading-tight">
+        {prospect.company ? (
+          <span className="flex items-center gap-1 min-w-0 truncate">
+            <Building2 className="h-3 w-3 flex-shrink-0" />
+            <span className="truncate">{prospect.company}</span>
+          </span>
+        ) : (
+          <span />
+        )}
+        {lastActivity && (
+          <span className="flex items-center gap-1 flex-shrink-0">
+            <Clock className="h-3 w-3" />
+            {formatRelativeTime(lastActivity)}
+          </span>
+        )}
+      </div>
+
+      {/* Row 3: Quick actions - always visible */}
+      <div className="flex items-center gap-0.5 mt-1.5 -ml-0.5">
+        {prospect.email && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 w-6 p-0 text-[var(--text-tertiary)] hover:text-[var(--brand-primary)] hover:bg-[var(--brand-primary)]/10"
+                onClick={(e) => handleQuickAction(e, () => onEmail?.(prospect))}
+              >
+                <Mail className="h-3 w-3" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">Email</TooltipContent>
+          </Tooltip>
+        )}
+        
+        {prospect.phone && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 w-6 p-0 text-[var(--text-tertiary)] hover:text-[var(--brand-primary)] hover:bg-[var(--brand-primary)]/10"
+                onClick={(e) => handleQuickAction(e, () => onCall?.(prospect))}
+              >
+                <Phone className="h-3 w-3" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">Call</TooltipContent>
+          </Tooltip>
+        )}
+        
+        {prospect.website && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 w-6 p-0 text-[var(--text-tertiary)] hover:text-[var(--brand-primary)] hover:bg-[var(--brand-primary)]/10"
+                onClick={(e) => handleQuickAction(e, () => onViewWebsite?.(prospect))}
+              >
+                <Globe className="h-3 w-3" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">Website</TooltipContent>
+          </Tooltip>
+        )}
+
+        {onMoveNext && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 w-6 p-0 text-[var(--text-tertiary)] hover:text-emerald-500 hover:bg-emerald-500/10"
+                onClick={(e) => handleQuickAction(e, () => onMoveNext?.(prospect))}
+              >
+                <ArrowRight className="h-3 w-3" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">Next stage</TooltipContent>
+          </Tooltip>
+        )}
+
+        {/* Spacer + activity count pushed right */}
+        <div className="flex-1" />
+        {prospect.call_count > 0 && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="flex items-center gap-0.5 text-[10px] text-[var(--text-tertiary)] mr-0.5">
+                <Phone className="h-2.5 w-2.5" />
+                {prospect.call_count}
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>{prospect.call_count} calls</TooltipContent>
+          </Tooltip>
+        )}
       </div>
     </div>
   )

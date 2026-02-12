@@ -87,7 +87,7 @@ const COLORS = [
   { name: 'Teal', value: '#14b8a6' },
 ]
 
-export default function BookingTypesPanel({ isOpen, onClose }) {
+export default function BookingTypesPanel({ isOpen, onClose, inline = false }) {
   const { currentOrg } = useAuthStore()
   const [bookingTypes, setBookingTypes] = useState([])
   const [hosts, setHosts] = useState([])
@@ -98,11 +98,11 @@ export default function BookingTypesPanel({ isOpen, onClose }) {
 
   // Fetch booking types and hosts
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen || inline) {
       fetchBookingTypes()
       fetchHosts()
     }
-  }, [isOpen])
+  }, [isOpen, inline])
 
   const fetchHosts = async () => {
     try {
@@ -157,21 +157,10 @@ export default function BookingTypesPanel({ isOpen, onClose }) {
     toast.success('Booking link copied to clipboard')
   }
 
-  if (!isOpen) return null
+  if (!isOpen && !inline) return null
 
-  return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[700px] max-h-[85vh] overflow-hidden flex flex-col">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Link2 className="h-5 w-5" />
-            Booking Types
-          </DialogTitle>
-          <DialogDescription>
-            Manage your booking types for consultations and meetings
-          </DialogDescription>
-        </DialogHeader>
-
+  const content = (
+    <>
         <div className="flex-1 overflow-auto py-4">
           {loading ? (
             <div className="flex items-center justify-center py-12">
@@ -288,16 +277,6 @@ export default function BookingTypesPanel({ isOpen, onClose }) {
           )}
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
-            Close
-          </Button>
-          <Button onClick={() => setShowCreateModal(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            New Booking Type
-          </Button>
-        </DialogFooter>
-
         {/* Create/Edit Modal */}
         <BookingTypeFormModal
           isOpen={showCreateModal || !!editingType}
@@ -321,6 +300,54 @@ export default function BookingTypesPanel({ isOpen, onClose }) {
           hosts={hosts}
           onUpdated={fetchBookingTypes}
         />
+    </>
+  )
+
+  if (inline) {
+    return (
+      <div className="flex-1 flex flex-col h-full min-h-0 overflow-hidden">
+        <div className="flex items-center justify-between px-6 py-4 border-b">
+          <div>
+            <h2 className="text-lg font-semibold flex items-center gap-2">
+              <Link2 className="h-5 w-5" />
+              Booking Types
+            </h2>
+            <p className="text-sm text-muted-foreground">Manage your booking types for consultations and meetings</p>
+          </div>
+          <Button onClick={() => setShowCreateModal(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            New Booking Type
+          </Button>
+        </div>
+        <div className="flex-1 overflow-auto px-6">
+          {content}
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[700px] max-h-[85vh] overflow-hidden flex flex-col">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Link2 className="h-5 w-5" />
+            Booking Types
+          </DialogTitle>
+          <DialogDescription>
+            Manage your booking types for consultations and meetings
+          </DialogDescription>
+        </DialogHeader>
+        {content}
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>
+            Close
+          </Button>
+          <Button onClick={() => setShowCreateModal(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            New Booking Type
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )

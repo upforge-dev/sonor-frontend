@@ -46,7 +46,8 @@ import {
   FileText,
   HelpCircle,
   BarChart3,
-  Zap
+  Zap,
+  MapPin
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -77,7 +78,7 @@ import { cn } from '@/lib/utils'
 import { format } from 'date-fns'
 import useAuthStore from '@/lib/auth-store'
 import { useSignalAccess } from '@/lib/signal-access'
-import { portalApi, syncApi } from '@/lib/portal-api'
+import { portalApi, syncApi, workspaceIntegrationsApi, commerceApi } from '@/lib/portal-api'
 import { syncApi as signalSyncApi } from '@/lib/signal-api'
 import { toast } from 'sonner'
 import { ModuleLayout } from '@/components/ModuleLayout'
@@ -95,61 +96,143 @@ import HostsPanel from './HostsPanel'
 import AvailabilityExceptionsPanel from './AvailabilityExceptionsPanel'
 import CalendarConnectionsPanel from './CalendarConnectionsPanel'
 import UnifiedTasksPanel from './UnifiedTasksPanel'
+import KeyboardShortcutsDialog from './KeyboardShortcutsDialog'
 import TeamTasksPanel from './TeamTasksPanel'
 import AdminOverviewPanel from './AdminOverviewPanel'
+import UserGoogleIntegrationPanel from '../integrations/UserGoogleIntegrationPanel'
 
-// Color palette for events (Motion-inspired with Uptrade teal/emerald)
-const EVENT_COLORS = {
-  focus: { 
-    bg: 'bg-teal-500', 
-    light: 'bg-teal-50 dark:bg-teal-500/15', 
-    text: 'text-teal-700 dark:text-teal-300', 
-    border: 'border-teal-400',
-    accent: '#14b8a6'
+// ── Default color palette ──────────────────────────────────────────────────
+// Professional, muted palette. Meetings & Bookings share the same hue so they
+// read as one category. Each key maps to Tailwind utility classes + a hex
+// accent used for the left-border stripe and the sidebar legend dot.
+const DEFAULT_EVENT_COLORS = {
+  meeting: {                       // Meetings & Bookings – calm slate-blue
+    bg: 'bg-slate-500',
+    light: 'bg-slate-100 dark:bg-slate-500/15',
+    text: 'text-slate-700 dark:text-slate-300',
+    border: 'border-slate-400',
+    accent: '#64748b',
   },
-  meeting: { 
-    bg: 'bg-rose-400', 
-    light: 'bg-rose-50 dark:bg-rose-500/15', 
-    text: 'text-rose-700 dark:text-rose-300', 
-    border: 'border-rose-400',
-    accent: '#fb7185'
+  focus: {                         // Focus time – brand teal/emerald
+    bg: 'bg-emerald-500',
+    light: 'bg-emerald-50 dark:bg-emerald-500/15',
+    text: 'text-emerald-700 dark:text-emerald-300',
+    border: 'border-emerald-400',
+    accent: '#10b981',
   },
-  task: { 
-    bg: 'bg-amber-400', 
-    light: 'bg-amber-50 dark:bg-amber-500/15', 
-    text: 'text-amber-700 dark:text-amber-300', 
+  task: {                          // Tasks – warm amber
+    bg: 'bg-amber-500',
+    light: 'bg-amber-50 dark:bg-amber-500/12',
+    text: 'text-amber-700 dark:text-amber-300',
     border: 'border-amber-400',
-    accent: '#fbbf24'
+    accent: '#f59e0b',
   },
-  lunch: { 
-    bg: 'bg-orange-400', 
-    light: 'bg-orange-50 dark:bg-orange-500/15', 
-    text: 'text-orange-700 dark:text-orange-300', 
+  lunch: {                         // Breaks – soft orange
+    bg: 'bg-orange-400',
+    light: 'bg-orange-50 dark:bg-orange-500/12',
+    text: 'text-orange-700 dark:text-orange-300',
     border: 'border-orange-400',
-    accent: '#fb923c'
+    accent: '#fb923c',
   },
-  work: { 
-    bg: 'bg-violet-400', 
-    light: 'bg-violet-50 dark:bg-violet-500/15', 
-    text: 'text-violet-700 dark:text-violet-300', 
-    border: 'border-violet-400',
-    accent: '#a78bfa'
+  work: {                          // CRM activities / project work – muted purple
+    bg: 'bg-purple-400',
+    light: 'bg-purple-50 dark:bg-purple-500/12',
+    text: 'text-purple-700 dark:text-purple-300',
+    border: 'border-purple-400',
+    accent: '#a855f7',
   },
-  personal: { 
-    bg: 'bg-sky-400', 
-    light: 'bg-sky-50 dark:bg-sky-500/15', 
-    text: 'text-sky-700 dark:text-sky-300', 
+  personal: {                      // Personal / misc – sky blue
+    bg: 'bg-sky-400',
+    light: 'bg-sky-50 dark:bg-sky-500/12',
+    text: 'text-sky-700 dark:text-sky-300',
     border: 'border-sky-400',
-    accent: '#38bdf8'
+    accent: '#38bdf8',
   },
-  default: { 
-    bg: 'bg-gray-400', 
-    light: 'bg-gray-50 dark:bg-gray-500/15', 
-    text: 'text-gray-700 dark:text-gray-300', 
+  google: {                        // Google Calendar – Google blue
+    bg: 'bg-blue-500',
+    light: 'bg-blue-50 dark:bg-blue-500/15',
+    text: 'text-blue-700 dark:text-blue-300',
+    border: 'border-blue-400',
+    accent: '#4285f4',
+  },
+  commerce: {                      // Commerce Events – indigo
+    bg: 'bg-indigo-500',
+    light: 'bg-indigo-50 dark:bg-indigo-500/12',
+    text: 'text-indigo-700 dark:text-indigo-300',
+    border: 'border-indigo-400',
+    accent: '#6366f1',
+  },
+  followup: {                      // CRM Follow-ups – warm cyan
+    bg: 'bg-cyan-500',
+    light: 'bg-cyan-50 dark:bg-cyan-500/12',
+    text: 'text-cyan-700 dark:text-cyan-300',
+    border: 'border-cyan-400',
+    accent: '#06b6d4',
+  },
+  default: {
+    bg: 'bg-gray-400',
+    light: 'bg-gray-50 dark:bg-gray-500/12',
+    text: 'text-gray-700 dark:text-gray-300',
     border: 'border-gray-400',
-    accent: '#9ca3af'
+    accent: '#9ca3af',
   },
 }
+
+// Build a live EVENT_COLORS object that merges user-customised accents over
+// the defaults.  `customSourceColors` state (see below) stores per-source hex
+// overrides and is persisted in localStorage.
+function buildEventColors(customSourceColors) {
+  // Clone defaults
+  const colors = {}
+  for (const [key, val] of Object.entries(DEFAULT_EVENT_COLORS)) {
+    colors[key] = { ...val }
+  }
+  // Apply custom source → color-key overrides
+  // The mapping is: source-id → color-key in EVENT_COLORS
+  const sourceToColorKey = {
+    'google-calendar': 'google',
+    'booking': 'meeting',
+    'crm-followup': 'followup',
+    'crm-activity': 'work',
+    'project-task': 'task',
+    'commerce-event': 'commerce',
+  }
+  for (const [sourceId, hex] of Object.entries(customSourceColors || {})) {
+    const colorKey = sourceToColorKey[sourceId]
+    if (colorKey && colors[colorKey]) {
+      colors[colorKey] = { ...colors[colorKey], accent: hex }
+    }
+  }
+  return colors
+}
+
+// Available preset colors for the picker
+const COLOR_PRESETS = [
+  '#64748b', // slate
+  '#6b7280', // gray
+  '#10b981', // emerald
+  '#14b8a6', // teal
+  '#06b6d4', // cyan
+  '#38bdf8', // sky
+  '#4285f4', // blue
+  '#6366f1', // indigo
+  '#a855f7', // purple
+  '#f59e0b', // amber
+  '#fb923c', // orange
+  '#ef4444', // red
+  '#ec4899', // pink
+  '#f43f5e', // rose
+]
+
+// Calendar source definitions for the color legend
+const CALENDAR_SOURCE_DEFS = [
+  { id: 'google-calendar', name: 'Google Calendar', defaultAccent: '#4285f4', icon: Calendar },
+  { id: 'booking', name: 'Bookings', defaultAccent: '#64748b', icon: Video },
+  { id: 'crm-followup', name: 'CRM Follow-ups', defaultAccent: '#06b6d4', icon: Users },
+  { id: 'crm-activity', name: 'CRM Activities', defaultAccent: '#a855f7', icon: Briefcase },
+  { id: 'project-task', name: 'Tasks', defaultAccent: '#f59e0b', icon: CheckSquare },
+  { id: 'commerce-event', name: 'Events', defaultAccent: '#6366f1', icon: CalendarDays },
+]
 
 // Get week dates starting from Sunday
 const getWeekDates = (date) => {
@@ -267,6 +350,260 @@ function MiniCalendar({ selectedDate, setSelectedDate, events }) {
 }
 
 // ============================================================================
+// EVENT DETAIL DIALOG
+// ============================================================================
+
+function EventDetailDialog({ event, onClose, onDeleted, onUpdated }) {
+  const [deleting, setDeleting] = useState(false)
+  const [editing, setEditing] = useState(false)
+  const [editForm, setEditForm] = useState({})
+
+  if (!event) return null
+
+  const colors = DEFAULT_EVENT_COLORS[event.color] || DEFAULT_EVENT_COLORS.default
+  const durationMinutes = Math.round((event.endTime - event.startTime) / (1000 * 60))
+  
+  const sourceLabels = {
+    'booking': 'Booking',
+    'crm-followup': 'CRM Follow-up',
+    'crm-activity': 'CRM Activity',
+    'project-task': 'Task',
+    'google-calendar': 'Google Calendar',
+    'commerce-event': 'Event',
+  }
+
+  const isGoogleEvent = event.source === 'google-calendar'
+  const isPortalEvent = ['booking', 'crm-followup', 'crm-activity', 'project-task', 'commerce-event'].includes(event.source)
+
+  const handleDelete = async () => {
+    if (!isGoogleEvent) return
+    setDeleting(true)
+    try {
+      await workspaceIntegrationsApi.deleteCalendarEvent(event.sourceId)
+      toast.success('Event deleted from Google Calendar')
+      onDeleted?.()
+    } catch (err) {
+      console.error('Failed to delete event:', err)
+      toast.error('Failed to delete event')
+    } finally {
+      setDeleting(false)
+    }
+  }
+
+  const handleStartEdit = () => {
+    setEditForm({
+      summary: event.title,
+      description: event.meta?.description || '',
+      location: event.meta?.location || '',
+      startTime: event.startTime.toISOString(),
+      endTime: event.endTime.toISOString(),
+    })
+    setEditing(true)
+  }
+
+  const handleSaveEdit = async () => {
+    if (!isGoogleEvent) return
+    try {
+      await workspaceIntegrationsApi.updateCalendarEvent(event.sourceId, editForm)
+      toast.success('Event updated')
+      setEditing(false)
+      onUpdated?.()
+    } catch (err) {
+      console.error('Failed to update event:', err)
+      toast.error('Failed to update event')
+    }
+  }
+
+  return (
+    <Dialog open={!!event} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-[500px]">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-3 pr-8">
+            <div className="w-3 h-8 rounded-sm shrink-0" style={{ backgroundColor: colors.accent }} />
+            {editing ? (
+              <input
+                value={editForm.summary}
+                onChange={(e) => setEditForm(f => ({ ...f, summary: e.target.value }))}
+                className="flex-1 bg-transparent border-b border-primary outline-none text-lg font-semibold"
+              />
+            ) : (
+              <span className="truncate">{event.title}</span>
+            )}
+          </DialogTitle>
+          <DialogDescription className="flex items-center gap-2 mt-1 flex-wrap">
+            <Badge variant="secondary" className="text-xs" style={{ borderColor: colors.accent, color: colors.accent }}>
+              {sourceLabels[event.source] || event.source}
+            </Badge>
+            {event.type && (
+              <Badge variant="outline" className="text-xs capitalize">{event.type}</Badge>
+            )}
+            {event.meta?.projectName && (
+              <Badge variant="outline" className="text-xs">{event.meta.projectName}</Badge>
+            )}
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 py-3">
+          {/* Date & time */}
+          <div className="flex items-center gap-3 text-sm">
+            <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
+            <div>
+              <div className="font-medium">
+                {format(event.startTime, 'EEEE, MMMM d, yyyy')}
+              </div>
+              <div className="text-muted-foreground">
+                {formatTime(event.startTime)} – {formatTime(event.endTime)}
+                <span className="ml-2 text-xs">({durationMinutes} min)</span>
+              </div>
+            </div>
+          </div>
+          
+          {/* Location / video link */}
+          {(event.meta?.location || event.meta?.videoLink || event.meta?.virtualMeetingUrl) && (
+            <div className="flex items-center gap-3 text-sm">
+              {(event.meta?.videoLink || event.meta?.virtualMeetingUrl) ? (
+                <Video className="h-4 w-4 text-muted-foreground shrink-0" />
+              ) : (
+                <MapPin className="h-4 w-4 text-muted-foreground shrink-0" />
+              )}
+              <div>
+                {(event.meta?.videoLink || event.meta?.virtualMeetingUrl) ? (
+                  <a href={event.meta.videoLink || event.meta.virtualMeetingUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                    Join video call
+                  </a>
+                ) : (
+                  <span>{event.meta.location}</span>
+                )}
+              </div>
+            </div>
+          )}
+          
+          {/* Attendees */}
+          {event.meta?.attendees?.length > 0 && (
+            <div className="flex items-start gap-3 text-sm">
+              <Users className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+              <div className="space-y-1">
+                {event.meta.attendees.map((a, i) => (
+                  <div key={i} className="text-sm">
+                    {a.name || a.displayName || a.email}
+                    {a.responseStatus && (
+                      <span className={cn(
+                        "ml-2 text-xs",
+                        a.responseStatus === 'accepted' && "text-emerald-600",
+                        a.responseStatus === 'declined' && "text-red-500",
+                        a.responseStatus === 'tentative' && "text-amber-500",
+                      )}>
+                        ({a.responseStatus})
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {/* Guest info (for bookings) */}
+          {event.meta?.guestEmail && (
+            <div className="flex items-center gap-3 text-sm">
+              <Users className="h-4 w-4 text-muted-foreground shrink-0" />
+              <span>{event.meta.guestEmail}</span>
+            </div>
+          )}
+
+          {/* Commerce event details */}
+          {event.source === 'commerce-event' && (
+            <div className="flex items-center gap-3 text-sm">
+              {event.meta?.capacity && (
+                <Badge variant="outline" className="text-xs">
+                  {event.meta.spotsRemaining != null 
+                    ? `${event.meta.spotsRemaining}/${event.meta.capacity} spots left` 
+                    : `${event.meta.capacity} capacity`}
+                </Badge>
+              )}
+              {event.meta?.price != null && (
+                <Badge variant="outline" className="text-xs">
+                  ${Number(event.meta.price).toFixed(2)}
+                </Badge>
+              )}
+            </div>
+          )}
+          
+          {/* Description */}
+          {editing ? (
+            <div className="space-y-2 border-t pt-3">
+              <textarea
+                value={editForm.description}
+                onChange={(e) => setEditForm(f => ({ ...f, description: e.target.value }))}
+                className="w-full min-h-[80px] p-2 text-sm border rounded-md bg-background resize-none"
+                placeholder="Add a description..."
+              />
+            </div>
+          ) : event.meta?.description ? (
+            <div className="text-sm text-muted-foreground border-t pt-3 mt-3">
+              <p className="whitespace-pre-wrap">{event.meta.description}</p>
+            </div>
+          ) : null}
+          
+          {/* Action buttons */}
+          <div className="border-t pt-3 flex items-center gap-2 flex-wrap">
+            {/* Google Calendar events: edit + delete */}
+            {isGoogleEvent && !editing && (
+              <>
+                <Button variant="outline" size="sm" onClick={handleStartEdit}>
+                  <Edit className="h-3.5 w-3.5 mr-1.5" />
+                  Edit
+                </Button>
+                <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" onClick={handleDelete} disabled={deleting}>
+                  {deleting ? <UptradeSpinner size="sm" className="[&_svg]:!h-3.5 [&_svg]:!w-3.5 [&_p]:hidden mr-1.5" /> : <Trash2 className="h-3.5 w-3.5 mr-1.5" />}
+                  Delete
+                </Button>
+              </>
+            )}
+            {isGoogleEvent && editing && (
+              <>
+                <Button size="sm" onClick={handleSaveEdit}>
+                  <CheckCircle className="h-3.5 w-3.5 mr-1.5" />
+                  Save
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => setEditing(false)}>
+                  Cancel
+                </Button>
+              </>
+            )}
+
+            {/* Portal events: link to the relevant module */}
+            {event.source === 'booking' && (
+              <Button variant="outline" size="sm" onClick={onClose}>
+                <CalendarCheck className="h-3.5 w-3.5 mr-1.5" />
+                View in Bookings
+              </Button>
+            )}
+            {event.source === 'commerce-event' && (
+              <Button variant="outline" size="sm" asChild>
+                <a href={`/commerce/offerings/${event.sourceId}`}>
+                  <CalendarDays className="h-3.5 w-3.5 mr-1.5" />
+                  View in Commerce
+                </a>
+              </Button>
+            )}
+
+            {/* Google Calendar external link */}
+            {event.meta?.htmlLink && (
+              <Button variant="ghost" size="sm" asChild className="ml-auto">
+                <a href={event.meta.htmlLink} target="_blank" rel="noopener noreferrer">
+                  <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
+                  Google Calendar
+                </a>
+              </Button>
+            )}
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+// ============================================================================
 // MAIN COMPONENT
 // ============================================================================
 
@@ -283,7 +620,9 @@ export default function SyncModule({ className }) {
   const [showRightSidebar, setShowRightSidebar] = useState(true)
   const [showLeftSidebar, setShowLeftSidebar] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
+  const [centerView, setCenterView] = useState('calendar') // 'calendar' | 'bookings' | 'booking-types' | 'hosts' | 'integrations'
   const [rightSidebarMode, setRightSidebarMode] = useState('tasks') // 'tasks' | 'calendar' | 'playbooks'
+  const [calendarConnected, setCalendarConnected] = useState(false)
   
   // Task view mode state (personal / team / overview)
   const [taskViewMode, setTaskViewMode] = useState('personal') // 'personal' | 'team' | 'overview'
@@ -292,25 +631,61 @@ export default function SyncModule({ className }) {
   // Modal states
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [createModalType, setCreateModalType] = useState('event')
-  const [showBookingTypes, setShowBookingTypes] = useState(false)
-  const [showBookingsList, setShowBookingsList] = useState(false)
-  const [showHostsPanel, setShowHostsPanel] = useState(false)
+  const [createModalTime, setCreateModalTime] = useState(null) // HH:mm string for pre-fill
+  const [selectedEvent, setSelectedEvent] = useState(null) // event object for detail popover
   const [showExceptionsPanel, setShowExceptionsPanel] = useState(false)
   const [showCalendarConnections, setShowCalendarConnections] = useState(null) // host object or null
   const [showPlanDay, setShowPlanDay] = useState(false)
+  const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false)
   const [hosts, setHosts] = useState([])
   
   // Calendar visibility (source filtering)
-  const [calendarSources, setCalendarSources] = useState([
-    { id: 'project-task', name: 'Project Tasks', color: 'teal', visible: true, icon: CheckSquare },
-  ])
+  // Custom source colors persisted in localStorage
+  const [customSourceColors, setCustomSourceColors] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('sync_custom_colors') || '{}')
+    } catch { return {} }
+  })
+  const [calendarSources, setCalendarSources] = useState(
+    CALENDAR_SOURCE_DEFS.map(s => ({ ...s, visible: true, accent: s.defaultAccent }))
+  )
   const [projectSourceVisibility, setProjectSourceVisibility] = useState({})
   const [expandedProjects, setExpandedProjects] = useState({})
+  const [activeProjectIds, setActiveProjectIds] = useState(new Set()) // which projects are shown in calendar
+  const [colorPickerOpen, setColorPickerOpen] = useState(null) // source id of open picker
+
+  // Derive EVENT_COLORS from defaults + user customisations
+  const EVENT_COLORS = useMemo(() => buildEventColors(customSourceColors), [customSourceColors])
+
+  // Check workspace Google Calendar connection status
+  useEffect(() => {
+    workspaceIntegrationsApi.getGoogleStatus()
+      .then(status => setCalendarConnected(status?.connected && status?.calendar?.connected))
+      .catch(() => setCalendarConnected(false))
+  }, [])
+
+  // Keep calendarSources accent in sync with custom colors
+  useEffect(() => {
+    setCalendarSources(prev => prev.map(s => ({
+      ...s,
+      accent: customSourceColors[s.id] || s.defaultAccent,
+    })))
+  }, [customSourceColors])
+
+  // Persist custom colors
+  const updateSourceColor = (sourceId, hex) => {
+    setCustomSourceColors(prev => {
+      const next = { ...prev, [sourceId]: hex }
+      localStorage.setItem('sync_custom_colors', JSON.stringify(next))
+      return next
+    })
+    setColorPickerOpen(null)
+  }
 
   const crmSources = [
-    { id: 'booking', name: 'Consultations', color: 'rose', icon: Video },
-    { id: 'crm-followup', name: 'CRM Follow-ups', color: 'amber', icon: Users },
-    { id: 'crm-activity', name: 'CRM Activities', color: 'violet', icon: Briefcase },
+    { id: 'booking', name: 'Consultations', color: 'slate', icon: Video },
+    { id: 'crm-followup', name: 'CRM Follow-ups', color: 'cyan', icon: Users },
+    { id: 'crm-activity', name: 'CRM Activities', color: 'purple', icon: Briefcase },
   ]
 
   const projectList = useMemo(() => {
@@ -333,7 +708,13 @@ export default function SyncModule({ className }) {
       })
       return next
     })
+    // Initialize all projects as active
+    setActiveProjectIds((prev) => {
+      if (prev.size > 0) return prev
+      return new Set(projectList.map(p => p.id))
+    })
   }, [projectList])
+
   
   // Signal AI states
   const [aiLoading, setAiLoading] = useState(null) // 'briefing' | 'focus' | 'prep' | null
@@ -346,22 +727,28 @@ export default function SyncModule({ className }) {
   // Project-level Signal only enables AI features within project modules, not Sync
   const signalEnabled = hasOrgSignal
   
-  // Filter events by visible sources
+  // Filter events by visible sources and active projects
   const filteredEvents = useMemo(() => {
     const visibleSources = calendarSources.filter(c => c.visible).map(c => c.id)
 
     return events.filter((event) => {
-      if (event.source === 'booking' || event.source === 'crm-followup' || event.source === 'crm-activity') {
+      // Check global source visibility first
+      if (!visibleSources.includes(event.source)) return false
+
+      // Project-scoped sources (bookings, CRM, commerce events)
+      if (['booking', 'crm-followup', 'crm-activity', 'commerce-event'].includes(event.source)) {
         const projectId = event.projectId || event.project_id
         if (!projectId) return true
+        // Filter by active projects
+        if (activeProjectIds.size > 0 && !activeProjectIds.has(projectId)) return false
         const visibility = projectSourceVisibility[projectId]
         if (!visibility) return true
         return visibility[event.source] !== false
       }
 
-      return visibleSources.includes(event.source)
+      return true
     })
-  }, [events, calendarSources, projectSourceVisibility])
+  }, [events, calendarSources, projectSourceVisibility, activeProjectIds])
   
   // Computed values
   const weekDates = useMemo(() => getWeekDates(selectedDate), [selectedDate])
@@ -387,6 +774,8 @@ export default function SyncModule({ className }) {
         bookingsByProject,
         followUpsByProject,
         activitiesByProject,
+        googleCalRes,
+        commerceEventsByProject,
       ] = await Promise.all([
         // 1. Project Tasks (per-user, independent of project dropdowns)
         projectId 
@@ -445,6 +834,19 @@ export default function SyncModule({ className }) {
               .catch(() => ({ project, data: [] }))
           )
         ),
+
+        // 5. Google Calendar events (per-user workspace integration)
+        workspaceIntegrationsApi.getCalendarEvents(startDate, endDate)
+          .catch(() => ({ events: [] })),
+
+        // 6. Commerce Events (per project — from commerce_offerings + schedules)
+        Promise.all(
+          projectList.map((project) =>
+            commerceApi.getOfferings(project.id, { type: 'event', status: 'active' })
+              .then((res) => ({ project, data: res?.data || res || [] }))
+              .catch(() => ({ project, data: [] }))
+          )
+        ),
       ])
       
       const allEvents = []
@@ -478,7 +880,7 @@ export default function SyncModule({ className }) {
               startTime: scheduledTime,
               endTime: new Date(scheduledTime.getTime() + 30 * 60000), // 30 min default
               type: followUp.type === 'call' ? 'meeting' : 'task',
-              color: followUp.type === 'call' ? 'meeting' : 'task',
+              color: 'followup',
               source: 'crm-followup',
               sourceId: followUp.id,
               projectId: project.id,
@@ -503,7 +905,7 @@ export default function SyncModule({ className }) {
             startTime: new Date(deadline.getTime() - 60 * 60000), // 1 hour before deadline
             endTime: deadline,
             type: 'task',
-            color: task.priority === 'high' ? 'meeting' : 'task',
+            color: 'task',
             source: 'project-task',
             sourceId: task.id,
             meta: { projectId: task.project_id, status: task.status, priority: task.priority }
@@ -528,6 +930,97 @@ export default function SyncModule({ className }) {
               projectId: project.id,
               meta: { contactId: activity.contact_id, type: activity.type, projectId: project.id }
             })
+          }
+        })
+      })
+      
+      // Transform Commerce Events (per project)
+      commerceEventsByProject.forEach(({ project, data }) => {
+        const offerings = Array.isArray(data) ? data : data?.offerings || []
+        offerings.forEach(offering => {
+          // Commerce events may have schedules with specific dates
+          const schedules = offering.schedules || []
+          if (schedules.length > 0) {
+            schedules.forEach(sched => {
+              if (!sched.starts_at) return
+              const start = new Date(sched.starts_at)
+              const end = sched.ends_at ? new Date(sched.ends_at) : new Date(start.getTime() + (offering.duration_minutes || 60) * 60000)
+              allEvents.push({
+                id: `commerce-sched-${sched.id}`,
+                title: offering.name || 'Event',
+                startTime: start,
+                endTime: end,
+                type: 'work',
+                color: 'commerce',
+                source: 'commerce-event',
+                sourceId: offering.id,
+                projectId: project.id,
+                meta: {
+                  projectId: project.id,
+                  projectName: project.name || project.title,
+                  scheduleId: sched.id,
+                  capacity: sched.capacity || offering.capacity,
+                  spotsRemaining: sched.spots_remaining,
+                  location: offering.location,
+                  isVirtual: offering.is_virtual,
+                  virtualMeetingUrl: offering.virtual_meeting_url,
+                  price: offering.price,
+                  status: sched.status,
+                  description: offering.short_description || offering.description,
+                }
+              })
+            })
+          } else if (offering.metadata?.event_date) {
+            // Fallback: single-date event stored in metadata
+            const start = new Date(offering.metadata.event_date)
+            const end = new Date(start.getTime() + (offering.duration_minutes || 60) * 60000)
+            allEvents.push({
+              id: `commerce-${offering.id}`,
+              title: offering.name || 'Event',
+              startTime: start,
+              endTime: end,
+              type: 'work',
+              color: 'commerce',
+              source: 'commerce-event',
+              sourceId: offering.id,
+              projectId: project.id,
+              meta: {
+                projectId: project.id,
+                projectName: project.name || project.title,
+                capacity: offering.capacity,
+                location: offering.location,
+                isVirtual: offering.is_virtual,
+                virtualMeetingUrl: offering.virtual_meeting_url,
+                price: offering.price,
+                description: offering.short_description || offering.description,
+              }
+            })
+          }
+        })
+      })
+
+      // Transform Google Calendar events
+      const gcalEvents = googleCalRes?.events || []
+      gcalEvents.forEach(gEvent => {
+        if (!gEvent.startTime) return
+        const start = new Date(gEvent.startTime)
+        const end = gEvent.endTime ? new Date(gEvent.endTime) : new Date(start.getTime() + 60 * 60000)
+        allEvents.push({
+          id: `gcal-${gEvent.id}`,
+          title: gEvent.title || '(No title)',
+          startTime: start,
+          endTime: end,
+          type: 'personal',
+          color: 'google',
+          source: 'google-calendar',
+          sourceId: gEvent.id,
+          allDay: gEvent.allDay || false,
+          meta: {
+            location: gEvent.location,
+            htmlLink: gEvent.htmlLink,
+            attendees: gEvent.attendees,
+            organizer: gEvent.organizer,
+            description: gEvent.description,
           }
         })
       })
@@ -683,8 +1176,15 @@ export default function SyncModule({ className }) {
   // Handle click on calendar grid to create event at that time
   const handleGridClick = (date, hour) => {
     setSelectedDate(date)
-    setCreateModalType('event')
+    setCreateModalType('meeting')
+    setCreateModalTime(`${String(hour).padStart(2, '0')}:00`)
     setShowCreateModal(true)
+  }
+  
+  // Handle click on an existing event to view details
+  const handleEventClick = (e, event) => {
+    e.stopPropagation() // prevent grid click from firing
+    setSelectedEvent(event)
   }
   
   // Get events for a specific day
@@ -737,37 +1237,20 @@ export default function SyncModule({ className }) {
         <Zap className="h-4 w-4" />
         Plan my day
       </Button>
-      <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground hidden md:flex" onClick={() => setShowBookingTypes(true)}>
-        <Link2 className="h-4 w-4" />
-        Booking links
-      </Button>
-      <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground hidden md:flex" onClick={() => setShowBookingsList(true)}>
-        <CalendarCheck className="h-4 w-4" />
-        Bookings
-      </Button>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground hidden md:flex">
-            <Settings className="h-4 w-4" />
-            Display
+      {centerView !== 'calendar' && (
+        <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground" onClick={() => setCenterView('calendar')}>
+          <Calendar className="h-4 w-4" />
+          Back to Calendar
+        </Button>
+      )}
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setShowKeyboardShortcuts(true)}>
+            <span className="text-xs font-mono">?</span>
           </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-56">
-          <DropdownMenuItem onClick={() => setShowLeftSidebar(!showLeftSidebar)}>
-            {showLeftSidebar ? <EyeOff className="h-4 w-4 mr-2" /> : <Eye className="h-4 w-4 mr-2" />}
-            {showLeftSidebar ? 'Hide' : 'Show'} left sidebar
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setShowRightSidebar(!showRightSidebar)}>
-            {showRightSidebar ? <EyeOff className="h-4 w-4 mr-2" /> : <Eye className="h-4 w-4 mr-2" />}
-            {showRightSidebar ? 'Hide' : 'Show'} right sidebar
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={loadCalendarData}>
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Refresh calendar
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+        </TooltipTrigger>
+        <TooltipContent>Keyboard shortcuts</TooltipContent>
+      </Tooltip>
       <Button variant="ghost" size="icon" className="h-8 w-8 md:hidden" onClick={loadCalendarData} disabled={loading}>
         <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
       </Button>
@@ -824,9 +1307,9 @@ export default function SyncModule({ className }) {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="start" className="w-52">
-                          <DropdownMenuItem onClick={() => { setCreateModalType('event'); setShowCreateModal(true) }}>
-                            <CalendarPlus className="h-4 w-4 mr-2" />
-                            New Event
+                          <DropdownMenuItem onClick={() => { setCreateModalType('meeting'); setShowCreateModal(true) }}>
+                            <Video className="h-4 w-4 mr-2" />
+                            New Meeting
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => { setCreateModalType('focus'); setShowCreateModal(true) }}>
                             <Focus className="h-4 w-4 mr-2" />
@@ -837,7 +1320,7 @@ export default function SyncModule({ className }) {
                             New Task
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={() => setShowBookingTypes(true)}>
+                          <DropdownMenuItem onClick={() => setCenterView('booking-types')}>
                             <Link2 className="h-4 w-4 mr-2" />
                             Manage Booking Types
                           </DropdownMenuItem>
@@ -860,35 +1343,65 @@ export default function SyncModule({ className }) {
                     <div className="space-y-1">
                       <p className="uppercase tracking-wider text-muted-foreground mb-2">Views</p>
                       {[
-                        { icon: Calendar, label: 'Calendar', active: true, onClick: () => {} },
-                        { icon: CalendarCheck, label: 'Bookings', badge: null, onClick: () => setShowBookingsList(true) },
-                        { icon: Users, label: 'Hosts', onClick: () => setShowHostsPanel(true) },
-                        { icon: Link2, label: 'Booking Types', onClick: () => setShowBookingTypes(true) },
-                        { icon: CalendarOff, label: 'PTO & Holidays', onClick: () => setShowExceptionsPanel(true) },
+                        { id: 'calendar', icon: Calendar, label: 'Calendar' },
+                        { id: 'bookings', icon: CalendarCheck, label: 'Bookings' },
+                        { id: 'hosts', icon: Users, label: 'Hosts' },
+                        { id: 'booking-types', icon: Link2, label: 'Booking Types' },
+                        { id: 'pto', icon: CalendarOff, label: 'PTO & Holidays', onClick: () => setShowExceptionsPanel(true) },
                       ].map((item) => (
                         <button 
-                          key={item.label}
-                          onClick={item.onClick}
+                          key={item.id}
+                          onClick={item.onClick || (() => setCenterView(item.id))}
                           className={cn(
                             "w-full text-left px-3 py-2 rounded-md flex items-center gap-2.5 transition-colors",
-                            item.active 
+                            (item.id === centerView || (item.id === 'pto' && false))
                               ? "bg-primary/10 text-primary" 
                               : "hover:bg-muted text-foreground"
                           )}
                         >
                           <item.icon className="h-4 w-4" />
                           {item.label}
-                          {item.badge && (
-                            <Badge variant="secondary" className="ml-auto text-[10px] h-5 min-w-5 justify-center">
-                              {item.badge}
-                            </Badge>
-                          )}
                         </button>
                       ))}
                     </div>
                     
-                    {/* Current Project */}
-                    {currentProject && (
+                    {/* Projects */}
+                    {projectList.length > 1 ? (
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <p className="uppercase tracking-wider text-muted-foreground">Projects</p>
+                          <button
+                            className="text-[10px] text-muted-foreground hover:text-foreground"
+                            onClick={() => {
+                              const allActive = projectList.every(p => activeProjectIds.has(p.id))
+                              setActiveProjectIds(allActive ? new Set() : new Set(projectList.map(p => p.id)))
+                            }}
+                          >
+                            {projectList.every(p => activeProjectIds.has(p.id)) ? 'Hide all' : 'Show all'}
+                          </button>
+                        </div>
+                        {projectList.map((project) => (
+                          <label key={project.id} className="flex items-center gap-2.5 px-3 py-1.5 rounded-md hover:bg-muted/50 cursor-pointer group">
+                            <Checkbox
+                              checked={activeProjectIds.has(project.id)}
+                              onCheckedChange={(checked) => {
+                                setActiveProjectIds((prev) => {
+                                  const next = new Set(prev)
+                                  if (checked) next.add(project.id)
+                                  else next.delete(project.id)
+                                  return next
+                                })
+                              }}
+                              className="border-2"
+                            />
+                            <div className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                            <span className="text-sm font-medium truncate group-hover:text-foreground transition-colors">
+                              {project.name || project.title}
+                            </span>
+                          </label>
+                        ))}
+                      </div>
+                    ) : currentProject && (
                       <div className="space-y-2">
                         <p className="uppercase tracking-wider text-muted-foreground">Project</p>
                         <div className="flex items-center gap-2.5 px-3 py-2 rounded-md bg-muted/50">
@@ -897,6 +1410,74 @@ export default function SyncModule({ className }) {
                         </div>
                       </div>
                     )}
+                    
+                    {/* Calendar Sources / Color Legend */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <p className="uppercase tracking-wider text-muted-foreground text-[11px]">Calendars</p>
+                        <button
+                          className="text-[10px] text-muted-foreground hover:text-foreground"
+                          onClick={() => {
+                            const allVisible = calendarSources.every(s => s.visible)
+                            setCalendarSources(prev => prev.map(s => ({ ...s, visible: !allVisible })))
+                          }}
+                        >
+                          {calendarSources.every(s => s.visible) ? 'Hide all' : 'Show all'}
+                        </button>
+                      </div>
+                      {calendarSources.map((source) => (
+                        <div key={source.id} className="relative">
+                          <div className="flex items-center gap-2.5 px-2 py-1.5 rounded-md hover:bg-muted/50 group">
+                            <Checkbox
+                              checked={source.visible}
+                              onCheckedChange={(checked) => {
+                                setCalendarSources(prev => prev.map(s =>
+                                  s.id === source.id ? { ...s, visible: !!checked } : s
+                                ))
+                              }}
+                              className="h-3.5 w-3.5 cursor-pointer"
+                              style={{ borderColor: source.accent, backgroundColor: source.visible ? source.accent : undefined }}
+                            />
+                            <div className="flex items-center gap-2 flex-1 min-w-0 cursor-pointer"
+                              onClick={() => setCalendarSources(prev => prev.map(s =>
+                                s.id === source.id ? { ...s, visible: !s.visible } : s
+                              ))}
+                            >
+                              <source.icon className="h-3.5 w-3.5 shrink-0" style={{ color: source.accent }} />
+                              <span className="text-sm truncate">{source.name}</span>
+                            </div>
+                            {/* Color dot — click to open picker */}
+                            <button
+                              onClick={() => setColorPickerOpen(colorPickerOpen === source.id ? null : source.id)}
+                              className="w-3.5 h-3.5 rounded-full shrink-0 ring-1 ring-black/10 dark:ring-white/20 hover:scale-125 transition-transform"
+                              style={{ backgroundColor: source.accent }}
+                              title="Change color"
+                            />
+                            <span className="text-[10px] text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity tabular-nums w-4 text-right">
+                              {events.filter(e => e.source === source.id).length}
+                            </span>
+                          </div>
+                          {/* Color picker popover */}
+                          {colorPickerOpen === source.id && (
+                            <div className="absolute left-2 right-2 mt-1 p-2 rounded-lg border bg-popover shadow-lg z-50">
+                              <div className="grid grid-cols-7 gap-1.5">
+                                {COLOR_PRESETS.map((hex) => (
+                                  <button
+                                    key={hex}
+                                    onClick={() => updateSourceColor(source.id, hex)}
+                                    className={cn(
+                                      "w-5 h-5 rounded-full ring-1 ring-black/10 dark:ring-white/20 hover:scale-125 transition-transform",
+                                      source.accent === hex && "ring-2 ring-primary ring-offset-1"
+                                    )}
+                                    style={{ backgroundColor: hex }}
+                                  />
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
                     
                     {/* Signal AI Features */}
                     {signalEnabled && (
@@ -949,6 +1530,32 @@ export default function SyncModule({ className }) {
                         </div>
                       </div>
                     )}
+
+                    {/* Integrations section — Commerce-style */}
+                    <div className="space-y-2 pt-2">
+                      <div className="flex items-center justify-between text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                        Integrations
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 w-6 p-0 hover:bg-muted"
+                          onClick={() => setCenterView('integrations')}
+                        >
+                          <Settings className="h-3 w-3" />
+                        </Button>
+                      </div>
+                      <div className="px-3 py-3 bg-muted/50 rounded-lg">
+                        <div className="flex items-center gap-2 text-xs">
+                          <div className={cn(
+                            "h-2 w-2 rounded-full",
+                            calendarConnected ? "bg-emerald-500" : "bg-muted-foreground"
+                          )} />
+                          <span className={calendarConnected ? "text-foreground" : "text-muted-foreground"}>
+                            {calendarConnected ? 'Google Calendar connected' : 'Google Calendar not connected'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
         )}
         rightSidebar={(
@@ -1049,6 +1656,7 @@ export default function SyncModule({ className }) {
                       projectId={currentProject?.id}
                       className="h-full"
                       onTaskClick={(task) => toast.info(`Viewing: ${task.title}`)}
+                      onShowShortcuts={() => setShowKeyboardShortcuts(true)}
                     />
                   )}
                   {taskViewMode === 'team' && (
@@ -1131,30 +1739,33 @@ export default function SyncModule({ className }) {
                                 </button>
                                 {isOpen && (
                                   <div className="px-3 pb-3 space-y-2 border-t pt-2">
-                                    {getProjectCalendarSources(project.id).length === 0 ? (
-                                      <p className="text-muted-foreground">No calendars</p>
-                                    ) : (
-                                      getProjectCalendarSources(project.id).map(cal => {
-                                        const calSource = calendarSources.find(s => s.id === cal.id)
-                                        if (!calSource) return null
-                                        const CalIcon = calSource.icon
-                                        return (
-                                          <label key={cal.id} className="flex items-center gap-2 cursor-pointer">
-                                            <Checkbox
-                                              checked={calSource.visible}
-                                              onCheckedChange={(checked) => {
-                                                setCalendarSources(sources => sources.map(s =>
-                                                  s.id === cal.id ? { ...s, visible: checked } : s
-                                                ))
-                                              }}
-                                              className="border-2"
-                                            />
-                                            <CalIcon className="h-3.5 w-3.5 text-muted-foreground" />
-                                            <span className="truncate">{cal.name || cal.id}</span>
-                                          </label>
-                                        )
-                                      })
-                                    )}
+                                    {[
+                                      { key: 'booking', name: 'Bookings', icon: CalendarCheck },
+                                      { key: 'crm-followup', name: 'CRM Follow-ups', icon: Users },
+                                      { key: 'crm-activity', name: 'CRM Activities', icon: Clock },
+                                    ].map(source => {
+                                      const SourceIcon = source.icon
+                                      const vis = projectSourceVisibility[project.id] || {}
+                                      return (
+                                        <label key={source.key} className="flex items-center gap-2 cursor-pointer group">
+                                          <Checkbox
+                                            checked={vis[source.key] !== false}
+                                            onCheckedChange={(checked) => {
+                                              setProjectSourceVisibility(prev => ({
+                                                ...prev,
+                                                [project.id]: {
+                                                  ...prev[project.id],
+                                                  [source.key]: checked,
+                                                },
+                                              }))
+                                            }}
+                                            className="border-2"
+                                          />
+                                          <SourceIcon className="h-3.5 w-3.5 text-muted-foreground" />
+                                          <span className="truncate group-hover:text-foreground transition-colors">{source.name}</span>
+                                        </label>
+                                      )
+                                    })}
                                   </div>
                                 )}
                               </div>
@@ -1235,6 +1846,15 @@ export default function SyncModule({ className }) {
       >
         <ModuleLayout.Header title="Sync" icon={MODULE_ICONS.sync} subtitle={subtitle} actions={headerActions} />
         <ModuleLayout.Content noPadding>
+          {centerView === 'bookings' ? (
+            <BookingsListPanel inline onClose={() => setCenterView('calendar')} />
+          ) : centerView === 'booking-types' ? (
+            <BookingTypesPanel inline onClose={() => setCenterView('calendar')} />
+          ) : centerView === 'hosts' ? (
+            <HostsPanel inline onClose={() => setCenterView('calendar')} />
+          ) : centerView === 'integrations' ? (
+            <UserGoogleIntegrationPanel inline context="sync" onClose={() => setCenterView('calendar')} />
+          ) : (
           <div className="flex-1 overflow-auto h-full min-h-0 bg-[var(--glass-bg)] backdrop-blur-xl border border-[var(--glass-border)] min-w-0">
             {loading ? (
               <div className="h-full flex items-center justify-center">
@@ -1308,7 +1928,7 @@ export default function SyncModule({ className }) {
                       <div className="flex-1 grid grid-cols-7">
                       {weekDates.map((date, dayIndex) => {
                         const isCurrentDay = isSameDay(date, today)
-                        const hourEvents = events.filter(e => 
+                        const hourEvents = filteredEvents.filter(e => 
                           isSameDay(e.startTime, date) && 
                           e.startTime.getHours() === hour
                         )
@@ -1335,27 +1955,29 @@ export default function SyncModule({ className }) {
                                   initial={{ opacity: 0, scale: 0.95 }}
                                   animate={{ opacity: 1, scale: 1 }}
                                   whileHover={{ scale: 1.02 }}
+                                  onClick={(e) => handleEventClick(e, event)}
                                   className={cn(
-                                    "absolute left-0.5 right-0.5 rounded-md px-2 py-1 text-xs cursor-pointer overflow-hidden",
+                                    "absolute left-0.5 right-0.5 rounded-md px-2 py-1 text-xs cursor-pointer overflow-hidden z-10",
                                     "shadow-sm hover:shadow-md transition-shadow",
-                                    colors.light
+                                    selectedEvent?.id === event.id && "ring-2 ring-primary shadow-md"
                                   )}
                                   style={{ 
                                     height: `${heightPercent}%`,
                                     top: `${(event.startTime.getMinutes() / 60) * 100}%`,
+                                    backgroundColor: `${colors.accent}2e`,
                                     borderLeft: `3px solid ${colors.accent}`,
                                   }}
                                 >
-                                  <div className={cn("font-medium truncate leading-tight", colors.text)}>
+                                  <div className="font-medium truncate leading-tight" style={{ color: colors.accent }}>
                                     {event.title}
                                   </div>
                                   {durationMinutes >= 30 && (
-                                    <div className="text-[10px] text-muted-foreground mt-0.5">
+                                    <div className="text-[10px] mt-0.5" style={{ color: `${colors.accent}99` }}>
                                       {formatTime(event.startTime)} – {formatTime(event.endTime)}
                                     </div>
                                   )}
                                   {event.attendees?.length > 0 && durationMinutes >= 45 && (
-                                    <div className="flex items-center gap-1 mt-0.5 text-[10px] text-muted-foreground">
+                                    <div className="flex items-center gap-1 mt-0.5 text-[10px]" style={{ color: `${colors.accent}99` }}>
                                       <Users className="h-3 w-3" />
                                       {event.attendees.length}
                                     </div>
@@ -1380,7 +2002,7 @@ export default function SyncModule({ className }) {
               // ===== DAY VIEW =====
               <div className="h-full flex flex-col min-h-0">
                 {hours.map((hour) => {
-                  const hourEvents = events.filter(e => 
+                  const hourEvents = filteredEvents.filter(e => 
                     isSameDay(e.startTime, selectedDate) && 
                     e.startTime.getHours() === hour
                   )
@@ -1403,18 +2025,20 @@ export default function SyncModule({ className }) {
                               key={event.id || i}
                               initial={{ opacity: 0, x: -10 }}
                               animate={{ opacity: 1, x: 0 }}
+                              onClick={(e) => handleEventClick(e, event)}
                               className={cn(
-                                "absolute left-2 right-2 rounded-md px-3 py-2 text-sm shadow-sm overflow-hidden",
-                                colors.light
+                                "absolute left-2 right-2 rounded-md px-3 py-2 text-sm shadow-sm overflow-hidden cursor-pointer z-10",
+                                selectedEvent?.id === event.id && "ring-2 ring-primary shadow-md"
                               )}
                               style={{ 
+                                backgroundColor: `${colors.accent}2e`,
                                 borderLeft: `3px solid ${colors.accent}`,
                                 height: `${heightPercent}%`,
                                 top: `${(event.startTime.getMinutes() / 60) * 100}%`,
                               }}
                             >
-                              <div className={cn("font-medium", colors.text)}>{event.title}</div>
-                              <div className="text-xs text-muted-foreground">
+                              <div className="font-medium" style={{ color: colors.accent }}>{event.title}</div>
+                              <div className="text-xs" style={{ color: `${colors.accent}99` }}>
                                 {formatTime(event.startTime)} – {formatTime(event.endTime)}
                               </div>
                             </motion.div>
@@ -1430,16 +2054,26 @@ export default function SyncModule({ className }) {
               </div>
             )}
           </div>
+          )}
         </ModuleLayout.Content>
       </ModuleLayout>
       
         {/* ===== MODALS ===== */}
         <CreateEventModal
           isOpen={showCreateModal}
-          onClose={() => setShowCreateModal(false)}
+          onClose={() => { setShowCreateModal(false); setCreateModalTime(null) }}
           initialType={createModalType}
           selectedDate={selectedDate}
+          selectedTime={createModalTime}
           onCreated={loadCalendarData}
+        />
+        
+        {/* Event Detail Dialog */}
+        <EventDetailDialog
+          event={selectedEvent}
+          onClose={() => setSelectedEvent(null)}
+          onDeleted={() => { setSelectedEvent(null); loadCalendarData() }}
+          onUpdated={() => { setSelectedEvent(null); loadCalendarData() }}
         />
         
         <PlanDayDialog
@@ -1448,21 +2082,6 @@ export default function SyncModule({ className }) {
           projectId={currentProject?.id}
           initialDate={selectedDate}
           onPlanComplete={loadCalendarData}
-        />
-        
-        <BookingTypesPanel
-          isOpen={showBookingTypes}
-          onClose={() => setShowBookingTypes(false)}
-        />
-        
-        <BookingsListPanel
-          isOpen={showBookingsList}
-          onClose={() => setShowBookingsList(false)}
-        />
-        
-        <HostsPanel
-          isOpen={showHostsPanel}
-          onClose={() => setShowHostsPanel(false)}
         />
         
         <AvailabilityExceptionsPanel
@@ -1757,6 +2376,12 @@ export default function SyncModule({ className }) {
             )}
           </DialogContent>
         </Dialog>
+
+        {/* Keyboard Shortcuts Help */}
+        <KeyboardShortcutsDialog
+          open={showKeyboardShortcuts}
+          onOpenChange={setShowKeyboardShortcuts}
+        />
     </TooltipProvider>
   )
 }

@@ -89,12 +89,15 @@ export default function HighlightsView({
   hasSignal,
   onViewForm,
   onViewSubmission,
+  onViewAllSubmissions,
 }) {
   // Get recent submissions (last 10)
   const recentSubmissions = submissions.slice(0, 10)
   
-  // Get top performing forms (by submission count - we'd need to add this)
-  const topForms = forms.slice(0, 5)
+  // Get top performing forms sorted by submission count (descending)
+  const topForms = [...forms]
+    .sort((a, b) => (b.submissionCount || b.submission_count || 0) - (a.submissionCount || a.submission_count || 0))
+    .slice(0, 5)
 
   return (
     <div className="space-y-6">
@@ -146,7 +149,7 @@ export default function HighlightsView({
                   Latest form responses
                 </CardDescription>
               </div>
-              <Button variant="ghost" size="sm" className="text-[var(--text-secondary)]">
+              <Button variant="ghost" size="sm" className="text-[var(--text-secondary)]" onClick={onViewAllSubmissions}>
                 View All
               </Button>
             </div>
@@ -180,8 +183,9 @@ export default function HighlightsView({
                                submission.fields?.first_name ||
                                'Anonymous'
                   const email = submission.email || submission.fields?.email || ''
-                  const qualityTier = submission.quality_tier || 'medium'
-                  const createdAt = submission.created_at ? new Date(submission.created_at) : null
+                  const qualityTier = submission.quality_tier || submission.qualityTier || 'medium'
+                  const rawDate = submission.created_at || submission.createdAt
+                  const createdAt = rawDate ? new Date(rawDate) : null
                   
                   return (
                     <button
@@ -333,12 +337,12 @@ export default function HighlightsView({
                           {form.name}
                         </p>
                         <p className="text-xs text-[var(--text-tertiary)]">
-                          {form.is_active ? 'Active' : 'Inactive'}
+                          {(form.isActive ?? form.is_active) ? 'Active' : 'Inactive'}
                         </p>
                       </div>
                       <div className="flex items-center gap-1 text-xs text-[var(--text-tertiary)]">
                         <Inbox className="h-3.5 w-3.5" />
-                        <span>{form.submission_count || 0}</span>
+                        <span>{form.submissionCount || form.submission_count || 0}</span>
                       </div>
                     </button>
                   ))}

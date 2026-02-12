@@ -1,7 +1,7 @@
 // src/pages/forms/components/FormsSettingsView.jsx
 // Forms module settings - notifications, spam filters, defaults
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -19,12 +19,18 @@ import {
   AlertTriangle,
   Save,
   X,
+  Users,
+  RefreshCw,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
+import portalApi from '@/lib/portal-api'
 
 export default function FormsSettingsView({ projectId }) {
   const [isSaving, setIsSaving] = useState(false)
+  const [isLoaded, setIsLoaded] = useState(false)
+  const [savedEmails, setSavedEmails] = useState([])
+  const [formCount, setFormCount] = useState(0)
   const [settings, setSettings] = useState({
     defaultNotificationEmails: [],
     defaultSuccessMessage: 'Thank you for your submission!',
@@ -36,11 +42,7 @@ export default function FormsSettingsView({ projectId }) {
   })
   const [emailInput, setEmailInput] = useState('')
   
-  useEffect(() => {
-    loadSettings()
-  }, [projectId])
-  
-  async function loadSettings() {
+  const loadSettings = useCallback(async () => {
     if (!projectId) return
     
     try {
@@ -51,12 +53,28 @@ export default function FormsSettingsView({ projectId }) {
         .single()
       
       if (data?.settings?.forms) {
-        setSettings({ ...settings, ...data.settings.forms })
+        const loadedSettings = { ...settings, ...data.settings.forms }
+        setSettings(loadedSettings)
+        setSavedEmails(loadedSettings.defaultNotificationEmails || [])
       }
+      
+      // Load form count for this project
+      const { count } = await supabase
+        .from('managed_forms')
+        .select('id', { count: 'exact', head: true })
+        .eq('project_id', projectId)
+      
+      setFormCount(count || 0)
+      setIsLoaded(true)
     } catch (err) {
       console.error('Failed to load settings:', err)
+      setIsLoaded(true)
     }
-  }
+  }, [projectId])
+  
+  useEffect(() => {
+    loadSettings()
+  }, [loadSettings])
   
   async function handleSave() {
     if (!projectId) return
@@ -85,7 +103,38 @@ export default function FormsSettingsView({ projectId }) {
       
       if (error) throw error
       
-      toast.success('Settings saved')
+      // Also sync notification emails to all existing forms that have empty notification_emails
+      if (settings.defaultNotificationEmails.length > 0) {
+        try {
+          const { data: forms } = await supabase
+            .from('managed_forms')
+            .select('id, notification_emails')
+            .eq('project_id', projectId)
+          
+          const formsToUpdate = (forms || []).filter(
+            f => !f.notification_emails || f.notification_emails.length === 0
+          )
+          
+          if (formsToUpdate.length > 0) {
+            for (const form of formsToUpdate) {
+              await supabase
+                .from('managed_forms')
+                .update({ notification_emails: settings.defaultNotificationEmails })
+                .eq('id', form.id)
+            }
+            toast.success(`Settings saved — synced to ${formsToUpdate.length} form(s)`)
+          } else {
+            toast.success('Settings saved')
+          }
+        } catch (syncErr) {
+          console.error('Failed to sync emails to forms:', syncErr)
+          toast.success('Settings saved (form sync failed)')
+        }
+      } else {
+        toast.success('Settings saved')
+      }
+      
+      setSavedEmails([...settings.defaultNotificationEmails])
     } catch (err) {
       console.error('Failed to save settings:', err)
       toast.error('Failed to save settings')
@@ -95,7 +144,7 @@ export default function FormsSettingsView({ projectId }) {
   }
   
   function handleAddEmail() {
-    const email = emailInput.trim()
+    const email = emailInput.trim().toLowerCase()
     if (!email) return
     
     // Basic email validation
@@ -123,6 +172,8 @@ export default function FormsSettingsView({ projectId }) {
     })
   }
   
+  const hasUnsavedChanges = JSON.stringify(settings.defaultNotificationEmails) !== JSON.stringify(savedEmails)
+  
   return (
     <ScrollArea className="h-full">
       <div className="space-y-6 p-6">
@@ -141,7 +192,10 @@ export default function FormsSettingsView({ projectId }) {
             style={{ backgroundColor: 'var(--brand-primary)' }}
           >
             {isSaving ? (
-              <>Saving...</>
+              <>
+                <RefreshCw className="h-4 w-4 animate-spin" />
+                Saving...
+              </>
             ) : (
               <>
                 <Save className="h-4 w-4" />
@@ -171,32 +225,71 @@ export default function FormsSettingsView({ projectId }) {
             <div>
               <Label>Default Notification Emails</Label>
               <p className="text-sm text-muted-foreground mb-2">
-                These emails will receive notifications for all new forms by default
+                These emails will receive notifications when any form in this project is submitted
               </p>
               <div className="flex gap-2">
                 <Input
                   placeholder="email@example.com"
                   value={emailInput}
                   onChange={(e) => setEmailInput(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleAddEmail()}
+                  onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddEmail())}
                 />
                 <Button onClick={handleAddEmail} variant="outline">
                   Add
                 </Button>
               </div>
-              {settings.defaultNotificationEmails.length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-3">
-                  {settings.defaultNotificationEmails.map((email) => (
-                    <Badge key={email} variant="secondary" className="gap-1">
-                      {email}
-                      <button
-                        onClick={() => handleRemoveEmail(email)}
-                        className="ml-1 hover:text-destructive"
+              
+              {/* Current recipients */}
+              {settings.defaultNotificationEmails.length > 0 ? (
+                <div className="mt-3 space-y-2">
+                  <div className="flex flex-wrap gap-2">
+                    {settings.defaultNotificationEmails.map((email) => (
+                      <Badge 
+                        key={email} 
+                        variant="secondary" 
+                        className="gap-1 px-3 py-1.5"
                       >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </Badge>
-                  ))}
+                        <Mail className="h-3 w-3 mr-1 opacity-60" />
+                        {email}
+                        <button
+                          onClick={() => handleRemoveEmail(email)}
+                          className="ml-1 hover:text-destructive transition-colors"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
+                  {hasUnsavedChanges && (
+                    <p className="text-xs text-amber-500 flex items-center gap-1">
+                      <AlertTriangle className="h-3 w-3" />
+                      Unsaved changes — click "Save Changes" to apply
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <div className="mt-3 p-3 rounded-lg border border-amber-500/20 bg-amber-500/5">
+                  <p className="text-sm text-amber-600 flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4 shrink-0" />
+                    No notification emails configured — form submissions won't trigger email alerts
+                  </p>
+                </div>
+              )}
+              
+              {/* Saved confirmation */}
+              {isLoaded && savedEmails.length > 0 && !hasUnsavedChanges && (
+                <div className="mt-3 p-3 rounded-lg border border-emerald-500/20 bg-emerald-500/5">
+                  <div className="flex items-start gap-2">
+                    <CheckCircle className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-sm text-emerald-600 font-medium">
+                        Notifications active
+                      </p>
+                      <p className="text-xs text-[var(--text-tertiary)] mt-0.5">
+                        {savedEmails.length} recipient{savedEmails.length !== 1 ? 's' : ''} will be notified for all {formCount} form{formCount !== 1 ? 's' : ''} in this project
+                      </p>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>

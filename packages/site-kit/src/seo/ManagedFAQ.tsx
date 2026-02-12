@@ -4,17 +4,127 @@ import type { ManagedFAQProps, FAQItem } from './types'
 import { createSchema } from './ManagedSchema'
 
 /**
- * Default FAQ item renderer
+ * Inline styles for the accordion FAQ (no external CSS dependency)
+ */
+const faqStyles = `
+.uptrade-faq-items {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.uptrade-faq-item {
+  border-bottom: 1px solid rgba(0,0,0,0.08);
+}
+.uptrade-faq-item:first-child {
+  border-top: 1px solid rgba(0,0,0,0.08);
+}
+.uptrade-faq-item summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  padding: 1.25rem 0;
+  font-weight: 600;
+  font-size: 1.05rem;
+  line-height: 1.5;
+  color: inherit;
+  list-style: none;
+  user-select: none;
+  transition: color 0.15s ease;
+}
+.uptrade-faq-item summary:hover {
+  opacity: 0.8;
+}
+.uptrade-faq-item summary::-webkit-details-marker {
+  display: none;
+}
+.uptrade-faq-item summary::marker {
+  display: none;
+  content: '';
+}
+.uptrade-faq-chevron {
+  flex-shrink: 0;
+  width: 1.25rem;
+  height: 1.25rem;
+  margin-left: 1rem;
+  transition: transform 0.2s ease;
+  opacity: 0.5;
+}
+.uptrade-faq-item[open] .uptrade-faq-chevron {
+  transform: rotate(180deg);
+}
+.uptrade-faq-answer {
+  padding: 0 0 1.25rem 0;
+  color: rgba(0,0,0,0.6);
+  line-height: 1.75;
+  font-size: 0.95rem;
+}
+.uptrade-faq-answer p {
+  margin: 0 0 0.75rem 0;
+}
+.uptrade-faq-answer p:last-child {
+  margin-bottom: 0;
+}
+.uptrade-faq-answer ul, .uptrade-faq-answer ol {
+  padding-left: 1.5rem;
+  margin: 0.5rem 0;
+}
+.uptrade-faq-answer li {
+  margin-bottom: 0.25rem;
+}
+.uptrade-faq-answer a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.uptrade-faq-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+.uptrade-faq-description {
+  color: rgba(0,0,0,0.6);
+  margin-bottom: 2rem;
+  font-size: 1rem;
+  line-height: 1.6;
+}
+`
+
+/**
+ * Chevron SVG (no icon library dependency)
+ */
+function ChevronDown() {
+  return (
+    <svg
+      className="uptrade-faq-chevron"
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <polyline points="6 9 12 15 18 9" />
+    </svg>
+  )
+}
+
+/**
+ * Default FAQ item renderer – uses native <details>/<summary> for toggle
  */
 function DefaultFAQItem({ item, index }: { item: FAQItem; index: number }) {
   return (
-    <div key={item.id} className="uptrade-faq-item">
-      <h3 className="uptrade-faq-question">{item.question}</h3>
-      <div 
+    <details key={item.id} className="uptrade-faq-item">
+      <summary>
+        <span>{item.question}</span>
+        <ChevronDown />
+      </summary>
+      <div
         className="uptrade-faq-answer"
         dangerouslySetInnerHTML={{ __html: item.answer }}
       />
-    </div>
+    </details>
   )
 }
 
@@ -103,6 +213,8 @@ export async function ManagedFAQ({
           }}
         />
       )}
+      {/* Embedded styles for accordion FAQ (no external CSS file needed) */}
+      <style dangerouslySetInnerHTML={{ __html: faqStyles }} />
       <div className={className || 'uptrade-faq'}>
         {showTitle && faqData.title && (
           <h2 className="uptrade-faq-title">{faqData.title}</h2>

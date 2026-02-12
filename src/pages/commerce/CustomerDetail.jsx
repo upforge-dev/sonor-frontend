@@ -4,7 +4,7 @@
 
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { useCustomer, useCustomerPurchases, customersKeys } from '@/lib/hooks'
+import { useCustomer, useCustomerPurchases, useUpdateCustomer, useAddCustomerTag } from '@/lib/hooks'
 import { useQueryClient } from '@tanstack/react-query'
 import useAuthStore from '@/lib/auth-store'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -50,28 +50,17 @@ export default function CustomerDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { currentProject } = useAuthStore()
-  const { currentCustomer, fetchCustomer, updateCustomer, addCustomerTags } = useCommerceStore()
+  const { data: currentCustomer, isLoading: loading, error: queryError } = useCustomer(currentProject?.id, id)
+  const { data: purchasesData, isLoading: purchasesLoading } = useCustomerPurchases(currentProject?.id, id)
+  const updateCustomerMutation = useUpdateCustomer()
+  const addTagMutation = useAddCustomerTag()
 
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-  const [purchases, setPurchases] = useState([])
-  const [purchasesLoading, setPurchasesLoading] = useState(false)
   const [editing, setEditing] = useState(false)
   const [editForm, setEditForm] = useState({})
   const [saving, setSaving] = useState(false)
   const [tagInput, setTagInput] = useState('')
 
-  useEffect(() => {
-    if (currentProject?.id && id) {
-      setLoading(true)
-      fetchCustomer(currentProject.id, id)
-        .then(() => setLoading(false))
-        .catch(err => {
-          setError(err.message)
-          setLoading(false)
-        })
-    }
-  }, [currentProject?.id, id, fetchCustomer])
+  const error = queryError?.message || (queryError ? String(queryError) : null)
 
   useEffect(() => {
     if (currentCustomer) {
@@ -83,22 +72,16 @@ export default function CustomerDetail() {
     }
   }, [currentCustomer])
 
-  useEffect(() => {
-    if (currentProject?.id && id) {
-      setPurchasesLoading(true)
-      getCustomerPurchases(currentProject.id, id)
-        .then(data => {
-          setPurchases(data)
-          setPurchasesLoading(false)
-        })
-        .catch(() => setPurchasesLoading(false))
-    }
-  }, [currentProject?.id, id])
+  const purchases = purchasesData || []
 
   const handleSave = async () => {
     setSaving(true)
     try {
-      await updateCustomer(currentProject.id, id, editForm)
+      await updateCustomerMutation.mutateAsync({
+        projectId: currentProject.id,
+        customerId: id,
+        data: editForm
+      })
       toast.success('Customer updated')
       setEditing(false)
     } catch (error) {
@@ -112,7 +95,11 @@ export default function CustomerDetail() {
     if (!tagInput.trim()) return
     
     try {
-      await addCustomerTags(currentProject.id, id, [tagInput.trim()])
+      await addTagMutation.mutateAsync({
+        projectId: currentProject.id,
+        customerId: id,
+        tag: tagInput.trim()
+      })
       toast.success('Tag added')
       setTagInput('')
     } catch (error) {
@@ -124,7 +111,7 @@ export default function CustomerDetail() {
     return <DetailSkeleton />
   }
 
-  if (error || !currentCustomer) {
+  if (error || (!loading && !currentCustomer)) {
     return (
       <div className="p-6">
         <Card className="border-red-200 bg-red-50">

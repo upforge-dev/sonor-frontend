@@ -522,6 +522,9 @@ const useAuthStore = create(
 
   // Login function using Supabase Auth
   login: async (email, password, nextPath = '/') => {
+    // Clear stale org/project context BEFORE login to prevent sending
+    // a previous user's org ID in the X-Organization-Id header
+    get().clearAuth()
     set({ isLoading: true, error: null })
     
     try {

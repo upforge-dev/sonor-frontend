@@ -77,6 +77,7 @@ export type FieldType =
   | 'text'
   | 'email'
   | 'phone'
+  | 'tel'
   | 'number'
   | 'textarea'
   | 'select'
@@ -92,6 +93,7 @@ export type FieldType =
   | 'slider'
   | 'hidden'
   | 'heading'
+  | 'section_header'
   | 'paragraph'
 
 export interface FormField {

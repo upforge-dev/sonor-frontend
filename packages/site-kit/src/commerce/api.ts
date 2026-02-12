@@ -206,6 +206,37 @@ export async function fetchCategories(): Promise<{ id: string; name: string; slu
 }
 
 // ============================================
+// Payment Processor Info
+// ============================================
+
+/**
+ * Fetch the active payment processor for the current project.
+ * Returns 'stripe' | 'square' | null.
+ */
+export async function fetchActiveProcessor(): Promise<'stripe' | 'square' | null> {
+  const { apiUrl, apiKey } = getApiConfig()
+  
+  if (!apiKey) return null
+  
+  try {
+    const response = await fetch(`${apiUrl}/api/public/commerce/processor`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+      },
+      body: JSON.stringify({}),
+    })
+    
+    if (!response.ok) return null
+    const data = await response.json()
+    return data?.processor || null
+  } catch {
+    return null
+  }
+}
+
+// ============================================
 // Checkout & Registration
 // ============================================
 

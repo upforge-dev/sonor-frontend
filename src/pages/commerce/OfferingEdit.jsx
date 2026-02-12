@@ -76,34 +76,23 @@ export default function OfferingEdit({ offeringId, onBack }) {
   const navigate = useNavigate()
   const id = offeringId || routeId
   const { currentProject } = useAuthStore()
-  const { currentOffering, fetchOffering, updateOffering } = useCommerceStore()
-  const { forms, fetchForms, isLoading: formsLoading } = useFormsStore()
+  // React Query hooks (replaces old useCommerceStore / useFormsStore)
+  const { data: currentOffering, isLoading: offeringLoading, error: offeringError } = useCommerceOffering(id)
+  const updateOfferingMutation = useUpdateCommerceOffering()
+  const { data: forms = [], isLoading: formsLoading } = useForms(
+    currentProject?.id ? { projectId: currentProject.id } : {},
+    { enabled: !!currentProject?.id }
+  )
   // Use React Query hook for SEO pages
   const { data: seoPagesResponse, isLoading: pagesLoading } = useSeoPages(currentProject?.id, { limit: 200 })
   const seoPages = seoPagesResponse?.data?.pages || seoPagesResponse?.pages || []
   const brandColors = useBrandColors()
 
-  const [loading, setLoading] = useState(true)
+  const loading = offeringLoading
   const [saving, setSaving] = useState(false)
-  const [error, setError] = useState(null)
+  const error = offeringError?.message || null
   const [formData, setFormData] = useState(null)
   const [images, setImages] = useState([])
-
-  // Load offering data, forms, and SEO pages
-  useEffect(() => {
-    if (currentProject?.id && id) {
-      setLoading(true)
-      fetchOffering(currentProject.id, id)
-        .then(() => setLoading(false))
-        .catch(err => {
-          setError(err.message)
-          setLoading(false)
-        })
-      // Load forms for service intake selection
-      fetchForms({ projectId: currentProject.id })
-      // SEO pages are now fetched via React Query hook automatically
-    }
-  }, [currentProject?.id, id, fetchOffering, fetchForms])
 
   // Populate form when offering loads
   useEffect(() => {
@@ -163,13 +152,12 @@ export default function OfferingEdit({ offeringId, onBack }) {
     setFormData(prev => ({ ...prev, [field]: value }))
   }
 
+  const queryClient = useQueryClient()
   const handleImagesChange = useCallback((newImages) => {
     setImages(newImages)
-    // Refetch offering to update featured_image in store
-    if (currentProject?.id) {
-      fetchOffering(currentProject.id, id)
-    }
-  }, [currentProject?.id, id, fetchOffering])
+    // Refetch offering to update featured_image in cache
+    queryClient.invalidateQueries({ queryKey: commerceKeys.offeringDetail(id) })
+  }, [id, queryClient])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -223,7 +211,7 @@ export default function OfferingEdit({ offeringId, onBack }) {
       data.seo_page_id = formData.seo_page_id || null
       data.page_path = formData.page_path || null
 
-      await updateOffering(id, data)
+      await updateOfferingMutation.mutateAsync({ offeringId: id, data })
       
       toast.success(`${currentConfig?.label || 'Offering'} updated successfully`)
       if (onBack) {

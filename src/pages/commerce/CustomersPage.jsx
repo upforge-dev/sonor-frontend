@@ -2,9 +2,9 @@
 // Customers list with search and filters
 // MIGRATED TO REACT QUERY HOOKS - Jan 29, 2026
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useCustomers, customersKeys } from '@/lib/hooks'
+import { useCustomers, useCreateCustomer } from '@/lib/hooks'
 import { useQueryClient } from '@tanstack/react-query'
 import useAuthStore from '@/lib/auth-store'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -47,25 +47,18 @@ import { toast } from '@/lib/toast'
 
 export default function CustomersPage() {
   const { currentProject } = useAuthStore()
-  const {
-    customers,
-    customersLoading,
-    customersError,
-    fetchCustomers,
-    createCustomer,
-  } = useCommerceStore()
-
   const [search, setSearch] = useState('')
+  const { data: customersData, isLoading: customersLoading, error: customersError } = useCustomers(
+    currentProject?.id,
+    { search: search || undefined }
+  )
+  const createCustomerMutation = useCreateCustomer()
+
   const [createOpen, setCreateOpen] = useState(false)
   const [importExportOpen, setImportExportOpen] = useState(false)
   const [newCustomer, setNewCustomer] = useState({ email: '', name: '', phone: '' })
-  const [creating, setCreating] = useState(false)
 
-  useEffect(() => {
-    if (currentProject?.id) {
-      fetchCustomers(currentProject.id, { search: search || undefined })
-    }
-  }, [currentProject?.id, search, fetchCustomers])
+  const customers = customersData?.customers || []
 
   const handleCreate = async (e) => {
     e.preventDefault()
@@ -74,16 +67,16 @@ export default function CustomersPage() {
       return
     }
 
-    setCreating(true)
     try {
-      await createCustomer(currentProject.id, newCustomer)
+      await createCustomerMutation.mutateAsync({
+        projectId: currentProject.id,
+        data: newCustomer
+      })
       toast.success('Customer created successfully')
       setCreateOpen(false)
       setNewCustomer({ email: '', name: '', phone: '' })
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to create customer')
-    } finally {
-      setCreating(false)
     }
   }
 

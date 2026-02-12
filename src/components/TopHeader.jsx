@@ -1,6 +1,7 @@
 // src/components/TopHeader.jsx
 // Supabase-style top header bar with org/project switchers, search, help, and user menu
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
+import { useLocation } from 'react-router-dom'
 import { 
   Search, 
   HelpCircle, 
@@ -15,7 +16,13 @@ import {
   Building2,
   FolderOpen,
   Sparkles,
-  Plus
+  Plus,
+  Bug,
+  BookOpen,
+  MessageSquare,
+  ExternalLink,
+  Loader2,
+  CheckCircle2,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -33,7 +40,16 @@ import {
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
 } from '@/components/ui/dropdown-menu'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import {
   Tooltip,
   TooltipContent,
@@ -45,6 +61,7 @@ import AccountSettingsModal from '@/components/settings/AccountSettingsModal'
 import useAuthStore from '@/lib/auth-store'
 import useThemeStore from '@/lib/theme-store'
 import { useAccountSettingsStore } from '@/lib/account-settings-store'
+import { authApi } from '@/lib/portal-api'
 import { cn } from '@/lib/utils'
 
 // Detect if user is on Windows
@@ -326,9 +343,179 @@ function ProjectSection({ onNavigateToProjects }) {
 }
 
 // ============================================================================
+// BUG REPORT DIALOG
+// ============================================================================
+function BugReportDialog({ open, onOpenChange }) {
+  const { user, currentOrg, currentProject } = useAuthStore()
+  const location = useLocation()
+  const [subject, setSubject] = useState('')
+  const [description, setDescription] = useState('')
+  const [sending, setSending] = useState(false)
+  const [sent, setSent] = useState(false)
+
+  const currentPage = location.pathname
+
+  const handleSubmit = useCallback(async (e) => {
+    e.preventDefault()
+    if (!description.trim()) return
+
+    setSending(true)
+    try {
+      // Try API first
+      await authApi.submitSupport({
+        type: 'bug_report',
+        subject: subject || `Bug Report: ${currentPage}`,
+        description,
+        page: currentPage,
+        userEmail: user?.email,
+        userName: user?.name,
+        orgName: currentOrg?.name,
+        projectName: currentProject?.name || currentProject?.title,
+        userAgent: navigator.userAgent,
+        timestamp: new Date().toISOString(),
+      })
+      setSent(true)
+    } catch (err) {
+      // Fallback: open mailto with pre-filled content
+      console.warn('[BugReport] API failed, falling back to mailto:', err)
+      const body = [
+        `Bug Report`,
+        ``,
+        `Page: ${window.location.origin}${currentPage}`,
+        `User: ${user?.name || 'Unknown'} (${user?.email || 'Unknown'})`,
+        `Org: ${currentOrg?.name || 'N/A'}`,
+        `Project: ${currentProject?.name || currentProject?.title || 'N/A'}`,
+        `Time: ${new Date().toLocaleString()}`,
+        `Browser: ${navigator.userAgent}`,
+        ``,
+        `---`,
+        ``,
+        subject ? `Subject: ${subject}` : '',
+        ``,
+        description,
+      ].filter(Boolean).join('\n')
+
+      const mailtoUrl = `mailto:ramsey@uptrademedia.com?subject=${encodeURIComponent(subject || `Bug Report: ${currentPage}`)}&body=${encodeURIComponent(body)}`
+      window.open(mailtoUrl, '_blank')
+      setSent(true)
+    } finally {
+      setSending(false)
+    }
+  }, [subject, description, currentPage, user, currentOrg, currentProject])
+
+  const handleClose = useCallback((open) => {
+    onOpenChange(open)
+    if (!open) {
+      // Reset after close animation
+      setTimeout(() => {
+        setSubject('')
+        setDescription('')
+        setSent(false)
+      }, 200)
+    }
+  }, [onOpenChange])
+
+  return (
+    <Dialog open={open} onOpenChange={handleClose}>
+      <DialogContent className="sm:max-w-[480px]">
+        {sent ? (
+          <div className="flex flex-col items-center justify-center py-8 text-center">
+            <div className="rounded-full bg-emerald-500/10 p-3 mb-4">
+              <CheckCircle2 className="h-8 w-8 text-emerald-500" />
+            </div>
+            <h3 className="text-lg font-semibold mb-2">Report Sent</h3>
+            <p className="text-sm text-muted-foreground mb-6">
+              Thanks for reporting this. We'll look into it right away.
+            </p>
+            <Button onClick={() => handleClose(false)}>
+              Close
+            </Button>
+          </div>
+        ) : (
+          <>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Bug className="h-5 w-5 text-destructive" />
+                Report a Bug
+              </DialogTitle>
+              <DialogDescription>
+                Describe the issue you encountered and we'll get it fixed.
+              </DialogDescription>
+            </DialogHeader>
+
+            <form onSubmit={handleSubmit} className="space-y-4 mt-2">
+              {/* Auto-detected page */}
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">Page</Label>
+                <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-muted/50 border text-sm">
+                  <span className="truncate text-muted-foreground">{currentPage}</span>
+                </div>
+              </div>
+
+              {/* Subject */}
+              <div className="space-y-1.5">
+                <Label htmlFor="bug-subject">Subject</Label>
+                <Input
+                  id="bug-subject"
+                  placeholder="Brief summary of the issue"
+                  value={subject}
+                  onChange={(e) => setSubject(e.target.value)}
+                />
+              </div>
+
+              {/* Description */}
+              <div className="space-y-1.5">
+                <Label htmlFor="bug-description">
+                  What happened? <span className="text-destructive">*</span>
+                </Label>
+                <Textarea
+                  id="bug-description"
+                  placeholder="Describe the bug, what you expected to happen, and what actually happened..."
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  rows={5}
+                  required
+                />
+              </div>
+
+              {/* User context (read-only) */}
+              <div className="text-xs text-muted-foreground bg-muted/30 rounded-md px-3 py-2 space-y-0.5">
+                <p>Reported by: {user?.name || user?.email || 'Unknown'}</p>
+                {currentOrg?.name && <p>Organization: {currentOrg.name}</p>}
+                {(currentProject?.name || currentProject?.title) && (
+                  <p>Project: {currentProject.name || currentProject.title}</p>
+                )}
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <Button type="button" variant="outline" onClick={() => handleClose(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={!description.trim() || sending}>
+                  {sending ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Sending...
+                    </>
+                  ) : (
+                    'Send Report'
+                  )}
+                </Button>
+              </div>
+            </form>
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+// ============================================================================
 // MAIN TOP HEADER COMPONENT
 // ============================================================================
 export default function TopHeader({ onNavigate, onOpenSearch }) {
+  const [bugReportOpen, setBugReportOpen] = useState(false)
+
   return (
     <TooltipProvider>
       <header className="h-12 flex items-center justify-between border-b border-border/50 bg-card backdrop-blur-sm" role="banner" aria-label="Top navigation">
@@ -375,21 +562,43 @@ export default function TopHeader({ onNavigate, onOpenSearch }) {
             <TooltipContent>Search ({modKey}K)</TooltipContent>
           </Tooltip>
 
-          {/* Help Button */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8 min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0 text-muted-foreground hover:text-foreground" aria-label="Help and support">
-                <HelpCircle className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Help & support</TooltipContent>
-          </Tooltip>
+          {/* Help & Support Dropdown */}
+          <DropdownMenu>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0 text-muted-foreground hover:text-foreground" aria-label="Help and support">
+                    <HelpCircle className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+              </TooltipTrigger>
+              <TooltipContent>Help & support</TooltipContent>
+            </Tooltip>
+            <DropdownMenuContent align="end" className="w-52">
+              <DropdownMenuLabel className="text-xs text-muted-foreground">Help & Support</DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => setBugReportOpen(true)}>
+                <Bug className="h-4 w-4 mr-2" />
+                Report a Bug
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => window.open('mailto:ramsey@uptrademedia.com?subject=Portal Support Request', '_blank')}>
+                <MessageSquare className="h-4 w-4 mr-2" />
+                Contact Support
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem disabled>
+                <BookOpen className="h-4 w-4 mr-2" />
+                Documentation
+                <span className="ml-auto text-xs text-muted-foreground">Soon</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
           {/* User Menu */}
           <UserMenuDropdown onNavigate={onNavigate} onOpenSearch={onOpenSearch} />
         </div>
       </header>
       <AccountSettingsModal />
+      <BugReportDialog open={bugReportOpen} onOpenChange={setBugReportOpen} />
     </TooltipProvider>
   )
 }

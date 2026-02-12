@@ -88,7 +88,7 @@ import { toast } from '@/lib/toast'
 import useAuthStore from '@/lib/auth-store'
 import useDebounce from '@/hooks/useDebounce'
 import { useBrandColors } from '@/hooks/useBrandColors'
-import { crmApi } from '@/lib/portal-api'
+import { crmApi, workspaceIntegrationsApi } from '@/lib/portal-api'
 import { useSignalAccess } from '@/lib/signal-access'
 import SignalIcon from '@/components/ui/SignalIcon'
 import { ModuleLayout } from '@/components/ModuleLayout'
@@ -108,6 +108,9 @@ import CRMEmailHub from './CRMEmailHub'
 import ProspectingDashboard from '@/components/sales/ProspectingDashboard'
 import SalesModule from '@/components/sales/SalesModule'
 import UnassignedLeadsQueue from './UnassignedLeadsQueue'
+import ClientsView from './ClientsView'
+import EmailComposeDialog from './EmailComposeDialog'
+import UserGoogleIntegrationPanel from '../integrations/UserGoogleIntegrationPanel'
 import {
   DEFAULT_PIPELINE_STAGES,
   ACTIVE_STAGES,
@@ -447,8 +450,18 @@ export default function CRMDashboard() {
   // Dialogs
   const [isAddProspectOpen, setIsAddProspectOpen] = useState(false)
   const [isPipelineSettingsOpen, setIsPipelineSettingsOpen] = useState(false)
+  const [isEmailComposeOpen, setIsEmailComposeOpen] = useState(false)
+  const [emailComposeContact, setEmailComposeContact] = useState(null)
   const [pipelineStages, setPipelineStages] = useState(DEFAULT_PIPELINE_STAGES)
   
+  // Gmail connection status for sidebar indicator
+  const [gmailConnected, setGmailConnected] = useState(false)
+  useEffect(() => {
+    workspaceIntegrationsApi.getGoogleStatus()
+      .then(status => setGmailConnected(status?.connected && status?.gmail?.connected))
+      .catch(() => setGmailConnected(false))
+  }, [])
+
   // Signal AI enabled for this project
   const signalEnabled = hasCurrentProjectSignal
 
@@ -792,22 +805,6 @@ export default function CRMDashboard() {
                       </label>
                     </div>
                     
-                    {/* Current Project */}
-                    {currentProject && (
-                      <div className="space-y-2">
-                        <p className="uppercase tracking-wider text-muted-foreground">Project</p>
-                        <div className="flex items-center gap-2.5 px-3 py-2 rounded-md bg-muted/50">
-                          <div 
-                            className="w-2.5 h-2.5 rounded-full"
-                            style={{ backgroundColor: brandColors.primary }}
-                          />
-                          <span className="truncate">
-                            {currentProject.name || currentProject.title}
-                          </span>
-                        </div>
-                      </div>
-                    )}
-                    
                     {/* Signal Features */}
                     {signalEnabled && (
                       <div className="space-y-2">
@@ -918,6 +915,18 @@ export default function CRMDashboard() {
                           <span>Email</span>
                         </button>
                         <button
+                          onClick={() => setViewMode('clients')}
+                          className={cn(
+                            "w-full text-left px-3 py-2 rounded-lg transition-colors flex items-center gap-2",
+                            viewMode === 'clients'
+                              ? "bg-primary/10 text-primary"
+                              : "hover:bg-muted"
+                          )}
+                        >
+                          <Building2 className="h-4 w-4" />
+                          <span>Clients</span>
+                        </button>
+                        <button
                           onClick={() => setViewMode('unassigned')}
                           className={cn(
                             "w-full text-left px-3 py-2 rounded-lg transition-colors flex items-center gap-2 relative",
@@ -940,6 +949,32 @@ export default function CRMDashboard() {
                             </Badge>
                           )}
                         </button>
+                      </div>
+                    </div>
+
+                    {/* Integrations section — Commerce-style */}
+                    <div className="space-y-2 pt-2">
+                      <div className="flex items-center justify-between text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                        Integrations
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 w-6 p-0 hover:bg-muted"
+                          onClick={() => setViewMode('integrations')}
+                        >
+                          <Settings className="h-3 w-3" />
+                        </Button>
+                      </div>
+                      <div className="px-3 py-3 bg-muted/50 rounded-lg">
+                        <div className="flex items-center gap-2 text-xs">
+                          <div className={cn(
+                            "h-2 w-2 rounded-full",
+                            gmailConnected ? "bg-emerald-500" : "bg-muted-foreground"
+                          )} />
+                          <span className={gmailConnected ? "text-foreground" : "text-muted-foreground"}>
+                            {gmailConnected ? 'Gmail connected' : 'Gmail not connected'}
+                          </span>
+                        </div>
                       </div>
                     </div>
 
@@ -1118,6 +1153,12 @@ export default function CRMDashboard() {
               <CRMEmailHub 
                 brandColors={brandColors}
               />
+            ) : viewMode === 'clients' ? (
+              // Clients View - Manage converted leads with health metrics
+              <ClientsView
+                onClientClick={handleProspectClick}
+                brandColors={brandColors}
+              />
             ) : viewMode === 'unassigned' ? (
               // Unassigned Leads Queue - Leads waiting to be claimed/assigned
               <div className="flex-1 min-h-0 p-4 overflow-auto">
@@ -1126,6 +1167,9 @@ export default function CRMDashboard() {
                   onLeadAssigned={handleLeadAssigned}
                 />
               </div>
+            ) : viewMode === 'integrations' ? (
+              // Integrations - Google workspace (Gmail + Calendar) per-user OAuth
+              <UserGoogleIntegrationPanel inline context="crm" onClose={() => setViewMode('pipeline')} />
             ) : viewMode === 'radar' ? (
               // Radar View - Signal AI Prospecting via Places API
               <ProspectingDashboard />
@@ -1151,12 +1195,27 @@ export default function CRMDashboard() {
                   }}
                   onProspectClick={handleProspectClick}
                   onMoveToStage={handleUpdateStage}
+                  onEmail={(prospect) => {
+                    if (prospect.email) {
+                      setEmailComposeContact(prospect)
+                      setIsEmailComposeOpen(true)
+                    }
+                  }}
+                  onCall={(prospect) => {
+                    if (prospect.phone) window.location.href = `tel:${prospect.phone}`
+                  }}
+                  onViewWebsite={(prospect) => {
+                    if (prospect.website) window.open(prospect.website, '_blank', 'noopener')
+                  }}
+                  onArchive={(prospect) => {
+                    handleUpdateStage(prospect.id, 'closed_lost')
+                  }}
                   className="h-full"
                 />
               </div>
             ) : (
               // List View
-              <ScrollArea className="flex-1">
+              <ScrollArea className="flex-1 min-h-0">
                 <div className="p-4 space-y-2">
                   {filteredProspects.map((prospect) => (
                     <ProspectCard
@@ -1188,6 +1247,17 @@ export default function CRMDashboard() {
           onClose={() => setIsPipelineSettingsOpen(false)}
           projectId={currentProject?.id}
           onUpdate={handleRefresh}
+        />
+
+        {/* Email Compose Dialog (Gmail integration) */}
+        <EmailComposeDialog
+          open={isEmailComposeOpen}
+          onOpenChange={setIsEmailComposeOpen}
+          contact={emailComposeContact}
+          projectId={currentProject?.id}
+          onSent={() => {
+            toast.success('Email sent successfully')
+          }}
         />
     </TooltipProvider>
   )

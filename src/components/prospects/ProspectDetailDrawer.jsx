@@ -1529,28 +1529,47 @@ function AuditsTab({ prospect, brandColors }) {
   )
 }
 
-// Emails Tab
+// Emails Tab — Org-wide cross-user email visibility
 function EmailsTab({ prospect, brandColors, onCompose }) {
   const { currentProject } = useAuthStore()
-  const [emailData, setEmailData] = useState({ threads: [], connected: false })
+  const [threads, setThreads] = useState([])
+  const [totalEmails, setTotalEmails] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
+  const [gmailConnected, setGmailConnected] = useState(null) // null = checking
   const [connecting, setConnecting] = useState(false)
+  const [expandedThread, setExpandedThread] = useState(null)
 
+  // Check Gmail connection status
+  useEffect(() => {
+    const checkConnection = async () => {
+      try {
+        const { data } = await crmApi.getGmailStatus()
+        setGmailConnected(data?.connected === true)
+      } catch {
+        setGmailConnected(false)
+      }
+    }
+    checkConnection()
+  }, [])
+
+  // Fetch org-wide emails for this contact
   const fetchEmails = async () => {
+    setIsLoading(true)
     try {
-      const response = await crmApi.getProspectEmails(prospect.id)
-      setEmailData(response.data)
+      const { data } = await crmApi.getContactEmails(prospect.id, { limit: 100 })
+      setThreads(data.threads || [])
+      setTotalEmails(data.totalEmails || 0)
     } catch (err) {
-      console.error('Failed to fetch emails:', err)
-      setEmailData({ threads: [], connected: false })
+      console.error('Failed to fetch contact emails:', err)
+      setThreads([])
     } finally {
       setIsLoading(false)
     }
   }
 
   useEffect(() => {
-    fetchEmails()
-  }, [prospect.id])
+    if (prospect?.id) fetchEmails()
+  }, [prospect?.id])
 
   // Handle Gmail connect
   const handleConnectGmail = async () => {
@@ -1563,9 +1582,7 @@ function EmailsTab({ prospect, brandColors, onCompose }) {
       const returnUrl = window.location.href.split('?')[0]
       const response = await emailApi.getGmailAuthUrl(currentProject.id, returnUrl)
       const { authUrl } = response.data || response
-      if (!authUrl) {
-        throw new Error('No auth URL returned')
-      }
+      if (!authUrl) throw new Error('No auth URL returned')
       window.location.href = authUrl
     } catch (error) {
       console.error('Failed to get Gmail auth URL:', error)
@@ -1582,7 +1599,8 @@ function EmailsTab({ prospect, brandColors, onCompose }) {
     )
   }
 
-  if (!emailData.connected) {
+  // Show connect prompt only if no one in the org has synced emails for this contact
+  if (gmailConnected === false && threads.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-48 text-center p-4">
         <div 
@@ -1614,7 +1632,12 @@ function EmailsTab({ prospect, brandColors, onCompose }) {
   return (
     <div className="p-4">
       <div className="flex justify-between items-center mb-4">
-        <h4 className="font-medium text-[var(--text-primary)]">Email Threads</h4>
+        <div>
+          <h4 className="font-medium text-[var(--text-primary)]">Email Threads</h4>
+          <p className="text-xs text-[var(--text-tertiary)]">
+            {totalEmails} email{totalEmails !== 1 ? 's' : ''} across {threads.length} thread{threads.length !== 1 ? 's' : ''} (all team members)
+          </p>
+        </div>
         <Button 
           size="sm" 
           style={{ backgroundColor: brandColors.primary, color: 'white' }}
@@ -1625,7 +1648,7 @@ function EmailsTab({ prospect, brandColors, onCompose }) {
         </Button>
       </div>
       
-      {emailData.threads.length === 0 ? (
+      {threads.length === 0 ? (
         <div className="text-center py-8">
           <p className="text-sm text-[var(--text-tertiary)]">
             No email threads found with {prospect.email}
@@ -1642,12 +1665,67 @@ function EmailsTab({ prospect, brandColors, onCompose }) {
         </div>
       ) : (
         <div className="space-y-2">
-          {emailData.threads.map((thread, i) => (
-            <Card key={i} className="glass p-3 cursor-pointer hover:bg-[var(--glass-bg-hover)]">
-              <p className="font-medium text-sm text-[var(--text-primary)]">{thread.subject}</p>
-              <p className="text-xs text-[var(--text-tertiary)] mt-1">
-                {formatRelativeTime(thread.last_message_at)}
-              </p>
+          {threads.map((thread) => (
+            <Card 
+              key={thread.thread_id} 
+              className="glass overflow-hidden cursor-pointer hover:bg-[var(--glass-bg-hover)] transition-colors"
+              onClick={() => setExpandedThread(expandedThread === thread.thread_id ? null : thread.thread_id)}
+            >
+              <div className="p-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <p className={cn(
+                      "font-medium text-sm text-[var(--text-primary)] truncate",
+                      thread.has_unread && "font-bold"
+                    )}>
+                      {thread.subject || '(No subject)'}
+                    </p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-xs text-[var(--text-tertiary)]">
+                        {thread.message_count} message{thread.message_count !== 1 ? 's' : ''}
+                      </span>
+                      {thread.needs_response && (
+                        <span className="text-xs px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 font-medium">
+                          Needs reply
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <span className="text-xs text-[var(--text-tertiary)] whitespace-nowrap">
+                    {formatRelativeTime(thread.latest_date)}
+                  </span>
+                </div>
+
+                {/* Expanded: show individual messages */}
+                {expandedThread === thread.thread_id && thread.messages && (
+                  <div className="mt-3 pt-3 border-t border-[var(--glass-border)] space-y-2">
+                    {thread.messages.map((msg, i) => (
+                      <div key={msg.id || i} className="text-xs space-y-0.5">
+                        <div className="flex items-center justify-between">
+                          <span className={cn(
+                            "font-medium",
+                            msg.direction === 'outbound' ? 'text-blue-500' : 'text-[var(--text-primary)]'
+                          )}>
+                            {msg.direction === 'outbound' ? (
+                              <>You → {prospect.name || prospect.email}</>
+                            ) : (
+                              <>{msg.from_name || msg.from_email} → You</>
+                            )}
+                          </span>
+                          <span className="text-[var(--text-tertiary)]">
+                            {formatRelativeTime(msg.email_date)}
+                          </span>
+                        </div>
+                        {msg.snippet && (
+                          <p className="text-[var(--text-tertiary)] line-clamp-2">
+                            {msg.snippet}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </Card>
           ))}
         </div>

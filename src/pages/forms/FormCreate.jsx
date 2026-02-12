@@ -5,11 +5,13 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import useAuthStore from '@/lib/auth-store'
 import { supabase } from '@/lib/supabase'
+import portalApi from '@/lib/portal-api'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { Switch } from '@/components/ui/switch'
 import {
   Select,
   SelectContent,
@@ -17,6 +19,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import {
   ArrowLeft,
   FileText,
@@ -29,9 +37,12 @@ import {
   Star,
   Sparkles,
   Zap,
+  Globe,
+  Info,
 } from 'lucide-react'
 import SignalIcon from '@/components/ui/SignalIcon'
 import { useSignalAccess } from '@/lib/signal-access'
+import { toast } from 'sonner'
 
 const FORM_TEMPLATES = [
   {
@@ -73,7 +84,7 @@ const FORM_TEMPLATES = [
 
 export default function FormCreate() {
   const navigate = useNavigate()
-  const { currentProject } = useAuthStore()
+  const { currentProject, currentOrg, isSuperAdmin, accessLevel } = useAuthStore()
   const { hasSignal } = useSignalAccess()
   
   const [step, setStep] = useState('template')
@@ -81,7 +92,13 @@ export default function FormCreate() {
   const [formName, setFormName] = useState('')
   const [formSlug, setFormSlug] = useState('')
   const [formDescription, setFormDescription] = useState('')
+  const [isOrgWide, setIsOrgWide] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  
+  // Can the user create org-wide templates?
+  const canCreateOrgTemplate = isSuperAdmin || 
+    accessLevel === 'organization' || 
+    currentOrg?.org_type === 'agency'
   
   async function handleCreate() {
     if (!currentProject?.id || !formName.trim()) return
@@ -90,6 +107,7 @@ export default function FormCreate() {
     try {
       const slug = formSlug.trim() || formName.toLowerCase().replace(/[^a-z0-9]+/g, '-')
       
+      // Create the project-level form first
       const { data, error } = await supabase
         .from('managed_forms')
         .insert({
@@ -106,10 +124,29 @@ export default function FormCreate() {
       
       if (error) throw error
       
+      // If org-wide, also create the org template
+      if (isOrgWide && currentOrg?.id) {
+        try {
+          await portalApi.post('/forms/templates', {
+            orgId: currentOrg.id,
+            slug,
+            name: formName.trim(),
+            description: formDescription.trim() || null,
+            formType: selectedTemplate?.id || 'custom',
+            isActive: true,
+          })
+          toast.success('Org-wide template created — it will auto-clone to new projects')
+        } catch (tplErr) {
+          console.error('Failed to create org template:', tplErr)
+          toast.error('Form created but org template failed — you can promote it later')
+        }
+      }
+      
       // Navigate to edit the new form
       navigate(`/forms/${data.id}/edit`)
     } catch (err) {
       console.error('Failed to create form:', err)
+      toast.error('Failed to create form')
     } finally {
       setIsSaving(false)
     }
@@ -244,6 +281,45 @@ export default function FormCreate() {
                 rows={3}
               />
             </div>
+            
+            {/* Org-wide template toggle */}
+            {canCreateOrgTemplate && (
+              <div className="flex items-center justify-between p-4 rounded-lg border border-[var(--glass-border)] bg-[var(--glass-bg)]">
+                <div className="flex items-center gap-3">
+                  <div 
+                    className="p-2 rounded-lg"
+                    style={{ backgroundColor: isOrgWide ? 'color-mix(in srgb, var(--brand-primary) 15%, transparent)' : 'var(--glass-bg)' }}
+                  >
+                    <Globe className="h-4 w-4" style={{ color: isOrgWide ? 'var(--brand-primary)' : 'var(--text-tertiary)' }} />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor="org-wide-toggle" className="text-sm font-medium cursor-pointer">
+                        Make available org-wide
+                      </Label>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Info className="h-3.5 w-3.5 text-[var(--text-tertiary)]" />
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="max-w-xs">
+                            <p>Creates an org template that will automatically be added to any new projects created under <strong>{currentOrg?.name || 'this organization'}</strong>.</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
+                    <p className="text-xs text-[var(--text-tertiary)] mt-0.5">
+                      Auto-clones this form to all current & future projects in {currentOrg?.name || 'the org'}
+                    </p>
+                  </div>
+                </div>
+                <Switch
+                  id="org-wide-toggle"
+                  checked={isOrgWide}
+                  onCheckedChange={setIsOrgWide}
+                />
+              </div>
+            )}
             
             <div className="flex items-center justify-between pt-4 border-t border-[var(--glass-border)]">
               <Button variant="outline" onClick={() => setStep('template')}>

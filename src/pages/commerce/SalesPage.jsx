@@ -2,9 +2,9 @@
 // Sales list and management
 // MIGRATED TO REACT QUERY HOOKS - Jan 29, 2026
 
-import { useState, useEffect } from 'react'
+import { useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { useCommerceSales, commerceKeys } from '@/lib/hooks'
+import { useCommerceSales, useUpdateCommerceSale } from '@/lib/hooks'
 import { useQueryClient } from '@tanstack/react-query'
 import useAuthStore from '@/lib/auth-store'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -44,6 +44,7 @@ import {
   RefreshCw,
   Calendar,
 } from 'lucide-react'
+import { toast } from '@/lib/toast'
 
 const statusConfig = {
   pending: { label: 'Pending', variant: 'secondary', icon: Clock },
@@ -55,66 +56,98 @@ const statusConfig = {
 
 export default function SalesPage() {
   const { currentProject } = useAuthStore()
-  const {
-    sales,
-    salesLoading,
-    salesError,
-    fetchSales,
-    salesStats,
-    fetchSalesStats,
-    completeSale,
-    refundSale,
-  } = useCommerceStore()
-
   const [statusFilter, setStatusFilter] = useState('all')
   const [dateFilter, setDateFilter] = useState('all')
+  const updateSaleMutation = useUpdateCommerceSale()
 
-  useEffect(() => {
-    if (currentProject?.id) {
-      const filters = {
-        status: statusFilter !== 'all' ? statusFilter : undefined,
-      }
-      
-      // Add date range based on filter
-      if (dateFilter !== 'all') {
-        const now = new Date()
-        let startDate
-        
-        switch (dateFilter) {
-          case 'today':
-            startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-            break
-          case 'week':
-            startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
-            break
-          case 'month':
-            startDate = new Date(now.getFullYear(), now.getMonth(), 1)
-            break
-          case 'year':
-            startDate = new Date(now.getFullYear(), 0, 1)
-            break
-        }
-        
-        if (startDate) {
-          filters.start_date = startDate.toISOString()
-        }
-      }
-      
-      fetchSales(currentProject.id, filters)
-      fetchSalesStats(currentProject.id)
+  const filters = useMemo(() => {
+    const filterObj = {
+      status: statusFilter !== 'all' ? statusFilter : undefined,
     }
-  }, [currentProject?.id, statusFilter, dateFilter, fetchSales, fetchSalesStats])
+    
+    // Add date range based on filter
+    if (dateFilter !== 'all') {
+      const now = new Date()
+      let startDate
+      
+      switch (dateFilter) {
+        case 'today':
+          startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+          break
+        case 'week':
+          startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+          break
+        case 'month':
+          startDate = new Date(now.getFullYear(), now.getMonth(), 1)
+          break
+        case 'year':
+          startDate = new Date(now.getFullYear(), 0, 1)
+          break
+      }
+      
+      if (startDate) {
+        filterObj.start_date = startDate.toISOString()
+      }
+    }
+    
+    return filterObj
+  }, [statusFilter, dateFilter])
+
+  const { data: salesData, isLoading: salesLoading, error: salesError } = useCommerceSales(
+    currentProject?.id,
+    filters
+  )
+
+  const sales = salesData || []
+
+  // Calculate stats from sales data
+  const salesStats = useMemo(() => {
+    if (!sales || sales.length === 0) {
+      return {
+        totalRevenue: 0,
+        totalSales: 0,
+        completedSales: 0,
+        pendingSales: 0,
+      }
+    }
+
+    return {
+      totalRevenue: sales.reduce((sum, sale) => sum + (sale.total_amount || 0), 0),
+      totalSales: sales.length,
+      completedSales: sales.filter(s => s.status === 'completed').length,
+      pendingSales: sales.filter(s => s.status === 'pending').length,
+    }
+  }, [sales])
 
   const handleComplete = async (saleId) => {
     if (window.confirm('Mark this sale as completed?')) {
-      await completeSale(currentProject.id, saleId)
+      try {
+        await updateSaleMutation.mutateAsync({
+          saleId,
+          data: { status: 'completed' }
+        })
+        toast.success('Sale marked as completed')
+      } catch (error) {
+        toast.error('Failed to update sale')
+      }
     }
   }
 
   const handleRefund = async (saleId) => {
     const reason = window.prompt('Enter refund reason (optional):')
     if (reason !== null) {
-      await refundSale(currentProject.id, saleId, reason)
+      try {
+        await updateSaleMutation.mutateAsync({
+          saleId,
+          data: { 
+            status: 'refunded',
+            refund_reason: reason || undefined
+          }
+        })
+        toast.success('Sale refunded')
+      } catch (error) {
+        toast.error('Failed to refund sale')
+      }
     }
   }
 

@@ -74,7 +74,7 @@ const STATUS_CONFIG = {
   'no-show': { label: 'No Show', color: 'bg-gray-100 text-gray-700 dark:bg-gray-500/20 dark:text-gray-400', icon: Ban },
 }
 
-export default function BookingsListPanel({ isOpen, onClose }) {
+export default function BookingsListPanel({ isOpen, onClose, inline = false }) {
   const [bookings, setBookings] = useState([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('upcoming')
@@ -82,10 +82,10 @@ export default function BookingsListPanel({ isOpen, onClose }) {
   const [selectedBooking, setSelectedBooking] = useState(null)
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen || inline) {
       fetchBookings()
     }
-  }, [isOpen, activeTab])
+  }, [isOpen, inline, activeTab])
 
   const fetchBookings = async () => {
     try {
@@ -137,20 +137,8 @@ export default function BookingsListPanel({ isOpen, onClose }) {
     return groups
   }, {})
 
-  return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[800px] max-h-[85vh] overflow-hidden flex flex-col">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
-            Bookings
-          </DialogTitle>
-          <DialogDescription>
-            View and manage scheduled consultations
-          </DialogDescription>
-        </DialogHeader>
-
-        {/* Tabs */}
+  const content = (
+    <>
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
           <div className="flex items-center justify-between gap-4 pb-4">
             <TabsList>
@@ -325,6 +313,41 @@ export default function BookingsListPanel({ isOpen, onClose }) {
             onUpdated={fetchBookings}
           />
         )}
+    </>
+  )
+
+  if (inline) {
+    return (
+      <div className="flex-1 flex flex-col h-full min-h-0 overflow-hidden">
+        <div className="flex items-center justify-between px-6 py-4 border-b">
+          <div>
+            <h2 className="text-lg font-semibold flex items-center gap-2">
+              <Calendar className="h-5 w-5" />
+              Bookings
+            </h2>
+            <p className="text-sm text-muted-foreground">View and manage scheduled consultations</p>
+          </div>
+        </div>
+        <div className="flex-1 overflow-auto px-6 pt-4">
+          {content}
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[800px] max-h-[85vh] overflow-hidden flex flex-col">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Calendar className="h-5 w-5" />
+            Bookings
+          </DialogTitle>
+          <DialogDescription>
+            View and manage scheduled consultations
+          </DialogDescription>
+        </DialogHeader>
+        {content}
       </DialogContent>
     </Dialog>
   )

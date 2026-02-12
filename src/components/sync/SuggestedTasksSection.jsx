@@ -26,9 +26,48 @@ import { crmSkillsApi, seoSkillsApi, syncApi as signalSyncApi } from '@/lib/sign
 import { syncApi } from '@/lib/portal-api'
 import { toast } from 'sonner'
 import SignalIcon from '@/components/ui/SignalIcon'
+import { useSignalAccess } from '@/lib/signal-access'
 
-// Local storage key for dismissed suggestions
+// Local storage keys
 const DISMISSED_KEY = 'sync_dismissed_suggestions'
+const CACHE_KEY_PREFIX = 'sync_signal_suggestions_'
+const CACHE_TTL = 24 * 60 * 60 * 1000 // 24 hours
+
+// Get cached suggestions for a project
+const getCachedSuggestions = (projectId) => {
+  try {
+    const key = CACHE_KEY_PREFIX + (projectId || 'global')
+    const stored = localStorage.getItem(key)
+    if (!stored) return null
+    const { data, timestamp } = JSON.parse(stored)
+    if (Date.now() - timestamp > CACHE_TTL) {
+      localStorage.removeItem(key)
+      return null
+    }
+    return data
+  } catch {
+    return null
+  }
+}
+
+// Save suggestions to cache
+const setCachedSuggestions = (projectId, data) => {
+  try {
+    const key = CACHE_KEY_PREFIX + (projectId || 'global')
+    localStorage.setItem(key, JSON.stringify({ data, timestamp: Date.now() }))
+  } catch {
+    // Ignore storage errors
+  }
+}
+
+// Invalidate cache for a project (called after adding/dismissing)
+const invalidateCache = (projectId) => {
+  try {
+    localStorage.removeItem(CACHE_KEY_PREFIX + (projectId || 'global'))
+  } catch {
+    // Ignore
+  }
+}
 
 // Get dismissed IDs from localStorage
 const getDismissed = () => {
@@ -61,8 +100,9 @@ const addDismissed = (id) => {
   }
 }
 
-// Suggestion card component
+// Suggestion card component - expands on hover to show full text
 function SuggestionCard({ suggestion, onAdd, onDismiss, isAdding }) {
+  const [expanded, setExpanded] = useState(false)
   const getSourceConfig = (source) => {
     switch (source) {
       case 'crm':
@@ -106,10 +146,12 @@ function SuggestionCard({ suggestion, onAdd, onDismiss, isAdding }) {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, x: -100 }}
       className={cn(
-        "p-3 rounded-lg border bg-card hover:shadow-sm transition-all group overflow-hidden",
+        "p-3 rounded-lg border bg-card hover:shadow-sm transition-all group cursor-default",
         urgency === 'critical' && "border-red-300 dark:border-red-500/30",
         urgency === 'high' && "border-amber-300 dark:border-amber-500/30"
       )}
+      onMouseEnter={() => setExpanded(true)}
+      onMouseLeave={() => setExpanded(false)}
     >
       <div className="flex items-start gap-2">
         {/* Icon */}
@@ -120,10 +162,13 @@ function SuggestionCard({ suggestion, onAdd, onDismiss, isAdding }) {
           <SourceIcon className="h-3.5 w-3.5" style={{ color: 'var(--brand-primary)' }} />
         </div>
 
-        <div className="flex-1 min-w-0 overflow-hidden">
+        <div className="flex-1 min-w-0">
           {/* Header */}
           <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
-            <span className="font-medium text-sm truncate max-w-[140px]">
+            <span className={cn(
+              "font-medium text-sm",
+              !expanded && "truncate max-w-[140px]"
+            )}>
               {suggestion.title || suggestion.name || suggestion.action}
             </span>
             <Badge variant="secondary" className="text-[9px] h-4 px-1.5 shrink-0">
@@ -153,9 +198,12 @@ function SuggestionCard({ suggestion, onAdd, onDismiss, isAdding }) {
             </div>
           )}
 
-          {/* Reason - truncated */}
+          {/* Reason - expands on hover to show full text */}
           {suggestion.reason && (
-            <p className="text-xs text-muted-foreground line-clamp-2 mb-1">
+            <p className={cn(
+              "text-xs text-muted-foreground mb-1 transition-all duration-200",
+              !expanded && "line-clamp-2"
+            )}>
               {suggestion.reason}
             </p>
           )}
@@ -197,31 +245,57 @@ export default function SuggestedTasksSection({
   onTaskCreated,
   className 
 }) {
+  const { hasAccess: hasSignalAccess, hasOrgSignal } = useSignalAccess()
   const [suggestions, setSuggestions] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [isOpen, setIsOpen] = useState(true)
   const [addingId, setAddingId] = useState(null)
 
-  const loadSuggestions = useCallback(async () => {
+  // Signal requires ORG-LEVEL access (same check as SyncModule)
+  const signalEnabled = hasOrgSignal
+
+  // Force refresh bypasses cache
+  const loadSuggestions = useCallback(async (forceRefresh = false) => {
+    // Don't fetch if Signal is not enabled for this org
+    if (!signalEnabled) {
+      setSuggestions([])
+      setLoading(false)
+      return
+    }
+
     try {
       setError(null)
-      setLoading(true)
-      
+
       const dismissed = getDismissed()
+
+      // Check cache first (unless force refresh)
+      if (!forceRefresh) {
+        const cached = getCachedSuggestions(projectId)
+        if (cached) {
+          // Filter out any newly dismissed items from cached data
+          const filtered = cached.filter(s => !dismissed.has(s.id))
+          setSuggestions(filtered)
+          setLoading(false)
+          return
+        }
+      }
+
+      setLoading(true)
+
       const allSuggestions = []
 
       // Fetch CRM follow-ups, daily briefing, and SEO opportunities in parallel
+      // Pass projectId to scope results to the current project context
       const [crmResult, briefingResult, seoResult] = await Promise.allSettled([
-        crmSkillsApi.prioritizeFollowups(10),
-        signalSyncApi.getDailyBriefing({ focusAreas: ['sales', 'project', 'meeting-prep'] }),
+        crmSkillsApi.prioritizeFollowups(10, projectId),
+        signalSyncApi.getDailyBriefing({ focusAreas: ['sales', 'project', 'meeting-prep'], projectId }),
         projectId ? seoSkillsApi.getOpportunities(projectId, { limit: 5 }) : Promise.resolve(null),
       ])
 
       // Process CRM suggestions
       if (crmResult.status === 'fulfilled' && crmResult.value?.prioritized_prospects) {
         const crmSuggestions = crmResult.value.prioritized_prospects
-          .filter(s => !dismissed.has(`crm-${s.id}`))
           .map(s => ({
             ...s,
             id: `crm-${s.id}`,
@@ -235,7 +309,6 @@ export default function SuggestedTasksSection({
       // Process SEO opportunities
       if (seoResult.status === 'fulfilled' && seoResult.value?.data?.opportunities) {
         const seoOpportunities = seoResult.value.data.opportunities
-          .filter(o => !dismissed.has(`seo-${o.id}`))
           .map(o => ({
             id: `seo-${o.id}`,
             originalId: o.id,
@@ -254,7 +327,6 @@ export default function SuggestedTasksSection({
       // Process daily briefing priorities
       if (briefingResult.status === 'fulfilled' && briefingResult.value?.data?.priorities) {
         const priorities = briefingResult.value.data.priorities
-          .filter(p => !dismissed.has(`briefing-${p.rank}`))
           .slice(0, 5) // Limit to top 5 priorities
           .map(p => ({
             id: `briefing-${p.rank}`,
@@ -278,8 +350,13 @@ export default function SuggestedTasksSection({
         const bOrder = urgencyOrder[b.urgency] ?? 2
         return aOrder - bOrder
       })
-      
-      setSuggestions(allSuggestions)
+
+      // Cache the full set (before dismiss filtering) so dismissed state is applied at read time
+      setCachedSuggestions(projectId, allSuggestions)
+
+      // Apply dismiss filter for display
+      const filtered = allSuggestions.filter(s => !dismissed.has(s.id))
+      setSuggestions(filtered)
     } catch (err) {
       console.error('Failed to load suggestions:', err)
       // Don't show error for empty results or auth issues
@@ -289,11 +366,14 @@ export default function SuggestedTasksSection({
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [projectId, signalEnabled])
 
   useEffect(() => {
     loadSuggestions()
   }, [loadSuggestions])
+
+  // Don't render the section at all if Signal is not enabled
+  if (!signalEnabled) return null
 
   const handleAdd = async (suggestion) => {
     setAddingId(suggestion.id)
@@ -390,25 +470,41 @@ export default function SuggestedTasksSection({
   return (
     <div className={cn("mb-6", className)}>
       {/* Section header */}
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 w-full text-left mb-3 cursor-pointer"
-      >
-        <SignalIcon className="h-4 w-4" style={{ color: 'var(--brand-primary)' }} />
-        <span className="font-semibold text-sm">Signal Suggests</span>
-        {suggestions.length > 0 && (
-          <Badge 
-            className="ml-1 h-5 text-xs"
-            style={{ backgroundColor: 'var(--brand-primary)' }}
+      <div className="flex items-center gap-2 mb-3">
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className="flex items-center gap-2 flex-1 text-left cursor-pointer"
+        >
+          <SignalIcon className="h-4 w-4" style={{ color: 'var(--brand-primary)' }} />
+          <span className="font-semibold text-sm">Signal Suggests</span>
+          {suggestions.length > 0 && (
+            <Badge 
+              className="ml-1 h-5 text-xs"
+              style={{ backgroundColor: 'var(--brand-primary)' }}
+            >
+              {suggestions.length}
+            </Badge>
+          )}
+          <ChevronDown className={cn(
+            "h-4 w-4 ml-auto text-muted-foreground transition-transform",
+            !isOpen && "-rotate-90"
+          )} />
+        </button>
+        {!loading && (
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-6 w-6 text-muted-foreground hover:text-foreground shrink-0"
+            title="Re-analyze suggestions"
+            onClick={(e) => {
+              e.stopPropagation()
+              loadSuggestions(true)
+            }}
           >
-            {suggestions.length}
-          </Badge>
+            <RefreshCw className="h-3.5 w-3.5" />
+          </Button>
         )}
-        <ChevronDown className={cn(
-          "h-4 w-4 ml-auto text-muted-foreground transition-transform",
-          !isOpen && "-rotate-90"
-        )} />
-      </button>
+      </div>
 
       <AnimatePresence>
         {isOpen && (
@@ -430,7 +526,7 @@ export default function SuggestedTasksSection({
                   size="sm" 
                   variant="outline" 
                   className="mt-2"
-                  onClick={loadSuggestions}
+                  onClick={() => loadSuggestions(true)}
                 >
                   Retry
                 </Button>

@@ -30,7 +30,7 @@ export function WebVitals({ apiUrl: propApiUrl, apiKey: propApiKey, debug = fals
   const pathname = usePathname()
   
   useEffect(() => {
-    // Dynamic import to avoid SSR issues
+    // Dynamic import to avoid SSR issues; catch ChunkLoadError (e.g. Turbopack dev)
     import('web-vitals').then(({ onCLS, onLCP, onTTFB, onINP, onFCP }) => {
       const vitals: Record<string, number> = {}
       let reported = false
@@ -120,6 +120,9 @@ export function WebVitals({ apiUrl: propApiUrl, apiKey: propApiKey, debug = fals
         document.removeEventListener('visibilitychange', handleVisibilityChange)
         clearTimeout(timeout)
       }
+    }).catch((err) => {
+      // ChunkLoadError in Turbopack/dev - Web Vitals are optional
+      if (debug) console.warn('[Analytics] Web Vitals import failed:', err)
     })
   }, [pathname, propApiUrl, propApiKey, debug])
   

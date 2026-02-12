@@ -162,9 +162,9 @@ export function DriveList({ selectedFile, onSelectFile, onCurrentFolderChange })
         </nav>
         <div className="p-6 flex flex-col items-center justify-center min-h-[280px] text-center">
           <FolderOpen className="w-12 h-12 text-[var(--text-tertiary)] mb-4" />
-          <h3 className="text-lg font-medium text-[var(--text-primary)] mb-2">Drive not configured</h3>
+          <h3 className="text-lg font-medium text-[var(--text-primary)] mb-2">Drive not connected</h3>
           <p className="text-sm text-[var(--text-secondary)] max-w-md">
-            Google Drive (private storage) requires a service account to be configured for your organization. Contact your admin or use Web assets for uploads.
+            Connect your Google account via workspace integrations to access your Drive files. Use the Integrations section in the sidebar.
           </p>
         </div>
       </div>

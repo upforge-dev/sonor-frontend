@@ -86,6 +86,8 @@ export function FormClient({
   // Validate field
   const validateField = useCallback((field: FormFieldType): string | null => {
     if (!isFieldVisible(field)) return null
+    // Skip display-only field types
+    if (['heading', 'section_header', 'paragraph', 'hidden'].includes(field.field_type)) return null
     
     const value = values[field.slug]
     const rules = field.validation || {}
@@ -328,20 +330,12 @@ export function FormClient({
       )}
       
       {/* Fields */}
-      <div className="uptrade-form__fields" style={{ display: 'flex', flexWrap: 'wrap', gap: 16 }}>
+      <div className="uptrade-form__fields">
         {currentFields.map((field) => {
           if (!isFieldVisible(field)) return null
           
-          const widthMap: Record<string, string> = {
-            full: '100%',
-            half: 'calc(50% - 8px)',
-            third: 'calc(33.33% - 11px)',
-            quarter: 'calc(25% - 12px)',
-          }
-          const widthStyle = widthMap[field.width] || '100%'
-          
           return (
-            <div key={field.id} className={`uptrade-form__field-wrapper uptrade-form__field-wrapper--${field.width}`} style={{ width: widthStyle }}>
+            <div key={field.id} className={`uptrade-form__field-wrapper uptrade-form__field-wrapper--${field.width || 'full'}`}>
               <FormField
                 field={field}
                 value={values[field.slug]}

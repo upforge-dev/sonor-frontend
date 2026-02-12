@@ -1,7 +1,7 @@
 /**
- * StripeSetupDialog - Configure Stripe payment processor via Connect OAuth
+ * StripeSetupDialog - Configure Stripe payment processor via Connect OAuth (popup flow)
  */
-import { useState } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -19,18 +19,63 @@ import { toast } from 'sonner'
 export default function StripeSetupDialog({ open, onOpenChange, projectId, onSuccess }) {
   const [isConnecting, setIsConnecting] = useState(false)
   const [error, setError] = useState(null)
+  const popupRef = useRef(null)
+  const pollRef = useRef(null)
 
-  const handleConnect = async () => {
+  // Listen for postMessage from the OAuth popup callback page
+  const handleMessage = useCallback((event) => {
+    if (event.data?.type !== 'oauth-complete') return
+    if (event.data.processor !== 'stripe') return
+
+    // Clean up
+    setIsConnecting(false)
+    if (pollRef.current) clearInterval(pollRef.current)
+
+    if (event.data.success) {
+      toast.success('Stripe connected successfully!')
+      onSuccess?.()
+      onOpenChange(false)
+    } else {
+      setError(event.data.error || 'Failed to connect Stripe')
+    }
+  }, [onSuccess, onOpenChange])
+
+  useEffect(() => {
+    window.addEventListener('message', handleMessage)
+    return () => window.removeEventListener('message', handleMessage)
+  }, [handleMessage])
+
+  // Poll to detect if the user closed the popup without completing
+  useEffect(() => {
+    if (!isConnecting) return
+    pollRef.current = setInterval(() => {
+      if (popupRef.current && popupRef.current.closed) {
+        setIsConnecting(false)
+        clearInterval(pollRef.current)
+      }
+    }, 500)
+    return () => clearInterval(pollRef.current)
+  }, [isConnecting])
+
+  const handleConnect = () => {
     setError(null)
     setIsConnecting(true)
-    
-    try {
-      // Redirect to Stripe Connect OAuth flow
-      window.location.href = `${portalApi.defaults.baseURL}/commerce/oauth/stripe/authorize/${projectId}`
-    } catch (error) {
-      console.error('Failed to initiate Stripe Connect:', error)
-      setError(error.response?.data?.message || 'Failed to connect Stripe')
+
+    const authUrl = `${portalApi.defaults.baseURL}/commerce/oauth/stripe/authorize/${projectId}`
+    const w = 600, h = 700
+    const left = window.screenX + (window.outerWidth - w) / 2
+    const top = window.screenY + (window.outerHeight - h) / 2
+
+    popupRef.current = window.open(
+      authUrl,
+      'stripe-oauth',
+      `width=${w},height=${h},left=${left},top=${top},popup=yes,toolbar=no,menubar=no`
+    )
+
+    if (!popupRef.current) {
+      // Popup blocked — fall back to redirect
       setIsConnecting(false)
+      setError('Popup blocked. Please allow popups for this site and try again.')
     }
   }
 
@@ -54,7 +99,7 @@ export default function StripeSetupDialog({ open, onOpenChange, projectId, onSuc
 
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              You'll be redirected to Stripe to authorize this connection.
+              A new window will open for you to authorize this connection with Stripe.
             </p>
             
             <div className="bg-muted/50 p-4 rounded-lg space-y-2">
@@ -88,7 +133,7 @@ export default function StripeSetupDialog({ open, onOpenChange, projectId, onSuc
             {isConnecting ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Connecting...
+                Waiting for Stripe...
               </>
             ) : (
               <>

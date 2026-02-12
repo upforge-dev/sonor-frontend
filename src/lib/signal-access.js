@@ -34,9 +34,11 @@ export const useSignalAccess = () => {
   // Check if Signal is enabled at org level
   const orgSignalEnabled = currentOrg?.signal_enabled || currentOrg?.signalEnabled || false
   
-  // Check if Signal is enabled at project level (features array)
+  // Check if Signal is enabled at project level
+  // Two sources: projects.signal_enabled boolean OR legacy features array
   const projectFeatures = currentProject?.features || []
-  const projectSignalEnabled = Array.isArray(projectFeatures) && projectFeatures.includes('signal')
+  const projectSignalEnabled = currentProject?.signal_enabled === true
+    || (Array.isArray(projectFeatures) && projectFeatures.includes('signal'))
   
   // Check if org is restricted due to unpaid invoice
   const isRestricted = currentOrg?.is_access_restricted === true

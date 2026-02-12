@@ -1006,30 +1006,16 @@ export default function CommerceDashboard({ onNavigate }) {
             </div>
             
             {/* Shopify - only show when Products are enabled */}
-            {isProductsEnabled && (
+            {isProductsEnabled && integrations.shopify.connected && (
             <div className="px-3 py-2">
               <div className="flex items-center gap-2">
-                <div className={cn(
-                  "h-2 w-2 rounded-full",
-                  integrations.shopify.connected ? "bg-[var(--accent-green)]" : "bg-[var(--text-tertiary)]"
-                )} />
+                <div className="h-2 w-2 rounded-full bg-[var(--accent-green)]" />
                 <span className="text-sm text-[var(--text-primary)]">Shopify</span>
-                {integrations.shopify.connected ? (
-                  <Badge variant="outline" className="text-xs ml-auto bg-[var(--accent-green)]/10 text-[var(--accent-green)] border-[var(--accent-green)]/20">
-                    Synced
-                  </Badge>
-                ) : (
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="h-6 text-xs text-[var(--text-tertiary)] hover:text-[var(--text-primary)] ml-auto"
-                    onClick={() => setIsShopifyDialogOpen(true)}
-                  >
-                    Connect
-                  </Button>
-                )}
+                <Badge variant="outline" className="text-xs ml-auto bg-[var(--accent-green)]/10 text-[var(--accent-green)] border-[var(--accent-green)]/20">
+                  Synced
+                </Badge>
               </div>
-              {integrations.shopify.connected && integrations.shopify.lastSync && (
+              {integrations.shopify.lastSync && (
                 <p className="text-xs text-[var(--text-tertiary)] mt-1 pl-4">
                   Last sync: {formatDistanceToNow(new Date(integrations.shopify.lastSync), { addSuffix: true })}
                 </p>
@@ -1037,61 +1023,7 @@ export default function CommerceDashboard({ onNavigate }) {
             </div>
             )}
             
-            {/* Stripe - only show when Shopify not connected */}
-            {!integrations.shopify.connected && (
-              <div className="px-3 py-2">
-                <div className="flex items-center gap-2">
-                  <div className={cn(
-                    "h-2 w-2 rounded-full",
-                    integrations.stripe.connected ? "bg-[var(--accent-purple)]" : "bg-[var(--text-tertiary)]"
-                  )} />
-                  <span className="text-sm text-[var(--text-primary)]">Stripe</span>
-                  {integrations.stripe.connected ? (
-                    <Badge variant="outline" className="text-xs ml-auto bg-[var(--accent-purple)]/10 text-[var(--accent-purple)] border-[var(--accent-purple)]/20">
-                      Active
-                    </Badge>
-                  ) : (
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="h-6 text-xs text-[var(--text-tertiary)] hover:text-[var(--text-primary)] ml-auto"
-                      onClick={() => setIsStripeDialogOpen(true)}
-                    >
-                      Connect
-                    </Button>
-                  )}
-                </div>
-              </div>
-            )}
-            
-            {/* Square - only show when Shopify not connected */}
-            {!integrations.shopify.connected && (
-              <div className="px-3 py-2">
-                <div className="flex items-center gap-2">
-                  <div className={cn(
-                    "h-2 w-2 rounded-full",
-                    integrations.square.connected ? "bg-[var(--accent-blue)]" : "bg-[var(--text-tertiary)]"
-                  )} />
-                  <span className="text-sm text-[var(--text-primary)]">Square</span>
-                  {integrations.square.connected ? (
-                    <Badge variant="outline" className="text-xs ml-auto bg-[var(--accent-blue)]/10 text-[var(--accent-blue)] border-[var(--accent-blue)]/20">
-                      Active
-                    </Badge>
-                  ) : (
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="h-6 text-xs text-[var(--text-tertiary)] hover:text-[var(--text-primary)] ml-auto"
-                      onClick={() => setIsSquareDialogOpen(true)}
-                    >
-                      Connect
-                    </Button>
-                  )}
-                </div>
-              </div>
-            )}
-            
-            {/* Mode indicator */}
+            {/* Status indicator — payment/sync status */}
             <div className="px-3 py-3 mt-2 bg-[var(--glass-bg-inset)] rounded-lg mx-1">
               <div className="flex items-center gap-2 text-xs">
                 {integrations.shopify.connected ? (
@@ -1099,10 +1031,15 @@ export default function CommerceDashboard({ onNavigate }) {
                     <Cloud className="h-3 w-3 text-[var(--accent-green)]" />
                     <span className="text-[var(--text-secondary)]">Products sync from Shopify</span>
                   </>
-                ) : hasPaymentProcessor ? (
+                ) : integrations.stripe.connected ? (
                   <>
-                    <CreditCard className="h-3 w-3 text-[var(--accent-purple)]" />
-                    <span className="text-[var(--text-secondary)]">Payments via {integrations.stripe.connected ? 'Stripe' : 'Square'}</span>
+                    <div className="h-2 w-2 rounded-full bg-[var(--accent-green)]" />
+                    <span className="text-[var(--text-secondary)]">Stripe connected</span>
+                  </>
+                ) : integrations.square.connected ? (
+                  <>
+                    <div className="h-2 w-2 rounded-full bg-[var(--accent-green)]" />
+                    <span className="text-[var(--text-secondary)]">Square connected</span>
                   </>
                 ) : (
                   <>

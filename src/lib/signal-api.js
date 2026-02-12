@@ -82,13 +82,33 @@ signalApi.interceptors.request.use(
   }
 )
 
+// Track Signal API connectivity to suppress repeated connection errors
+let _signalApiDown = false
+let _signalApiDownLoggedAt = 0
+
 // Add response interceptor for error handling
 signalApi.interceptors.response.use(
   (response) => {
-    console.log('[Signal API Response]', response.config.method?.toUpperCase(), response.config.url, 'Status:', response.status)
+    // Signal API is reachable again
+    if (_signalApiDown) {
+      _signalApiDown = false
+      console.log('[Signal API] Connection restored')
+    }
     return response
   },
   async (error) => {
+    // Suppress connection-refused noise -- log once per minute max
+    const isConnectionError = error.code === 'ERR_NETWORK' || error.code === 'ECONNREFUSED' || !error.response
+    if (isConnectionError) {
+      const now = Date.now()
+      if (!_signalApiDown || now - _signalApiDownLoggedAt > 60000) {
+        console.warn('[Signal API] Unreachable — AI features will be unavailable')
+        _signalApiDownLoggedAt = now
+      }
+      _signalApiDown = true
+      return Promise.reject(error)
+    }
+
     console.error('[Signal API Error]', {
       url: error.config?.url,
       method: error.config?.method,
@@ -109,6 +129,14 @@ signalApi.interceptors.response.use(
     return Promise.reject(error)
   }
 )
+
+/**
+ * Check if Signal API is currently reachable.
+ * Components can use this to skip API calls when Signal is down.
+ */
+export function isSignalApiAvailable() {
+  return !_signalApiDown
+}
 
 // ============================================================================
 // Helper: Get auth headers for fetch/SSE requests
@@ -1458,10 +1486,13 @@ export const crmAiApi = {
   /**
    * Get AI-prioritized list of contacts needing follow-up
    * @param {number} capacity - Max number of contacts to return
+   * @param {string} [projectId] - Optional project ID to scope results
    * @returns {Promise<Object>} Prioritized contacts with reasons and suggested actions
    */
-  prioritizeFollowups: async (capacity = 10) => {
-    const response = await signalApi.post('/skills/crm/prioritize-followups', { capacity })
+  prioritizeFollowups: async (capacity = 10, projectId = null) => {
+    const payload = { capacity }
+    if (projectId) payload.projectId = projectId
+    const response = await signalApi.post('/skills/crm/prioritize-followups', payload)
     return response.data
   },
 

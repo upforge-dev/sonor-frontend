@@ -10,7 +10,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { 
   Palette, Zap, Globe, Save, RotateCcw, Info, Settings2,
-  Check, AlertCircle, Loader2, ShoppingBag, CreditCard, ExternalLink, Mail,
+  Check, CheckCircle, AlertCircle, Loader2, ShoppingBag, CreditCard, ExternalLink, Mail,
   Upload, Image as ImageIcon, X, Users, Bell, Building2, MapPin
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -193,6 +193,7 @@ export default function ProjectSettingsPanel({ project, isAdmin, onProjectUpdate
     resend_from_name: project?.settings?.resend_from_name || '',
     notification_recipients: project?.settings?.notification_recipients || [],
     features: project?.features || [],
+    signal_enabled: project?.signal_enabled || false,
     commerce_types: project?.settings?.commerce_types || ['product', 'service'],
     payment_processor: project?.settings?.payment_processor || 'stripe', // 'stripe' or 'square'
     shopify_connected: project?.settings?.shopify_connected || false,
@@ -243,6 +244,7 @@ export default function ProjectSettingsPanel({ project, isAdmin, onProjectUpdate
         resend_from_name: project.settings?.resend_from_name || '',
         notification_recipients: project.settings?.notification_recipients || [],
         features: Array.isArray(project.features) ? project.features : [],
+        signal_enabled: project.signal_enabled || false,
         // Don't use defaults - use saved values or empty arrays
         commerce_types: Array.isArray(project.settings?.commerce_types) ? project.settings.commerce_types : [],
         payment_processor: project.settings?.payment_processor || null,
@@ -401,7 +403,7 @@ export default function ProjectSettingsPanel({ project, isAdmin, onProjectUpdate
   }
   
   // Check if Signal is enabled via org or project
-  const isSignalEnabled = hasOrgSignal || formData.features.includes('signal')
+  const isSignalEnabled = hasOrgSignal || formData.signal_enabled || formData.features.includes('signal')
   
   // Save settings
   const handleSave = async () => {
@@ -433,6 +435,8 @@ export default function ProjectSettingsPanel({ project, isAdmin, onProjectUpdate
         brand_secondary: formData.brand_secondary || null,
         domain: formData.domain || null,
         features: formData.features,
+        signal_enabled: formData.signal_enabled,
+        signal_enabled_at: formData.signal_enabled ? (project.signal_enabled_at || new Date().toISOString()) : null,
         settings: updatedSettings,
         // Business Profile fields - Universal source of truth
         city: formData.city || null,
@@ -858,7 +862,7 @@ export default function ProjectSettingsPanel({ project, isAdmin, onProjectUpdate
             </CardContent>
           </Card>
           
-          {/* Signal Features - lg: row 2, second 1fr */}
+          {/* Signal AI - lg: row 2, second 1fr */}
           <Card className="min-w-0 lg:col-start-3 lg:row-start-2 2xl:col-auto 2xl:row-auto">
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-base">
@@ -866,35 +870,53 @@ export default function ProjectSettingsPanel({ project, isAdmin, onProjectUpdate
                 Signal AI
                 {orgActuallyHasSignal && (
                   <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 ml-auto text-xs">
-                    Org Active
+                    Org-Wide
                   </Badge>
                 )}
-                {isSignalAdmin && !orgActuallyHasSignal && (
+                {!orgActuallyHasSignal && formData.signal_enabled && (
                   <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200 ml-auto text-xs">
-                    Admin Mode
+                    Project
                   </Badge>
                 )}
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-3">
               {orgActuallyHasSignal ? (
-                <div className="flex items-center gap-2 p-2 rounded-lg bg-green-50 dark:bg-green-950/20 text-green-700 dark:text-green-400 text-sm">
-                  <Check className="h-4 w-4 shrink-0" />
-                  <span>Echo & AI enabled (org subscription)</span>
-                </div>
-              ) : isSignalAdmin ? (
-                <div className="flex items-center gap-2 p-2 rounded-lg bg-purple-50 dark:bg-purple-950/20 text-purple-700 dark:text-purple-400 text-sm">
-                  <Check className="h-4 w-4 shrink-0" />
-                  <span>Echo & AI enabled (admin access)</span>
-                </div>
+                <>
+                  {/* Org-wide Signal is ON — project inherits automatically */}
+                  <div className="flex items-center gap-2 p-2 rounded-lg bg-green-50 dark:bg-green-950/20 text-green-700 dark:text-green-400 text-sm">
+                    <CheckCircle className="h-4 w-4 shrink-0" />
+                    <span>Signal enabled organization-wide</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    AI chat, Echo, and all Signal features are active for every project in this organization.
+                  </p>
+                </>
               ) : (
-                <FeatureToggle
-                  feature="Signal AI"
-                  enabled={formData.features.includes('signal')}
-                  onChange={() => toggleFeature('signal')}
-                  description="AI-powered features"
-                  isAdmin={isAdmin}
-                />
+                <>
+                  {/* Per-project toggle — org doesn't have Signal */}
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label className="text-sm font-medium">Enable Signal for this project</Label>
+                      <p className="text-xs text-muted-foreground">
+                        AI chat, Echo, and AI-powered features
+                      </p>
+                    </div>
+                    <Switch
+                      checked={formData.signal_enabled}
+                      onCheckedChange={(checked) => {
+                        setFormData(prev => ({ ...prev, signal_enabled: checked }))
+                        setHasChanges(true)
+                      }}
+                      disabled={!isAdmin && !isSignalAdmin}
+                    />
+                  </div>
+                  {!isAdmin && !isSignalAdmin && (
+                    <p className="text-xs text-muted-foreground italic">
+                      Only admins can enable Signal.
+                    </p>
+                  )}
+                </>
               )}
             </CardContent>
           </Card>

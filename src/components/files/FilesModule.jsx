@@ -1,7 +1,7 @@
 // src/components/files/FilesModule.jsx
 // Uses ModuleLayout: left sidebar (views), center (list), right panel (file details).
 // MIGRATED TO REACT QUERY HOOKS - Jan 29, 2026
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -48,6 +48,7 @@ import {
   Presentation,
   Table2,
   ChevronDown,
+  Settings,
   Sparkles,
   MessageCircle,
 } from 'lucide-react'
@@ -56,7 +57,7 @@ import { toast } from '@/lib/toast'
 import { useFiles, useFolders, useUploadFile, useCreateFolder, filesKeys, driveKeys, useDriveFiles } from '@/lib/hooks'
 import { useQueryClient } from '@tanstack/react-query'
 import useAuthStore from '@/lib/auth-store'
-import { oauthApi, filesApi, engageApi } from '@/lib/portal-api'
+import { oauthApi, filesApi, engageApi, workspaceIntegrationsApi } from '@/lib/portal-api'
 import { ModuleLayout } from '@/components/ModuleLayout'
 import { UptradeSpinner } from '@/components/UptradeLoading'
 import { MODULE_ICONS } from '@/lib/module-icons'
@@ -118,9 +119,21 @@ export default function FilesModule() {
   const [sendToChatSessionId, setSendToChatSessionId] = useState('')
   const [sendingToChat, setSendingToChat] = useState(false)
   const [driveCurrentFolderId, setDriveCurrentFolderId] = useState(null)
+  const [driveConnected, setDriveConnected] = useState(false)
+  const [showIntegrationsModal, setShowIntegrationsModal] = useState(false)
+  const [connectingGoogle, setConnectingGoogle] = useState(false)
   const replaceInputRef = useRef(null)
   const queryClient = useQueryClient()
   const { currentProject } = useAuthStore()
+
+  // Check workspace integration status on mount
+  useEffect(() => {
+    workspaceIntegrationsApi.getGoogleStatus()
+      .then(status => {
+        setDriveConnected(status?.connected && status?.drive?.connected)
+      })
+      .catch(() => setDriveConnected(false))
+  }, [])
 
   const refreshFiles = () => {
     if (projectId) queryClient.invalidateQueries({ queryKey: filesKeys.list(projectId, {}) })
@@ -176,17 +189,13 @@ export default function FilesModule() {
   }
 
   const ensureDriveConnected = async () => {
-    if (!projectId) {
-      toast.error('Select a project first')
-      return false
-    }
     try {
-      const status = await oauthApi.getConnectionStatus(projectId)
-      const modules = status?.platforms?.google?.modules || []
-      if (modules.includes(FILES_DRIVE_MODULE)) return true
+      const status = await workspaceIntegrationsApi.getGoogleStatus()
+      if (status?.connected && status?.drive?.connected) return true
+      // Initiate workspace OAuth if not connected
       const returnUrl = `${window.location.origin}/files`
-      const { url } = await oauthApi.initiate('google', projectId, FILES_DRIVE_MODULE, returnUrl)
-      window.location.href = url
+      const { authUrl } = await workspaceIntegrationsApi.connectGoogle(returnUrl)
+      window.location.href = authUrl
       return false
     } catch (e) {
       toast.error(e.response?.data?.message || 'Could not check Google Drive connection')
@@ -371,6 +380,32 @@ export default function FilesModule() {
         <Folder className="h-4 w-4" />
         <span>Drive</span>
       </button>
+
+      {/* Integrations */}
+      <div className="mt-6">
+        <div className="flex items-center justify-between px-3 py-2 text-xs font-medium text-[var(--text-tertiary)] uppercase tracking-wide">
+          Integrations
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 w-6 p-0 hover:bg-[var(--glass-bg-hover)]"
+            onClick={() => setShowIntegrationsModal(true)}
+          >
+            <Settings className="h-3 w-3" />
+          </Button>
+        </div>
+        <div className="px-3 py-3 bg-[var(--glass-bg-inset)] rounded-lg mx-1">
+          <div className="flex items-center gap-2 text-xs">
+            <div className={cn(
+              "h-2 w-2 rounded-full",
+              driveConnected ? "bg-[var(--accent-green)]" : "bg-[var(--text-tertiary)]"
+            )} />
+            <span className={driveConnected ? "text-[var(--text-secondary)]" : "text-[var(--text-tertiary)]"}>
+              {driveConnected ? 'Google Drive connected' : 'Google Drive not connected'}
+            </span>
+          </div>
+        </div>
+      </div>
     </div>
   )
 
@@ -639,6 +674,71 @@ export default function FilesModule() {
         </div>
         </ModuleLayout.Content>
       </ModuleLayout>
+
+      {/* Integrations modal */}
+      <Dialog open={showIntegrationsModal} onOpenChange={setShowIntegrationsModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Workspace Integrations</DialogTitle>
+            <DialogDescription>
+              Connect your Google account to access Drive files, Gmail, and Calendar.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="flex items-center justify-between p-4 rounded-lg border border-[var(--glass-border)] bg-[var(--glass-bg)]">
+              <div className="flex items-center gap-3">
+                <div className={cn(
+                  "h-3 w-3 rounded-full",
+                  driveConnected ? "bg-[var(--accent-green)]" : "bg-[var(--text-tertiary)]"
+                )} />
+                <div>
+                  <p className="text-sm font-medium text-[var(--text-primary)]">Google Drive</p>
+                  <p className="text-xs text-[var(--text-tertiary)]">
+                    {driveConnected ? 'Connected — your Drive files are accessible' : 'Not connected'}
+                  </p>
+                </div>
+              </div>
+              {driveConnected ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={async () => {
+                    try {
+                      await workspaceIntegrationsApi.disconnectGoogle()
+                      setDriveConnected(false)
+                      toast.success('Google disconnected')
+                    } catch (e) {
+                      toast.error('Failed to disconnect')
+                    }
+                  }}
+                >
+                  Disconnect
+                </Button>
+              ) : (
+                <Button
+                  variant="glass-primary"
+                  size="sm"
+                  disabled={connectingGoogle}
+                  onClick={async () => {
+                    setConnectingGoogle(true)
+                    try {
+                      const returnUrl = `${window.location.origin}/files`
+                      const { authUrl } = await workspaceIntegrationsApi.connectGoogle(returnUrl)
+                      window.open(authUrl, '_blank', 'width=500,height=700')
+                    } catch (e) {
+                      toast.error(e?.response?.data?.message || 'Failed to start connection')
+                    } finally {
+                      setConnectingGoogle(false)
+                    }
+                  }}
+                >
+                  Connect
+                </Button>
+              )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Send to chat dialog */}
         <Dialog open={showSendToChatDialog} onOpenChange={setShowSendToChatDialog}>

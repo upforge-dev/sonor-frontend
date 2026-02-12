@@ -115,10 +115,15 @@
   width: calc(33.33% - 11px);
 }
 
+.uptrade-form__field-wrapper--quarter {
+  width: calc(25% - 12px);
+}
+
 @media (max-width: 640px) {
   .uptrade-form__field-wrapper--half,
-  .uptrade-form__field-wrapper--third {
-    width: 100%;
+  .uptrade-form__field-wrapper--third,
+  .uptrade-form__field-wrapper--quarter {
+    width: 100% !important;
   }
 }
 
