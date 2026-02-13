@@ -432,7 +432,7 @@ const useAuthStore = create(
           
           const response = await authApi.switchOrg({ projectId })
           
-          const { organization, project, role, isSuperAdmin } = response.data
+          const { organization, project, role, isSuperAdmin, projects } = response.data
           
           // Build the project context from the returned project data
           const projectContext = project ? {
@@ -457,12 +457,17 @@ const useAuthStore = create(
             ? { ...organization, userRole: role }
             : get().currentOrg
           
-          set({
+          // Update available projects if the backend returned the sibling project list
+          const updates = {
             currentOrg: orgContext,
             currentProject: projectContext,
             isSuperAdmin,
-            isLoading: false
-          })
+            isLoading: false,
+            // Update available projects so the project switcher shows all org projects
+            ...(projects ? { availableProjects: projects } : {}),
+          }
+          
+          set(updates)
           
           // Store project context for restoration
           if (project) {

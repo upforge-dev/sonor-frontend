@@ -2,11 +2,11 @@
 // Technical SEO Hub - Core Web Vitals, Indexing, Schema, Internal Links
 import { useState, useMemo } from 'react'
 import { toast } from 'sonner'
-import { useCwvSummary, useSeoPages, seoKeys } from '@/lib/hooks/use-seo'
+import { useCwvSummary } from '@/lib/hooks'
 import { useSignalAccess } from '@/lib/signal-access'
 import { seoApi } from '@/lib/portal-api'
 import { useQueryClient } from '@tanstack/react-query'
-import { seoPageKeys } from '@/hooks/seo'
+import { seoPageKeys, useSeoPages } from '@/hooks/seo'
 import SignalUpgradeCard from './signal/SignalUpgradeCard'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -217,7 +217,7 @@ export default function SEOTechnicalAudit({
   const { refetch: refetchCwv } = useCwvSummary(projectId, { enabled: false })
 
   // Pull seo_pages from API when parent didn't pass any (e.g. site-kit already posted pages)
-  const { data: pagesFromApi, isLoading: pagesLoading } = useSeoPages(projectId, { limit: 500 }, { enabled: !!projectId })
+  const { data: pagesFromApi, isLoading: pagesLoading } = useSeoPages(projectId, { limit: 500 })
 
   const [activeTab, setActiveTab] = useState<string>('overview')
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false)
@@ -228,7 +228,6 @@ export default function SEOTechnicalAudit({
     setIsCrawling(true)
     try {
       await seoApi.crawlSitemap(projectId)
-      queryClient.invalidateQueries({ queryKey: seoKeys.pages(projectId) })
       queryClient.invalidateQueries({ queryKey: seoPageKeys.list(projectId) })
       await refetchCwv()
       onRefresh?.()

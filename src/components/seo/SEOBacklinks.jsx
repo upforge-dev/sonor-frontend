@@ -47,7 +47,7 @@ export default function SEOBacklinks({ projectId }) {
 
   const handleStatusChange = async (opportunityId, status) => {
     try {
-      await seoApi.updateBacklinkOpportunity(opportunityId, status)
+      await seoApi.updateBacklinkOpportunity(projectId, opportunityId, { status })
       queryClient.invalidateQueries({ queryKey: seoTechnicalKeys.backlinks(projectId) })
     } catch (error) {
       console.error('Status update error:', error)

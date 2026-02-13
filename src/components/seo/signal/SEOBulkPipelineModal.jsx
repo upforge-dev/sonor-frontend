@@ -34,6 +34,7 @@ import {
 } from 'lucide-react'
 import SignalIcon from '@/components/ui/SignalIcon'
 import { signalSeoApi } from '@/lib/signal-api'
+import { useSignalAccess } from '@/lib/signal-access'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 
@@ -98,6 +99,8 @@ export function SEOBulkPipelineModal({
   pages = [],
   onComplete,
 }) {
+  const { hasAccess: hasSignalAccess } = useSignalAccess()
+  
   // Normalize: API may return { pages: [...] } or a raw array
   const pagesList = Array.isArray(pages) ? pages : (pages?.pages ?? [])
 
@@ -438,6 +441,7 @@ export function SEOBulkPipelineModal({
               </Button>
               <Button 
                 onClick={handleStart}
+                disabled={!hasSignalAccess}
                 style={{ 
                   background: 'linear-gradient(135deg, var(--brand-primary), var(--brand-secondary))'
                 }}

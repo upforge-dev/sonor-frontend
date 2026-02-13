@@ -421,7 +421,7 @@ export default function SEOCompetitorMonitor({ projectId }) {
       try {
         // Fetch real data from APIs
         const [keywordsRes, competitorsRes, alertsRes] = await Promise.all([
-          seoApi.getKeywordRankings(projectId).catch(() => ({ data: { rankings: [] } })),
+          seoApi.getTrackedKeywords(projectId).catch(() => ({ data: { rankings: [] } })),
           seoApi.getCompetitors(projectId).catch(() => ({ data: [] })),
           seoApi.getAlerts(projectId, { type: 'competitor' }).catch(() => ({ data: [] })),
         ])
@@ -482,7 +482,7 @@ export default function SEOCompetitorMonitor({ projectId }) {
       
       // Reload all data
       const [keywordsRes, competitorsRes, alertsRes] = await Promise.all([
-        seoApi.getKeywordRankings(projectId).catch(() => ({ data: { rankings: [] } })),
+        seoApi.getTrackedKeywords(projectId).catch(() => ({ data: { rankings: [] } })),
         seoApi.getCompetitors(projectId).catch(() => ({ data: [] })),
         seoApi.getAlerts(projectId, { type: 'competitor' }).catch(() => ({ data: [] })),
       ])

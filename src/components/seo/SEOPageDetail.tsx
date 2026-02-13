@@ -2,7 +2,7 @@
 // Detailed view for a single page
 // MIGRATED TO REACT QUERY - Jan 29, 2026
 // CONVERTED TO TYPESCRIPT - Feb 12, 2026
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -32,11 +32,14 @@ import {
   Image as ImageIcon,
   Loader2,
   Rocket,
+  Smartphone,
+  Monitor,
 } from 'lucide-react'
 import { UptradeSpinner } from '@/components/UptradeLoading'
 import { useSeoPage, useSeoProject, useUpdateSeoPage, useInspectUrl, useGenerateSchema, usePageImages, useUpdatePageImage } from '@/hooks/seo'
 import { useOptimizePage, useAnalyzeContent } from '@/hooks/seo/useSeoSignal'
 import { useSiteImages, useUpdateSiteImage } from '@/lib/hooks'
+import useAuthStore from '@/lib/auth-store'
 import { useQueryClient } from '@tanstack/react-query'
 import { seoApi } from '@/lib/portal-api'
 import { useSEOAIGeneration } from '@/lib/use-seo-ai-generation'
@@ -246,9 +249,11 @@ interface SEOPageDetailInnerProps {
 export default function SEOPageDetail({ projectId }: SEOPageDetailProps) {
   const { pageId } = useParams()
   const navigate = useNavigate()
+  const { currentProject: authProject } = useAuthStore()
+  const orgId = authProject?.org_id
   
   // React Query hooks - auto-fetch when IDs are available
-  const { data: currentProject } = useSeoProject(projectId)
+  const { data: currentProject } = useSeoProject(orgId, projectId)
   const { data: page, isLoading } = useSeoPage(projectId, pageId)
 
   // Loading state
@@ -443,7 +448,7 @@ function SEOPageDetailInner({ page, site, projectId }: SEOPageDetailInnerProps) 
     setRequestingIndexing(true)
     setActionMessage(null)
     try {
-      await seoApi.requestIndexing(projectId, page.url)
+      await seoApi.submitUrlForIndexing(projectId, page.url)
       setActionMessage({ type: 'success', text: 'Indexing requested - Google will process within 48 hours' })
     } catch (err: unknown) {
       setActionMessage({ type: 'error', text: (err as Error).message || 'Failed to request indexing' })
@@ -546,6 +551,67 @@ function SEOPageDetailInner({ page, site, projectId }: SEOPageDetailInnerProps) 
 
   // Combine discovered images (from site-kit) with any that have managed slots
   const allPageImages: PageImage[] = discoveredImages.length > 0 ? discoveredImages : managedImages
+
+  // Page health assessment — from simplified version
+  const pageHealth = useMemo(() => {
+    const issues: { type: string; label: string; severity: 'high' | 'medium' | 'low' }[] = []
+    const good: { type: string; label: string }[] = []
+    
+    // Title
+    if (!page.title || (page.title_length != null && (page.title_length < 30 || page.title_length > 60))) {
+      issues.push({ type: 'title', label: 'Title needs optimization', severity: 'high' })
+    } else {
+      good.push({ type: 'title', label: 'Title is good' })
+    }
+    
+    // Meta description
+    if (!page.meta_description || (page.meta_description_length != null && (page.meta_description_length < 120 || page.meta_description_length > 160))) {
+      issues.push({ type: 'meta', label: 'Meta description needs work', severity: 'high' })
+    } else {
+      good.push({ type: 'meta', label: 'Meta description is good' })
+    }
+    
+    // H1
+    if (!page.h1) {
+      issues.push({ type: 'h1', label: 'Missing H1 tag', severity: 'high' })
+    } else if ((page.h1_count ?? 0) > 1) {
+      issues.push({ type: 'h1', label: `Multiple H1 tags (${page.h1_count})`, severity: 'medium' })
+    } else {
+      good.push({ type: 'h1', label: 'H1 is good' })
+    }
+    
+    // Schema
+    if (!page.schema_types || (Array.isArray(page.schema_types) && page.schema_types.length === 0)) {
+      issues.push({ type: 'schema', label: 'No structured data', severity: 'medium' })
+    } else {
+      good.push({ type: 'schema', label: `Schema: ${Array.isArray(page.schema_types) ? page.schema_types.join(', ') : 'Present'}` })
+    }
+    
+    // Images
+    const imagesWithoutAlt = allPageImages.filter(img => !img.current_alt && !img.managed_alt)
+    if (imagesWithoutAlt.length > 0) {
+      issues.push({ type: 'images', label: `${imagesWithoutAlt.length} images missing alt text`, severity: 'medium' })
+    } else if (allPageImages.length > 0) {
+      good.push({ type: 'images', label: `${allPageImages.length} images with alt text` })
+    }
+    
+    // Content
+    if (!page.content_text && !page.content_hash) {
+      issues.push({ type: 'content', label: 'No content analyzed yet', severity: 'low' })
+    } else {
+      good.push({ type: 'content', label: 'Content indexed' })
+    }
+    
+    // Index status
+    if (page.index_status === 'not-indexed' || page.index_status === 'not_indexed') {
+      issues.push({ type: 'indexing', label: 'Page not indexed by Google', severity: 'high' })
+    } else if (page.index_status === 'indexed') {
+      good.push({ type: 'indexing', label: 'Page is indexed' })
+    }
+    
+    const total = issues.length + good.length
+    return { issues, good, score: total > 0 ? Math.round((good.length / total) * 100) : 0 }
+  }, [page, allPageImages])
 
   const handleOptimizeAllAlt = async () => {
     if (!hasSignalAccess || allPageImages.length === 0) return
@@ -697,21 +763,35 @@ function SEOPageDetailInner({ page, site, projectId }: SEOPageDetailInnerProps) 
             </Button>
           )}
           
-          {/* Quick Optimize with Signal - Unified optimization */}
+          {/* Smart One-Click Fix */}
           {hasSignalAccess && (
             <Button 
               variant="outline"
               size="sm"
-              onClick={() => setOptimizeDialogOpen(true)}
+              onClick={async () => {
+                try {
+                  const result = await optimizePageMutation.mutateAsync({
+                    projectId,
+                    pageIdOrPath: page.id,
+                    options: { optimize_alt: true, optimize_meta: true, optimize_schema: true, optimize_llm: true },
+                    apply: false
+                  })
+                  setOptimizeResults(result)
+                  setActiveTab('results')
+                  toast.success('Analysis complete — review results')
+                } catch (err: unknown) {
+                  toast.error((err as Error).message || 'Optimization failed')
+                }
+              }}
               disabled={optimizePageMutation.isPending}
-              title="Quick optimization for metadata, schema, and alt text"
+              title={pageHealth.issues.length > 0 ? `Fix ${pageHealth.issues.length} issues` : 'Re-analyze page'}
             >
               {optimizePageMutation.isPending ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               ) : (
-                <SignalIcon className="h-4 w-4 mr-2" />
+                <Zap className="h-4 w-4 mr-2" />
               )}
-              Quick Optimize
+              {pageHealth.issues.length === 0 ? 'Re-analyze' : pageHealth.issues.length >= 3 ? 'Fix All Issues' : `Fix ${pageHealth.issues.length} Issue${pageHealth.issues.length > 1 ? 's' : ''}`}
             </Button>
           )}
           
@@ -792,7 +872,15 @@ function SEOPageDetailInner({ page, site, projectId }: SEOPageDetailInnerProps) 
       </div>
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
+        <Card>
+          <CardContent className="pt-4">
+            <div className="text-sm text-[var(--text-tertiary)]">Health Score</div>
+            <div className="text-2xl font-bold" style={{ color: pageHealth.score >= 80 ? '#4ade80' : pageHealth.score >= 50 ? '#facc15' : '#f87171' }}>
+              {pageHealth.score}%
+            </div>
+          </CardContent>
+        </Card>
         <Card>
           <CardContent className="pt-4">
             <div className="text-sm text-[var(--text-tertiary)]">Clicks (28d)</div>
@@ -848,6 +936,12 @@ function SEOPageDetailInner({ page, site, projectId }: SEOPageDetailInnerProps) 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
+          {optimizeResults && (
+            <TabsTrigger value="results">
+              <Zap className="h-3.5 w-3.5 mr-1.5" />
+              Results
+            </TabsTrigger>
+          )}
           <TabsTrigger value="serp-preview">
             <Eye className="h-3.5 w-3.5 mr-1.5" />
             SERP Preview
@@ -860,9 +954,73 @@ function SEOPageDetailInner({ page, site, projectId }: SEOPageDetailInnerProps) 
           <TabsTrigger value="content">Content</TabsTrigger>
           <TabsTrigger value="queries">Queries</TabsTrigger>
           <TabsTrigger value="opportunities">Issues</TabsTrigger>
+          <TabsTrigger value="performance">
+            <Zap className="h-3.5 w-3.5 mr-1.5" />
+            Performance
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6 mt-6">
+          {/* Page Health - Issues & What's Good */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4 text-yellow-400" />
+                  Needs Attention ({pageHealth.issues.length})
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {pageHealth.issues.length === 0 ? (
+                  <p className="text-sm text-green-400 flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4" />
+                    All checks passed!
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {pageHealth.issues.map((issue, idx) => (
+                      <div
+                        key={idx}
+                        className={`flex items-center gap-2 p-2 rounded text-sm ${
+                          issue.severity === 'high'
+                            ? 'bg-red-500/10 text-red-400'
+                            : issue.severity === 'medium'
+                            ? 'bg-yellow-500/10 text-yellow-400'
+                            : 'bg-blue-500/10 text-blue-400'
+                        }`}
+                      >
+                        <XCircle className="h-4 w-4 flex-shrink-0" />
+                        {issue.label}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4 text-green-400" />
+                  What&apos;s Good ({pageHealth.good.length})
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {pageHealth.good.map((item, idx) => (
+                    <div
+                      key={idx}
+                      className="flex items-center gap-2 p-2 rounded bg-green-500/10 text-green-400 text-sm"
+                    >
+                      <CheckCircle className="h-4 w-4 flex-shrink-0" />
+                      {item.label}
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Current Metadata */}
             <Card>
@@ -1144,6 +1302,81 @@ function SEOPageDetailInner({ page, site, projectId }: SEOPageDetailInnerProps) 
             </Card>
           )}
         </TabsContent>
+
+        {/* Results Tab - Shows after Signal optimization */}
+        {optimizeResults && (
+          <TabsContent value="results" className="space-y-6 mt-6">
+            <Card className="border-green-500/30 bg-green-500/5">
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <CheckCircle className="h-5 w-5 text-green-400" />
+                  Signal Analysis Complete
+                </CardTitle>
+                <CardDescription>
+                  Review the recommendations below and apply changes when ready
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Metadata Recommendations */}
+                {optimizeResults.results?.meta && (
+                  <div className="space-y-3">
+                    <h4 className="font-medium text-sm text-muted-foreground">Recommended Metadata</h4>
+                    <div className="p-4 rounded-lg bg-muted/30 space-y-3">
+                      <div>
+                        <div className="text-xs text-muted-foreground mb-1">TITLE</div>
+                        <div className="text-sm font-medium">{optimizeResults.results.meta.title}</div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-muted-foreground mb-1">META DESCRIPTION</div>
+                        <div className="text-sm">{optimizeResults.results.meta.description}</div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Image Alt Text Suggestions */}
+                {optimizeResults.results?.alt_text && optimizeResults.results.alt_text.length > 0 && (
+                  <div className="space-y-3">
+                    <h4 className="font-medium text-sm text-muted-foreground">
+                      Image Alt Text ({optimizeResults.results.alt_text.length})
+                    </h4>
+                    <div className="space-y-2 max-h-60 overflow-auto">
+                      {optimizeResults.results.alt_text.map((img: OptimizeAltTextResult, idx: number) => (
+                        <div key={idx} className="p-3 rounded-lg bg-muted/30 text-sm">
+                          <div>{img.optimized_alt}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Apply / Discard */}
+                <div className="flex justify-end gap-3 pt-4 border-t border-border/50">
+                  <Button variant="outline" onClick={() => { setOptimizeResults(null); setActiveTab('overview') }}>
+                    Discard
+                  </Button>
+                  <Button
+                    onClick={() => handleOptimizePage(true)}
+                    disabled={optimizePageMutation.isPending}
+                    className="bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    {optimizePageMutation.isPending ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Applying...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                        Apply All Changes
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
 
         <TabsContent value="serp-preview" className="mt-6">
           <SEOSerpPreview 
@@ -1809,6 +2042,11 @@ function SEOPageDetailInner({ page, site, projectId }: SEOPageDetailInnerProps) 
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* Performance Tab - Core Web Vitals */}
+        <TabsContent value="performance" className="space-y-6 mt-6">
+          <PagePerformanceSection page={page} projectId={projectId} site={site} />
+        </TabsContent>
       </Tabs>
 
       {/* Optimize with Signal Dialog */}
@@ -1998,6 +2236,198 @@ function SEOPageDetailInner({ page, site, projectId }: SEOPageDetailInnerProps) 
           toast.success('Deep optimization complete!')
         }}
       />
+    </div>
+  )
+}
+
+// ─── Performance / Core Web Vitals section for a single page ─────────
+
+interface PagePerformanceSectionProps {
+  page: SeoPage
+  projectId: string
+  site: SeoProject | undefined
+}
+
+interface CwvDisplayData {
+  mobileScore?: number | null
+  desktopScore?: number | null
+  mobileLCP?: number | null
+  desktopLCP?: number | null
+  mobileCLS?: number | null
+  desktopCLS?: number | null
+  mobileFID?: number | null
+  desktopFID?: number | null
+  mobileTTFB?: number | null
+  desktopTTFB?: number | null
+}
+
+function PagePerformanceSection({ page, projectId, site }: PagePerformanceSectionProps) {
+  const [isScanning, setIsScanning] = useState(false)
+  const [cwvData, setCwvData] = useState<CwvDisplayData | null>(null)
+  const queryClient = useQueryClient()
+  
+  const getPageUrl = (): string | null => {
+    if (!site?.domain) return null
+    const protocol = site.domain.includes('localhost') ? 'http://' : 'https://'
+    const domain = site.domain.replace(/^https?:\/\//, '').replace(/\/$/, '')
+    const path = page.path?.startsWith('/') ? page.path : `/${page.path || ''}`
+    return `${protocol}${domain}${path}`
+  }
+  
+  const handleScanPage = async () => {
+    const url = getPageUrl()
+    if (!url || !projectId) return
+    
+    setIsScanning(true)
+    try {
+      const response = await seoApi.checkPageCwv(projectId, { url })
+      setCwvData(response.data || response)
+      queryClient.invalidateQueries({ queryKey: ['seo'] })
+      toast.success('PageSpeed scan complete')
+    } catch {
+      toast.error('Failed to scan page')
+    } finally {
+      setIsScanning(false)
+    }
+  }
+  
+  const displayData: CwvDisplayData = cwvData || {
+    mobileScore: (page as Record<string, unknown>).mobile_score as number | undefined,
+    desktopScore: (page as Record<string, unknown>).desktop_score as number | undefined,
+    mobileLCP: (page as Record<string, unknown>).mobile_lcp as number | undefined,
+    desktopLCP: (page as Record<string, unknown>).desktop_lcp as number | undefined,
+    mobileCLS: (page as Record<string, unknown>).mobile_cls as number | undefined,
+    desktopCLS: (page as Record<string, unknown>).desktop_cls as number | undefined,
+    mobileFID: (page as Record<string, unknown>).mobile_fid as number | undefined,
+    desktopFID: (page as Record<string, unknown>).desktop_fid as number | undefined,
+    mobileTTFB: (page as Record<string, unknown>).mobile_ttfb as number | undefined,
+    desktopTTFB: (page as Record<string, unknown>).desktop_ttfb as number | undefined,
+  }
+  
+  const hasData = displayData.mobileScore || displayData.desktopScore
+  
+  const getScoreColor = (score: number | null | undefined): string => {
+    if (!score) return 'text-muted-foreground'
+    if (score >= 90) return 'text-green-400'
+    if (score >= 50) return 'text-yellow-400'
+    return 'text-red-400'
+  }
+  
+  const getScoreBg = (score: number | null | undefined): string => {
+    if (!score) return 'bg-muted/30'
+    if (score >= 90) return 'bg-green-500/10'
+    if (score >= 50) return 'bg-yellow-500/10'
+    return 'bg-red-500/10'
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold text-foreground">Core Web Vitals</h3>
+          <p className="text-sm text-muted-foreground">Performance metrics from Google PageSpeed Insights</p>
+        </div>
+        <Button onClick={handleScanPage} disabled={isScanning || !getPageUrl()}>
+          {isScanning ? (
+            <><RefreshCw className="mr-2 h-4 w-4 animate-spin" />Scanning...</>
+          ) : (
+            <><Zap className="mr-2 h-4 w-4" />{hasData ? 'Re-scan Page' : 'Scan Page'}</>
+          )}
+        </Button>
+      </div>
+
+      {!hasData ? (
+        <Card className="border-dashed">
+          <CardContent className="py-12 text-center">
+            <Zap className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+            <h3 className="text-lg font-semibold mb-2">No Performance Data</h3>
+            <p className="text-muted-foreground mb-4">Click &quot;Scan Page&quot; to run a PageSpeed Insights analysis</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Card className={getScoreBg(displayData.mobileScore)}>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Smartphone className="h-4 w-4" />Mobile Score
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className={`text-4xl font-bold ${getScoreColor(displayData.mobileScore)}`}>
+                  {displayData.mobileScore || '-'}
+                </div>
+              </CardContent>
+            </Card>
+            <Card className={getScoreBg(displayData.desktopScore)}>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Monitor className="h-4 w-4" />Desktop Score
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className={`text-4xl font-bold ${getScoreColor(displayData.desktopScore)}`}>
+                  {displayData.desktopScore || '-'}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+          <Card>
+            <CardHeader><CardTitle className="text-base">Core Web Vitals Breakdown</CardTitle></CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <CwvMetricRow label="Largest Contentful Paint (LCP)" mobileValue={displayData.mobileLCP} desktopValue={displayData.desktopLCP} unit="s" good={2.5} poor={4} />
+                <CwvMetricRow label="Cumulative Layout Shift (CLS)" mobileValue={displayData.mobileCLS} desktopValue={displayData.desktopCLS} unit="" good={0.1} poor={0.25} />
+                <CwvMetricRow label="First Input Delay (FID)" mobileValue={displayData.mobileFID} desktopValue={displayData.desktopFID} unit="ms" good={100} poor={300} />
+                <CwvMetricRow label="Time to First Byte (TTFB)" mobileValue={displayData.mobileTTFB} desktopValue={displayData.desktopTTFB} unit="ms" good={800} poor={1800} />
+              </div>
+            </CardContent>
+          </Card>
+        </>
+      )}
+    </div>
+  )
+}
+
+interface CwvMetricRowProps {
+  label: string
+  mobileValue: number | null | undefined
+  desktopValue: number | null | undefined
+  unit: string
+  good: number
+  poor: number
+}
+
+function CwvMetricRow({ label, mobileValue, desktopValue, unit, good, poor }: CwvMetricRowProps) {
+  const getStatus = (value: number | null | undefined): string => {
+    if (value === undefined || value === null) return 'unknown'
+    if (value <= good) return 'good'
+    if (value <= poor) return 'warning'
+    return 'poor'
+  }
+  
+  const statusColors: Record<string, string> = {
+    good: 'text-green-400', warning: 'text-yellow-400', poor: 'text-red-400', unknown: 'text-muted-foreground'
+  }
+  
+  const formatValue = (val: number | null | undefined): string => {
+    if (val === undefined || val === null) return '-'
+    return `${val}${unit}`
+  }
+
+  return (
+    <div className="p-3 rounded-lg bg-muted/30">
+      <div className="text-sm font-medium text-foreground mb-2">{label}</div>
+      <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2">
+          <Smartphone className="h-3.5 w-3.5 text-muted-foreground" />
+          <span className={`text-sm font-medium ${statusColors[getStatus(mobileValue)]}`}>{formatValue(mobileValue)}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <Monitor className="h-3.5 w-3.5 text-muted-foreground" />
+          <span className={`text-sm font-medium ${statusColors[getStatus(desktopValue)]}`}>{formatValue(desktopValue)}</span>
+        </div>
+      </div>
     </div>
   )
 }

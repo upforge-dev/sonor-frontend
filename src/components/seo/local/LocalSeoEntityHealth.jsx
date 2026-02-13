@@ -1,7 +1,7 @@
 // src/components/seo/local/LocalSeoEntityHealth.jsx
 // Entity Health Score - GBP optimization and local signals
 import { useState } from 'react'
-import { useEntityHealth, useRefreshEntityHealth } from '@/lib/hooks/use-seo'
+import { useEntityHealth, useRefreshEntityHealth } from '@/lib/hooks'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'

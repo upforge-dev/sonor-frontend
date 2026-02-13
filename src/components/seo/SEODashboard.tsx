@@ -206,9 +206,10 @@ export default function SEODashboard({ onNavigate }: SEODashboardProps) {
   const { currentOrg, currentProject: authProject } = useAuthStore()
   const currentProject = authProject
   const projectId = currentProject?.id
+  const orgId = currentProject?.org_id
   const domain = currentProject?.domain || currentOrg?.domain
 
-  const { data: seoProjectData, isLoading: projectLoading } = useSeoProject(projectId)
+  const { data: seoProjectData, isLoading: projectLoading } = useSeoProject(orgId, projectId)
   const { data: pagesData, isLoading: pagesLoading } = useSeoPages(projectId, { limit: 100 })
   const { data: opportunitiesData } = useSeoOpportunities(projectId, { status: 'open' })
   const { data: gscOverviewData, isLoading: gscLoading } = useSeoGSCOverview(projectId)

@@ -39,7 +39,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { UptradeSpinner } from '@/components/UptradeLoading';
-import { useGscOverview, useSeoPages, useSeoOpportunities } from '@/lib/hooks';
+import { useSeoGSCOverview, useSeoPages, useSeoOpportunities } from '@/hooks/seo';
 import useAuthStore from '@/lib/auth-store';
 
 // Report sections configuration
@@ -91,9 +91,9 @@ export function SEOClientReportModal({ open, onClose, projectId }) {
   const { currentOrg } = useAuthStore();
   
   // Use React Query hooks instead of store
-  const { data: gscOverview } = useGscOverview(projectId, '28d', { enabled: open && !!projectId });
-  const { data: pagesData } = useSeoPages(projectId, { limit: 50 }, { enabled: open && !!projectId });
-  const { data: opportunitiesData } = useSeoOpportunities(projectId, { status: 'open' }, { enabled: open && !!projectId });
+  const { data: gscOverview } = useSeoGSCOverview(projectId);
+  const { data: pagesData } = useSeoPages(projectId, { limit: 50 });
+  const { data: opportunitiesData } = useSeoOpportunities(projectId, { status: 'open' });
   
   const pages = pagesData?.pages || [];
   const opportunities = opportunitiesData?.opportunities || [];

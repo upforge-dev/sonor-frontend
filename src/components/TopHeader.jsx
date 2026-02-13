@@ -197,8 +197,8 @@ function ProjectSwitcherDropdown({ onNavigateToProjects }) {
     return null
   }
   
-  // Don't show project switcher if no project is selected (at org level)
-  if (!currentProject) {
+  // Don't show project switcher if no project is selected AND no projects are available
+  if (!currentProject && (!availableProjects || availableProjects.length === 0)) {
     return null
   }
 
@@ -210,7 +210,9 @@ function ProjectSwitcherDropdown({ onNavigateToProjects }) {
           disabled={isLoading}
           aria-label="Switch project"
         >
-          <span className="text-sm max-w-[150px] truncate">{currentProject?.name || currentProject?.title || 'Project'}</span>
+          <span className="text-sm max-w-[150px] truncate">
+            {currentProject?.name || currentProject?.title || 'Select Project'}
+          </span>
           {currentProject && getEnvironmentBadge(currentProject) && (
             <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-primary/10 text-primary border-muted">
               {getEnvironmentBadge(currentProject)}

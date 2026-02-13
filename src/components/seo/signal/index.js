@@ -12,3 +12,4 @@ export { default as ImplementationSnippet, generateSnippet } from './Implementat
 export { default as EffortEstimate, getEffortConfig, useEffortEstimate, calculateTotalEffort } from './EffortEstimate'
 export { default as ImpactPredictor, useImpactPrediction } from './ImpactPredictor'
 export { default as SEOPipelineModal } from './SEOPipelineModal'
+export { default as SEOBulkPipelineModal } from './SEOBulkPipelineModal'

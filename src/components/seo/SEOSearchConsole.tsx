@@ -2,7 +2,8 @@
 // GSC Coverage & Indexing Health — the Search Console view
 // Shows canonical vs indexed pages, issues, and auto-fix (Signal-powered)
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import {
   Globe, Search, CheckCircle2, AlertTriangle, XCircle, RefreshCw,
   ChevronDown, ChevronRight, ExternalLink, Zap, Lock, ArrowRight,
@@ -31,6 +32,7 @@ import {
   useSeoGscAutoFix,
   useSeoInspectUrl,
   useSeoSubmitForIndexing,
+  seoGSCKeys,
 } from '@/hooks/seo/useSeoGSC'
 import GscConnectModal from './GscConnectModal'
 import SignalUpgradeCard from './signal/SignalUpgradeCard'
@@ -410,12 +412,19 @@ function IssueCategory({ type, issues, projectId, hasSignal }: IssueCategoryProp
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 export default function SEOSearchConsole({ projectId }: SEOSearchConsoleProps) {
+  const queryClient = useQueryClient()
   const { hasAccess: hasSignalAccess } = useSignalAccess()
   const { data: health, isLoading, error, refetch } = useSeoGscHealth(projectId)
   const reconcile = useSeoGscReconcile()
   const autoFix = useSeoGscAutoFix()
   const [showConnect, setShowConnect] = useState<boolean>(false)
   const [autoFixResults, setAutoFixResults] = useState<AutoFixResults | null>(null)
+
+  const handleGscConnectSuccess = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: seoGSCKeys.health(projectId) })
+    queryClient.invalidateQueries({ queryKey: seoGSCKeys.all })
+    setShowConnect(false)
+  }, [projectId, queryClient])
 
   // Group issues by type
   const issuesByType = useMemo<Record<string, GSCIssue[]>>(() => {
@@ -499,8 +508,9 @@ export default function SEOSearchConsole({ projectId }: SEOSearchConsoleProps) {
         </Card>
         <GscConnectModal
           open={showConnect}
-          onClose={() => setShowConnect(false)}
+          onOpenChange={setShowConnect}
           projectId={projectId}
+          onSuccess={handleGscConnectSuccess}
         />
       </>
     )

@@ -6,7 +6,7 @@
 
 import { useState } from 'react'
 import { useNavigate, useLocation, Routes, Route, Navigate } from 'react-router-dom'
-import { useSeoProject, useSeoPages, seoKeys } from '@/lib/hooks'
+import { useSeoProject, useSeoPages, seoPageKeys } from '@/hooks/seo'
 import { seoApi } from '@/lib/portal-api'
 import { useQueryClient } from '@tanstack/react-query'
 import useAuthStore from '@/lib/auth-store'
@@ -68,9 +68,10 @@ export default function SEOModule() {
   
   // Always use current project from auth store
   const projectId: string | undefined = authCurrentProject?.id
+  const orgId: string | undefined = authCurrentProject?.org_id
   
   // React Query hooks - auto-fetch on mount
-  const { data: currentProject } = useSeoProject(projectId)
+  const { data: currentProject } = useSeoProject(orgId, projectId)
   
   // Fetch all pages for bulk optimization (sorted parent/children by path)
   const { data: pagesData } = useSeoPages(projectId, { limit: 500 })

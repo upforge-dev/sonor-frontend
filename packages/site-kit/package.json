@@ -1,6 +1,6 @@
 {
   "name": "@uptrademedia/site-kit",
-  "version": "1.0.24",
+  "version": "1.0.25",
   "description": "Complete client-side integration kit for Uptrade Portal - SEO, Analytics, Engage, Forms, Blog",
   "license": "MIT",
   "main": "./dist/index.js",
