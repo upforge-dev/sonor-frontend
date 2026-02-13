@@ -1011,6 +1011,10 @@ export const seoApi = {
   listQueries: (projectId, params = {}) =>
     portalApi.get(`/seo/projects/${projectId}/queries`, { params }),
   
+  // Alias for listQueries (used by hooks)
+  getQueries: (projectId, params = {}) =>
+    portalApi.get(`/seo/projects/${projectId}/queries`, { params }),
+  
   getQuery: (queryId) =>
     portalApi.get(`/seo/queries/${queryId}`),
   
@@ -1094,6 +1098,15 @@ export const seoApi = {
   
   clearGscData: (projectId) =>
     portalApi.delete(`/seo/projects/${projectId}/gsc/cache`),
+  
+  getGscComparison: (projectId, params = {}) =>
+    portalApi.get(`/seo/projects/${projectId}/gsc/comparison`, { params }),
+  
+  getGscHealth: (projectId) =>
+    portalApi.get(`/seo/projects/${projectId}/gsc/health`),
+  
+  reconcileGsc: (projectId) =>
+    portalApi.post(`/seo/projects/${projectId}/gsc/reconcile`),
   
   // ==================== AI BRAIN ====================
   trainSite: (projectId) =>

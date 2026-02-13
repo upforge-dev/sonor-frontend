@@ -1,28 +1,14 @@
 // src/lib/supabase.js
-// Supabase client for authentication and database operations
-
-import { createClient } from '@supabase/supabase-js'
-
-// Supabase configuration
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables')
-}
-
-// Create Supabase client
+// Re-exports the single Supabase client from supabase-auth.js
+// to avoid creating multiple GoTrueClient instances.
+//
 // Note: Using implicit flow (not PKCE) because magic links generated via
 // supabaseAdmin.auth.admin.generateLink() produce implicit flow tokens.
 // PKCE requires client-initiated auth to generate code verifier/challenge pairs.
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: true,
-    flowType: 'implicit', // Required for admin-generated magic links to work
-  },
-})
+
+import { supabase } from './supabase-auth'
+
+export { supabase }
 
 /**
  * Helper function to get current user

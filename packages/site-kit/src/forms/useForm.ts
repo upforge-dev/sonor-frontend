@@ -164,28 +164,25 @@ export function useForm(
     totalSteps,
   })
   
-  // Fetch form config
+  // Fetch form config (project is derived from API key on the backend; projectId is optional)
   useEffect(() => {
-    if (!projectId) {
-      setFetchError(new Error('projectId is required. Provide it via SiteKitProvider or useForm options.'))
+    const apiUrl = typeof window !== 'undefined'
+      ? (window as any).__SITE_KIT_API_URL__ || 'https://api.uptrademedia.com'
+      : 'https://api.uptrademedia.com'
+    const apiKey = typeof window !== 'undefined'
+      ? (window as any).__SITE_KIT_API_KEY__
+      : undefined
+
+    if (!apiKey) {
+      setFetchError(new Error('API key is required. Provide it via SiteKitProvider (apiKey) or set __SITE_KIT_API_KEY__.'))
       setIsLoading(false)
       return
     }
-    
+
     async function fetchForm() {
       try {
         setIsLoading(true)
-        
-        const apiUrl = typeof window !== 'undefined' 
-          ? (window as any).__SITE_KIT_API_URL__ || 'https://api.uptrademedia.com'
-          : 'https://api.uptrademedia.com'
-        const apiKey = typeof window !== 'undefined' 
-          ? (window as any).__SITE_KIT_API_KEY__
-          : undefined
-        
-        if (!apiKey) {
-          throw new Error('API key is required. Set NEXT_PUBLIC_UPTRADE_API_KEY in your .env')
-        }
+        setFetchError(null)
         
         const response = await fetch(`${apiUrl}/api/public/forms/config`, {
           method: 'POST',

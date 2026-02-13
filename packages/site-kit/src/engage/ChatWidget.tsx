@@ -25,7 +25,8 @@ type Socket = { connected: boolean; disconnect: () => void; on: (ev: string, fn:
 // ---------------------------------------------------------------------------
 
 interface ChatWidgetProps {
-  projectId: string
+  /** Optional: resolved from API key via project-info when not provided */
+  projectId?: string
   config?: Partial<ChatConfig>
   apiUrl?: string
 }
@@ -141,7 +142,11 @@ function isLightColor(hex: string): boolean {
 // Component
 // ---------------------------------------------------------------------------
 
-export function ChatWidget({ projectId, config, apiUrl: propApiUrl }: ChatWidgetProps) {
+export function ChatWidget({ projectId: propProjectId, config, apiUrl: propApiUrl }: ChatWidgetProps) {
+  // Resolve projectId from API key when not provided (backend derives project from key)
+  const [resolvedProjectId, setResolvedProjectId] = useState<string | null>(propProjectId || null)
+  const projectId = propProjectId || resolvedProjectId || ''
+
   // State -------------------------------------------------------------------
   const [isOpen, setIsOpen] = useState(false)
   const [messages, setMessages] = useState<Message[]>([])
@@ -185,6 +190,24 @@ export function ChatWidget({ projectId, config, apiUrl: propApiUrl }: ChatWidget
     handoffOfflinePrompt ?? widgetConfig?.offline_subheading ?? widgetConfig?.form_description ?? widgetConfig?.offline_message ?? config?.offlineMessage ?? "Leave us a message and we'll get back to you!"
 
   const baseUrl = propApiUrl || getApiConfig().apiUrl
+
+  // Resolve projectId from API key when not provided
+  useEffect(() => {
+    if (propProjectId || resolvedProjectId) return
+    const { apiKey } = getApiConfig()
+    if (!apiKey) return
+    let cancelled = false
+    fetch(`${baseUrl}/api/public/seo/project-info`, {
+      headers: { 'x-api-key': apiKey },
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (cancelled || !data?.valid || !data?.project_id) return
+        setResolvedProjectId(data.project_id)
+      })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [propProjectId, resolvedProjectId, baseUrl])
 
   // -------------------------------------------------------------------------
   // API calls
@@ -1380,7 +1403,7 @@ export function ChatWidget({ projectId, config, apiUrl: propApiUrl }: ChatWidget
     </div>
   )
 
-  // Don't render if projectId is missing (e.g. env var not set)
+  // Don't render until we have projectId (from props or resolved from API key)
   if (!projectId) return null
 
   return (

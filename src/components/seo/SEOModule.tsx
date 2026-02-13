@@ -1,4 +1,4 @@
-// src/components/seo/SEOModule.jsx
+// src/components/seo/SEOModule.tsx
 // Main SEO Module - CONSOLIDATED for simplicity
 // Focus: "Are my rankings improving?" + Local SEO
 // All page-level optimization happens in Page Detail view
@@ -27,13 +27,16 @@ import SEOSidebar from '@/components/seo/SEOSidebar'
 // Core views
 import SEODashboard from '@/components/seo/SEODashboard'
 import SEOPagesList from '@/components/seo/SEOPagesList'
-import SEOPageDetail from '@/components/seo/SEOPageDetailSimplified'
+import SEOPageDetail from '@/components/seo/SEOPageDetail'
 import SEOKeywordTracking from '@/components/seo/SEOKeywordTracking'
 import SEOLocalSeo from '@/components/seo/SEOLocalSeo'
 import SEOSetupGate from '@/components/seo/SEOSetupGate'
 
 // Technical SEO (consolidated single page with internal tabs)
 import SEOTechnicalAudit from '@/components/seo/SEOTechnicalAudit'
+
+// Search Console (GSC coverage & indexing health)
+import SEOSearchConsole from '@/components/seo/SEOSearchConsole'
 
 // Content strategy
 import SEOContentDecay from '@/components/seo/SEOContentDecay'
@@ -49,6 +52,13 @@ import SEOReportingPage from '@/components/seo/SEOReportingPage'
 // Bulk pipeline modal for deep optimization
 import SEOBulkPipelineModal from '@/components/seo/signal/SEOBulkPipelineModal'
 
+interface SeoPage {
+  id?: string
+  path?: string
+  url?: string
+  [key: string]: any
+}
+
 export default function SEOModule() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -57,7 +67,7 @@ export default function SEOModule() {
   const { currentProject: authCurrentProject } = useAuthStore()
   
   // Always use current project from auth store
-  const projectId = authCurrentProject?.id
+  const projectId: string | undefined = authCurrentProject?.id
   
   // React Query hooks - auto-fetch on mount
   const { data: currentProject } = useSeoProject(projectId)
@@ -65,7 +75,7 @@ export default function SEOModule() {
   // Fetch all pages for bulk optimization (sorted parent/children by path)
   const { data: pagesData } = useSeoPages(projectId, { limit: 500 })
   const rawPages = pagesData?.pages ?? pagesData?.data ?? []
-  const allPages = (Array.isArray(rawPages) ? rawPages : []).slice().sort((a, b) => {
+  const allPages: SeoPage[] = (Array.isArray(rawPages) ? rawPages : []).slice().sort((a, b) => {
     const pathA = a.path || (a.url ? new URL(a.url, 'https://x').pathname : '') || ''
     const pathB = b.path || (b.url ? new URL(b.url, 'https://x').pathname : '') || ''
     return pathA.localeCompare(pathB, undefined, { sensitivity: 'base' })
@@ -73,15 +83,15 @@ export default function SEOModule() {
   
   // Get active tab from current route path
   const pathSegments = location.pathname.split('/').filter(Boolean)
-  const activeTab = pathSegments[1] || 'dashboard' // /seo/keywords -> 'keywords'
+  const activeTab: string = pathSegments[1] || 'dashboard' // /seo/keywords -> 'keywords'
   
-  const [bulkPipelineOpen, setBulkPipelineOpen] = useState(false)
+  const [bulkPipelineOpen, setBulkPipelineOpen] = useState<boolean>(false)
 
-  const handleTabChange = (tab) => {
+  const handleTabChange = (tab: string): void => {
     navigate(`/seo/${tab}`)
   }
 
-  const subtitle = hasSignalAccess
+  const subtitle: string = hasSignalAccess
     ? 'Signal-powered optimization'
     : 'Optimization & monitoring'
 
@@ -139,7 +149,8 @@ export default function SEOModule() {
                 </p>
                 <Button
                   onClick={() => navigate('/settings')}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                  className="text-white"
+                  style={{ backgroundColor: 'var(--brand-primary)' }}
                 >
                   Configure Domain
                 </Button>
@@ -163,6 +174,9 @@ export default function SEOModule() {
                   
                   {/* Technical SEO (consolidated - has internal tabs for audit, indexing, etc) */}
                   <Route path="technical" element={<SEOTechnicalAudit projectId={projectId} pages={allPages} domain={currentProject?.domain} />} />
+                  
+                  {/* Search Console (GSC coverage & indexing health) */}
+                  <Route path="search-console" element={<SEOSearchConsole projectId={projectId} />} />
                   
                   {/* Intelligence views */}
                   <Route path="backlinks" element={<SEOBacklinks projectId={projectId} />} />

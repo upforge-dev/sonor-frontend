@@ -24,21 +24,29 @@ export default function SignalStatusBanner({
       animate={{ opacity: 1, y: 0 }}
       className={cn(
         'relative overflow-hidden rounded-xl border',
-        'bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-cyan-500/10',
-        'border-emerald-500/20',
         className
       )}
+      style={{
+        background: 'linear-gradient(to right, color-mix(in srgb, var(--brand-primary) 10%, transparent), color-mix(in srgb, var(--brand-secondary) 10%, transparent), color-mix(in srgb, var(--brand-secondary) 10%, transparent))',
+        borderColor: 'color-mix(in srgb, var(--brand-primary) 20%, transparent)'
+      }}
     >
       {/* Background glow effect */}
-      <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/5 to-teal-500/5 opacity-50" />
+      <div 
+        className="absolute inset-0 opacity-50" 
+        style={{ background: 'linear-gradient(to right, color-mix(in srgb, var(--brand-primary) 5%, transparent), color-mix(in srgb, var(--brand-secondary) 5%, transparent))' }} 
+      />
       
       <div className="relative p-4 md:p-5">
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
             {/* Header */}
             <div className="flex items-center gap-2 mb-2">
-              <div className="flex items-center justify-center w-8 h-8 rounded-full bg-emerald-500/20">
-                <Sparkles className="h-4 w-4 text-emerald-400" />
+              <div 
+                className="flex items-center justify-center w-8 h-8 rounded-full" 
+                style={{ backgroundColor: 'color-mix(in srgb, var(--brand-primary) 20%, transparent)' }}
+              >
+                <Sparkles className="h-4 w-4" style={{ color: 'var(--brand-primary)' }} />
               </div>
               <h3 className="font-semibold text-[var(--text-primary)]">
                 Signal Status
@@ -60,13 +68,13 @@ export default function SignalStatusBanner({
             {hasStats && (
               <div className="flex flex-wrap items-center gap-3 text-sm text-[var(--text-secondary)] mb-3">
                 <span className="flex items-center gap-1">
-                  <SignalIcon className="h-3.5 w-3.5 text-teal-400" />
+                  <SignalIcon className="h-3.5 w-3.5" style={{ color: 'var(--brand-secondary)' }} />
                   Analyzing {siteDomain} for {analyzingDays} days
                 </span>
                 <span className="text-[var(--text-tertiary)]">•</span>
                 <span>{recommendationCount} recommendations</span>
                 <span className="text-[var(--text-tertiary)]">•</span>
-                <span className="text-emerald-400">{winCount} wins</span>
+                <span style={{ color: 'var(--brand-primary)' }}>{winCount} wins</span>
               </div>
             )}
 
@@ -84,7 +92,8 @@ export default function SignalStatusBanner({
           {onApply && latestInsight && (
             <Button 
               size="sm" 
-              className="shrink-0 bg-emerald-600 hover:bg-emerald-500 text-white"
+              className="shrink-0 text-white"
+              style={{ backgroundColor: 'var(--brand-primary)' }}
               onClick={onApply}
             >
               Apply

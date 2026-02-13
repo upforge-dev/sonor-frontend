@@ -37,7 +37,7 @@ export default function SignalSuggestion({
       className={cn(
         'p-4 rounded-lg border transition-colors',
         'bg-[var(--glass-bg)] border-[var(--glass-border)]',
-        'hover:border-emerald-500/30',
+        'hover:border-[color:color-mix(in_srgb,var(--brand-primary)_30%,transparent)]',
         className
       )}
     >
@@ -68,7 +68,7 @@ export default function SignalSuggestion({
           {/* Reason with tooltip */}
           {reason && (
             <div className="flex items-center gap-1 text-xs text-[var(--text-tertiary)]">
-              <Sparkles className="h-3 w-3 text-emerald-400" />
+              <Sparkles className="h-3 w-3" style={{ color: 'var(--brand-primary)' }} />
               <span>{reason}</span>
               <TooltipProvider>
                 <Tooltip>
@@ -105,7 +105,8 @@ export default function SignalSuggestion({
           <Button
             size="sm"
             variant="ghost"
-            className="h-8 w-8 p-0 text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10"
+            className="h-8 w-8 p-0 hover:bg-[color:color-mix(in_srgb,var(--brand-primary)_10%,transparent)]"
+            style={{ color: 'var(--brand-primary)' }}
             onClick={() => onApply?.(id)}
             disabled={isApplying}
           >

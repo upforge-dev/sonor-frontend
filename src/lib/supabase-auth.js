@@ -11,7 +11,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     autoRefreshToken: true,
     persistSession: true,
-    detectSessionInUrl: true
+    detectSessionInUrl: true,
   }
 })
 
@@ -127,11 +127,13 @@ export async function getCurrentUser() {
   console.log('[getCurrentUser] Session user:', session.user.email)
   
   // First try to fetch contact by auth_user_id
+  console.log('[getCurrentUser] Querying contacts by auth_user_id:', session.user.id)
   let { data: contact, error } = await supabase
     .from('contacts')
     .select('*')
     .eq('auth_user_id', session.user.id)
     .single()
+  console.log('[getCurrentUser] Query result:', { contact: contact?.email, error: error?.message })
   
   // If not found by auth_user_id, try by email (case-insensitive)
   if (error || !contact) {

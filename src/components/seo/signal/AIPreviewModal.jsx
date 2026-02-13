@@ -102,12 +102,15 @@ function DiffView({ before, after, type }) {
       {/* After */}
       <div>
         <div className="flex items-center justify-between mb-1">
-          <span className="text-xs font-medium text-emerald-400 uppercase tracking-wider">
+          <span className="text-xs font-medium uppercase tracking-wider" style={{ color: 'var(--brand-primary)' }}>
             AI Suggestion
           </span>
           <CharacterCount text={after} type={type} />
         </div>
-        <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-sm text-[var(--text-primary)]">
+        <div 
+          className="p-3 rounded-lg text-sm text-[var(--text-primary)] border" 
+          style={{ backgroundColor: 'color-mix(in srgb, var(--brand-primary) 10%, transparent)', borderColor: 'color-mix(in srgb, var(--brand-primary) 20%, transparent)' }}
+        >
           {after}
         </div>
       </div>
@@ -129,10 +132,13 @@ function SuggestionCard({ suggestion, isSelected, onSelect, index, type }) {
       onClick={onSelect}
       className={cn(
         'relative p-4 rounded-lg border cursor-pointer transition-all duration-200',
-        isSelected
-          ? 'bg-emerald-500/10 border-emerald-500/50 ring-1 ring-emerald-500/30'
-          : 'bg-[var(--glass-bg)] border-[var(--glass-border)] hover:border-[var(--accent-primary)]/50'
+        !isSelected && 'bg-[var(--glass-bg)] border-[var(--glass-border)] hover:border-[var(--accent-primary)]/50'
       )}
+      style={isSelected ? {
+        backgroundColor: 'color-mix(in srgb, var(--brand-primary) 10%, transparent)',
+        borderColor: 'color-mix(in srgb, var(--brand-primary) 50%, transparent)',
+        boxShadow: '0 0 0 1px color-mix(in srgb, var(--brand-primary) 30%, transparent)'
+      } : undefined}
     >
       <div className="flex items-start gap-3">
         <RadioGroupItem value={suggestion.id} id={suggestion.id} className="mt-1" />
@@ -164,7 +170,7 @@ function SuggestionCard({ suggestion, isSelected, onSelect, index, type }) {
       
       {isSelected && (
         <div className="absolute -top-2 -right-2">
-          <div className="flex items-center justify-center h-5 w-5 rounded-full bg-emerald-500 text-white">
+          <div className="flex items-center justify-center h-5 w-5 rounded-full text-white" style={{ backgroundColor: 'var(--brand-primary)' }}>
             <Check className="h-3 w-3" />
           </div>
         </div>
@@ -250,8 +256,11 @@ export default function AIPreviewModal({
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <div className="flex items-center gap-2">
-            <div className="flex items-center justify-center h-8 w-8 rounded-full bg-emerald-500/20">
-              <Sparkles className="h-4 w-4 text-emerald-400" />
+            <div 
+              className="flex items-center justify-center h-8 w-8 rounded-full" 
+              style={{ backgroundColor: 'color-mix(in srgb, var(--brand-primary) 20%, transparent)' }}
+            >
+              <Sparkles className="h-4 w-4" style={{ color: 'var(--brand-primary)' }} />
             </div>
             <div>
               <DialogTitle className="flex items-center gap-2">
@@ -285,8 +294,8 @@ export default function AIPreviewModal({
           {isLoading && (
             <div className="flex flex-col items-center justify-center py-12 gap-3">
               <div className="relative">
-                <Loader2 className="h-8 w-8 text-emerald-400 animate-spin" />
-                <Sparkles className="h-3 w-3 text-emerald-300 absolute -top-1 -right-1 animate-pulse" />
+                <Loader2 className="h-8 w-8 animate-spin" style={{ color: 'var(--brand-primary)' }} />
+                <Sparkles className="h-3 w-3 absolute -top-1 -right-1 animate-pulse" style={{ color: 'var(--brand-secondary)' }} />
               </div>
               <p className="text-sm text-[var(--text-secondary)]">
                 Generating AI suggestions...
@@ -400,7 +409,8 @@ export default function AIPreviewModal({
           <Button
             onClick={handleApply}
             disabled={!finalValue || isLoading}
-            className="bg-emerald-600 hover:bg-emerald-500"
+            className="text-white"
+            style={{ backgroundColor: 'var(--brand-primary)' }}
           >
             <Check className="h-4 w-4 mr-2" />
             Apply

@@ -1233,10 +1233,12 @@ export default function SyncModule({ className }) {
           : selectedDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
         }
       </span>
-      <Button size="sm" className="gap-1.5 hidden md:flex" style={{ backgroundColor: 'var(--brand-primary)' }} onClick={() => setShowPlanDay(true)}>
-        <Zap className="h-4 w-4" />
-        Plan my day
-      </Button>
+      {signalEnabled && (
+        <Button size="sm" className="gap-1.5 hidden md:flex" style={{ backgroundColor: 'var(--brand-primary)' }} onClick={() => setShowPlanDay(true)}>
+          <Zap className="h-4 w-4" />
+          Plan my day
+        </Button>
+      )}
       {centerView !== 'calendar' && (
         <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground" onClick={() => setCenterView('calendar')}>
           <Calendar className="h-4 w-4" />

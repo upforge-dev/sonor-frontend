@@ -63,6 +63,7 @@ import {
 } from '@/components/ui/tabs'
 import { cn } from '@/lib/utils'
 import { syncApi } from '@/lib/portal-api'
+import useAuthStore from '@/lib/auth-store'
 import { toast } from 'sonner'
 import { format, formatDistanceToNow, isPast, isToday, isTomorrow } from 'date-fns'
 
@@ -75,6 +76,7 @@ const STATUS_CONFIG = {
 }
 
 export default function BookingsListPanel({ isOpen, onClose, inline = false }) {
+  const { currentProject } = useAuthStore()
   const [bookings, setBookings] = useState([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('upcoming')
@@ -85,7 +87,7 @@ export default function BookingsListPanel({ isOpen, onClose, inline = false }) {
     if (isOpen || inline) {
       fetchBookings()
     }
-  }, [isOpen, inline, activeTab])
+  }, [isOpen, inline, activeTab, currentProject?.id])
 
   const fetchBookings = async () => {
     try {
@@ -93,6 +95,9 @@ export default function BookingsListPanel({ isOpen, onClose, inline = false }) {
       const params = {
         status: activeTab === 'upcoming' ? 'confirmed,pending' : activeTab === 'past' ? 'completed,no-show' : 'cancelled',
         limit: 50,
+      }
+      if (currentProject?.id) {
+        params.project_id = currentProject.id
       }
       const { data } = await syncApi.getBookings(params)
       setBookings(data.bookings || [])

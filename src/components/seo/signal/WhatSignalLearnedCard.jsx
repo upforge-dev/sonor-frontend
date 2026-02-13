@@ -84,8 +84,11 @@ export default function WhatSignalLearnedCard({
     <Card className={cn('overflow-hidden', className)}>
       <CardHeader className="pb-3">
         <div className="flex items-center gap-2">
-          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-purple-500/20">
-            <SignalIcon className="h-4 w-4 text-purple-400" />
+          <div 
+            className="flex items-center justify-center w-8 h-8 rounded-full" 
+            style={{ backgroundColor: 'color-mix(in srgb, var(--brand-primary) 20%, transparent)' }}
+          >
+            <SignalIcon className="h-4 w-4" style={{ color: 'var(--brand-primary)' }} />
           </div>
           <div>
             <CardTitle className="text-base">What Signal Learned</CardTitle>
@@ -146,7 +149,7 @@ function LoadingState() {
         transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
         className="mb-2"
       >
-        <SignalIcon className="h-6 w-6 text-purple-400" />
+        <SignalIcon className="h-6 w-6" style={{ color: 'var(--brand-primary)' }} />
       </motion.div>
       <p className="text-sm text-[var(--text-secondary)]">Loading patterns...</p>
     </div>

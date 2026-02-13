@@ -6,6 +6,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { seoApi } from '../../lib/portal-api'
+import { signalSeoApi } from '../../lib/signal-api'
 
 // Query keys
 export const seoGSCKeys = {
@@ -22,6 +23,8 @@ export const seoGSCKeys = {
     [...seoGSCKeys.all, 'tracked', projectId] as const,
   strikingDistance: (projectId: string) => 
     [...seoGSCKeys.all, 'strikingDistance', projectId] as const,
+  health: (projectId: string) =>
+    [...seoGSCKeys.all, 'health', projectId] as const,
 }
 
 interface DateRangeOptions {
@@ -185,5 +188,97 @@ export function useSeoGSCComparison(
     },
     enabled: !!projectId && !!ranges.startDate,
     staleTime: 10 * 60 * 1000,
+  })
+}
+
+// ============================================================
+// GSC HEALTH & RECONCILIATION
+// ============================================================
+
+/**
+ * Fetch comprehensive GSC health data
+ * Joins canonical pages with indexing status for a unified coverage view
+ */
+export function useSeoGscHealth(projectId: string) {
+  return useQuery({
+    queryKey: seoGSCKeys.health(projectId),
+    queryFn: async () => {
+      const response = await seoApi.getGscHealth(projectId)
+      return response.data
+    },
+    enabled: !!projectId,
+    staleTime: 2 * 60 * 1000, // 2 minutes — health data changes with inspections
+    refetchOnWindowFocus: true,
+  })
+}
+
+/**
+ * Portal API reconciliation — bulk inspect + submit non-indexed pages
+ */
+export function useSeoGscReconcile() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (projectId: string) => {
+      const response = await seoApi.reconcileGsc(projectId)
+      return response.data
+    },
+    onSuccess: (_data, projectId) => {
+      // Invalidate health data to refetch
+      queryClient.invalidateQueries({ queryKey: seoGSCKeys.health(projectId) })
+      queryClient.invalidateQueries({ queryKey: seoGSCKeys.all })
+    },
+  })
+}
+
+/**
+ * Signal API auto-fix reconciliation — inspects, fixes, and submits
+ * Signal *solves* the problems instead of just recommending
+ */
+export function useSeoGscAutoFix() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (projectId: string) => {
+      return signalSeoApi.reconcileGsc(projectId)
+    },
+    onSuccess: () => {
+      // Invalidate all GSC data after auto-fix
+      queryClient.invalidateQueries({ queryKey: seoGSCKeys.all })
+    },
+  })
+}
+
+/**
+ * Single URL inspection
+ */
+export function useSeoInspectUrl() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ projectId, url }: { projectId: string; url: string }) => {
+      const response = await seoApi.inspectUrl(projectId, url)
+      return response.data
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: seoGSCKeys.health(variables.projectId) })
+    },
+  })
+}
+
+/**
+ * Submit URL for indexing
+ */
+export function useSeoSubmitForIndexing() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ projectId, url }: { projectId: string; url: string }) => {
+      const response = await seoApi.submitUrlForIndexing(projectId, url)
+      return response.data
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: seoGSCKeys.health(variables.projectId) })
+    },
   })
 }

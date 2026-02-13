@@ -1,4 +1,4 @@
-// src/components/seo/SEODashboard.jsx
+// src/components/seo/SEODashboard.tsx
 // SEO Dashboard - Clean, focused answer to "Are my rankings improving?"
 // REWRITTEN: Jan 31, 2026
 import { useState, useCallback, useEffect, useMemo } from 'react'
@@ -9,12 +9,15 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { 
   Globe, TrendingUp, AlertTriangle, FileText, Target, RefreshCw,
   ExternalLink, Settings, Search, MousePointerClick, Eye, BarChart3,
-  ChevronRight, Zap, ArrowUp, ArrowDown, Minus, Link2, Unlink, RotateCcw
+  ChevronRight, Zap, ArrowUp, ArrowDown, Minus, Link2, Unlink, RotateCcw,
+  ShieldCheck, CircleAlert, CheckCircle2
 } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import { UptradeSpinner } from '@/components/UptradeLoading'
 import { 
   useSeoProject, useSeoPages, useSeoOpportunities,
-  useSeoGSCOverview, useSeoGSCQueries, seoProjectKeys, seoGSCKeys
+  useSeoGSCOverview, useSeoGSCQueries, seoProjectKeys, seoGSCKeys,
+  useSeoGscHealth,
 } from '@/hooks/seo'
 import { seoApi, oauthApi } from '@/lib/portal-api'
 import { useQueryClient } from '@tanstack/react-query'
@@ -35,7 +38,17 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 
-function MetricCard({ icon: Icon, label, value, change, loading = false, inverseChange = false, iconColor = 'text-primary' }) {
+interface MetricCardProps {
+  icon: LucideIcon
+  label: string
+  value: string | number
+  change?: number | null
+  loading?: boolean
+  inverseChange?: boolean
+  iconColor?: string
+}
+
+function MetricCard({ icon: Icon, label, value, change, loading = false, inverseChange = false, iconColor = 'text-primary' }: MetricCardProps) {
   const isPositive = inverseChange ? change < 0 : change > 0
   const isNegative = inverseChange ? change > 0 : change < 0
   const showChange = change !== null && change !== undefined && !isNaN(change)
@@ -74,7 +87,18 @@ function MetricCard({ icon: Icon, label, value, change, loading = false, inverse
   )
 }
 
-function TrendChart({ data = [], loading = false, height = 80 }) {
+interface TrendDataPoint {
+  date?: string
+  clicks?: number
+}
+
+interface TrendChartProps {
+  data?: TrendDataPoint[]
+  loading?: boolean
+  height?: number
+}
+
+function TrendChart({ data = [], loading = false, height = 80 }: TrendChartProps) {
   if (loading) return <Skeleton className="w-full" style={{ height }} />
   if (!data.length) return <div className="flex items-center justify-center text-muted-foreground text-sm" style={{ height }}>No trend data</div>
   const maxClicks = Math.max(...data.map(d => d.clicks || 0), 1)
@@ -94,7 +118,19 @@ function TrendChart({ data = [], loading = false, height = 80 }) {
   )
 }
 
-function RankingDistribution({ queries = [], loading = false }) {
+interface QueryData {
+  query?: string
+  clicks?: number
+  ctr?: number
+  position?: number
+}
+
+interface RankingDistributionProps {
+  queries?: QueryData[]
+  loading?: boolean
+}
+
+function RankingDistribution({ queries = [], loading = false }: RankingDistributionProps) {
   const distribution = useMemo(() => {
     if (!queries?.length) return null
     const buckets = {
@@ -127,7 +163,13 @@ function RankingDistribution({ queries = [], loading = false }) {
   )
 }
 
-function TopKeywordsList({ queries = [], loading = false, onViewAll }) {
+interface TopKeywordsListProps {
+  queries?: QueryData[]
+  loading?: boolean
+  onViewAll?: () => void
+}
+
+function TopKeywordsList({ queries = [], loading = false, onViewAll }: TopKeywordsListProps) {
   if (loading) return <div className="space-y-3">{[1,2,3,4,5].map(i => <Skeleton key={i} className="h-12 w-full" />)}</div>
   if (!queries?.length) return <div className="text-center py-8 text-muted-foreground"><Search className="h-8 w-8 mx-auto mb-2 opacity-50" /><p className="text-sm">No keyword data</p></div>
   
@@ -154,7 +196,11 @@ function TopKeywordsList({ queries = [], loading = false, onViewAll }) {
   )
 }
 
-export default function SEODashboard({ onNavigate }) {
+interface SEODashboardProps {
+  onNavigate?: (path: string) => void
+}
+
+export default function SEODashboard({ onNavigate }: SEODashboardProps) {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const { currentOrg, currentProject: authProject } = useAuthStore()
@@ -167,6 +213,7 @@ export default function SEODashboard({ onNavigate }) {
   const { data: opportunitiesData } = useSeoOpportunities(projectId, { status: 'open' })
   const { data: gscOverviewData, isLoading: gscLoading } = useSeoGSCOverview(projectId)
   const { data: gscQueriesData, isLoading: queriesLoading } = useSeoGSCQueries(projectId, { limit: 100 })
+  const { data: gscHealthData } = useSeoGscHealth(projectId)
 
   const pages = useMemo(() => { const p = pagesData?.pages ?? pagesData?.data; return Array.isArray(p) ? p : (p?.pages ?? []) }, [pagesData])
   const opportunities = useMemo(() => { const o = opportunitiesData?.opportunities ?? opportunitiesData?.data ?? opportunitiesData; return Array.isArray(o) ? o : [] }, [opportunitiesData])
@@ -180,11 +227,11 @@ export default function SEODashboard({ onNavigate }) {
   const gscTrend = gscOverview?.trend || []
   const gscQueries = gscQueriesData?.queries || gscQueriesData || []
 
-  const [syncing, setSyncing] = useState(false)
-  const [disconnecting, setDisconnecting] = useState(false)
-  const [showDisconnectDialog, setShowDisconnectDialog] = useState(false)
-  const [showGscConnectModal, setShowGscConnectModal] = useState(false)
-  const [gscPropertyConnectionId, setGscPropertyConnectionId] = useState(null)
+  const [syncing, setSyncing] = useState<boolean>(false)
+  const [disconnecting, setDisconnecting] = useState<boolean>(false)
+  const [showDisconnectDialog, setShowDisconnectDialog] = useState<boolean>(false)
+  const [showGscConnectModal, setShowGscConnectModal] = useState<boolean>(false)
+  const [gscPropertyConnectionId, setGscPropertyConnectionId] = useState<string | null>(null)
 
   // Handle OAuth callback when returning from full-page redirect (legacy) or from URL params
   useEffect(() => {
@@ -228,7 +275,7 @@ export default function SEODashboard({ onNavigate }) {
     setShowGscConnectModal(true)
   }, [projectId])
 
-  const handleGscConnectSuccess = useCallback(({ connectionId, selectProperty }) => {
+  const handleGscConnectSuccess = useCallback(({ connectionId, selectProperty }: { connectionId: string; selectProperty?: boolean }) => {
     queryClient.invalidateQueries({ queryKey: seoProjectKeys.detail(projectId) })
     queryClient.invalidateQueries({ queryKey: seoGSCKeys.overview(projectId) })
     queryClient.invalidateQueries({ queryKey: seoGSCKeys.queries(projectId) })
@@ -259,14 +306,14 @@ export default function SEODashboard({ onNavigate }) {
     }
   }, [gscConnectionId])
 
-  const handleNavigate = useCallback((path) => { onNavigate ? onNavigate(path) : navigate(path) }, [navigate, onNavigate])
-  const formatNumber = (num) => { if (num === null || num === undefined) return '-'; if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`; if (num >= 1000) return `${(num / 1000).toFixed(1)}K`; return num.toString() }
+  const handleNavigate = useCallback((path: string) => { onNavigate ? onNavigate(path) : navigate(path) }, [navigate, onNavigate])
+  const formatNumber = (num: number | null | undefined): string => { if (num === null || num === undefined) return '-'; if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`; if (num >= 1000) return `${(num / 1000).toFixed(1)}K`; return num.toString() }
 
   if (projectLoading) return <div className="p-6 flex items-center justify-center min-h-[400px]"><UptradeSpinner size="md" label="Loading SEO data..." /></div>
   if (!projectId) return <div className="p-6"><Card className="border-blue-500/30 bg-blue-500/5"><CardContent className="py-12 text-center"><Search className="h-12 w-12 mx-auto mb-4 text-blue-400" /><h3 className="text-lg font-semibold mb-2">Select a Project</h3><p className="text-muted-foreground">Select a project from the sidebar</p></CardContent></Card></div>
   if (!domain) return <div className="p-6"><Card className="border-yellow-500/30 bg-yellow-500/5"><CardContent className="py-12 text-center"><AlertTriangle className="h-12 w-12 mx-auto mb-4 text-yellow-400" /><h3 className="text-lg font-semibold mb-2">No Domain Configured</h3><p className="text-muted-foreground mb-4">Configure a domain in project settings</p><Button variant="outline" onClick={() => handleNavigate('/settings')}><Settings className="h-4 w-4 mr-2" />Configure Domain</Button></CardContent></Card></div>
 
-  const openOpportunities = opportunities.filter(o => o.status === 'open')
+  const openOpportunities = opportunities.filter((o: any) => o.status === 'open')
 
   return (
     <div className="space-y-6">
@@ -308,7 +355,7 @@ export default function SEODashboard({ onNavigate }) {
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <MetricCard icon={MousePointerClick} label="Clicks (28d)" value={formatNumber(gscMetrics.clicks?.value || currentProject?.total_clicks_28d || 0)} change={gscMetrics.clicks?.change} loading={gscLoading} iconColor="text-blue-500" />
-        <MetricCard icon={Eye} label="Impressions (28d)" value={formatNumber(gscMetrics.impressions?.value || currentProject?.total_impressions_28d || 0)} change={gscMetrics.impressions?.change} loading={gscLoading} iconColor="text-purple-500" />
+        <MetricCard icon={Eye} label="Impressions (28d)" value={formatNumber(gscMetrics.impressions?.value || currentProject?.total_impressions_28d || 0)} change={gscMetrics.impressions?.change} loading={gscLoading} iconColor="text-teal-500" />
         <MetricCard icon={BarChart3} label="Avg Position" value={(gscMetrics.position?.value || currentProject?.avg_position_28d)?.toFixed(1) || '-'} change={gscMetrics.position?.change} loading={gscLoading} inverseChange iconColor="text-orange-500" />
         <MetricCard icon={Target} label="CTR" value={`${((gscMetrics.ctr?.value || currentProject?.avg_ctr_28d || 0) * 100).toFixed(1)}%`} change={gscMetrics.ctr?.change} loading={gscLoading} iconColor="text-green-500" />
       </div>
@@ -345,14 +392,75 @@ export default function SEODashboard({ onNavigate }) {
               {openOpportunities.length > 0 && <Button variant="outline" className="w-full justify-start border-primary/30 hover:bg-primary/10" onClick={() => handleNavigate('/seo/pages')}><Target className="h-4 w-4 mr-2 text-primary" />Review Opportunities<Badge className="ml-auto bg-primary/20 text-primary text-xs">{openOpportunities.length}</Badge></Button>}
             </CardContent>
           </Card>
-          <Card><CardHeader className="pb-3"><CardTitle className="text-base flex items-center gap-2"><FileText className="h-4 w-4" />Pages</CardTitle></CardHeader>
+          <Card className={gscHealthData?.issues?.length > 0 ? 'border-amber-500/20' : ''}>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <ShieldCheck className="h-4 w-4" style={{ color: 'var(--brand-primary)' }} />
+                  Indexing Health
+                </CardTitle>
+                {gscHealthData && (
+                  <Badge variant="outline" className={cn("text-xs",
+                    (gscHealthData.coveragePercent ?? 0) >= 90 ? "border-green-500/30 text-green-500" :
+                    (gscHealthData.coveragePercent ?? 0) >= 70 ? "border-amber-500/30 text-amber-500" :
+                    "border-red-500/30 text-red-500"
+                  )}>
+                    {Math.round(gscHealthData.coveragePercent ?? 0)}% indexed
+                  </Badge>
+                )}
+              </div>
+            </CardHeader>
             <CardContent>
-              {pagesLoading ? <Skeleton className="h-16 w-full" /> : (
+              {pagesLoading ? <Skeleton className="h-20 w-full" /> : (
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between"><span className="text-sm text-muted-foreground">Total Pages</span><span className="text-lg font-semibold">{pages.length}</span></div>
-                  <div className="flex items-center justify-between"><span className="text-sm text-muted-foreground">Indexed</span><span className="text-sm font-medium text-green-500">{currentProject?.pages_indexed || pages.filter(p => p.index_status === 'indexed' || p.indexing_verdict === 'PASS' || p.is_indexed).length}</span></div>
-                  <div className="flex items-center justify-between"><span className="text-sm text-muted-foreground">Not Indexed</span><span className="text-sm font-medium text-red-500">{currentProject?.pages_not_indexed || pages.filter(p => !(p.index_status === 'indexed' || p.indexing_verdict === 'PASS' || p.is_indexed)).length}</span></div>
-                  <Button variant="ghost" size="sm" className="w-full mt-2" onClick={() => handleNavigate('/seo/pages')}>View All Pages<ChevronRight className="h-4 w-4 ml-1" /></Button>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Total Pages</span>
+                    <span className="text-lg font-semibold">{gscHealthData?.totalPages ?? pages.length}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
+                      <span className="text-sm text-muted-foreground">Indexed</span>
+                    </div>
+                    <span className="text-sm font-medium text-green-500">
+                      {gscHealthData?.indexedPages ?? currentProject?.pages_indexed ?? pages.filter((p: any) => p.index_status === 'indexed' || p.indexing_verdict === 'PASS' || p.is_indexed).length}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <CircleAlert className="h-3.5 w-3.5 text-red-500" />
+                      <span className="text-sm text-muted-foreground">Not Indexed</span>
+                    </div>
+                    <span className="text-sm font-medium text-red-500">
+                      {gscHealthData?.notIndexedPages ?? currentProject?.pages_not_indexed ?? pages.filter((p: any) => !(p.index_status === 'indexed' || p.indexing_verdict === 'PASS' || p.is_indexed)).length}
+                    </span>
+                  </div>
+                  {gscHealthData?.issues?.length > 0 && (
+                    <div className="pt-2 border-t border-border/50">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-amber-500 font-medium flex items-center gap-1">
+                          <AlertTriangle className="h-3 w-3" />
+                          {gscHealthData.issues.length} issue{gscHealthData.issues.length !== 1 ? 's' : ''} detected
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  {gscHealthData?.coveragePercent != null && (
+                    <div className="pt-1">
+                      <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all duration-500"
+                          style={{
+                            width: `${Math.min(100, gscHealthData.coveragePercent)}%`,
+                            backgroundColor: gscHealthData.coveragePercent >= 90 ? '#22c55e' : gscHealthData.coveragePercent >= 70 ? '#f59e0b' : '#ef4444'
+                          }}
+                        />
+                      </div>
+                    </div>
+                  )}
+                  <Button variant="ghost" size="sm" className="w-full mt-1" onClick={() => handleNavigate('/seo/search-console')}>
+                    View Search Console<ChevronRight className="h-4 w-4 ml-1" />
+                  </Button>
                 </div>
               )}
             </CardContent>
@@ -360,7 +468,7 @@ export default function SEODashboard({ onNavigate }) {
           {openOpportunities.length > 0 && (
             <Card className="border-primary/20"><CardHeader className="pb-3"><CardTitle className="text-base flex items-center gap-2"><Zap className="h-4 w-4 text-primary" />Opportunities</CardTitle></CardHeader>
               <CardContent><div className="space-y-2">
-                {openOpportunities.slice(0, 3).map((opp) => <div key={opp.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/30 text-sm"><span className="truncate flex-1">{opp.title}</span><Badge variant="outline" className={cn("ml-2 text-xs", opp.priority === 'critical' && "border-red-500/30 text-red-500", opp.priority === 'high' && "border-orange-500/30 text-orange-500", opp.priority === 'medium' && "border-yellow-500/30 text-yellow-500")}>{opp.priority}</Badge></div>)}
+                {openOpportunities.slice(0, 3).map((opp: any) => <div key={opp.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/30 text-sm"><span className="truncate flex-1">{opp.title}</span><Badge variant="outline" className={cn("ml-2 text-xs", opp.priority === 'critical' && "border-red-500/30 text-red-500", opp.priority === 'high' && "border-orange-500/30 text-orange-500", opp.priority === 'medium' && "border-yellow-500/30 text-yellow-500")}>{opp.priority}</Badge></div>)}
                 {openOpportunities.length > 3 && <Button variant="ghost" size="sm" className="w-full" onClick={() => handleNavigate('/seo/pages')}>+{openOpportunities.length - 3} more<ChevronRight className="h-4 w-4 ml-1" /></Button>}
               </div></CardContent>
             </Card>

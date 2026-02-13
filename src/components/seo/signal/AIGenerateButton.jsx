@@ -80,10 +80,10 @@ export default function AIGenerateButton({
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
             className={cn(
-              'h-7 w-7 relative',
-              'text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10',
+              'h-7 w-7 relative hover:bg-[color:color-mix(in_srgb,var(--brand-primary)_10%,transparent)]',
               className
             )}
+            style={{ color: 'var(--brand-primary)' }}
           >
             {isLoading ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -116,10 +116,10 @@ export default function AIGenerateButton({
         onClick={onClick}
         disabled={disabled || isLoading}
         className={cn(
-          'h-7 px-2 text-xs',
-          'text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10',
+          'h-7 px-2 text-xs hover:bg-[color:color-mix(in_srgb,var(--brand-primary)_10%,transparent)]',
           className
         )}
+        style={{ color: 'var(--brand-primary)' }}
       >
         {isLoading ? (
           <Loader2 className="h-3 w-3 mr-1 animate-spin" />
@@ -139,9 +139,10 @@ export default function AIGenerateButton({
       onClick={onClick}
       disabled={disabled || isLoading}
       className={cn(
-        'border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10 hover:border-emerald-500/50',
+        'hover:bg-[color:color-mix(in_srgb,var(--brand-primary)_10%,transparent)] hover:border-[color:color-mix(in_srgb,var(--brand-primary)_50%,transparent)]',
         className
       )}
+      style={{ color: 'var(--brand-primary)', borderColor: 'color-mix(in srgb, var(--brand-primary) 30%, transparent)' }}
     >
       {isLoading ? (
         <Loader2 className="h-4 w-4 mr-2 animate-spin" />

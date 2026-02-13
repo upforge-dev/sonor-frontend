@@ -1,4 +1,4 @@
-// src/components/seo/SEOPagesList.jsx
+// src/components/seo/SEOPagesList.tsx
 // List of all pages for a site with filtering and actions
 // MIGRATED TO REACT QUERY - Jan 29, 2026
 // UPDATED: Jan 29, 2026 - Added hierarchical parent/child grouping
@@ -33,31 +33,104 @@ import { seoApi } from '@/lib/portal-api'
 import SEOBulkEditModal from './SEOBulkEditModal'
 import { cn } from '@/lib/utils'
 
+// Types
+interface Site {
+  id?: string
+  [key: string]: any
+}
+
+interface SEOPagesListProps {
+  site?: Site
+  projectId?: string
+}
+
+interface SeoPage {
+  id: string
+  path?: string
+  url?: string
+  title?: string
+  clicks_28d?: number | null
+  impressions_28d?: number | null
+  avg_position_28d?: number | null
+  seo_health_score?: number | null
+  opportunities_count?: number
+  index_status?: string | null
+  has_noindex?: boolean
+  robots_blocked?: boolean
+  displayPath?: string
+  slug?: string
+  isRoot?: boolean
+  isLeaf?: boolean
+  parentPath?: string
+  [key: string]: any
+}
+
+type StatusFilter = 'all' | 'indexed' | 'not-indexed' | 'blocked'
+type HealthFilter = 'all' | 'good' | 'needs-work' | 'poor'
+type SortBy = 'path' | 'clicks' | 'impressions' | 'position' | 'health' | 'opportunities'
+
+interface PageGroup {
+  parent: string
+  children: SeoPage[]
+  segment?: string
+  isRoot?: boolean
+}
+
+interface GroupStats {
+  clicks: number
+  impressions: number
+  position: number | null
+  health: number | null
+  issues: number
+}
+
+type DisplayRow = 
+  | {
+      type: 'group'
+      groupKey: string
+      segment?: string
+      childCount: number
+      isExpanded: boolean
+      stats: GroupStats
+    }
+  | {
+      type: 'page'
+      page: SeoPage
+      depth: number
+      parentGroup?: string
+    }
+
+interface PagesPagination {
+  page: number
+  total: number
+  totalPages: number
+}
+
 // Helper to format segment names for display
-function formatSegmentName(segment) {
+function formatSegmentName(segment?: string): string {
   if (!segment) return 'Home'
   return segment
     .replace(/-/g, ' ')
     .replace(/\b\w/g, c => c.toUpperCase())
 }
 
-export default function SEOPagesList({ site, projectId }) {
+export default function SEOPagesList({ site, projectId }: SEOPagesListProps) {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   
   // Local UI state
-  const [searchQuery, setSearchQuery] = useState('')
-  const [statusFilter, setStatusFilter] = useState('all')
-  const [healthFilter, setHealthFilter] = useState('all')
-  const [sortBy, setSortBy] = useState('clicks')
-  const [page, setPage] = useState(1)
-  const [crawlingPages, setCrawlingPages] = useState(new Set())
-  const [crawlingSitemap, setCrawlingSitemap] = useState(false)
-  const [bulkEditOpen, setBulkEditOpen] = useState(false)
-  const [expandedGroups, setExpandedGroups] = useState(new Set())
+  const [searchQuery, setSearchQuery] = useState<string>('')
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
+  const [healthFilter, setHealthFilter] = useState<HealthFilter>('all')
+  const [sortBy, setSortBy] = useState<SortBy>('clicks')
+  const [page, setPage] = useState<number>(1)
+  const [crawlingPages, setCrawlingPages] = useState<Set<string>>(new Set())
+  const [crawlingSitemap, setCrawlingSitemap] = useState<boolean>(false)
+  const [bulkEditOpen, setBulkEditOpen] = useState<boolean>(false)
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set())
 
   // Use projectId directly (new architecture) or fallback to site.id (legacy)
-  const siteId = projectId || site?.id
+  const siteId: string | undefined = projectId || site?.id
 
   // React Query: Fetch pages with filters
   // Automatically refetches when filters change!
@@ -65,7 +138,7 @@ export default function SEOPagesList({ site, projectId }) {
     data: pagesData, 
     isLoading: pagesLoading,
     refetch: refetchPages
-  } = useSeoPages(siteId, {
+  } = useSeoPages(siteId || '', {
     page,
     limit: 50,
     search: searchQuery || undefined,
@@ -74,18 +147,19 @@ export default function SEOPagesList({ site, projectId }) {
   })
 
   // Extract pages and pagination from response (ensure array; handles raw API shape)
-  const pages = (() => {
+  const pages: SeoPage[] = (() => {
     const p = pagesData?.pages ?? pagesData?.data
     return Array.isArray(p) ? p : (p?.pages ?? [])
   })()
-  const pagesPagination = useMemo(() => ({
+  const pagesPagination: PagesPagination = useMemo(() => ({
     page: pagesData?.page || 1,
     total: pagesData?.total || 0,
     totalPages: pagesData?.totalPages || 1,
   }), [pagesData])
 
   // Direct API calls for actions (not cached data)
-  const handleCrawlSitemap = async () => {
+  const handleCrawlSitemap = async (): Promise<void> => {
+    if (!siteId) return
     setCrawlingSitemap(true)
     try {
       await seoApi.crawlSitemap(siteId)
@@ -96,7 +170,8 @@ export default function SEOPagesList({ site, projectId }) {
     }
   }
 
-  const handleCrawlPage = async (pageId) => {
+  const handleCrawlPage = async (pageId: string): Promise<void> => {
+    if (!siteId) return
     setCrawlingPages(prev => new Set([...prev, pageId]))
     try {
       await seoApi.crawlPage(pageId)
@@ -112,7 +187,7 @@ export default function SEOPagesList({ site, projectId }) {
     }
   }
 
-  const getHealthBadge = (score) => {
+  const getHealthBadge = (score: number | null | undefined): JSX.Element => {
     if (score === null || score === undefined) {
       return <Badge variant="outline" className="text-xs">-</Badge>
     }
@@ -125,7 +200,7 @@ export default function SEOPagesList({ site, projectId }) {
     return <Badge className="bg-red-500/20 text-red-400 border-red-500/30 text-xs">{score}</Badge>
   }
 
-  const getIndexStatusBadge = (page) => {
+  const getIndexStatusBadge = (page: SeoPage): JSX.Element => {
     const status = page.index_status
     const hasNoindex = page.has_noindex
     const isBlocked = page.robots_blocked
@@ -140,7 +215,7 @@ export default function SEOPagesList({ site, projectId }) {
     }
     if (hasNoindex) {
       return (
-        <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30 text-xs gap-1">
+        <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 text-xs gap-1">
           <XCircle className="h-3 w-3" />
           Noindex
         </Badge>
@@ -177,14 +252,14 @@ export default function SEOPagesList({ site, projectId }) {
     )
   }
 
-  const formatNumber = (num) => {
+  const formatNumber = (num: number | null | undefined): string => {
     if (num === null || num === undefined) return '-'
     if (num >= 1000) return `${(num / 1000).toFixed(1)}K`
     return num.toString()
   }
 
   // Helper to get path from page object
-  const getPagePath = (page) => {
+  const getPagePath = (page: SeoPage): string => {
     if (page.path) {
       try {
         const url = new URL(page.path)
@@ -204,18 +279,18 @@ export default function SEOPagesList({ site, projectId }) {
   }
 
   // Filter pages based on health filter
-  const filteredPages = pages.filter(page => {
+  const filteredPages: SeoPage[] = pages.filter((page: SeoPage) => {
     if (healthFilter === 'all') return true
-    if (healthFilter === 'good') return page.seo_health_score >= 80
-    if (healthFilter === 'needs-work') return page.seo_health_score >= 60 && page.seo_health_score < 80
-    if (healthFilter === 'poor') return page.seo_health_score < 60
+    if (healthFilter === 'good') return (page.seo_health_score ?? 0) >= 80
+    if (healthFilter === 'needs-work') return (page.seo_health_score ?? 0) >= 60 && (page.seo_health_score ?? 0) < 80
+    if (healthFilter === 'poor') return (page.seo_health_score ?? 0) < 60
     return true
   })
 
   // Build hierarchical page structure grouped by parent path
-  const { groupedPages, displayRows } = useMemo(() => {
+  const { groupedPages, displayRows } = useMemo<{ groupedPages: Map<string, PageGroup>, displayRows: DisplayRow[] }>(() => {
     // Group pages by their parent path (first segment)
-    const groups = new Map()
+    const groups = new Map<string, PageGroup>()
     
     for (const page of filteredPages) {
       const path = getPagePath(page)
@@ -274,7 +349,7 @@ export default function SEOPagesList({ site, projectId }) {
     }
     
     // Build flat display rows with expand/collapse logic
-    const rows = []
+    const rows: DisplayRow[] = []
     for (const [groupKey, group] of sortedGroups) {
       const isExpanded = expandedGroups.has(groupKey)
       const hasMultipleChildren = group.children.length > 1
@@ -338,7 +413,7 @@ export default function SEOPagesList({ site, projectId }) {
   }, [filteredPages, sortBy, expandedGroups])
 
   // Toggle group expansion
-  const toggleGroup = (groupKey) => {
+  const toggleGroup = (groupKey: string): void => {
     setExpandedGroups(prev => {
       const next = new Set(prev)
       if (next.has(groupKey)) {
@@ -367,7 +442,7 @@ export default function SEOPagesList({ site, projectId }) {
         </div>
 
         <div className="flex items-center gap-2">
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <Select value={statusFilter} onValueChange={(value: StatusFilter) => setStatusFilter(value)}>
             <SelectTrigger className="w-[140px]">
               <SelectValue placeholder="Index Status" />
             </SelectTrigger>
@@ -379,7 +454,7 @@ export default function SEOPagesList({ site, projectId }) {
             </SelectContent>
           </Select>
 
-          <Select value={healthFilter} onValueChange={setHealthFilter}>
+          <Select value={healthFilter} onValueChange={(value: HealthFilter) => setHealthFilter(value)}>
             <SelectTrigger className="w-[140px]">
               <SelectValue placeholder="Health" />
             </SelectTrigger>
@@ -391,7 +466,7 @@ export default function SEOPagesList({ site, projectId }) {
             </SelectContent>
           </Select>
 
-          <Select value={sortBy} onValueChange={setSortBy}>
+          <Select value={sortBy} onValueChange={(value: SortBy) => setSortBy(value)}>
             <SelectTrigger className="w-[140px]">
               <SelectValue placeholder="Sort By" />
             </SelectTrigger>
@@ -438,7 +513,9 @@ export default function SEOPagesList({ site, projectId }) {
         field="both"
         onComplete={() => {
           // Invalidate cache to refetch fresh data
-          queryClient.invalidateQueries({ queryKey: seoPageKeys.list(siteId) })
+          if (siteId) {
+            queryClient.invalidateQueries({ queryKey: seoPageKeys.list(siteId) })
+          }
         }}
       />
 
@@ -546,7 +623,7 @@ export default function SEOPagesList({ site, projectId }) {
                             {row.stats.position?.toFixed(1) || '-'}
                           </td>
                           <td className="px-4 py-3 text-center">
-                            {getHealthBadge(Math.round(row.stats.health))}
+                            {getHealthBadge(Math.round(row.stats.health || 0))}
                           </td>
                           <td className="px-4 py-3 text-center">
                             {row.stats.issues > 0 ? (
@@ -590,7 +667,7 @@ export default function SEOPagesList({ site, projectId }) {
                                 <p className="text-xs text-muted-foreground truncate">
                                   {isChild ? page.displayPath : (() => {
                                     try {
-                                      const url = new URL(page.path)
+                                      const url = new URL(page.path || '')
                                       return url.pathname
                                     } catch {
                                       return page.path
@@ -617,7 +694,7 @@ export default function SEOPagesList({ site, projectId }) {
                           {getHealthBadge(page.seo_health_score)}
                         </td>
                         <td className="px-4 py-3 text-center">
-                          {page.opportunities_count > 0 ? (
+                          {page.opportunities_count && page.opportunities_count > 0 ? (
                             <Badge variant="outline" className="text-orange-400 border-orange-500/30">
                               {page.opportunities_count}
                             </Badge>

@@ -878,6 +878,20 @@ export const signalSeoApi = {
     })
     return response.data.data
   },
+
+  // GSC Reconciliation with Auto-Fix
+  // POST /skills/seo/gsc-reconcile
+  reconcileGsc: async (projectId) => {
+    const response = await signalApi.post('/skills/seo/gsc-reconcile', { projectId })
+    return response.data.data
+  },
+
+  // GSC Comparison (AI-powered)
+  // POST /skills/seo/gsc-comparison
+  analyzeGscComparison: async (projectId, { autoFix = false } = {}) => {
+    const response = await signalApi.post('/skills/seo/gsc-comparison', { projectId, autoFix })
+    return response.data.data
+  },
   
   // Additional Signal API endpoints
   

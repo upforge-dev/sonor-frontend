@@ -1,6 +1,6 @@
-// src/components/seo/SEOTechnicalAudit.jsx
+// src/components/seo/SEOTechnicalAudit.tsx
 // Technical SEO Hub - Core Web Vitals, Indexing, Schema, Internal Links
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo } from 'react'
 import { toast } from 'sonner'
 import { useCwvSummary, useSeoPages, seoKeys } from '@/lib/hooks/use-seo'
 import { useSignalAccess } from '@/lib/signal-access'
@@ -38,8 +38,158 @@ import {
   AlertCircle,
   ChevronRight
 } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import { UptradeSpinner } from '@/components/UptradeLoading'
 import { cn } from '@/lib/utils'
+import { useNavigate } from 'react-router-dom'
+
+// ================== TYPE DEFINITIONS ==================
+
+interface SeoPage {
+  id?: string
+  path?: string
+  url?: string
+  title?: string
+  meta_description?: string
+  h1?: string
+  word_count?: number
+  index_status?: 'indexed' | 'not_indexed'
+  is_indexed?: boolean
+  has_noindex?: boolean
+  robots_blocked?: boolean
+  http_status?: number
+  has_schema?: boolean
+  schema_types?: string[]
+  internal_links_in?: number
+  [key: string]: any
+}
+
+interface CwvSummary {
+  avgMobileScore?: number
+  avgDesktopScore?: number
+  mobileLCP?: number
+  desktopLCP?: number
+  mobileCLS?: number
+  desktopCLS?: number
+  mobileFID?: number
+  desktopFID?: number
+  mobileTTFB?: number
+  desktopTTFB?: number
+  [key: string]: any
+}
+
+interface PagesData {
+  pages?: SeoPage[]
+  data?: SeoPage[]
+  [key: string]: any
+}
+
+interface SEOTechnicalAuditProps {
+  projectId?: string
+  pages?: SeoPage[] | PagesData
+  cwvSummary?: CwvSummary | null
+  domain?: string | null
+  onRefresh?: () => void
+}
+
+interface AuditIssue {
+  type: 'error' | 'indexing' | 'cwv' | 'title' | 'description' | 'orphan' | 'duplicate'
+  message: string
+  count: number
+}
+
+interface IndexingData {
+  total: number
+  indexed: number
+  notIndexed: number
+  noindex: number
+  blocked: number
+  errors: number
+  redirects: number
+  pages: {
+    indexed: SeoPage[]
+    notIndexed: SeoPage[]
+    noindex: SeoPage[]
+    errors: SeoPage[]
+  }
+}
+
+interface ContentData {
+  missingTitles: SeoPage[]
+  missingDescriptions: SeoPage[]
+  missingH1: SeoPage[]
+  duplicateTitles: number
+  thinContent: SeoPage[]
+}
+
+interface SchemaData {
+  pagesWithSchema: number
+  totalPages: number
+  coverage: string
+  types: string[]
+}
+
+interface InternalLinksData {
+  orphanPages: SeoPage[]
+  avgLinks: string
+  wellLinked: number
+}
+
+interface AuditData {
+  score: number
+  issues: AuditIssue[]
+  warnings: AuditIssue[]
+  passed: string[]
+  indexing: IndexingData
+  content: ContentData
+  schema: SchemaData
+  internalLinks: InternalLinksData
+  cwv: CwvSummary | null
+}
+
+interface MetricCardProps {
+  icon: LucideIcon
+  label: string
+  value: string
+  status: 'good' | 'warning' | 'poor' | 'needs-improvement' | 'unknown'
+}
+
+interface CwvSectionProps {
+  cwvSummary?: CwvSummary | null
+  projectId?: string
+}
+
+interface CwvGaugeProps {
+  score?: number
+}
+
+interface CwvMetric {
+  key: string
+  label: string
+  unit: string
+  good: number
+  poor: number
+  description: string
+}
+
+interface CwvMetricCardProps {
+  metric: CwvMetric
+  mobileValue?: number
+  desktopValue?: number
+}
+
+interface IndexingSummaryCardProps {
+  data?: IndexingData
+}
+
+interface InternalLinksSectionProps {
+  data?: InternalLinksData
+  pages?: SeoPage[]
+}
+
+type CwvStatus = 'good' | 'needs-improvement' | 'poor' | 'unknown'
+
+// ================== MAIN COMPONENT ==================
 
 /**
  * SEOTechnicalAudit - Technical SEO Hub
@@ -51,7 +201,7 @@ export default function SEOTechnicalAudit({
   cwvSummary = null,
   domain = null,
   onRefresh 
-}) {
+}: SEOTechnicalAuditProps) {
   const { hasAccess: hasSignalAccess } = useSignalAccess()
 
   // Show upgrade prompt if no Signal access
@@ -69,11 +219,11 @@ export default function SEOTechnicalAudit({
   // Pull seo_pages from API when parent didn't pass any (e.g. site-kit already posted pages)
   const { data: pagesFromApi, isLoading: pagesLoading } = useSeoPages(projectId, { limit: 500 }, { enabled: !!projectId })
 
-  const [activeTab, setActiveTab] = useState('overview')
-  const [isRefreshing, setIsRefreshing] = useState(false)
-  const [isCrawling, setIsCrawling] = useState(false)
+  const [activeTab, setActiveTab] = useState<string>('overview')
+  const [isRefreshing, setIsRefreshing] = useState<boolean>(false)
+  const [isCrawling, setIsCrawling] = useState<boolean>(false)
 
-  const handleCrawlSitemap = async () => {
+  const handleCrawlSitemap = async (): Promise<void> => {
     if (!projectId) return
     setIsCrawling(true)
     try {
@@ -88,12 +238,12 @@ export default function SEOTechnicalAudit({
   }
 
   // Use pages prop if provided and non-empty; otherwise use seo_pages from API (e.g. from site-kit)
-  const propList = Array.isArray(pages) ? pages : (pages?.pages ?? [])
-  const apiList = Array.isArray(pagesFromApi?.pages) ? pagesFromApi.pages : (pagesFromApi?.data ?? [])
-  const pageList = (propList.length > 0 ? propList : apiList) || []
+  const propList: SeoPage[] = Array.isArray(pages) ? pages : (pages?.pages ?? [])
+  const apiList: SeoPage[] = Array.isArray(pagesFromApi?.pages) ? pagesFromApi.pages : (pagesFromApi?.data ?? [])
+  const pageList: SeoPage[] = (propList.length > 0 ? propList : apiList) || []
 
   // Calculate technical audit data from existing page data
-  const auditData = useMemo(() => {
+  const auditData = useMemo<AuditData | null>(() => {
     if (!pageList.length) {
       return null
     }
@@ -103,14 +253,14 @@ export default function SEOTechnicalAudit({
     const notIndexedPages = pageList.filter(p => p.index_status === 'not_indexed' || (!p.is_indexed && !p.has_noindex))
     const noindexPages = pageList.filter(p => p.has_noindex)
     const blockedPages = pageList.filter(p => p.robots_blocked)
-    const errorPages = pageList.filter(p => p.http_status >= 400)
-    const redirectPages = pageList.filter(p => p.http_status >= 300 && p.http_status < 400)
+    const errorPages = pageList.filter(p => p.http_status && p.http_status >= 400)
+    const redirectPages = pageList.filter(p => p.http_status && p.http_status >= 300 && p.http_status < 400)
 
     // Content Analysis
     const missingTitles = pageList.filter(p => !p.title || p.title.trim() === '')
     const missingDescriptions = pageList.filter(p => !p.meta_description || p.meta_description.trim() === '')
     const missingH1 = pageList.filter(p => !p.h1)
-    const duplicateTitles = findDuplicates(pageList.map(p => p.title).filter(Boolean))
+    const duplicateTitles = findDuplicates(pageList.map(p => p.title).filter(Boolean) as string[])
     const thinContent = pageList.filter(p => p.word_count && p.word_count < 300)
 
     // Schema Analysis
@@ -129,9 +279,9 @@ export default function SEOTechnicalAudit({
 
     // Calculate overall score
     let score = 100
-    const issues = []
-    const warnings = []
-    const passed = []
+    const issues: AuditIssue[] = []
+    const warnings: AuditIssue[] = []
+    const passed: string[] = []
 
     // Critical issues (high impact)
     if (errorPages.length > 0) {
@@ -173,7 +323,7 @@ export default function SEOTechnicalAudit({
     if (errorPages.length === 0) passed.push('No broken pages detected')
     if (missingTitles.length === 0) passed.push('All pages have titles')
     if (missingDescriptions.length === 0) passed.push('All pages have meta descriptions')
-    if (pagesWithSchema.length >= pages.length * 0.5) passed.push('Good schema coverage')
+    if (pagesWithSchema.length >= pageList.length * 0.5) passed.push('Good schema coverage')
     if (cwvStatus === 'good') passed.push('Core Web Vitals passing')
     if (orphanPages.length === 0) passed.push('No orphan pages')
     if (indexedPages.length >= pageList.length * 0.8) passed.push('Good indexing coverage')
@@ -203,7 +353,7 @@ export default function SEOTechnicalAudit({
       schema: {
         pagesWithSchema: pagesWithSchema.length,
         totalPages: pageList.length,
-        coverage: pageList.length > 0 ? (pagesWithSchema.length / pageList.length * 100).toFixed(0) : 0,
+        coverage: pageList.length > 0 ? (pagesWithSchema.length / pageList.length * 100).toFixed(0) : '0',
         types: schemaTypes
       },
       internalLinks: {
@@ -215,7 +365,7 @@ export default function SEOTechnicalAudit({
     }
   }, [pageList, cwvSummary])
 
-  const handleRefresh = async () => {
+  const handleRefresh = async (): Promise<void> => {
     if (!projectId) return
     setIsRefreshing(true)
     try {
@@ -226,21 +376,21 @@ export default function SEOTechnicalAudit({
     }
   }
 
-  const getScoreColor = (score) => {
+  const getScoreColor = (score: number): string => {
     if (score >= 90) return 'text-green-400'
     if (score >= 70) return 'text-yellow-400'
     if (score >= 50) return 'text-orange-400'
     return 'text-red-400'
   }
 
-  const getScoreBg = (score) => {
+  const getScoreBg = (score: number): string => {
     if (score >= 90) return 'bg-green-500/20 border-green-500/30'
     if (score >= 70) return 'bg-yellow-500/20 border-yellow-500/30'
     if (score >= 50) return 'bg-orange-500/20 border-orange-500/30'
     return 'bg-red-500/20 border-red-500/30'
   }
 
-  const getGrade = (score) => {
+  const getGrade = (score: number): string => {
     if (score >= 90) return 'A'
     if (score >= 80) return 'B'
     if (score >= 70) return 'C'
@@ -471,7 +621,7 @@ export default function SEOTechnicalAudit({
               icon={FileCode}
               label="Schema Coverage"
               value={`${auditData?.schema.coverage || 0}%`}
-              status={auditData?.schema.coverage >= 50 ? 'good' : 'warning'}
+              status={auditData && parseFloat(auditData.schema.coverage) >= 50 ? 'good' : 'warning'}
             />
             <MetricCard
               icon={Link2}
@@ -493,9 +643,9 @@ export default function SEOTechnicalAudit({
           <CwvSection cwvSummary={auditData?.cwv} projectId={projectId} />
         </TabsContent>
 
-        {/* Indexing Tab */}
+        {/* Indexing Tab — lightweight summary, links to full Search Console view */}
         <TabsContent value="indexing" className="space-y-4">
-          <IndexingSection data={auditData?.indexing} projectId={projectId} domain={domain} />
+          <IndexingSummaryCard data={auditData?.indexing} />
         </TabsContent>
 
         {/* Internal Links Tab */}
@@ -509,8 +659,8 @@ export default function SEOTechnicalAudit({
 
 // ================== SUB-COMPONENTS ==================
 
-function MetricCard({ icon: Icon, label, value, status }) {
-  const statusStyles = {
+function MetricCard({ icon: Icon, label, value, status }: MetricCardProps) {
+  const statusStyles: Record<string, string> = {
     good: 'bg-green-500/10 border-green-500/30',
     warning: 'bg-yellow-500/10 border-yellow-500/30',
     poor: 'bg-red-500/10 border-red-500/30',
@@ -531,11 +681,11 @@ function MetricCard({ icon: Icon, label, value, status }) {
   )
 }
 
-function CwvSection({ cwvSummary, projectId }) {
-  const [isRunning, setIsRunning] = useState(false)
+function CwvSection({ cwvSummary, projectId }: CwvSectionProps) {
+  const [isRunning, setIsRunning] = useState<boolean>(false)
   const queryClient = useQueryClient()
   
-  const handleRunSweep = async () => {
+  const handleRunSweep = async (): Promise<void> => {
     if (!projectId) return
     setIsRunning(true)
     try {
@@ -574,7 +724,7 @@ function CwvSection({ cwvSummary, projectId }) {
     )
   }
 
-  const metrics = [
+  const metrics: CwvMetric[] = [
     { 
       key: 'lcp', 
       label: 'Largest Contentful Paint', 
@@ -686,8 +836,8 @@ function CwvSection({ cwvSummary, projectId }) {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {metrics.map(metric => {
-              const mobileValue = cwvSummary[`mobile${metric.key.toUpperCase()}`]
-              const desktopValue = cwvSummary[`desktop${metric.key.toUpperCase()}`]
+              const mobileValue = cwvSummary[`mobile${metric.key.toUpperCase()}` as keyof CwvSummary] as number | undefined
+              const desktopValue = cwvSummary[`desktop${metric.key.toUpperCase()}` as keyof CwvSummary] as number | undefined
               
               return (
                 <CwvMetricCard 
@@ -705,14 +855,16 @@ function CwvSection({ cwvSummary, projectId }) {
   )
 }
 
-function CwvGauge({ score }) {
-  const getColor = (s) => {
+function CwvGauge({ score }: CwvGaugeProps) {
+  const getColor = (s?: number): string => {
+    if (!s) return 'text-muted-foreground'
     if (s >= 90) return 'text-green-400'
     if (s >= 50) return 'text-yellow-400'
     return 'text-red-400'
   }
 
-  const getBgColor = (s) => {
+  const getBgColor = (s?: number): string => {
+    if (!s) return 'stroke-border/50'
     if (s >= 90) return 'stroke-green-500'
     if (s >= 50) return 'stroke-yellow-500'
     return 'stroke-red-500'
@@ -753,22 +905,22 @@ function CwvGauge({ score }) {
   )
 }
 
-function CwvMetricCard({ metric, mobileValue, desktopValue }) {
-  const getStatus = (value) => {
+function CwvMetricCard({ metric, mobileValue, desktopValue }: CwvMetricCardProps) {
+  const getStatus = (value?: number): 'good' | 'warning' | 'poor' | 'unknown' => {
     if (value === undefined || value === null) return 'unknown'
     if (value <= metric.good) return 'good'
     if (value <= metric.poor) return 'warning'
     return 'poor'
   }
 
-  const statusColors = {
+  const statusColors: Record<string, string> = {
     good: 'text-green-400',
     warning: 'text-yellow-400',
     poor: 'text-red-400',
     unknown: 'text-muted-foreground'
   }
 
-  const formatValue = (val) => {
+  const formatValue = (val?: number): string => {
     if (val === undefined || val === null) return '-'
     if (metric.unit === 's') return `${val.toFixed(2)}s`
     if (metric.unit === 'ms') return `${Math.round(val)}ms`
@@ -805,123 +957,23 @@ function CwvMetricCard({ metric, mobileValue, desktopValue }) {
   )
 }
 
-function IndexingSection({ data, projectId, domain }) {
-  const [quota, setQuota] = useState(null)
-  const [submitting, setSubmitting] = useState(null) // url or 'bulk'
-  const notIndexedPages = data?.pages?.notIndexed || []
-
-  const baseUrl = useMemo(() => {
-    if (!domain) return null
-    const d = domain.replace(/^https?:\/\//, '').replace(/\/$/, '')
-    return d ? `https://${d}` : null
-  }, [domain])
-
-  const getFullUrl = (page) => {
-    if (page.url && (page.url.startsWith('http://') || page.url.startsWith('https://'))) return page.url
-    if (!baseUrl) return null
-    const path = page.path || (page.url || '').replace(/^https?:\/\/[^/]+/, '') || '/'
-    return path.startsWith('/') ? `${baseUrl}${path}` : `${baseUrl}/${path}`
-  }
-
-  useEffect(() => {
-    if (!projectId) return
-    seoApi.getIndexingSubmitQuota(projectId).then(setQuota).catch(() => setQuota(null))
-  }, [projectId, submitting])
-
-  const handleSubmitOne = async (page) => {
-    const url = getFullUrl(page)
-    if (!url || !projectId) {
-      if (!baseUrl) toast.error('Configure project domain to submit URLs')
-      return
-    }
-    setSubmitting(url)
-    try {
-      await seoApi.submitUrlForIndexing(projectId, url)
-      toast.success('URL submitted to Google for indexing')
-    } catch (e) {
-      toast.error(e?.response?.data?.message || e?.message || 'Submit failed')
-    } finally {
-      setSubmitting(null)
-    }
-  }
-
-  const handleSubmitBulk = async () => {
-    if (!projectId || !baseUrl || notIndexedPages.length === 0) {
-      if (!baseUrl) toast.error('Configure project domain to submit URLs')
-      return
-    }
-    const urls = notIndexedPages.map(getFullUrl).filter(Boolean)
-    const limit = Math.min(urls.length, quota?.remaining ?? 200)
-    if (limit === 0) {
-      toast.error('No indexing quota remaining today (200/day). Try again tomorrow.')
-      return
-    }
-    const toSubmit = urls.slice(0, limit)
-    setSubmitting('bulk')
-    try {
-      const result = await seoApi.submitBulkForIndexing(projectId, toSubmit)
-      const submitted = result?.submitted ?? result?.results?.filter(r => r.success)?.length ?? 0
-      toast.success(`Submitted ${submitted} URL(s) to Google for indexing`)
-    } catch (e) {
-      toast.error(e?.response?.data?.message || e?.message || 'Bulk submit failed')
-    } finally {
-      setSubmitting(null)
-    }
-  }
+function IndexingSummaryCard({ data }: IndexingSummaryCardProps) {
+  const navigate = useNavigate()
 
   if (!data) return null
 
-  const sections = [
-    { key: 'indexed', label: 'Indexed', icon: CheckCircle, color: 'green', pages: data.pages?.indexed || [] },
-    { key: 'notIndexed', label: 'Not Indexed', icon: EyeOff, color: 'yellow', pages: data.pages?.notIndexed || [] },
-    { key: 'noindex', label: 'Noindex Set', icon: Eye, color: 'blue', pages: data.pages?.noindex || [] },
-    { key: 'errors', label: 'Errors', icon: FileX, color: 'red', pages: data.pages?.errors || [] },
-  ]
+  const coveragePercent = data.total > 0 ? Math.round(data.indexed / data.total * 100) : 0
 
   return (
     <div className="space-y-4">
-      {/* Google Indexing API quota */}
-      {projectId && (
-        <Card className="border-muted">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Search className="h-4 w-4 text-muted-foreground" />
-              Google Indexing API
-            </CardTitle>
-            <CardDescription>
-              Submit URLs for indexing (max 200/day per property). Quota resets at midnight UTC.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-wrap items-center gap-4">
-            {quota != null && (
-              <div className="flex items-center gap-2">
-                <Badge variant="secondary">
-                  {quota.remaining} of {quota.limit ?? 200} remaining today
-                </Badge>
-              </div>
-            )}
-            {data.notIndexed > 0 && baseUrl && (
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={!!submitting || (quota != null && quota.remaining === 0)}
-                onClick={handleSubmitBulk}
-              >
-                {submitting === 'bulk' ? (
-                  <RefreshCw className="h-4 w-4 animate-spin mr-2" />
-                ) : null}
-                Submit all not indexed to Google
-              </Button>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Coverage Overview */}
+      {/* Coverage Summary */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Indexing Coverage</CardTitle>
-          <CardDescription>How Google is indexing your pages</CardDescription>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Search className="h-4 w-4" style={{ color: 'var(--brand-primary)' }} />
+            Indexing Coverage
+          </CardTitle>
+          <CardDescription>Quick overview — full details, inspections, and auto-fix tools are in Search Console</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="mb-4">
@@ -929,102 +981,58 @@ function IndexingSection({ data, projectId, domain }) {
               <span className="text-muted-foreground">
                 {data.indexed} of {data.total} pages indexed
               </span>
-              <span className="text-foreground font-medium">
-                {data.total > 0 ? Math.round(data.indexed / data.total * 100) : 0}%
-              </span>
+              <span className="text-foreground font-medium">{coveragePercent}%</span>
             </div>
-            <Progress 
-              value={data.total > 0 ? (data.indexed / data.total * 100) : 0} 
-              className="h-2"
-            />
+            <Progress value={coveragePercent} className="h-2" />
           </div>
-          
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {sections.map(section => (
-              <div 
-                key={section.key}
-                className={cn(
-                  'p-3 rounded-lg border',
-                  section.color === 'green' && 'bg-green-500/10 border-green-500/30',
-                  section.color === 'yellow' && 'bg-yellow-500/10 border-yellow-500/30',
-                  section.color === 'blue' && 'bg-blue-500/10 border-blue-500/30',
-                  section.color === 'red' && 'bg-red-500/10 border-red-500/30'
-                )}
-              >
-                <div className="flex items-center gap-2 mb-1">
-                  <section.icon className={cn(
-                    'h-4 w-4',
-                    section.color === 'green' && 'text-green-400',
-                    section.color === 'yellow' && 'text-yellow-400',
-                    section.color === 'blue' && 'text-blue-400',
-                    section.color === 'red' && 'text-red-400'
-                  )} />
-                  <span className="text-sm text-muted-foreground">{section.label}</span>
-                </div>
-                <p className="text-xl font-bold text-foreground">
-                  {data[section.key] || 0}
-                </p>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+            <div className="p-3 rounded-lg border bg-green-500/10 border-green-500/30">
+              <div className="flex items-center gap-2 mb-1">
+                <CheckCircle className="h-4 w-4 text-green-400" />
+                <span className="text-sm text-muted-foreground">Indexed</span>
               </div>
-            ))}
+              <p className="text-xl font-bold text-foreground">{data.indexed || 0}</p>
+            </div>
+            <div className="p-3 rounded-lg border bg-yellow-500/10 border-yellow-500/30">
+              <div className="flex items-center gap-2 mb-1">
+                <EyeOff className="h-4 w-4 text-yellow-400" />
+                <span className="text-sm text-muted-foreground">Not Indexed</span>
+              </div>
+              <p className="text-xl font-bold text-foreground">{data.notIndexed || 0}</p>
+            </div>
+            <div className="p-3 rounded-lg border bg-blue-500/10 border-blue-500/30">
+              <div className="flex items-center gap-2 mb-1">
+                <Eye className="h-4 w-4 text-blue-400" />
+                <span className="text-sm text-muted-foreground">Noindex</span>
+              </div>
+              <p className="text-xl font-bold text-foreground">{data.noindex || 0}</p>
+            </div>
+            <div className="p-3 rounded-lg border bg-red-500/10 border-red-500/30">
+              <div className="flex items-center gap-2 mb-1">
+                <FileX className="h-4 w-4 text-red-400" />
+                <span className="text-sm text-muted-foreground">Errors</span>
+              </div>
+              <p className="text-xl font-bold text-foreground">{data.errors || 0}</p>
+            </div>
           </div>
+
+          <Button
+            className="w-full"
+            style={{ backgroundColor: 'var(--brand-primary)' }}
+            onClick={() => navigate('/seo/search-console')}
+          >
+            <Globe className="h-4 w-4 mr-2" />
+            Open Search Console
+            <ArrowRight className="h-4 w-4 ml-2" />
+          </Button>
         </CardContent>
       </Card>
-
-      {/* Pages Not Indexed */}
-      {data.notIndexed > 0 && (
-        <Card className="border-yellow-500/30">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2 text-yellow-400">
-              <EyeOff className="h-5 w-5" />
-              Pages Not Indexed ({data.notIndexed})
-            </CardTitle>
-            <CardDescription>
-              These pages are not appearing in Google search results. Use the Google Indexing API to request indexing.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2 max-h-64 overflow-y-auto">
-              {data.pages?.notIndexed?.slice(0, 10).map((page, i) => {
-                const fullUrl = getFullUrl(page)
-                const canSubmit = projectId && fullUrl
-                return (
-                  <div key={i} className="flex items-center justify-between p-2 bg-muted/30 rounded gap-2">
-                    <span className="text-sm text-foreground truncate flex-1">
-                      {page.path || page.url}
-                    </span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-xs shrink-0"
-                      disabled={!canSubmit || !!submitting}
-                      onClick={() => handleSubmitOne(page)}
-                    >
-                      {submitting === fullUrl ? (
-                        <RefreshCw className="h-3 w-3 animate-spin" />
-                      ) : (
-                        <>
-                          Request Index
-                          <ChevronRight className="h-3 w-3 ml-1" />
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                )
-              })}
-              {data.notIndexed > 10 && (
-                <p className="text-sm text-muted-foreground text-center pt-2">
-                  +{data.notIndexed - 10} more pages
-                </p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </div>
   )
 }
 
-function InternalLinksSection({ data, pages = [] }) {
+function InternalLinksSection({ data, pages = [] }: InternalLinksSectionProps) {
   if (!data) return null
 
   return (
@@ -1130,7 +1138,7 @@ function InternalLinksSection({ data, pages = [] }) {
         <CardContent>
           <div className="space-y-2">
             {pages
-              .filter(p => p.internal_links_in > 0)
+              .filter(p => (p.internal_links_in || 0) > 0)
               .sort((a, b) => (b.internal_links_in || 0) - (a.internal_links_in || 0))
               .slice(0, 5)
               .map((page, i) => (
@@ -1148,7 +1156,7 @@ function InternalLinksSection({ data, pages = [] }) {
                   </Badge>
                 </div>
               ))}
-            {pages.filter(p => p.internal_links_in > 0).length === 0 && (
+            {pages.filter(p => (p.internal_links_in || 0) > 0).length === 0 && (
               <p className="text-sm text-muted-foreground text-center py-4">
                 No internal link data available. Crawl your sitemap to analyze internal linking.
               </p>
@@ -1162,15 +1170,15 @@ function InternalLinksSection({ data, pages = [] }) {
 
 // ================== HELPERS ==================
 
-function findDuplicates(arr) {
-  const counts = {}
+function findDuplicates(arr: (string | undefined)[]): number {
+  const counts: Record<string, number> = {}
   arr.forEach(item => {
     if (item) counts[item] = (counts[item] || 0) + 1
   })
   return Object.values(counts).filter(c => c > 1).length
 }
 
-function getCwvStatus(cwv) {
+function getCwvStatus(cwv?: CwvSummary | null): CwvStatus {
   if (!cwv) return 'unknown'
   const score = cwv.avgMobileScore || cwv.avgDesktopScore
   if (!score) return 'unknown'

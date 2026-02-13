@@ -1,8 +1,8 @@
-// src/components/seo/SEOReportingPage.jsx
+// src/components/seo/SEOReportingPage.tsx
 // SEO Reporting hub - Generate reports, view history, conversion attribution
 // Uses existing SEOClientReport functionality
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -19,35 +19,118 @@ import {
   ExternalLink,
   DollarSign,
   ArrowUpRight,
-  Sparkles
+  ArrowDownRight,
+  Minus,
+  Sparkles,
+  ShieldCheck,
+  CheckCircle2,
+  CircleAlert,
+  Globe,
+  ChevronRight,
 } from 'lucide-react'
-import { useGscOverview, useSeoPages, useSeoOpportunities } from '@/lib/hooks'
+import { 
+  useSeoGSCOverview, useSeoGscHealth, useSeoPages, useSeoOpportunities
+} from '@/hooks/seo'
 import { useSignalAccess } from '@/lib/signal-access'
 import SignalIcon from '@/components/ui/SignalIcon'
 import { SEOClientReportModal } from './SEOClientReport'
 import { cn } from '@/lib/utils'
+import { useNavigate } from 'react-router-dom'
 
-export default function SEOReportingPage({ projectId }) {
+interface SEOReportingPageProps {
+  projectId: string
+}
+
+interface Page {
+  id?: string
+  title?: string
+  path?: string
+  clicks?: number
+  position?: number
+}
+
+interface Opportunity {
+  id?: string
+  [key: string]: unknown
+}
+
+interface Report {
+  id: string
+  title: string
+  createdAt: string
+}
+
+export default function SEOReportingPage({ projectId }: SEOReportingPageProps) {
   const { hasAccess: hasSignalAccess } = useSignalAccess()
-  const [reportModalOpen, setReportModalOpen] = useState(false)
-  const [activeTab, setActiveTab] = useState('overview')
+  const navigate = useNavigate()
+  const [reportModalOpen, setReportModalOpen] = useState<boolean>(false)
+  const [activeTab, setActiveTab] = useState<string>('overview')
   
-  // Data for stats
-  const { data: gscOverview } = useGscOverview(projectId, '28d')
+  // Data for stats — use the new structured hooks with change data
+  const { data: gscOverview } = useSeoGSCOverview(projectId)
+  const { data: gscHealthData } = useSeoGscHealth(projectId)
   const { data: pagesData } = useSeoPages(projectId, { limit: 50 })
   const { data: opportunitiesData } = useSeoOpportunities(projectId, { status: 'open' })
   
-  const pages = pagesData?.pages || []
-  const opportunities = opportunitiesData?.opportunities || []
+  const pages = useMemo<Page[]>(() => {
+    const p = pagesData?.pages ?? pagesData?.data
+    return Array.isArray(p) ? p : (p?.pages ?? [])
+  }, [pagesData])
+  const opportunities = useMemo<Opportunity[]>(() => {
+    const o = opportunitiesData?.opportunities ?? opportunitiesData?.data ?? opportunitiesData
+    return Array.isArray(o) ? o : []
+  }, [opportunitiesData])
   
-  // Calculate metrics
-  const totalClicks = gscOverview?.clicks || 0
-  const totalImpressions = gscOverview?.impressions || 0
-  const avgPosition = gscOverview?.avgPosition || 0
-  const avgCtr = gscOverview?.ctr || 0
+  // Extract metrics with change data from GSC overview
+  const gscMetrics = gscOverview?.metrics || {}
+  const totalClicks = gscMetrics.clicks?.value || gscOverview?.clicks || 0
+  const clicksChange = gscMetrics.clicks?.change
+  const totalImpressions = gscMetrics.impressions?.value || gscOverview?.impressions || 0
+  const impressionsChange = gscMetrics.impressions?.change
+  const avgPosition = gscMetrics.position?.value || gscOverview?.avgPosition || 0
+  const positionChange = gscMetrics.position?.change
+  const avgCtr = gscMetrics.ctr?.value || gscOverview?.ctr || 0
+  const ctrChange = gscMetrics.ctr?.change
   
-  // Mock data for report history - in real implementation, fetch from API
-  const reportHistory = []
+  // Report history — still needs API integration
+  const reportHistory: Report[] = []
+  
+  // Helper to render change indicators with real data
+  const formatChange = (
+    change: number | null | undefined,
+    suffix: string = '%',
+    inversePositive: boolean = false
+  ): JSX.Element => {
+    if (change === null || change === undefined || isNaN(change)) {
+      return <span className="text-xs text-muted-foreground">No prior data</span>
+    }
+    const isPositive = inversePositive ? change < 0 : change > 0
+    const isNegative = inversePositive ? change > 0 : change < 0
+    const absChange = Math.abs(change)
+    const formatted = suffix === '%' ? `${absChange.toFixed(1)}${suffix}` : absChange.toFixed(1)
+    if (isPositive) {
+      return (
+        <div className="flex items-center text-green-500 text-sm">
+          <ArrowUpRight className="h-4 w-4" />
+          <span>+{formatted} vs prev</span>
+        </div>
+      )
+    }
+    if (isNegative) {
+      return (
+        <div className="flex items-center text-red-500 text-sm">
+          <ArrowDownRight className="h-4 w-4" />
+          <span>-{formatted} vs prev</span>
+        </div>
+      )
+    }
+    return (
+      <div className="flex items-center text-muted-foreground text-sm">
+        <Minus className="h-4 w-4" />
+        <span>No change</span>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -96,8 +179,8 @@ export default function SEOReportingPage({ projectId }) {
         <Card>
           <CardContent className="pt-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-purple-500/10">
-                <BarChart3 className="h-5 w-5 text-purple-500" />
+              <div className="p-2 rounded-lg bg-teal-500/10">
+                <BarChart3 className="h-5 w-5 text-teal-500" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{(avgCtr * 100).toFixed(1)}%</p>
@@ -155,38 +238,74 @@ export default function SEOReportingPage({ projectId }) {
                 <div className="space-y-2">
                   <p className="text-sm text-muted-foreground">Total Clicks</p>
                   <p className="text-3xl font-bold">{totalClicks.toLocaleString()}</p>
-                  <div className="flex items-center text-emerald-500 text-sm">
-                    <ArrowUpRight className="h-4 w-4" />
-                    <span>+12% vs prev</span>
-                  </div>
+                  {formatChange(clicksChange)}
                 </div>
                 <div className="space-y-2">
                   <p className="text-sm text-muted-foreground">Impressions</p>
                   <p className="text-3xl font-bold">{totalImpressions.toLocaleString()}</p>
-                  <div className="flex items-center text-emerald-500 text-sm">
-                    <ArrowUpRight className="h-4 w-4" />
-                    <span>+8% vs prev</span>
-                  </div>
+                  {formatChange(impressionsChange)}
                 </div>
                 <div className="space-y-2">
                   <p className="text-sm text-muted-foreground">Avg Position</p>
                   <p className="text-3xl font-bold">{avgPosition.toFixed(1)}</p>
-                  <div className="flex items-center text-emerald-500 text-sm">
-                    <ArrowUpRight className="h-4 w-4" />
-                    <span>+2.3 improved</span>
-                  </div>
+                  {formatChange(positionChange, '', true)}
                 </div>
                 <div className="space-y-2">
                   <p className="text-sm text-muted-foreground">Click-Through Rate</p>
                   <p className="text-3xl font-bold">{(avgCtr * 100).toFixed(1)}%</p>
-                  <div className="flex items-center text-emerald-500 text-sm">
-                    <ArrowUpRight className="h-4 w-4" />
-                    <span>+0.5% vs prev</span>
-                  </div>
+                  {formatChange(ctrChange ? ctrChange * 100 : ctrChange)}
                 </div>
               </div>
             </CardContent>
           </Card>
+
+          {/* Indexing Health Summary */}
+          {gscHealthData && (
+            <Card className={gscHealthData.issues?.length > 0 ? 'border-amber-500/20' : 'border-green-500/20'}>
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <ShieldCheck className="h-4 w-4" style={{ color: 'var(--brand-primary)' }} />
+                    Indexing Health
+                  </CardTitle>
+                  <Badge variant="outline" className={cn("text-xs",
+                    (gscHealthData.coveragePercent ?? 0) >= 90 ? "border-green-500/30 text-green-500" :
+                    (gscHealthData.coveragePercent ?? 0) >= 70 ? "border-amber-500/30 text-amber-500" :
+                    "border-red-500/30 text-red-500"
+                  )}>
+                    {Math.round(gscHealthData.coveragePercent ?? 0)}% coverage
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-3 gap-4 mb-3">
+                  <div className="text-center p-3 rounded-lg bg-muted/30">
+                    <p className="text-2xl font-bold">{gscHealthData.totalPages ?? 0}</p>
+                    <p className="text-xs text-muted-foreground">Total Pages</p>
+                  </div>
+                  <div className="text-center p-3 rounded-lg bg-green-500/10">
+                    <p className="text-2xl font-bold text-green-500">{gscHealthData.indexedPages ?? 0}</p>
+                    <p className="text-xs text-muted-foreground">Indexed</p>
+                  </div>
+                  <div className="text-center p-3 rounded-lg bg-red-500/10">
+                    <p className="text-2xl font-bold text-red-500">{gscHealthData.notIndexedPages ?? 0}</p>
+                    <p className="text-xs text-muted-foreground">Not Indexed</p>
+                  </div>
+                </div>
+                {gscHealthData.issues?.length > 0 && (
+                  <div className="flex items-center justify-between text-sm mt-2">
+                    <span className="text-amber-500 flex items-center gap-1">
+                      <CircleAlert className="h-3.5 w-3.5" />
+                      {gscHealthData.issues.length} issue{gscHealthData.issues.length !== 1 ? 's' : ''} detected
+                    </span>
+                    <Button variant="ghost" size="sm" onClick={() => navigate('/seo/search-console')}>
+                      View Details <ChevronRight className="h-3.5 w-3.5 ml-1" />
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
           {/* Top Pages */}
           <Card>
@@ -199,8 +318,12 @@ export default function SEOReportingPage({ projectId }) {
             <CardContent>
               {pages.length > 0 ? (
                 <div className="space-y-3">
-                  {pages.slice(0, 5).map((page, idx) => (
-                    <div key={page.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
+                  {pages
+                    .slice()
+                    .sort((a, b) => (b.clicks || 0) - (a.clicks || 0))
+                    .slice(0, 5)
+                    .map((page, idx) => (
+                    <div key={page.id || idx} className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
                       <div className="flex items-center gap-3 min-w-0">
                         <span className="text-sm font-medium text-muted-foreground w-6">
                           #{idx + 1}

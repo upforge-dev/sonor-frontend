@@ -1,8 +1,7 @@
-// src/components/seo/SEOSidebar.jsx
+// src/components/seo/SEOSidebar.tsx
 // Vertical sidebar navigation for SEO module with collapsible sections
 // Uses ModuleLayout predefined sidebar typography (no inline font/weight overrides)
 import { useState } from 'react'
-import { useLocation } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import { MODULE_SIDEBAR_TYPOGRAPHY } from '@/components/ModuleLayout'
 import { Badge } from '@/components/ui/badge'
@@ -13,6 +12,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { useSignalAccess } from '@/lib/signal-access'
 import SignalIcon from '@/components/ui/SignalIcon'
+import type { LucideIcon } from 'lucide-react'
 import { 
   LayoutDashboard,
   Search,
@@ -44,13 +44,32 @@ import {
   FileCheck,
   History,
   FileSearch,
-  HelpCircle
+  HelpCircle,
+  Globe,
 } from 'lucide-react'
+
+// Navigation item interface
+interface NavItem {
+  id: string
+  label: string
+  icon: LucideIcon
+  description: string
+  signal?: boolean
+  badge?: string
+}
+
+// Navigation section interface
+interface NavSection {
+  id: string
+  label: string
+  items: NavItem[]
+  signal?: boolean
+}
 
 // Navigation configuration
 // CONSOLIDATED: No dropdowns - each section is a single page
 // See docs/SEO-MODULE-ROADMAP.md for full feature roadmap
-const NAV_ITEMS = [
+const NAV_ITEMS: NavItem[] = [
   // Core SEO
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, description: 'Rankings & performance overview' },
   { id: 'pages', label: 'Pages', icon: FileText, description: 'On-page optimization' },
@@ -60,6 +79,7 @@ const NAV_ITEMS = [
   // Specialized
   { id: 'local-seo', label: 'Local SEO', icon: MapPin, description: 'GBP, citations & local rankings' },
   { id: 'technical', label: 'Technical', icon: Shield, description: 'Site audit, indexing & health' },
+  { id: 'search-console', label: 'Search Console', icon: Globe, description: 'GSC coverage & indexing health' },
   
   // Intelligence (Signal features)
   { id: 'backlinks', label: 'Backlinks', icon: Link2, description: 'Link monitoring & authority', signal: true },
@@ -68,10 +88,19 @@ const NAV_ITEMS = [
 ]
 
 // Legacy NAV_SECTIONS for backwards compatibility during transition
-const NAV_SECTIONS = [
+const NAV_SECTIONS: NavSection[] = [
 ]
 
-function NavItem({ item, isActive, onClick, isCollapsed, hasSignal, alertCount }) {
+interface NavItemProps {
+  item: NavItem
+  isActive: boolean
+  onClick: (id: string) => void
+  isCollapsed: boolean
+  hasSignal: boolean
+  alertCount: number
+}
+
+function NavItem({ item, isActive, onClick, isCollapsed, hasSignal, alertCount }: NavItemProps) {
   const isLocked = item.signal && !hasSignal
 
   const content = (
@@ -138,7 +167,18 @@ function NavItem({ item, isActive, onClick, isCollapsed, hasSignal, alertCount }
   return content
 }
 
-function NavSection({ section, activeTab, onTabChange, isCollapsed, hasSignal, alertCount, openSections, onToggleSection }) {
+interface NavSectionProps {
+  section: NavSection
+  activeTab: string
+  onTabChange: (id: string) => void
+  isCollapsed: boolean
+  hasSignal: boolean
+  alertCount: number
+  openSections: Record<string, boolean>
+  onToggleSection: (id: string) => void
+}
+
+function NavSection({ section, activeTab, onTabChange, isCollapsed, hasSignal, alertCount, openSections, onToggleSection }: NavSectionProps) {
   const isOpen = openSections[section.id]
   const isLocked = section.signal && !hasSignal
   const hasActiveItem = section.items.some(item => item.id === activeTab)
@@ -181,7 +221,7 @@ function NavSection({ section, activeTab, onTabChange, isCollapsed, hasSignal, a
           )}
           <span className="flex-1 text-left">{section.label}</span>
           {isLocked && (
-            <div className="flex items-center gap-1 text-xs text-violet-500 bg-violet-500/10 px-1.5 py-0.5 rounded">
+            <div className="flex items-center gap-1 text-xs px-1.5 py-0.5 rounded" style={{ color: 'var(--brand-primary)', backgroundColor: 'color-mix(in srgb, var(--brand-primary) 10%, transparent)' }}>
               <Sparkles className="h-2.5 w-2.5" />
               Signal
             </div>
@@ -205,8 +245,17 @@ function NavSection({ section, activeTab, onTabChange, isCollapsed, hasSignal, a
   )
 }
 
+interface DesktopSidebarProps {
+  activeTab: string
+  onTabChange: (id: string) => void
+  alertCount: number
+  isCollapsed: boolean
+  onToggleCollapse: () => void
+  embedded: boolean
+}
+
 // Desktop sidebar component - FLAT LIST (no collapsible sections)
-function DesktopSidebar({ activeTab, onTabChange, alertCount, isCollapsed, onToggleCollapse, embedded }) {
+function DesktopSidebar({ activeTab, onTabChange, alertCount, isCollapsed, onToggleCollapse, embedded }: DesktopSidebarProps) {
   const { hasAccess: hasSignalAccess } = useSignalAccess()
 
   // Embedded mode - used inside SEOModule with motion animation
@@ -230,15 +279,21 @@ function DesktopSidebar({ activeTab, onTabChange, alertCount, isCollapsed, onTog
           
           {/* Signal upgrade prompt */}
           {!hasSignalAccess && (
-            <div className="mt-6 p-3 rounded-lg bg-gradient-to-br from-violet-500/10 to-purple-500/10 border border-violet-500/20">
+            <div className="mt-6 p-3 rounded-lg border" style={{
+              background: 'linear-gradient(135deg, color-mix(in srgb, var(--brand-primary) 10%, transparent), color-mix(in srgb, var(--brand-secondary) 10%, transparent))',
+              borderColor: 'color-mix(in srgb, var(--brand-primary) 20%, transparent)'
+            }}>
               <div className="flex items-center gap-2 mb-2">
-                <Sparkles className="h-4 w-4 text-violet-500" />
-                <span className="text-violet-500">Upgrade to Signal</span>
+                <Sparkles className="h-4 w-4" style={{ color: 'var(--brand-primary)' }} />
+                <span style={{ color: 'var(--brand-primary)' }}>Upgrade to Signal</span>
               </div>
               <p className="text-muted-foreground mb-2">
                 Unlock Signal-powered SEO automation
               </p>
-              <Button size="sm" variant="outline" className="w-full h-7 border-violet-500/30 text-violet-500 hover:bg-violet-500/10">
+              <Button size="sm" variant="outline" className="w-full h-7" style={{
+                borderColor: 'color-mix(in srgb, var(--brand-primary) 30%, transparent)',
+                color: 'var(--brand-primary)'
+              }}>
                 Learn More
               </Button>
             </div>
@@ -289,15 +344,21 @@ function DesktopSidebar({ activeTab, onTabChange, alertCount, isCollapsed, onTog
       {/* Signal upgrade prompt (when not collapsed) */}
       {!hasSignalAccess && !isCollapsed && (
         <div className="p-3 border-t border-border/50">
-          <div className="p-3 rounded-lg bg-gradient-to-br from-violet-500/10 to-purple-500/10 border border-violet-500/20">
+          <div className="p-3 rounded-lg border" style={{
+            background: 'linear-gradient(135deg, color-mix(in srgb, var(--brand-primary) 10%, transparent), color-mix(in srgb, var(--brand-secondary) 10%, transparent))',
+            borderColor: 'color-mix(in srgb, var(--brand-primary) 20%, transparent)'
+          }}>
             <div className="flex items-center gap-2 mb-2">
-              <Sparkles className="h-4 w-4 text-violet-500" />
-              <span className="text-violet-500">Upgrade to Signal</span>
+              <Sparkles className="h-4 w-4" style={{ color: 'var(--brand-primary)' }} />
+              <span style={{ color: 'var(--brand-primary)' }}>Upgrade to Signal</span>
             </div>
             <p className="text-muted-foreground mb-2">
               Unlock Signal-powered SEO automation
             </p>
-            <Button size="sm" variant="outline" className="w-full h-7 border-violet-500/30 text-violet-500 hover:bg-violet-500/10">
+            <Button size="sm" variant="outline" className="w-full h-7" style={{
+              borderColor: 'color-mix(in srgb, var(--brand-primary) 30%, transparent)',
+              color: 'var(--brand-primary)'
+            }}>
               Learn More
             </Button>
           </div>
@@ -307,13 +368,18 @@ function DesktopSidebar({ activeTab, onTabChange, alertCount, isCollapsed, onTog
   )
 }
 
-// Mobile sidebar (drawer)
+interface MobileSidebarProps {
+  activeTab: string
+  onTabChange: (id: string) => void
+  alertCount: number
+}
+
 // Mobile sidebar (drawer) - FLAT LIST
-function MobileSidebar({ activeTab, onTabChange, alertCount }) {
-  const [open, setOpen] = useState(false)
+function MobileSidebar({ activeTab, onTabChange, alertCount }: MobileSidebarProps) {
+  const [open, setOpen] = useState<boolean>(false)
   const { hasAccess: hasSignalAccess } = useSignalAccess()
 
-  const handleTabChange = (tabId) => {
+  const handleTabChange = (tabId: string) => {
     onTabChange(tabId)
     setOpen(false)
   }
@@ -351,6 +417,15 @@ function MobileSidebar({ activeTab, onTabChange, alertCount }) {
   )
 }
 
+interface SEOSidebarProps {
+  activeTab: string
+  onTabChange: (id: string) => void
+  alertCount?: number
+  isMobileOnly?: boolean
+  embedded?: boolean
+  className?: string
+}
+
 // Main exported component
 export default function SEOSidebar({ 
   activeTab, 
@@ -359,8 +434,8 @@ export default function SEOSidebar({
   isMobileOnly = false,
   embedded = false,
   className 
-}) {
-  const [isCollapsed, setIsCollapsed] = useState(false)
+}: SEOSidebarProps) {
+  const [isCollapsed, setIsCollapsed] = useState<boolean>(false)
 
   // If mobile-only mode, just return the mobile sidebar trigger
   if (isMobileOnly) {
@@ -387,3 +462,4 @@ export default function SEOSidebar({
 
 // Export config for use elsewhere
 export { NAV_ITEMS, NAV_SECTIONS }
+export type { NavItem, NavSection }

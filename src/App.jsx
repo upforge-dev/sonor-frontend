@@ -62,6 +62,13 @@ export default function App() {
     hasCheckedAuthRef.current = true
 
     const checkAuthOnce = async () => {
+      // Safety timeout: never let the app hang on auth for more than 15 seconds
+      const timeout = setTimeout(() => {
+        console.warn('[App] Auth check timed out after 15s — proceeding without auth')
+        setInitialized(true)
+        requestAnimationFrame(() => hideInitialLoader())
+      }, 15000)
+
       try {
         const result = await checkAuth()
         // If user is authenticated, preload the default dashboard module(s) so
@@ -75,6 +82,7 @@ export default function App() {
       } catch (error) {
         console.error('[App] Error during initial auth check:', error)
       } finally {
+        clearTimeout(timeout)
         setInitialized(true)
         requestAnimationFrame(() => hideInitialLoader())
       }

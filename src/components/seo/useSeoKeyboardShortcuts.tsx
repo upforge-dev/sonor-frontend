@@ -131,10 +131,11 @@ export function useSeoKeyboardShortcuts(options: UseSeoKeyboardShortcutsOptions)
         sequenceBuffer = []
         break
 
-      // If sequence doesn't match and is getting long, clear it
-      if (sequenceBuffer.length > 2) {
-        sequenceBuffer = []
-      }
+      default:
+        // If sequence doesn't match and is getting long, clear it
+        if (sequenceBuffer.length > 2) {
+          sequenceBuffer = []
+        }
     }
   }
 

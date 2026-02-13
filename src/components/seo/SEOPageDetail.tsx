@@ -1,6 +1,7 @@
-// src/components/seo/SEOPageDetail.jsx
+// src/components/seo/SEOPageDetail.tsx
 // Detailed view for a single page
 // MIGRATED TO REACT QUERY - Jan 29, 2026
+// CONVERTED TO TYPESCRIPT - Feb 12, 2026
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -55,8 +56,194 @@ import {
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 
+// ─── Type Definitions ────────────────────────────────────────────────
+
+interface SEOPageDetailProps {
+  projectId: string
+}
+
+interface HeadingItem {
+  level: number
+  text: string
+}
+
+interface FaqItem {
+  question: string
+  answer: string
+}
+
+interface ContentTopic {
+  name: string
+  relevance_score: number
+}
+
+interface ContentKeyword {
+  keyword: string
+  prominence: string
+  frequency: number
+}
+
+interface ContentEntity {
+  name: string
+  type: string
+  mentions_count: number
+}
+
+interface SeoOpportunity {
+  opportunity: string
+  impact: string
+  effort: string
+  description: string
+}
+
+interface SchemaValidationError {
+  message?: string
+}
+
+interface ContentAnalysisResult {
+  topics?: ContentTopic[]
+  keywords?: ContentKeyword[]
+  entities?: ContentEntity[]
+  recommendations?: string[]
+  seo_opportunities?: SeoOpportunity[]
+}
+
+interface SeoPage {
+  id: string
+  url: string
+  path: string
+  title: string | null
+  managed_title: string | null
+  meta_description: string | null
+  managed_meta_description: string | null
+  h1: string | null
+  h1_count: number | null
+  title_length: number | null
+  meta_description_length: number | null
+  seo_health_score: number | null
+  index_status: string | null
+  clicks_28d: number | null
+  impressions_28d: number | null
+  avg_position_28d: number | null
+  ctr_28d: number | null
+  clicks_prev_28d: number | null
+  impressions_prev_28d: number | null
+  avg_position_prev_28d: number | null
+  word_count: number | null
+  internal_links_out: number | null
+  internal_links_in: number | null
+  external_links: number | null
+  images_count: number | null
+  images_without_alt: number | null
+  has_schema: boolean | null
+  canonical_url: string | null
+  performance_score: number | null
+  seo_score: number | null
+  accessibility_score: number | null
+  best_practices_score: number | null
+  pagespeed_last_checked_at: string | null
+  content_text: string | null
+  content_hash: string | null
+  content_analyzed_at: string | null
+  content_analysis_result: unknown
+  content_depth_score: number | null
+  reading_time_minutes: number | null
+  heading_structure: HeadingItem[] | null
+  faq_detected: FaqItem[] | null
+  content_topics: ContentTopic[] | null
+  content_keywords: ContentKeyword[] | null
+  content_entities: ContentEntity[] | null
+  content_recommendations: string[] | null
+  managed_schema: Record<string, unknown> | null
+  managed_llm_schema: Record<string, unknown> | null
+  schema_types: Record<string, unknown> | string[] | null
+  schema_validation_errors: (SchemaValidationError | string)[] | null
+  schema_validated_at: string | null
+  llm_schema_generated_at: string | null
+  target_keyword: string | null
+}
+
+interface SeoProject {
+  id: string
+  domain: string
+  [key: string]: unknown
+}
+
+interface PageImage {
+  id: string
+  src?: string
+  url?: string
+  resolved_url?: string
+  slot_id?: string
+  current_alt?: string | null
+  alt_text?: string | null
+  has_alt?: boolean
+  managed_alt?: string | null
+  position_in_page?: string | null
+  surrounding_text?: string | null
+  page_path?: string
+  file?: { name?: string; filename?: string }
+}
+
+interface AltSuggestion {
+  id: string
+  text: string
+}
+
+interface BatchAltResult {
+  suggestions?: AltSuggestion[]
+  error?: string
+}
+
+interface ActionMessage {
+  type: 'success' | 'error'
+  text: string
+}
+
+interface OptimizeOptions {
+  optimize_alt: boolean
+  optimize_meta: boolean
+  optimize_schema: boolean
+  optimize_llm: boolean
+}
+
+interface OptimizeMetaResult {
+  title: string
+  description: string
+}
+
+interface OptimizeAltTextResult {
+  optimized_alt: string
+}
+
+interface OptimizeSchemaResult {
+  type: string
+}
+
+interface OptimizeResults {
+  applied?: boolean
+  results?: {
+    meta?: OptimizeMetaResult
+    alt_text?: OptimizeAltTextResult[]
+    schema?: OptimizeSchemaResult
+  }
+}
+
+interface LengthStatus {
+  color: string
+  message: string
+}
+
+interface SEOPageDetailInnerProps {
+  page: SeoPage
+  site: SeoProject | undefined
+  projectId: string
+}
+
+// ─── Main Component ──────────────────────────────────────────────────
+
 // Main component - fetches page from route params
-export default function SEOPageDetail({ projectId }) {
+export default function SEOPageDetail({ projectId }: SEOPageDetailProps) {
   const { pageId } = useParams()
   const navigate = useNavigate()
   
@@ -99,7 +286,7 @@ export default function SEOPageDetail({ projectId }) {
 }
 
 // Inner component - safe to use hooks since page is guaranteed to exist
-function SEOPageDetailInner({ page, site, projectId }) {
+function SEOPageDetailInner({ page, site, projectId }: SEOPageDetailInnerProps) {
   const queryClient = useQueryClient()
   // Use React Query mutations instead of Zustand store
   const inspectUrlMutation = useInspectUrl()
@@ -125,31 +312,31 @@ function SEOPageDetailInner({ page, site, projectId }) {
     enabled: !!pagePath // Don't fetch if no valid path
   })
   // Filter to only show images that explicitly match this page path
-  const managedImages = pagePath ? managedImagesRaw.filter(img => img.page_path === pagePath) : []
+  const managedImages: PageImage[] = pagePath ? managedImagesRaw.filter((img: PageImage) => img.page_path === pagePath) : []
   const updateManagedImageMutation = useUpdateSiteImage()
   
   // Discovered page images (from site-kit analytics)
   const { data: discoveredImagesData, isLoading: discoveredImagesLoading } = usePageImages(projectId, page.id)
-  const discoveredImages = discoveredImagesData?.images || []
+  const discoveredImages: PageImage[] = discoveredImagesData?.images || []
   const updatePageImageMutation = useUpdatePageImage()
   
   // Unified page optimization with Signal
   const optimizePageMutation = useOptimizePage()
   const [optimizeDialogOpen, setOptimizeDialogOpen] = useState(false)
-  const [optimizeOptions, setOptimizeOptions] = useState({
+  const [optimizeOptions, setOptimizeOptions] = useState<OptimizeOptions>({
     optimize_alt: true,
     optimize_meta: true,
     optimize_schema: true,
     optimize_llm: true
   })
-  const [optimizeResults, setOptimizeResults] = useState(null)
+  const [optimizeResults, setOptimizeResults] = useState<OptimizeResults | null>(null)
   
   // Deep Pipeline optimization (Ashbound-style 8-phase)
   const [pipelineModalOpen, setPipelineModalOpen] = useState(false)
   
   // Content analysis with Signal
   const analyzeContentMutation = useAnalyzeContent()
-  const [contentAnalysis, setContentAnalysis] = useState(null)
+  const [contentAnalysis, setContentAnalysis] = useState<ContentAnalysisResult | null>(null)
   
   // Check if page has content available
   const hasContent = page.content_text || page.content_hash
@@ -170,12 +357,12 @@ function SEOPageDetailInner({ page, site, projectId }) {
       })
       setContentAnalysis(result)
       toast.success('Content analysis complete!')
-    } catch (error) {
-      toast.error(error.message || 'Failed to analyze content')
+    } catch (error: unknown) {
+      toast.error((error as Error).message || 'Failed to analyze content')
     }
   }
   
-  const [batchAltResults, setBatchAltResults] = useState({})
+  const [batchAltResults, setBatchAltResults] = useState<Record<string, BatchAltResult>>({})
   const [batchAltLoading, setBatchAltLoading] = useState(false)
   
   const [crawling, setCrawling] = useState(false)
@@ -183,19 +370,19 @@ function SEOPageDetailInner({ page, site, projectId }) {
   const [generatingSchema, setGeneratingSchema] = useState(false)
   const [inspecting, setInspecting] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [actionMessage, setActionMessage] = useState(null)
+  const [actionMessage, setActionMessage] = useState<ActionMessage | null>(null)
   const [activeTab, setActiveTab] = useState('overview')
   const [editingTitle, setEditingTitle] = useState(false)
   const [editingMeta, setEditingMeta] = useState(false)
   
   // AI Preview Modal state
   const [aiModalOpen, setAIModalOpen] = useState(false)
-  const [aiModalType, setAIModalType] = useState('title') // 'title' | 'meta_description'
+  const [aiModalType, setAIModalType] = useState<'title' | 'meta_description'>('title')
   const [newTitle, setNewTitle] = useState(page.managed_title || page.title || '')
   const [newMeta, setNewMeta] = useState(page.managed_meta_description || page.meta_description || '')
 
   // Handle unified page optimization
-  const handleOptimizePage = async (apply = false) => {
+  const handleOptimizePage = async (apply: boolean = false) => {
     try {
       const result = await optimizePageMutation.mutateAsync({
         projectId,
@@ -211,8 +398,8 @@ function SEOPageDetailInner({ page, site, projectId }) {
         setOptimizeDialogOpen(false)
         queryClient.invalidateQueries({ queryKey: ['seo', 'page', projectId, page.id] })
       }
-    } catch (error) {
-      toast.error(error.message || 'Failed to optimize page')
+    } catch (error: unknown) {
+      toast.error((error as Error).message || 'Failed to optimize page')
     }
   }
 
@@ -230,8 +417,8 @@ function SEOPageDetailInner({ page, site, projectId }) {
         }
       })
       setActionMessage({ type: 'success', text: 'Metadata saved successfully' })
-    } catch (err) {
-      setActionMessage({ type: 'error', text: err.message || 'Failed to save metadata' })
+    } catch (err: unknown) {
+      setActionMessage({ type: 'error', text: (err as Error).message || 'Failed to save metadata' })
     } finally {
       setSaving(false)
     }
@@ -245,8 +432,8 @@ function SEOPageDetailInner({ page, site, projectId }) {
       await inspectUrlMutation.mutateAsync({ projectId, url: page.url })
       queryClient.invalidateQueries({ queryKey: ['seo', 'page', projectId, page.id] })
       setActionMessage({ type: 'success', text: 'Page inspected successfully' })
-    } catch (err) {
-      setActionMessage({ type: 'error', text: err.message || 'Failed to inspect page' })
+    } catch (err: unknown) {
+      setActionMessage({ type: 'error', text: (err as Error).message || 'Failed to inspect page' })
     } finally {
       setCrawling(false)
     }
@@ -258,8 +445,8 @@ function SEOPageDetailInner({ page, site, projectId }) {
     try {
       await seoApi.requestIndexing(projectId, page.url)
       setActionMessage({ type: 'success', text: 'Indexing requested - Google will process within 48 hours' })
-    } catch (err) {
-      setActionMessage({ type: 'error', text: err.message || 'Failed to request indexing' })
+    } catch (err: unknown) {
+      setActionMessage({ type: 'error', text: (err as Error).message || 'Failed to request indexing' })
     } finally {
       setRequestingIndexing(false)
     }
@@ -272,8 +459,8 @@ function SEOPageDetailInner({ page, site, projectId }) {
       await generateSchemaMutation.mutateAsync({ projectId, pageId: page.id })
       queryClient.invalidateQueries({ queryKey: ['seo', 'page', projectId, page.id] })
       setActionMessage({ type: 'success', text: 'Schema markup generated successfully' })
-    } catch (err) {
-      setActionMessage({ type: 'error', text: err.message || 'Failed to generate schema' })
+    } catch (err: unknown) {
+      setActionMessage({ type: 'error', text: (err as Error).message || 'Failed to generate schema' })
     } finally {
       setGeneratingSchema(false)
     }
@@ -286,14 +473,14 @@ function SEOPageDetailInner({ page, site, projectId }) {
       await inspectUrlMutation.mutateAsync({ projectId, url: page.url })
       queryClient.invalidateQueries({ queryKey: ['seo', 'page', projectId, page.id] })
       setActionMessage({ type: 'success', text: 'URL inspection complete' })
-    } catch (err) {
-      setActionMessage({ type: 'error', text: err.message || 'Failed to inspect URL' })
+    } catch (err: unknown) {
+      setActionMessage({ type: 'error', text: (err as Error).message || 'Failed to inspect URL' })
     } finally {
       setInspecting(false)
     }
   }
 
-  const getHealthBadge = (score) => {
+  const getHealthBadge = (score: number | null | undefined) => {
     if (score === null || score === undefined) {
       return <Badge variant="outline">Not analyzed</Badge>
     }
@@ -306,7 +493,7 @@ function SEOPageDetailInner({ page, site, projectId }) {
     return <Badge className="bg-red-500/20 text-red-400 border-red-500/30">Poor ({score})</Badge>
   }
 
-  const getIndexStatusBadge = (status) => {
+  const getIndexStatusBadge = (status: string | null | undefined) => {
     switch (status) {
       case 'indexed':
         return (
@@ -334,13 +521,13 @@ function SEOPageDetailInner({ page, site, projectId }) {
     }
   }
 
-  const formatNumber = (num) => {
+  const formatNumber = (num: number | null | undefined): string => {
     if (num === null || num === undefined) return '-'
     if (num >= 1000) return `${(num / 1000).toFixed(1)}K`
     return num.toString()
   }
 
-  const getChangeIndicator = (current, previous, inverse = false) => {
+  const getChangeIndicator = (current: number | null | undefined, previous: number | null | undefined, inverse: boolean = false) => {
     if (!previous || current === previous) return null
     const isPositive = inverse ? current < previous : current > previous
     const change = Math.abs(((current - previous) / previous) * 100).toFixed(1)
@@ -353,19 +540,19 @@ function SEOPageDetailInner({ page, site, projectId }) {
     )
   }
 
-  const copyToClipboard = (text) => {
+  const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text)
   }
 
   // Combine discovered images (from site-kit) with any that have managed slots
-  const allPageImages = discoveredImages.length > 0 ? discoveredImages : managedImages
+  const allPageImages: PageImage[] = discoveredImages.length > 0 ? discoveredImages : managedImages
 
   const handleOptimizeAllAlt = async () => {
     if (!hasSignalAccess || allPageImages.length === 0) return
     setBatchAltLoading(true)
     setBatchAltResults({})
     try {
-      const results = {}
+      const results: Record<string, BatchAltResult> = {}
       await Promise.all(
         allPageImages.map(async (img) => {
           try {
@@ -379,8 +566,8 @@ function SEOPageDetailInner({ page, site, projectId }) {
               count: 3,
             })
             results[img.id] = { suggestions }
-          } catch (e) {
-            results[img.id] = { error: e?.message || 'Failed' }
+          } catch (e: unknown) {
+            results[img.id] = { error: (e as Error)?.message || 'Failed' }
           }
         })
       )
@@ -391,14 +578,14 @@ function SEOPageDetailInner({ page, site, projectId }) {
       } else {
         toast.success(`Alt text suggestions generated for ${allPageImages.length} image(s)`)
       }
-    } catch (e) {
-      toast.error(e?.message || 'Failed to optimize alt text')
+    } catch (e: unknown) {
+      toast.error((e as Error)?.message || 'Failed to optimize alt text')
     } finally {
       setBatchAltLoading(false)
     }
   }
 
-  const handleApplyAlt = async (imageId, altText, isDiscovered = false) => {
+  const handleApplyAlt = async (imageId: string, altText: string, isDiscovered: boolean = false) => {
     try {
       if (isDiscovered) {
         // Update discovered image via new API
@@ -422,19 +609,19 @@ function SEOPageDetailInner({ page, site, projectId }) {
         return next
       })
       toast.success('Alt text updated')
-    } catch (e) {
-      toast.error(e?.message || 'Failed to update')
+    } catch (e: unknown) {
+      toast.error((e as Error)?.message || 'Failed to update')
     }
   }
 
-  const getTitleLengthStatus = (length) => {
+  const getTitleLengthStatus = (length: number | null | undefined): LengthStatus => {
     if (!length) return { color: 'text-red-400', message: 'Missing' }
     if (length < 30) return { color: 'text-yellow-400', message: 'Too short' }
     if (length > 60) return { color: 'text-yellow-400', message: 'Too long' }
     return { color: 'text-green-400', message: 'Good' }
   }
 
-  const getMetaLengthStatus = (length) => {
+  const getMetaLengthStatus = (length: number | null | undefined): LengthStatus => {
     if (!length) return { color: 'text-red-400', message: 'Missing' }
     if (length < 120) return { color: 'text-yellow-400', message: 'Too short' }
     if (length > 160) return { color: 'text-yellow-400', message: 'Too long' }
@@ -854,7 +1041,7 @@ function SEOPageDetailInner({ page, site, projectId }) {
                                   src={imageUrl}
                                   alt=""
                                   className="h-10 w-10 rounded object-cover flex-shrink-0"
-                                  onError={(e) => { e.target.style.display = 'none' }}
+                                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
                                 />
                               )}
                               <div className="min-w-0">
@@ -976,8 +1163,8 @@ function SEOPageDetailInner({ page, site, projectId }) {
                 setNewTitle(updates.managed_title ?? updates.managedTitle ?? newTitle)
                 setNewMeta(updates.managed_meta_description ?? updates.managedMetaDescription ?? newMeta)
                 setActionMessage({ type: 'success', text: 'SERP preview saved' })
-              } catch (err) {
-                setActionMessage({ type: 'error', text: err.message || 'Failed to save' })
+              } catch (err: unknown) {
+                setActionMessage({ type: 'error', text: (err as Error).message || 'Failed to save' })
               }
             }}
           />
@@ -1237,7 +1424,7 @@ function SEOPageDetailInner({ page, site, projectId }) {
                   <h4 className="text-sm font-medium text-red-400 mb-2">Validation Errors</h4>
                   <ul className="text-sm text-red-300 space-y-1">
                     {page.schema_validation_errors.map((err, i) => (
-                      <li key={i}>• {err.message || err}</li>
+                      <li key={i}>• {typeof err === 'string' ? err : err.message || String(err)}</li>
                     ))}
                   </ul>
                 </div>
@@ -1646,7 +1833,7 @@ function SEOPageDetailInner({ page, site, projectId }) {
                 <label className="flex items-center gap-3 p-3 rounded-lg border border-[var(--border-primary)] hover:bg-[var(--bg-secondary)] cursor-pointer">
                   <Checkbox
                     checked={optimizeOptions.optimize_meta}
-                    onCheckedChange={(checked) => setOptimizeOptions(prev => ({ ...prev, optimize_meta: checked }))}
+                    onCheckedChange={(checked) => setOptimizeOptions(prev => ({ ...prev, optimize_meta: !!checked }))}
                   />
                   <div>
                     <div className="font-medium text-sm">Title & Description</div>
@@ -1657,7 +1844,7 @@ function SEOPageDetailInner({ page, site, projectId }) {
                 <label className="flex items-center gap-3 p-3 rounded-lg border border-[var(--border-primary)] hover:bg-[var(--bg-secondary)] cursor-pointer">
                   <Checkbox
                     checked={optimizeOptions.optimize_alt}
-                    onCheckedChange={(checked) => setOptimizeOptions(prev => ({ ...prev, optimize_alt: checked }))}
+                    onCheckedChange={(checked) => setOptimizeOptions(prev => ({ ...prev, optimize_alt: !!checked }))}
                   />
                   <div>
                     <div className="font-medium text-sm">Image Alt Text</div>
@@ -1668,7 +1855,7 @@ function SEOPageDetailInner({ page, site, projectId }) {
                 <label className="flex items-center gap-3 p-3 rounded-lg border border-[var(--border-primary)] hover:bg-[var(--bg-secondary)] cursor-pointer">
                   <Checkbox
                     checked={optimizeOptions.optimize_schema}
-                    onCheckedChange={(checked) => setOptimizeOptions(prev => ({ ...prev, optimize_schema: checked }))}
+                    onCheckedChange={(checked) => setOptimizeOptions(prev => ({ ...prev, optimize_schema: !!checked }))}
                   />
                   <div>
                     <div className="font-medium text-sm">Schema Markup</div>
@@ -1679,7 +1866,7 @@ function SEOPageDetailInner({ page, site, projectId }) {
                 <label className="flex items-center gap-3 p-3 rounded-lg border border-[var(--border-primary)] hover:bg-[var(--bg-secondary)] cursor-pointer">
                   <Checkbox
                     checked={optimizeOptions.optimize_llm}
-                    onCheckedChange={(checked) => setOptimizeOptions(prev => ({ ...prev, optimize_llm: checked }))}
+                    onCheckedChange={(checked) => setOptimizeOptions(prev => ({ ...prev, optimize_llm: !!checked }))}
                   />
                   <div>
                     <div className="font-medium text-sm">LLM Schema</div>
@@ -1811,3 +1998,6 @@ function SEOPageDetailInner({ page, site, projectId }) {
           toast.success('Deep optimization complete!')
         }}
       />
+    </div>
+  )
+}
