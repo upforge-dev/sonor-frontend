@@ -122,7 +122,7 @@ function ScheduleMeetingModal({ open, onClose, prospect, brandColors }) {
   const [message, setMessage] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [isBooking, setIsBooking] = useState(false)
-  const { currentOrg } = useAuthStore()
+  const { currentOrg, currentProject } = useAuthStore()
 
   // Fetch booking types and hosts when modal opens
   useEffect(() => {
@@ -130,9 +130,10 @@ function ScheduleMeetingModal({ open, onClose, prospect, brandColors }) {
     const fetchData = async () => {
       setIsLoading(true)
       try {
+        const projectParams = currentProject?.id ? { project_id: currentProject.id } : {}
         const [typesRes, hostsRes] = await Promise.all([
-          syncApi.getBookingTypes(),
-          syncApi.getHosts()
+          syncApi.getBookingTypes(projectParams),
+          syncApi.getHosts(projectParams)
         ])
         setBookingTypes(typesRes.data?.types || typesRes.data || [])
         setHosts(hostsRes.data?.hosts || hostsRes.data || [])
@@ -189,7 +190,8 @@ function ScheduleMeetingModal({ open, onClose, prospect, brandColors }) {
         company: prospect.company,
         message: message,
         source: 'portal',
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        projectId: currentProject?.id,
       })
       
       toast.success('Meeting scheduled successfully!')

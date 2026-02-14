@@ -161,7 +161,8 @@ function SpinnerIcon() {
 
 export function BookingWidget({
   orgSlug,
-  apiUrl = DEFAULT_API_URL,
+  apiKey: propApiKey,
+  apiUrl: propApiUrl,
   bookingTypeSlug,
   timezone: propTimezone,
   className = '',
@@ -171,6 +172,9 @@ export function BookingWidget({
   hideTypeSelector = false,
   styles = {},
 }: BookingWidgetProps) {
+  // Resolve API key: prop > window global
+  const apiKey = propApiKey || (typeof window !== 'undefined' ? (window as any).__SITE_KIT_API_KEY__ : undefined)
+  const apiUrl = propApiUrl || (typeof window !== 'undefined' ? (window as any).__SITE_KIT_API_URL__ : undefined) || DEFAULT_API_URL
   // ── State ──
   const [step, setStep] = useState<BookingStep>(bookingTypeSlug ? 'datetime' : 'type')
   const [loading, setLoading] = useState(false)
@@ -210,18 +214,18 @@ export function BookingWidget({
   useEffect(() => {
     if (bookingTypeSlug) {
       setLoading(true)
-      fetchBookingTypeDetails(orgSlug, bookingTypeSlug, apiUrl)
+      fetchBookingTypeDetails(bookingTypeSlug, orgSlug, apiUrl, apiKey)
         .then(type => { setSelectedType(type); setStep('datetime') })
         .catch(err => { setError(err.message); onError?.(err) })
         .finally(() => setLoading(false))
     } else {
       setLoading(true)
-      fetchBookingTypes(orgSlug, apiUrl)
+      fetchBookingTypes(orgSlug, apiUrl, apiKey)
         .then(types => setBookingTypes(types.filter(t => t.is_active)))
         .catch(err => { setError(err.message); onError?.(err) })
         .finally(() => setLoading(false))
     }
-  }, [orgSlug, bookingTypeSlug, apiUrl, onError])
+  }, [orgSlug, apiKey, bookingTypeSlug, apiUrl, onError])
 
   useEffect(() => {
     if (!selectedDate || !selectedType) return
@@ -231,11 +235,11 @@ export function BookingWidget({
     setSelectedSlot(null)
     setConfirmedSlot(false)
 
-    fetchAvailability(orgSlug, selectedType.slug, dateStr, apiUrl, timezone)
+    fetchAvailability(selectedType.slug, dateStr, orgSlug, apiUrl, apiKey, timezone)
       .then(s => setSlots(s.filter(slot => slot.available)))
       .catch(err => { setError(err.message); onError?.(err) })
       .finally(() => setSlotsLoading(false))
-  }, [selectedDate, selectedType, orgSlug, apiUrl, timezone, onError])
+  }, [selectedDate, selectedType, orgSlug, apiKey, apiUrl, timezone, onError])
 
   // ── Handlers ──
 
@@ -246,11 +250,21 @@ export function BookingWidget({
 
   const handleSlotConfirm = useCallback(async () => {
     if (!selectedType || !selectedSlot) return
-    if (hold) await releaseSlotHold(hold.holdId, apiUrl).catch(() => {})
+    if (hold) await releaseSlotHold(hold.holdId, apiUrl, apiKey).catch(() => {})
 
     setLoading(true)
     try {
-      const newHold = await createSlotHold(selectedType.id, selectedSlot.start, selectedSlot.hostId, timezone, apiUrl)
+      const newHold = await createSlotHold(
+        {
+          bookingType: selectedType.slug,
+          slotStart: selectedSlot.start,
+          slotEnd: selectedSlot.end,
+          hostId: selectedSlot.hostId || '',
+          sessionId: `bw-${Date.now()}`,
+        },
+        apiUrl,
+        apiKey,
+      )
       setHold(newHold)
       setConfirmedSlot(true)
       setStep('form')
@@ -260,7 +274,7 @@ export function BookingWidget({
     } finally {
       setLoading(false)
     }
-  }, [selectedType, selectedSlot, hold, timezone, apiUrl, onError])
+  }, [selectedType, selectedSlot, hold, timezone, apiUrl, apiKey, onError])
 
   const handleBookingSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault()
@@ -269,7 +283,24 @@ export function BookingWidget({
     setError(null)
 
     try {
-      const result = await createBooking(selectedType.id, selectedSlot.start, guestInfo, timezone, selectedSlot.hostId, hold?.holdId, apiUrl)
+      const result = await createBooking(
+        {
+          bookingType: selectedType.slug,
+          scheduledAt: selectedSlot.start,
+          hostId: selectedSlot.hostId || '',
+          name: guestInfo.name,
+          email: guestInfo.email,
+          phone: guestInfo.phone,
+          message: guestInfo.notes,
+          source: 'main-site',
+          timezone,
+          holdId: hold?.holdId,
+          sessionId: `bw-${Date.now()}`,
+          sourceUrl: typeof window !== 'undefined' ? window.location.href : undefined,
+        },
+        apiUrl,
+        apiKey,
+      )
       setBookingResult(result)
       setStep('success')
       onBookingComplete?.(result)
@@ -279,11 +310,11 @@ export function BookingWidget({
     } finally {
       setSubmitting(false)
     }
-  }, [selectedType, selectedSlot, guestInfo, timezone, hold, apiUrl, onBookingComplete, onError])
+  }, [selectedType, selectedSlot, guestInfo, timezone, hold, apiUrl, apiKey, onBookingComplete, onError])
 
   useEffect(() => {
-    return () => { if (hold) releaseSlotHold(hold.holdId, apiUrl).catch(() => {}) }
-  }, [hold, apiUrl])
+    return () => { if (hold) releaseSlotHold(hold.holdId, apiUrl, apiKey).catch(() => {}) }
+  }, [hold, apiUrl, apiKey])
 
   // ── Month Navigation ──
 

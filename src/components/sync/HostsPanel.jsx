@@ -50,6 +50,7 @@ import {
 import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
 import { syncApi } from '@/lib/portal-api'
+import useAuthStore from '@/lib/auth-store'
 import { toast } from 'sonner'
 import CalendarConnectionsPanel from './CalendarConnectionsPanel'
 import AvailabilityExceptionsPanel from './AvailabilityExceptionsPanel'
@@ -81,6 +82,7 @@ const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
 })
 
 export default function HostsPanel({ isOpen, onClose, inline = false }) {
+  const { currentProject } = useAuthStore()
   const [hosts, setHosts] = useState([])
   const [loading, setLoading] = useState(true)
   const [editingHost, setEditingHost] = useState(null)
@@ -96,12 +98,14 @@ export default function HostsPanel({ isOpen, onClose, inline = false }) {
     if (isOpen || inline) {
       fetchHosts()
     }
-  }, [isOpen, inline])
+  }, [isOpen, inline, currentProject?.id])
 
   const fetchHosts = async () => {
     try {
       setLoading(true)
-      const { data } = await syncApi.getHosts()
+      const params = {}
+      if (currentProject?.id) params.project_id = currentProject.id
+      const { data } = await syncApi.getHosts(params)
       setHosts(data.hosts || [])
     } catch (error) {
       console.error('Failed to fetch hosts:', error)
@@ -132,11 +136,17 @@ export default function HostsPanel({ isOpen, onClose, inline = false }) {
         return
       }
 
+      // Include project_id for project scoping
+      const hostData = { ...editingHost }
+      if (currentProject?.id && !editingHost.id) {
+        hostData.projectId = currentProject.id
+      }
+
       if (editingHost.id) {
-        await syncApi.updateHost(editingHost.id, editingHost)
+        await syncApi.updateHost(editingHost.id, hostData)
         toast.success('Host updated')
       } else {
-        await syncApi.createHost(editingHost)
+        await syncApi.createHost(hostData)
         toast.success('Host created')
       }
       

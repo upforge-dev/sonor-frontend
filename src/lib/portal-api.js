@@ -3230,9 +3230,9 @@ export const commerceApi = {
 export const syncApi = {
   // ==================== ADMIN: BOOKING TYPES ====================
   
-  /** Get all booking types for org */
-  getBookingTypes: () =>
-    portalApi.get('/sync/admin/types'),
+  /** Get booking types for org (pass project_id to scope to project) */
+  getBookingTypes: (params = {}) =>
+    portalApi.get('/sync/admin/types', { params }),
   
   /** Create a booking type */
   createBookingType: (data) =>
@@ -3248,9 +3248,9 @@ export const syncApi = {
   
   // ==================== ADMIN: HOSTS ====================
   
-  /** Get all hosts for org */
-  getHosts: () =>
-    portalApi.get('/sync/admin/hosts'),
+  /** Get hosts for org (pass project_id to scope to project) */
+  getHosts: (params = {}) =>
+    portalApi.get('/sync/admin/hosts', { params }),
   
   /** Create a host */
   createHost: (data) =>

@@ -868,14 +868,16 @@ export default function ProjectDashboard({ onNavigate }) {
           }
         }
         
-        // Fetch upcoming bookings from Sync - ALWAYS (Sync is universal/per-user)
+        // Fetch upcoming bookings from Sync - scoped to current project
         try {
           const today = new Date().toISOString().split('T')[0]
-          const bookingsRes = await syncApi.getBookings({ 
+          const bookingParams = { 
             status: 'confirmed',
             startDate: today,
             limit: 5
-          })
+          }
+          if (currentProject?.id) bookingParams.project_id = currentProject.id
+          const bookingsRes = await syncApi.getBookings(bookingParams)
           const bookings = bookingsRes.data?.bookings || bookingsRes.data || bookingsRes || []
           setUpcomingBookings(Array.isArray(bookings) ? bookings : [])
         } catch (err) {

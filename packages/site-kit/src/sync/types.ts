@@ -60,8 +60,11 @@ export interface BookingResult {
 }
 
 export interface BookingWidgetProps {
-  /** Organization slug (e.g., 'heinrich-law') */
-  orgSlug: string
+  /** Organization slug – required for public (unauthenticated) mode, optional with apiKey */
+  orgSlug?: string
+  
+  /** API key – when provided, uses authenticated /sync/widget/* endpoints (no orgSlug needed) */
+  apiKey?: string
   
   /** API base URL - defaults to https://api.uptrademedia.com */
   apiUrl?: string

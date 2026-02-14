@@ -88,7 +88,7 @@ const COLORS = [
 ]
 
 export default function BookingTypesPanel({ isOpen, onClose, inline = false }) {
-  const { currentOrg } = useAuthStore()
+  const { currentOrg, currentProject } = useAuthStore()
   const [bookingTypes, setBookingTypes] = useState([])
   const [hosts, setHosts] = useState([])
   const [loading, setLoading] = useState(true)
@@ -96,17 +96,19 @@ export default function BookingTypesPanel({ isOpen, onClose, inline = false }) {
   const [editingType, setEditingType] = useState(null)
   const [routingType, setRoutingType] = useState(null)
 
-  // Fetch booking types and hosts
+  // Fetch booking types and hosts - re-fetch when project changes
   useEffect(() => {
     if (isOpen || inline) {
       fetchBookingTypes()
       fetchHosts()
     }
-  }, [isOpen, inline])
+  }, [isOpen, inline, currentProject?.id])
 
   const fetchHosts = async () => {
     try {
-      const { data } = await syncApi.getHosts()
+      const params = {}
+      if (currentProject?.id) params.project_id = currentProject.id
+      const { data } = await syncApi.getHosts(params)
       setHosts(data.hosts || [])
     } catch (error) {
       console.error('Failed to fetch hosts:', error)
@@ -116,7 +118,9 @@ export default function BookingTypesPanel({ isOpen, onClose, inline = false }) {
   const fetchBookingTypes = async () => {
     try {
       setLoading(true)
-      const { data } = await syncApi.getBookingTypes()
+      const params = {}
+      if (currentProject?.id) params.project_id = currentProject.id
+      const { data } = await syncApi.getBookingTypes(params)
       setBookingTypes(data.types || [])
     } catch (error) {
       console.error('Failed to fetch booking types:', error)
@@ -285,6 +289,7 @@ export default function BookingTypesPanel({ isOpen, onClose, inline = false }) {
             setEditingType(null)
           }}
           editingType={editingType}
+          projectId={currentProject?.id}
           onSaved={() => {
             setShowCreateModal(false)
             setEditingType(null)
@@ -354,7 +359,7 @@ export default function BookingTypesPanel({ isOpen, onClose, inline = false }) {
 }
 
 // Form modal for create/edit
-function BookingTypeFormModal({ isOpen, onClose, editingType, onSaved }) {
+function BookingTypeFormModal({ isOpen, onClose, editingType, projectId, onSaved }) {
   const [saving, setSaving] = useState(false)
   const [formData, setFormData] = useState({
     name: '',
@@ -414,6 +419,11 @@ function BookingTypeFormModal({ isOpen, onClose, editingType, onSaved }) {
         buffer_after_minutes: parseInt(formData.buffer_after_minutes),
         min_notice_hours: parseInt(formData.min_notice_hours),
         max_advance_days: parseInt(formData.max_advance_days),
+      }
+
+      // Scope booking type to current project
+      if (projectId) {
+        data.projectId = projectId
       }
 
       if (editingType) {

@@ -1,5 +1,10 @@
 /**
  * Sync API Functions - Client-side API calls for booking widget
+ *
+ * Two modes:
+ *   1. API-key flow (preferred): Uses x-api-key header → /sync/widget/* endpoints.
+ *      Project is resolved server-side from the key. No orgSlug needed.
+ *   2. Public/orgSlug flow (legacy): Uses /sync/public/:org/* endpoints. No auth.
  */
 
 import type { 
@@ -12,14 +17,51 @@ import type {
 
 const DEFAULT_API_URL = 'https://api.uptrademedia.com'
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Config helper (same pattern as analytics, commerce, engage)
+// ─────────────────────────────────────────────────────────────────────────────
+
+function getApiConfig() {
+  const apiUrl = typeof window !== 'undefined'
+    ? (window as any).__SITE_KIT_API_URL__ || DEFAULT_API_URL
+    : DEFAULT_API_URL
+  const apiKey = typeof window !== 'undefined'
+    ? (window as any).__SITE_KIT_API_KEY__
+    : undefined
+  return { apiUrl, apiKey }
+}
+
+/** Build headers – always include Content-Type for POSTs; add x-api-key when available */
+function buildHeaders(apiKey?: string, isPost = false): Record<string, string> {
+  const headers: Record<string, string> = {}
+  if (isPost) headers['Content-Type'] = 'application/json'
+  if (apiKey) headers['x-api-key'] = apiKey
+  return headers
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Read endpoints
+// ─────────────────────────────────────────────────────────────────────────────
+
 /**
- * Fetch public booking types for an organization
+ * Fetch booking types.
+ * - With apiKey → GET /sync/widget/types
+ * - With orgSlug → GET /sync/public/:org/types
  */
 export async function fetchBookingTypes(
-  orgSlug: string,
-  apiUrl: string = DEFAULT_API_URL
+  orgSlug?: string,
+  apiUrl?: string,
+  apiKey?: string,
 ): Promise<BookingType[]> {
-  const response = await fetch(`${apiUrl}/sync/public/${orgSlug}/types`)
+  const cfg = getApiConfig()
+  const url = apiUrl || cfg.apiUrl
+  const key = apiKey || cfg.apiKey
+
+  const endpoint = key
+    ? `${url}/sync/widget/types`
+    : `${url}/sync/public/${orgSlug}/types`
+
+  const response = await fetch(endpoint, { headers: buildHeaders(key) })
   
   if (!response.ok) {
     throw new Error(`Failed to fetch booking types: ${response.statusText}`)
@@ -33,11 +75,20 @@ export async function fetchBookingTypes(
  * Fetch booking type details
  */
 export async function fetchBookingTypeDetails(
-  orgSlug: string,
   typeSlug: string,
-  apiUrl: string = DEFAULT_API_URL
+  orgSlug?: string,
+  apiUrl?: string,
+  apiKey?: string,
 ): Promise<BookingType> {
-  const response = await fetch(`${apiUrl}/sync/public/${orgSlug}/types/${typeSlug}`)
+  const cfg = getApiConfig()
+  const url = apiUrl || cfg.apiUrl
+  const key = apiKey || cfg.apiKey
+
+  const endpoint = key
+    ? `${url}/sync/widget/types/${typeSlug}`
+    : `${url}/sync/public/${orgSlug}/types/${typeSlug}`
+
+  const response = await fetch(endpoint, { headers: buildHeaders(key) })
   
   if (!response.ok) {
     throw new Error(`Failed to fetch booking type: ${response.statusText}`)
@@ -50,20 +101,27 @@ export async function fetchBookingTypeDetails(
  * Fetch available time slots for a specific date
  */
 export async function fetchAvailability(
-  orgSlug: string,
   typeSlug: string,
   date: string, // YYYY-MM-DD format
-  apiUrl: string = DEFAULT_API_URL,
+  orgSlug?: string,
+  apiUrl?: string,
+  apiKey?: string,
   timezone?: string,
-  hostId?: string
+  hostId?: string,
 ): Promise<TimeSlot[]> {
+  const cfg = getApiConfig()
+  const url = apiUrl || cfg.apiUrl
+  const key = apiKey || cfg.apiKey
+
   const params = new URLSearchParams({ date })
   if (timezone) params.append('timezone', timezone)
   if (hostId) params.append('hostId', hostId)
-  
-  const response = await fetch(
-    `${apiUrl}/sync/public/${orgSlug}/availability/${typeSlug}?${params}`
-  )
+
+  const endpoint = key
+    ? `${url}/sync/widget/availability/${typeSlug}?${params}`
+    : `${url}/sync/public/${orgSlug}/availability/${typeSlug}?${params}`
+
+  const response = await fetch(endpoint, { headers: buildHeaders(key) })
   
   if (!response.ok) {
     throw new Error(`Failed to fetch availability: ${response.statusText}`)
@@ -73,25 +131,37 @@ export async function fetchAvailability(
   return data.slots || []
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Write endpoints
+// ─────────────────────────────────────────────────────────────────────────────
+
 /**
  * Hold a time slot temporarily (5-10 minutes)
  */
 export async function createSlotHold(
-  bookingTypeId: string,
-  startTime: string,
-  hostId: string | undefined,
-  guestTimezone: string,
-  apiUrl: string = DEFAULT_API_URL
+  holdData: {
+    bookingType: string
+    slotStart: string
+    slotEnd: string
+    hostId: string
+    sessionId: string
+    guestEmail?: string
+  },
+  apiUrl?: string,
+  apiKey?: string,
 ): Promise<SlotHold> {
-  const response = await fetch(`${apiUrl}/sync/public/hold`, {
+  const cfg = getApiConfig()
+  const url = apiUrl || cfg.apiUrl
+  const key = apiKey || cfg.apiKey
+
+  const endpoint = key
+    ? `${url}/sync/widget/hold`
+    : `${url}/sync/public/hold`
+
+  const response = await fetch(endpoint, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      booking_type_id: bookingTypeId,
-      start_time: startTime,
-      host_id: hostId,
-      guest_timezone: guestTimezone,
-    }),
+    headers: buildHeaders(key, true),
+    body: JSON.stringify(holdData),
   })
   
   if (!response.ok) {
@@ -106,10 +176,20 @@ export async function createSlotHold(
  */
 export async function releaseSlotHold(
   holdId: string,
-  apiUrl: string = DEFAULT_API_URL
+  apiUrl?: string,
+  apiKey?: string,
 ): Promise<void> {
-  await fetch(`${apiUrl}/sync/public/hold/${holdId}`, {
+  const cfg = getApiConfig()
+  const url = apiUrl || cfg.apiUrl
+  const key = apiKey || cfg.apiKey
+
+  const endpoint = key
+    ? `${url}/sync/widget/hold/${holdId}`
+    : `${url}/sync/public/hold/${holdId}`
+
+  await fetch(endpoint, {
     method: 'DELETE',
+    headers: buildHeaders(key),
   })
 }
 
@@ -117,28 +197,36 @@ export async function releaseSlotHold(
  * Create a booking
  */
 export async function createBooking(
-  bookingTypeId: string,
-  startTime: string,
-  guest: GuestInfo,
-  timezone: string,
-  hostId?: string,
-  holdId?: string,
-  apiUrl: string = DEFAULT_API_URL
+  bookingData: {
+    bookingType: string
+    scheduledAt: string
+    hostId: string
+    name: string
+    email: string
+    phone?: string
+    company?: string
+    message?: string
+    source: string
+    timezone?: string
+    holdId?: string
+    sessionId?: string
+    sourceUrl?: string
+  },
+  apiUrl?: string,
+  apiKey?: string,
 ): Promise<BookingResult> {
-  const response = await fetch(`${apiUrl}/sync/public/booking`, {
+  const cfg = getApiConfig()
+  const url = apiUrl || cfg.apiUrl
+  const key = apiKey || cfg.apiKey
+
+  const endpoint = key
+    ? `${url}/sync/widget/booking`
+    : `${url}/sync/public/booking`
+
+  const response = await fetch(endpoint, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      booking_type_id: bookingTypeId,
-      start_time: startTime,
-      guest_name: guest.name,
-      guest_email: guest.email,
-      guest_phone: guest.phone,
-      guest_notes: guest.notes,
-      timezone,
-      host_id: hostId,
-      hold_id: holdId,
-    }),
+    headers: buildHeaders(key, true),
+    body: JSON.stringify(bookingData),
   })
   
   if (!response.ok) {
@@ -149,20 +237,23 @@ export async function createBooking(
   return response.json()
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Utility helpers
+// ─────────────────────────────────────────────────────────────────────────────
+
 /**
  * Get available dates for a month (helper for calendar view)
  * Returns dates that have at least one available slot
  */
 export async function fetchAvailableDates(
-  orgSlug: string,
   typeSlug: string,
   startDate: string, // YYYY-MM-DD
   endDate: string,   // YYYY-MM-DD
-  apiUrl: string = DEFAULT_API_URL,
-  timezone?: string
+  orgSlug?: string,
+  apiUrl?: string,
+  apiKey?: string,
+  timezone?: string,
 ): Promise<string[]> {
-  // Fetch availability for each day in range
-  // In production, this would be a single API call
   const availableDates: string[] = []
   const start = new Date(startDate)
   const end = new Date(endDate)
@@ -172,7 +263,7 @@ export async function fetchAvailableDates(
     const dateStr = current.toISOString().split('T')[0]
     
     try {
-      const slots = await fetchAvailability(orgSlug, typeSlug, dateStr, apiUrl, timezone)
+      const slots = await fetchAvailability(typeSlug, dateStr, orgSlug, apiUrl, apiKey, timezone)
       if (slots.some(s => s.available)) {
         availableDates.push(dateStr)
       }
