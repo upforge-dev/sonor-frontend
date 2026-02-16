@@ -1,21 +1,18 @@
 // public/engage-widget.js
 // Embeddable Echo chat widget for tenant websites
-// Include via: <script src="https://portal.uptrademedia.com/engage-widget.js" data-project="PROJECT_ID" async></script>
+// Include via: <script src="https://portal.uptrademedia.com/engage-widget.js" data-api-key="UPTRADE_API_KEY" async></script>
+// Optional: data-signal-url, data-portal-url (for custom Signal/Portal implementations)
 //
-// Features:
-// - AI chat powered by Signal knowledge base
-// - Echo branding with animated logo
-// - Tenant-specific colors and greeting
-// - Human handoff capability
-// - Popup/banner display engine
-// - Full offline support
+// One env var: UPTRADE_API_KEY. Project is resolved from the key.
+// Features: AI chat (Signal Echo), human handoff (Portal), popups/banners.
 
 (function() {
   'use strict';
 
-  // Configuration
-  const PORTAL_URL = 'https://portal.uptrademedia.com';
-  const API_BASE = '/.netlify/functions';
+  // Configuration (overridable via script data attributes: data-portal-url, data-portal-api-url, data-signal-url)
+  let PORTAL_URL = 'https://portal.uptrademedia.com';
+  let PORTAL_API_URL = 'https://api.uptrademedia.com';
+  let SIGNAL_URL = 'https://signal.uptrademedia.com';
   
   // ═══════════════════════════════════════════════════════════════════════════════
   // ANIMATED ECHO LOGO SVG
@@ -94,9 +91,10 @@
 
   // State
   let config = null;
-  let projectId = null;
+  let apiKey = null;
   let sessionId = null;
   let visitorId = null;
+  let echoSocket = null;
   let isOpen = false;
   let messages = [];
   let pollingInterval = null;
@@ -232,18 +230,20 @@
     }
   }
 
-  // Get project ID from script tag
-  const scriptTag = document.currentScript || document.querySelector('script[data-project]');
+  // Get apiKey and optional URLs from script tag (one env var: UPTRADE_API_KEY)
+  const scriptTag = document.currentScript || document.querySelector('script[data-api-key]');
   if (!scriptTag) {
-    console.error('[Engage] No script tag found with data-project attribute');
+    console.error('[Engage] No script tag found with data-api-key attribute');
     return;
   }
-  projectId = scriptTag.getAttribute('data-project');
-  
-  if (!projectId) {
-    console.error('[Engage] Missing data-project attribute');
+  apiKey = scriptTag.getAttribute('data-api-key');
+  if (!apiKey) {
+    console.error('[Engage] Missing data-api-key attribute (set UPTRADE_API_KEY)');
     return;
   }
+  if (scriptTag.getAttribute('data-signal-url')) SIGNAL_URL = scriptTag.getAttribute('data-signal-url');
+  if (scriptTag.getAttribute('data-portal-url')) PORTAL_URL = scriptTag.getAttribute('data-portal-url');
+  if (scriptTag.getAttribute('data-portal-api-url')) PORTAL_API_URL = scriptTag.getAttribute('data-portal-api-url');
 
   const WIDGET_ORIGIN = scriptTag.src ? new URL(scriptTag.src).origin : PORTAL_URL;
 
@@ -298,13 +298,15 @@
     }
   }
 
-  // Fetch widget configuration
+  // Fetch widget configuration (apiKey identifies project) – Portal API
   async function fetchConfig() {
     try {
-      const response = await fetch(`${WIDGET_ORIGIN}${API_BASE}/engage-chat-widget?projectId=${projectId}`);
-      const data = await response.json();
-      
-      if (data.enabled) {
+      const response = await fetch(`${PORTAL_API_URL}/engage/widget/config`, {
+        headers: { 'X-API-Key': apiKey }
+      });
+      const res = await response.json();
+      const data = res?.data;
+      if (data?.enabled) {
         config = data;
         initWidget();
       }
@@ -342,21 +344,22 @@
   // ═══════════════════════════════════════════════════════════════════════════════
   
   /**
-   * Fetch active elements from API and display them
+   * Fetch active elements from Portal API and display them
    */
   async function fetchAndDisplayElements() {
     try {
-      const url = new URL(`${WIDGET_ORIGIN}${API_BASE}/engage-elements-widget/elements`);
-      url.searchParams.set('projectId', projectId);
+      const url = new URL(`${PORTAL_API_URL}/engage/widget/elements`);
       url.searchParams.set('url', window.location.pathname);
-      url.searchParams.set('device', getDeviceType());
-      url.searchParams.set('visitor', localStorage.getItem('engage_visitor_id') ? 'returning' : 'new');
+      url.searchParams.set('visitorId', visitorId);
+      url.searchParams.set('deviceType', getDeviceType());
       
-      const response = await fetch(url);
-      const data = await response.json();
-      
-      if (data.elements && Array.isArray(data.elements)) {
-        activeElements = data.elements;
+      const response = await fetch(url, {
+        headers: { 'X-API-Key': apiKey }
+      });
+      const res = await response.json();
+      const elements = res?.data?.elements;
+      if (elements && Array.isArray(elements)) {
+        activeElements = elements;
         processElements();
       }
     } catch (error) {
@@ -596,15 +599,15 @@
   
   function trackElementEvent(elementId, eventType) {
     try {
-      fetch(`${WIDGET_ORIGIN}${API_BASE}/engage-elements-widget/event`, {
+      fetch(`${PORTAL_API_URL}/engage/widget/event`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-API-Key': apiKey },
         body: JSON.stringify({
           elementId,
           eventType,
           pageUrl: window.location.href,
           visitorId,
-          sessionId,
+          sessionId: sessionId || '',
           deviceType: getDeviceType()
         })
       });
@@ -1815,33 +1818,38 @@
     });
   }
 
-  // Create chat session
+  // Create chat session – Portal API
   async function createSession(visitorData) {
-    const baseUrl = scriptTag.src ? new URL(scriptTag.src).origin : PORTAL_URL;
-    
-    const response = await fetch(`${baseUrl}${API_BASE}/engage-chat-session`, {
+    const response = await fetch(`${PORTAL_API_URL}/engage/widget/session`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'X-API-Key': apiKey },
       body: JSON.stringify({
-        projectId,
         visitorId,
-        sessionId,
+        visitorName: visitorData.visitorName,
+        visitorEmail: visitorData.visitorEmail,
+        visitorPhone: visitorData.visitorPhone,
         sourceUrl: window.location.href,
         referrer: document.referrer,
         userAgent: navigator.userAgent,
         deviceType: getDeviceType(),
-        ...visitorData
+        chatMode: visitorData.chatMode,
+        aiSummary: visitorData.aiSummary,
+        aiConversationId: visitorData.aiConversationId
       })
     });
     
-    const data = await response.json();
-    sessionStorage.setItem('engage_chat_session', data.session.id);
+    const res = await response.json();
+    const session = res?.data?.session;
+    if (!session?.id) throw new Error(res?.message || 'Failed to create session');
+    sessionStorage.setItem('engage_chat_session', session.id);
     
     if (visitorData.initialMessage) {
       messages.push({
         role: 'visitor',
         content: visitorData.initialMessage
       });
+      // Send initial message to Portal for live chat
+      await sendLiveMessage(session.id, visitorData.initialMessage);
     }
     
     // Add system message
@@ -1850,7 +1858,7 @@
       content: 'You\'re connected! We\'ll respond shortly.'
     });
     
-    return data;
+    return { session };
   }
 
   // Send a message
@@ -1881,77 +1889,96 @@
     }
   }
 
-  // Send message to AI with streaming (Echo public chat endpoint)
+  // Ensure Signal Echo socket is connected (auth: UPTRADE_API_KEY + visitorId)
+  function ensureEchoSocket(callback) {
+    if (echoSocket && echoSocket.connected) {
+      callback();
+      return;
+    }
+    if (!window.io) {
+      const script = document.createElement('script');
+      script.src = 'https://cdn.socket.io/4.7.5/socket.io.min.js';
+      script.onload = () => connectEchoSocket(callback);
+      document.head.appendChild(script);
+    } else {
+      connectEchoSocket(callback);
+    }
+  }
+
+  function connectEchoSocket(onReady) {
+    if (echoSocket) {
+      if (echoSocket.connected) onReady();
+      else echoSocket.once('connect', onReady);
+      return;
+    }
+    echoSocket = window.io(SIGNAL_URL + '/echo-public', {
+      auth: { apiKey: apiKey, visitorId: visitorId },
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionAttempts: 5
+    });
+    echoSocket.on('connect', () => { if (onReady) onReady(); });
+    echoSocket.on('connect_error', (err) => console.error('[Engage] Echo socket error:', err.message));
+  }
+
+  // Send message to AI via Signal Echo socket (echo:message / echo:token / echo:complete)
   async function sendAIMessage(content) {
     isWaitingForAI = true;
     showTypingIndicator();
     setFabListening(true);
     
     try {
-      const baseUrl = scriptTag.src ? new URL(scriptTag.src).origin : PORTAL_URL;
-      const response = await fetch(`${baseUrl}${API_BASE}/echo-chat-public`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          projectId,
-          sessionId,
-          message: content,
-          history: aiConversationHistory.slice(-10),
-          source: 'engage_widget',
-          pageUrl: window.location.href
-        })
+      await new Promise(function(resolve) {
+        ensureEchoSocket(resolve);
       });
-      
-      if (!response.ok) {
-        throw new Error('Failed to get AI response');
-      }
 
-      // Parse SSE response
-      const text = await response.text();
-      const events = parseSSEEvents(text);
-      
-      hideTypingIndicator();
-      
-      // Process events
+      const requestId = 'msg_' + Date.now();
       let fullResponse = '';
-      let metadata = {};
-      
-      // Add placeholder message that we'll update
       const aiMessageIndex = messages.length;
       messages.push({ role: 'ai', content: '' });
-      
-      for (const event of events) {
-        if (event.type === 'token') {
-          fullResponse += event.data.content;
-          messages[aiMessageIndex].content = fullResponse;
-          updateMessagesUI();
-        } else if (event.type === 'complete') {
-          metadata = event.data;
-        } else if (event.type === 'start') {
-          if (event.data.conversationId) {
-            sessionStorage.setItem('engage_signal_conversation', event.data.conversationId);
+      updateMessagesUI();
+
+      await new Promise(function(resolve, reject) {
+        const onToken = function(data) {
+          if (data.requestId === requestId && data.content) {
+            fullResponse += data.content;
+            messages[aiMessageIndex].content = fullResponse;
+            updateMessagesUI();
           }
-        }
-      }
-      
-      // Update conversation history
-      if (fullResponse) {
-        aiConversationHistory.push({ role: 'assistant', content: fullResponse });
-      }
-      
-      // Check if AI triggered handoff
-      if (metadata.handoffRequested) {
-        handleAIHandoff(metadata.handoffReason);
-      }
-      
+        };
+        const onComplete = function(data) {
+          if (data.requestId === requestId) {
+            echoSocket.off('echo:token', onToken);
+            echoSocket.off('echo:complete', onComplete);
+            echoSocket.off('echo:error', onErr);
+            resolve();
+          }
+        };
+        const onErr = function(data) {
+          if (data.requestId === requestId) {
+            echoSocket.off('echo:token', onToken);
+            echoSocket.off('echo:complete', onComplete);
+            echoSocket.off('echo:error', onErr);
+            reject(new Error(data.message || 'Echo error'));
+          }
+        };
+        echoSocket.on('echo:token', onToken);
+        echoSocket.on('echo:complete', onComplete);
+        echoSocket.on('echo:error', onErr);
+        echoSocket.emit('echo:message', {
+          requestId: requestId,
+          message: content,
+          pageUrl: window.location.pathname || window.location.href
+        });
+      });
+
+      hideTypingIndicator();
+      if (fullResponse) aiConversationHistory.push({ role: 'assistant', content: fullResponse });
       trackEvent('ai_message_sent');
     } catch (error) {
       console.error('[Engage] AI message error:', error);
       hideTypingIndicator();
-      messages.push({ 
-        role: 'system', 
-        content: 'Sorry, I had trouble processing that. Please try again.' 
-      });
+      messages.push({ role: 'system', content: 'Sorry, I had trouble processing that. Please try again.' });
       updateMessagesUI();
     } finally {
       isWaitingForAI = false;
@@ -1982,15 +2009,15 @@
     return events;
   }
 
-  // Send message to live agent
+  // Send message to live agent – Portal API
   async function sendLiveMessage(chatSessionId, content) {
     try {
-      const baseUrl = scriptTag.src ? new URL(scriptTag.src).origin : PORTAL_URL;
-      await fetch(`${baseUrl}${API_BASE}/engage-chat-widget/message`, {
+      await fetch(`${PORTAL_API_URL}/engage/widget/message`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-API-Key': apiKey },
         body: JSON.stringify({
           sessionId: chatSessionId,
+          visitorId,
           content
         })
       });
@@ -2032,35 +2059,36 @@
     showHandoffForm(reason);
   }
 
-  // Request handoff to human agent
+  // Request handoff to human agent – Portal API
   async function requestHandoff(visitorData = {}) {
     const signalConversation = sessionStorage.getItem('engage_signal_conversation');
     
     try {
-      const baseUrl = scriptTag.src ? new URL(scriptTag.src).origin : PORTAL_URL;
-      const response = await fetch(`${baseUrl}${API_BASE}/engage-chat-session`, {
+      const response = await fetch(`${PORTAL_API_URL}/engage/widget/session`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-API-Key': apiKey },
         body: JSON.stringify({
-          projectId,
           visitorId,
-          sessionId,
+          visitorName: visitorData.visitorName,
+          visitorEmail: visitorData.visitorEmail,
+          visitorPhone: visitorData.visitorPhone,
           sourceUrl: window.location.href,
           referrer: document.referrer,
           userAgent: navigator.userAgent,
           deviceType: getDeviceType(),
-          chatMode: 'handoff', // Signal this is a handoff from AI
+          chatMode: 'handoff',
           aiConversationId: signalConversation,
-          aiSummary: summarizeConversation(),
-          ...visitorData
+          aiSummary: summarizeConversation()
         })
       });
       
-      const data = await response.json();
-      sessionStorage.setItem('engage_chat_session', data.session.id);
+      const res = await response.json();
+      const session = res?.data?.session;
+      if (!session?.id) throw new Error(res?.message || 'Failed to create handoff session');
+      sessionStorage.setItem('engage_chat_session', session.id);
       
       // Subscribe to realtime updates for this session
-      subscribeToSession(data.session.id);
+      subscribeToSession(session.id);
       
       messages.push({
         role: 'system',
@@ -2146,12 +2174,10 @@
   // SOCKET.IO REALTIME CONNECTION
   // ═══════════════════════════════════════════════════════════════════════════════
   
-  const PORTAL_API_URL = 'https://api.uptrademedia.com';
   let socket = null;
   let agentTypingTimeout = null;
   
   function subscribeToSession(chatSessionId) {
-    // Load Socket.io client if not already loaded
     if (!window.io) {
       const script = document.createElement('script');
       script.src = 'https://cdn.socket.io/4.7.5/socket.io.min.js';
@@ -2162,14 +2188,14 @@
     }
   }
 
-  // Connect to Portal API WebSocket
+  // Connect to Portal API WebSocket (human handoff)
   function connectSocket(chatSessionId) {
     try {
       sessionId = chatSessionId;
       
-      socket = io(`${PORTAL_API_URL}/engage/chat`, {
+      socket = window.io(PORTAL_API_URL.replace(/\/$/, '') + '/engage/chat', {
         query: {
-          projectId: projectId,
+          apiKey: apiKey,
           visitorId: visitorId,
           sessionId: chatSessionId
         },
@@ -2325,11 +2351,15 @@
     }
   }
 
-  // Cleanup socket connection
+  // Cleanup socket connections
   function cleanupRealtime() {
     if (socket) {
       socket.disconnect();
       socket = null;
+    }
+    if (echoSocket) {
+      echoSocket.disconnect();
+      echoSocket = null;
     }
     hideAgentTypingIndicator();
   }
@@ -2355,33 +2385,35 @@
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
   }
 
-  // Poll for new messages
+  // Poll for new messages – Portal API
   function startPolling() {
     const chatSessionId = sessionStorage.getItem('engage_chat_session');
     if (!chatSessionId) return;
     
     pollingInterval = setInterval(async () => {
       try {
-        const baseUrl = scriptTag.src ? new URL(scriptTag.src).origin : PORTAL_URL;
-        const url = new URL(`${baseUrl}${API_BASE}/engage-chat-widget/messages`);
+        const url = new URL(`${PORTAL_API_URL}/engage/widget/messages`);
         url.searchParams.set('sessionId', chatSessionId);
-        if (lastMessageTime) {
-          url.searchParams.set('after', lastMessageTime);
-        }
         
-        const response = await fetch(url);
-        const data = await response.json();
+        const response = await fetch(url, {
+          headers: { 'X-API-Key': apiKey }
+        });
+        const res = await response.json();
+        const msgList = res?.data;
         
-        if (data.messages && data.messages.length > 0) {
+        if (Array.isArray(msgList) && msgList.length > 0) {
           // Add new messages (filter out ones we already have)
-          data.messages.forEach(msg => {
-            if (!messages.find(m => m.id === msg.id)) {
+          msgList.forEach(msg => {
+            const msgId = msg.id;
+            const msgRole = msg.role || (msg.sender?.type === 'agent' ? 'agent' : 'visitor');
+            const msgContent = msg.content || msg.text || '';
+            if (!messages.find(m => m.id === msgId)) {
               messages.push({
-                id: msg.id,
-                role: msg.role,
-                content: msg.content
+                id: msgId,
+                role: msgRole,
+                content: msgContent
               });
-              lastMessageTime = msg.created_at;
+              lastMessageTime = msg.created_at || msg.createdAt;
               
               // Play sound for agent messages
               if (msg.role === 'agent' && config.playSoundOnMessage) {
@@ -2405,21 +2437,20 @@
     }
   }
 
-  // Track analytics event
+  // Track analytics event – Portal API (event endpoint; elementId optional, no-op when absent)
   async function trackEvent(eventType, metadata = {}) {
     try {
-      const baseUrl = scriptTag.src ? new URL(scriptTag.src).origin : PORTAL_URL;
       const chatSessionId = sessionStorage.getItem('engage_chat_session');
       
-      await fetch(`${baseUrl}${API_BASE}/engage-chat-widget/event`, {
+      await fetch(`${PORTAL_API_URL}/engage/widget/event`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-API-Key': apiKey },
         body: JSON.stringify({
-          projectId,
-          sessionId: chatSessionId,
           eventType,
           pageUrl: window.location.href,
           visitorId,
+          sessionId: chatSessionId || '',
+          deviceType: getDeviceType(),
           metadata
         })
       });
