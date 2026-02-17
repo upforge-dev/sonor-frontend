@@ -1,0 +1,21 @@
+# No Mock Data — Always Real Data
+
+**Rule: Never use mock or placeholder data in the Portal.** All UI must be wired to real APIs and real data.
+
+## Do
+
+- Use data from props/API only; show empty states when there is no data.
+- Derive stats (counts, totals, upcoming) from real lists when the API doesn’t return them.
+- Normalize API shapes (e.g. `schedules`, `next_schedule`) inside components or selectors for display.
+- On API/load errors, show error state and optionally retry; do not fall back to fake data.
+
+## Do Not
+
+- Add or keep `mock*` arrays, `showMockData` props, or DEV-only mock fallbacks.
+- Use hardcoded demo data to fill lists, stats, or activity feeds.
+- Return mock suggestions or placeholder results from hooks (e.g. SEO generation) when the API fails.
+
+## Commerce panels
+
+- **EventsPanel**, **ServicesPanel**, **ProductsPanel**, **ClassesPanel**: receive real `events`/`services`/`products`/`classes` and optional `stats`; derive stats from lists when not provided; show “No … yet” when empty.
+- **RecentActivity**, **CommerceMetrics**: receive real `activity`/`metrics`; show “No recent activity” / “No metrics available” when empty.

@@ -7,7 +7,7 @@
  * MIGRATED TO REACT QUERY HOOKS - Jan 29, 2026
  */
 import { useState, useRef, useCallback } from 'react'
-import { useUploadCommerceImage, useDeleteCommerceImage, commerceKeys } from '@/lib/hooks'
+import { useUploadCommerceImage, useDeleteCommerceImage, useUpdateCommerceOffering, commerceKeys } from '@/lib/hooks'
 import { useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -42,6 +42,9 @@ export function CommerceImageUploader({
   
   const featuredInputRef = useRef(null)
   const galleryInputRef = useRef(null)
+  const uploadImageMutation = useUploadCommerceImage()
+  const deleteImageMutation = useDeleteCommerceImage()
+  const updateOfferingMutation = useUpdateCommerceOffering()
 
   const validateFile = (file) => {
     if (!ACCEPTED_TYPES.includes(file.type)) {
@@ -88,11 +91,11 @@ export function CommerceImageUploader({
         // Set first uploaded image as featured if none exists or explicitly requested
         const isFeatured = setAsFeatured || (!featuredImageId && images.length === 0 && i === 0)
         
-        const result = await uploadOfferingImage(offeringId, file, isFeatured)
+        const result = await uploadImageMutation.mutateAsync({ offeringId, file, isFeatured })
         newImages.push({
-          id: result.id,
-          url: result.url,
-          filename: result.filename,
+          id: result?.id ?? result?.fileId,
+          url: result?.url ?? result?.publicUrl,
+          filename: result?.filename ?? file.name,
           is_featured: isFeatured,
         })
       }
@@ -105,7 +108,7 @@ export function CommerceImageUploader({
       setUploading(false)
       setUploadProgress(0)
     }
-  }, [offeringId, images, featuredImageId, maxImages, onImagesChange])
+  }, [offeringId, images, featuredImageId, maxImages, onImagesChange, uploadImageMutation])
 
   const handleDrop = useCallback((e) => {
     e.preventDefault()
@@ -133,11 +136,11 @@ export function CommerceImageUploader({
 
   const handleDelete = async (imageId) => {
     if (!offeringId) return
-    
+
     setDeletingId(imageId)
     try {
-      await deleteOfferingImage(offeringId, imageId)
-      onImagesChange?.(images.filter(img => img.id !== imageId))
+      await deleteImageMutation.mutateAsync({ offeringId, fileId: imageId })
+      onImagesChange?.(images.filter((img) => img.id !== imageId))
     } catch (err) {
       console.error('Delete error:', err)
       setError(err.message || 'Failed to delete image')
@@ -148,10 +151,13 @@ export function CommerceImageUploader({
 
   const handleSetFeatured = async (imageId) => {
     if (!offeringId) return
-    
+
     try {
-      await setFeaturedImage(offeringId, imageId)
-      onImagesChange?.(images.map(img => ({
+      await updateOfferingMutation.mutateAsync({
+        offeringId,
+        data: { featured_image_id: imageId },
+      })
+      onImagesChange?.(images.map((img) => ({
         ...img,
         is_featured: img.id === imageId,
       })))

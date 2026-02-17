@@ -230,6 +230,20 @@ export default function OfferingDetail({ offeringId, onBack, onEdit }) {
                   {currentOffering.short_description}
                 </p>
               )}
+              {/* Next date for events/classes */}
+              {(currentOffering.type === 'event' || currentOffering.type === 'class') && (() => {
+                const sched = currentOffering.next_schedule || currentOffering.schedules?.[0]
+                const at = sched?.starts_at || sched?.start_time
+                if (!at) return null
+                const d = new Date(at)
+                if (isPast(d)) return null
+                return (
+                  <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1">
+                    <CalendarDays className="h-3.5 w-3.5" />
+                    Next: {format(d, 'MMM d, yyyy')} at {format(d, 'h:mm a')}
+                  </p>
+                )
+              })()}
             </div>
           </div>
         </div>
@@ -365,6 +379,31 @@ export default function OfferingDetail({ offeringId, onBack, onEdit }) {
             </p>
           </CardContent>
         </Card>
+
+        {/* Next date card for events/classes */}
+        {(currentOffering.type === 'event' || currentOffering.type === 'class') && (() => {
+          const sched = currentOffering.next_schedule || currentOffering.schedules?.[0]
+          const at = sched?.starts_at || sched?.start_time
+          if (!at) return null
+          const d = new Date(at)
+          return (
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-2">
+                  <CalendarDays className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">Next date</span>
+                </div>
+                <p className="text-2xl font-bold mt-1">
+                  {format(d, 'MMM d, yyyy')}
+                </p>
+                <p className="text-sm text-muted-foreground mt-0.5">
+                  {format(d, 'h:mm a')}
+                  {currentOffering.schedules?.length > 1 && ` • ${currentOffering.schedules.length} sessions`}
+                </p>
+              </CardContent>
+            </Card>
+          )
+        })()}
       </div>
 
       {/* Tabs */}
@@ -374,8 +413,8 @@ export default function OfferingDetail({ offeringId, onBack, onEdit }) {
           {currentOffering.variants?.length > 0 && (
             <TabsTrigger value="variants">Variants</TabsTrigger>
           )}
-          {currentOffering.schedules?.length > 0 && (
-            <TabsTrigger value="schedules">Schedules</TabsTrigger>
+          {(currentOffering.type === 'event' || currentOffering.type === 'class') && (
+            <TabsTrigger value="schedules">Schedules ({currentOffering.schedules?.length ?? 0})</TabsTrigger>
           )}
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
           <TabsTrigger value="sales">Sales History</TabsTrigger>
@@ -519,37 +558,56 @@ export default function OfferingDetail({ offeringId, onBack, onEdit }) {
         <TabsContent value="schedules" className="mt-6">
           <Card>
             <CardHeader>
-              <CardTitle>Schedules</CardTitle>
-              <CardDescription>Upcoming sessions</CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Schedules</CardTitle>
+                  <CardDescription>Date and time for each session</CardDescription>
+                </div>
+                <Button variant="outline" size="sm" onClick={() => setShowScheduleDialog(true)}>
+                  <CalendarPlus className="h-4 w-4 mr-2" />
+                  Manage schedules
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               {currentOffering.schedules?.length > 0 ? (
                 <div className="space-y-4">
-                  {currentOffering.schedules.map(schedule => (
-                    <div
-                      key={schedule.id}
-                      className="flex items-center justify-between p-4 border rounded-lg"
-                    >
-                      <div>
-                        <p className="font-medium">
-                          {new Date(schedule.start_time).toLocaleDateString()} at{' '}
-                          {new Date(schedule.start_time).toLocaleTimeString([], {
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          {schedule.current_enrollment || 0} / {schedule.max_capacity || '∞'} enrolled
-                        </p>
+                  {currentOffering.schedules.map((schedule) => {
+                    const at = schedule.starts_at || schedule.start_time
+                    const capacity = schedule.capacity ?? schedule.max_capacity
+                    const enrolled = schedule.current_enrollment ?? (capacity != null && schedule.spots_remaining != null ? capacity - schedule.spots_remaining : 0)
+                    return (
+                      <div
+                        key={schedule.id}
+                        className="flex items-center justify-between p-4 border rounded-lg"
+                      >
+                        <div>
+                          <p className="font-medium">
+                            {at
+                              ? `${format(new Date(at), 'EEE, MMM d, yyyy')} at ${format(new Date(at), 'h:mm a')}`
+                              : 'No date set'}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {enrolled} / {capacity ?? '∞'} enrolled
+                          </p>
+                        </div>
+                        <Badge variant={schedule.status === 'active' || schedule.status === 'scheduled' ? 'default' : 'secondary'}>
+                          {schedule.status || 'scheduled'}
+                        </Badge>
                       </div>
-                      <Badge variant={schedule.status === 'active' ? 'default' : 'secondary'}>
-                        {schedule.status}
-                      </Badge>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               ) : (
-                <p className="text-muted-foreground">No schedules configured</p>
+                <div className="text-center py-8 text-muted-foreground">
+                  <Calendar className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                  <p>No schedules yet</p>
+                  <p className="text-sm mt-1">Add dates so customers can register.</p>
+                  <Button className="mt-4" variant="outline" onClick={() => setShowScheduleDialog(true)}>
+                    <CalendarPlus className="h-4 w-4 mr-2" />
+                    Add schedule
+                  </Button>
+                </div>
               )}
             </CardContent>
           </Card>
@@ -1011,25 +1069,39 @@ function EventDetailView({
   }
   
   // Get the next upcoming schedule
+  const scheduleStartsAt = (s) => s.starts_at || s.start_time
   const upcomingSchedules = (offering.schedules || [])
-    .filter(s => s.status === 'active' && isFuture(new Date(s.start_time)))
-    .sort((a, b) => new Date(a.start_time) - new Date(b.start_time))
-  
+    .filter((s) => {
+      const at = scheduleStartsAt(s)
+      if (!at) return false
+      const status = (s.status || '').toLowerCase()
+      return (status === 'active' || status === 'scheduled') && isFuture(new Date(at))
+    })
+    .sort((a, b) => new Date(scheduleStartsAt(a)) - new Date(scheduleStartsAt(b)))
+
   const nextSchedule = upcomingSchedules[0]
-  const totalCapacity = upcomingSchedules.reduce((sum, s) => sum + (s.max_capacity || 0), 0)
-  const totalEnrolled = upcomingSchedules.reduce((sum, s) => sum + (s.current_enrollment || 0), 0)
+  const totalCapacity = upcomingSchedules.reduce((sum, s) => sum + (s.capacity ?? s.max_capacity ?? 0), 0)
+  const totalEnrolled = upcomingSchedules.reduce((sum, s) => {
+    const cap = s.capacity ?? s.max_capacity
+    const enrolled = s.current_enrollment ?? (cap != null && s.spots_remaining != null ? cap - s.spots_remaining : 0)
+    return sum + enrolled
+  }, 0)
   const spotsRemaining = totalCapacity - totalEnrolled
 
   // Determine event status
   const getEventStatus = () => {
     if (!nextSchedule) {
-      const pastSchedules = (offering.schedules || []).filter(s => isPast(new Date(s.start_time)))
+      const pastSchedules = (offering.schedules || []).filter((s) => {
+        const at = s.starts_at || s.start_time
+        return at && isPast(new Date(at))
+      })
       if (pastSchedules.length > 0) return { label: 'Past Event', color: 'text-muted-foreground', bg: 'bg-muted' }
       return { label: 'No Dates Scheduled', color: 'text-amber-600', bg: 'bg-amber-100' }
     }
     if (spotsRemaining <= 0) return { label: 'Sold Out', color: 'text-red-600', bg: 'bg-red-100' }
     if (spotsRemaining <= 5) return { label: `Only ${spotsRemaining} spots left!`, color: 'text-amber-600', bg: 'bg-amber-100' }
-    if (isToday(new Date(nextSchedule.start_time))) return { label: 'Today!', color: 'text-emerald-600', bg: 'bg-emerald-100' }
+    const nextAt = nextSchedule.starts_at || nextSchedule.start_time
+    if (nextAt && isToday(new Date(nextAt))) return { label: 'Today!', color: 'text-emerald-600', bg: 'bg-emerald-100' }
     return { label: 'On Sale', color: 'text-emerald-600', bg: 'bg-emerald-100' }
   }
   
@@ -1133,23 +1205,23 @@ function EventDetailView({
                     <div className="flex items-start gap-4">
                       <div className="flex-shrink-0 w-16 text-center">
                         <div className="bg-primary text-primary-foreground rounded-t-lg px-2 py-1 text-xs font-medium uppercase">
-                          {format(new Date(nextSchedule.start_time), 'MMM')}
+                          {format(new Date(nextSchedule.starts_at || nextSchedule.start_time), 'MMM')}
                         </div>
                         <div className="bg-background border border-t-0 rounded-b-lg px-2 py-2">
                           <span className="text-2xl font-bold">
-                            {format(new Date(nextSchedule.start_time), 'd')}
+                            {format(new Date(nextSchedule.starts_at || nextSchedule.start_time), 'd')}
                           </span>
                         </div>
                       </div>
                       <div className="flex-1">
                         <p className="font-semibold text-lg">
-                          {format(new Date(nextSchedule.start_time), 'EEEE, MMMM d, yyyy')}
+                          {format(new Date(nextSchedule.starts_at || nextSchedule.start_time), 'EEEE, MMMM d, yyyy')}
                         </p>
                         <p className="text-muted-foreground flex items-center gap-2 mt-1">
                           <Clock className="h-4 w-4" />
-                          {format(new Date(nextSchedule.start_time), 'h:mm a')}
-                          {nextSchedule.end_time && (
-                            <> - {format(new Date(nextSchedule.end_time), 'h:mm a')}</>
+                          {format(new Date(nextSchedule.starts_at || nextSchedule.start_time), 'h:mm a')}
+                          {(nextSchedule.ends_at || nextSchedule.end_time) && (
+                            <> – {format(new Date(nextSchedule.ends_at || nextSchedule.end_time), 'h:mm a')}</>
                           )}
                         </p>
                         {upcomingSchedules.length > 1 && (
@@ -1396,9 +1468,9 @@ function EventDetailView({
                   {upcomingSchedules.slice(0, 5).map(schedule => (
                     <div key={schedule.id} className="flex items-center justify-between text-sm p-2 rounded hover:bg-muted/50">
                       <div>
-                        <p className="font-medium">{format(new Date(schedule.start_time), 'MMM d, yyyy')}</p>
+                        <p className="font-medium">{format(new Date(schedule.starts_at || schedule.start_time), 'MMM d, yyyy')}</p>
                         <p className="text-xs text-muted-foreground">
-                          {format(new Date(schedule.start_time), 'h:mm a')}
+                          {format(new Date(schedule.starts_at || schedule.start_time), 'h:mm a')}
                         </p>
                       </div>
                       <Badge variant="outline" className="text-xs">

@@ -3260,9 +3260,9 @@ export const syncApi = {
   updateHost: (id, data) =>
     portalApi.put(`/sync/admin/hosts/${id}`, data),
   
-  /** Delete a host */
-  deleteHost: (id) =>
-    portalApi.delete(`/sync/admin/hosts/${id}`),
+  /** Delete a host (pass project_id to scope: only deletes if host belongs to that project) */
+  deleteHost: (id, params = {}) =>
+    portalApi.delete(`/sync/admin/hosts/${id}`, { params }),
   
   /** Assign host to booking type */
   assignHostToType: (hostId, typeId, priority = 1) =>

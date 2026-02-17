@@ -325,11 +325,12 @@ export function EventCard({ event, brandColors, viewMode = 'list', onOpen }) {
   const priceDisplay = isFree ? 'Free' : `$${Number(event.price || 0).toFixed(2)}`
   
   const ticketsSold = event.sales_count || 0
-  const capacity = event.capacity || null
-  const spotsRemaining = capacity ? capacity - ticketsSold : null
-  
-  // Parse event date
-  const eventDate = event.starts_at ? new Date(event.starts_at) : null
+  const capacity = event.capacity ?? event.schedules?.[0]?.capacity ?? null
+  const spotsRemaining = capacity != null ? (event.schedules?.[0]?.spots_remaining ?? capacity - ticketsSold) : null
+
+  // Event date: from next_schedule or first schedule or top-level
+  const startsAt = event.next_schedule?.starts_at ?? event.schedules?.[0]?.starts_at ?? event.starts_at
+  const eventDate = startsAt ? new Date(startsAt) : null
   const isPast = eventDate && eventDate < new Date()
   
   const hasImage = event.featured_image || event.images?.length > 0 || event.image_url
@@ -432,8 +433,8 @@ export function EventCard({ event, brandColors, viewMode = 'list', onOpen }) {
             {eventDate && (
               <p className="text-sm text-[var(--text-secondary)] mt-1 flex items-center gap-1">
                 <Clock className="h-3 w-3" />
-                {format(eventDate, 'h:mm a')}
-                {event.location && <span>• {event.location}</span>}
+                {format(eventDate, 'MMM d, yyyy')} at {format(eventDate, 'h:mm a')}
+                {event.location && <span> • {event.location}</span>}
               </p>
             )}
           </div>
@@ -530,7 +531,7 @@ export function EventCard({ event, brandColors, viewMode = 'list', onOpen }) {
                   {eventDate && (
                     <span className="flex items-center gap-1">
                       <Clock className="h-3 w-3" />
-                      {format(eventDate, 'h:mm a')}
+                      {format(eventDate, 'MMM d')} at {format(eventDate, 'h:mm a')}
                     </span>
                   )}
                   {event.location && (

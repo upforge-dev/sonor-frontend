@@ -1938,6 +1938,7 @@
       messages.push({ role: 'ai', content: '' });
       updateMessagesUI();
 
+      let formShow = null;
       await new Promise(function(resolve, reject) {
         const onToken = function(data) {
           if (data.requestId === requestId && data.content) {
@@ -1951,6 +1952,8 @@
             echoSocket.off('echo:token', onToken);
             echoSocket.off('echo:complete', onComplete);
             echoSocket.off('echo:error', onErr);
+            echoSocket.off('echo:form:show', onFormShow);
+            echoSocket.off('echo:memory:updated', onMemoryUpdated);
             resolve();
           }
         };
@@ -1959,18 +1962,40 @@
             echoSocket.off('echo:token', onToken);
             echoSocket.off('echo:complete', onComplete);
             echoSocket.off('echo:error', onErr);
+            echoSocket.off('echo:form:show', onFormShow);
+            echoSocket.off('echo:memory:updated', onMemoryUpdated);
             reject(new Error(data.message || 'Echo error'));
+          }
+        };
+        const onFormShow = function(data) {
+          if (data.requestId === requestId && data.formSlug && !formShow) {
+            formShow = { formSlug: data.formSlug, prefill: data.prefill || {} };
+          }
+        };
+        const onMemoryUpdated = function(data) {
+          if (data.requestId === requestId && data.updates) {
+            try {
+              const key = 'engage_visitor_memory';
+              const existing = JSON.parse(localStorage.getItem(key) || '{}');
+              localStorage.setItem(key, JSON.stringify({ ...existing, ...data.updates }));
+            } catch (e) { /* ignore */ }
           }
         };
         echoSocket.on('echo:token', onToken);
         echoSocket.on('echo:complete', onComplete);
         echoSocket.on('echo:error', onErr);
+        echoSocket.on('echo:form:show', onFormShow);
+        echoSocket.on('echo:memory:updated', onMemoryUpdated);
         echoSocket.emit('echo:message', {
           requestId: requestId,
           message: content,
           pageUrl: window.location.pathname || window.location.href
         });
       });
+      if (formShow) {
+        messages.push({ role: 'form', formSlug: formShow.formSlug, prefill: formShow.prefill });
+        updateMessagesUI();
+      }
 
       hideTypingIndicator();
       if (fullResponse) aiConversationHistory.push({ role: 'assistant', content: fullResponse });
@@ -1984,6 +2009,30 @@
       isWaitingForAI = false;
       setFabListening(false);
     }
+  }
+
+  // Request contextual nudge via echo:nudge (returns via echo:nudge:result)
+  async function requestNudge(opts) {
+    if (!echoSocket || !echoSocket.connected) {
+      await new Promise(function(r) { ensureEchoSocket(r); });
+    }
+    return new Promise(function(resolve) {
+      const requestId = 'nudge_' + Date.now();
+      const handler = function(data) {
+        if (data.requestId === requestId) {
+          echoSocket.off('echo:nudge:result', handler);
+          resolve(data.error ? null : { title: data.title, message: data.message, cta: data.cta, action: data.action });
+        }
+      };
+      echoSocket.on('echo:nudge:result', handler);
+      echoSocket.emit('echo:nudge', {
+        requestId: requestId,
+        pageUrl: opts?.pageUrl || (window.location.pathname || window.location.href),
+        timeOnPage: opts?.timeOnPage,
+        browsingHistory: opts?.browsingHistory,
+        visitorMemory: opts?.visitorMemory
+      });
+    });
   }
 
   // Parse SSE events from response text
@@ -2377,9 +2426,12 @@
     const messagesContainer = document.getElementById('engage-messages');
     if (!messagesContainer) return;
     
-    messagesContainer.innerHTML = messages.map(msg => 
-      `<div class="engage-widget-message ${msg.role}">${escapeHtml(msg.content)}</div>`
-    ).join('');
+    messagesContainer.innerHTML = messages.map(msg => {
+      if (msg.role === 'form' && msg.formSlug) {
+        return `<div class="engage-widget-message form"><span class="engage-form-placeholder">Form ready: ${escapeHtml(msg.formSlug)}. Use echo:form:get to fetch and render.</span></div>`;
+      }
+      return `<div class="engage-widget-message ${msg.role}">${escapeHtml(msg.content || '')}</div>`;
+    }).join('');
     
     // Scroll to bottom
     messagesContainer.scrollTop = messagesContainer.scrollHeight;

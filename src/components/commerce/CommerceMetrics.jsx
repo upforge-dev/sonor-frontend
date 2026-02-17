@@ -12,52 +12,12 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-const mockMetrics = [
-  { 
-    key: 'revenue',
-    label: 'Revenue', 
-    value: '$12,450',
-    change: 12.5,
-    trend: 'up',
-    icon: DollarSign,
-    sparkline: [45, 52, 49, 63, 58, 70, 85]
-  },
-  { 
-    key: 'orders',
-    label: 'Orders', 
-    value: '156',
-    change: 8.3,
-    trend: 'up',
-    icon: ShoppingBag,
-    sparkline: [22, 25, 28, 24, 32, 30, 35]
-  },
-  { 
-    key: 'customers',
-    label: 'Customers', 
-    value: '89',
-    change: 15.2,
-    trend: 'up',
-    icon: Users,
-    sparkline: [15, 18, 22, 20, 25, 28, 32]
-  },
-  { 
-    key: 'views',
-    label: 'Views', 
-    value: '2.4K',
-    change: -3.2,
-    trend: 'down',
-    icon: Eye,
-    sparkline: [85, 82, 78, 80, 75, 72, 68]
-  },
-]
-
-export function CommerceMetrics({ 
-  metrics = [], 
-  showMockData = true,
+export function CommerceMetrics({
+  metrics = [],
   brandColors = {},
-  className 
+  className,
 }) {
-  const displayMetrics = metrics.length > 0 ? metrics : (showMockData ? mockMetrics : [])
+  const displayMetrics = metrics
   
   const primary = brandColors.primary || '#4bbf39'
   const secondary = brandColors.secondary || '#39bfb0'
@@ -78,10 +38,10 @@ export function CommerceMetrics({
   }
 
   return (
-    <div className={cn("grid grid-cols-2 md:grid-cols-4 gap-4", className)}>
+    <div className={cn('grid grid-cols-2 md:grid-cols-4 gap-4', className)}>
       {displayMetrics.map((metric, index) => {
-        const Icon = metric.icon
-        const isPositive = metric.trend === 'up'
+        const Icon = metric.icon || DollarSign
+        const isPositive = metric.trend !== 'down'
         const color = getMetricColor(index)
         const bgColor = getMetricBgColor(index)
         
@@ -101,7 +61,7 @@ export function CommerceMetrics({
                     ) : (
                       <TrendingDown className="h-4 w-4" />
                     )}
-                    <span>{Math.abs(metric.change)}%</span>
+                    <span>{Math.abs(metric.change ?? 0)}%</span>
                     <span className="text-muted-foreground">vs last period</span>
                   </div>
                 </div>
@@ -137,6 +97,11 @@ export function CommerceMetrics({
           </Card>
         )
       })}
+      {displayMetrics.length === 0 && (
+        <div className="col-span-2 md:col-span-4 text-center py-8 text-muted-foreground text-sm">
+          No metrics available
+        </div>
+      )}
     </div>
   )
 }

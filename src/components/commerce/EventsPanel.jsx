@@ -1,6 +1,7 @@
 // src/components/commerce/EventsPanel.jsx
-// Events panel - dates, tickets, capacity, venues
+// Events panel - dates, tickets, capacity, venues (real data only)
 
+import { useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -10,97 +11,88 @@ import {
   Plus,
   ChevronRight,
   Clock,
-  Ticket,
   Users,
   MapPin,
   Video,
-  TrendingUp,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { format, addDays, differenceInDays } from 'date-fns'
+import { format, differenceInDays } from 'date-fns'
 
-// Mock data for demo
-const mockEvents = [
-  { 
-    id: '1', 
-    name: 'Summer Fitness Challenge Kickoff', 
-    date: addDays(new Date(), 3),
-    capacity: 100,
-    sold: 67,
-    price: 25,
-    type: 'in_person'
-  },
-  { 
-    id: '2', 
-    name: 'Nutrition Masterclass', 
-    date: addDays(new Date(), 7),
-    capacity: 50,
-    sold: 34,
-    price: 35,
-    type: 'virtual'
-  },
-  { 
-    id: '3', 
-    name: 'Community Workout Day', 
-    date: addDays(new Date(), 14),
-    capacity: 200,
-    sold: 89,
-    price: 0,
-    type: 'in_person'
-  },
-]
+/**
+ * Normalize API offering (with schedules) into a flat shape for display.
+ * Supports: next_schedule.starts_at, schedules[0].starts_at, capacity, spots_remaining, location.
+ */
+function normalizeEvent(event) {
+  const schedule = event.next_schedule || event.schedules?.[0]
+  const startsAt = schedule?.starts_at || event.starts_at
+  const date = startsAt ? new Date(startsAt) : null
+  const capacity = schedule?.capacity ?? event.capacity ?? null
+  const spotsRemaining = schedule?.spots_remaining ?? null
+  const sold = capacity != null && spotsRemaining != null ? capacity - spotsRemaining : event.sales_count ?? 0
+  const location = event.location || schedule?.location || null
+  const isVirtual = event.is_virtual ?? false
+  return {
+    id: event.id,
+    name: event.name || event.title,
+    date,
+    capacity,
+    sold,
+    price: event.price,
+    venue: location,
+    type: isVirtual ? 'virtual' : 'in_person',
+  }
+}
 
-const mockUpcoming = [
-  { 
-    id: '1', 
-    name: 'Summer Fitness Challenge Kickoff', 
-    date: addDays(new Date(), 3),
-    capacity: 100,
-    sold: 67,
-    venue: 'City Park Pavilion',
-    type: 'in_person'
-  },
-  { 
-    id: '2', 
-    name: 'Nutrition Masterclass', 
-    date: addDays(new Date(), 7),
-    capacity: 50,
-    sold: 34,
-    venue: 'Zoom',
-    type: 'virtual'
-  },
-]
-
-export function EventsPanel({ 
-  events = [], 
+export function EventsPanel({
+  events = [],
   upcomingEvents = [],
   stats = {},
-  showMockData = true,
   compact = false,
   brandColors = {},
-  className 
+  className,
 }) {
   const navigate = useNavigate()
-  
-  const displayEvents = events.length > 0 ? events : (showMockData ? mockEvents : [])
-  const displayUpcoming = upcomingEvents.length > 0 ? upcomingEvents : (showMockData ? mockUpcoming : [])
-  const displayStats = Object.keys(stats).length > 0 ? stats : (showMockData ? {
-    totalEvents: 5,
-    upcomingEvents: 3,
-    ticketsSold: 190,
-    totalRevenue: 4750,
-  } : {})
+
+  const upcomingFromEvents = useMemo(() => {
+    const now = new Date()
+    return events
+      .filter((e) => {
+        const s = e.next_schedule || e.schedules?.[0]
+        const at = s?.starts_at ? new Date(s.starts_at) : null
+        return at && at >= now
+      })
+      .map(normalizeEvent)
+      .sort((a, b) => (a.date && b.date ? a.date - b.date : 0))
+  }, [events])
+
+  const displayUpcoming = upcomingEvents.length > 0
+    ? upcomingEvents.map((e) => (e.date ? e : normalizeEvent(e)))
+    : upcomingFromEvents
+
+  const derivedStats = useMemo(() => {
+    if (Object.keys(stats).length > 0) return stats
+    const totalEvents = events.length
+    const upcomingCount = displayUpcoming.length
+    const ticketsSold = events.reduce((sum, e) => sum + (e.sales_count || 0), 0)
+    const totalRevenue = events.reduce((sum, e) => sum + (e.revenue || e.total_revenue || 0), 0)
+    return {
+      totalEvents,
+      upcomingEvents: upcomingCount,
+      ticketsSold,
+      totalRevenue,
+    }
+  }, [events, displayUpcoming.length, stats])
 
   const secondary = brandColors.secondary || '#39bfb0'
   const rgba = brandColors.rgba || { secondary10: 'rgba(57, 191, 176, 0.1)', secondary20: 'rgba(57, 191, 176, 0.2)' }
 
   if (compact) {
     return (
-      <Card className={cn("border-l-4", className)} style={{ borderLeftColor: secondary }}>
+      <Card className={cn('border-l-4', className)} style={{ borderLeftColor: secondary }}>
         <CardContent className="p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div 
+              <div
                 className="p-2 rounded-lg"
                 style={{ backgroundColor: rgba.secondary10, color: secondary }}
               >
@@ -108,18 +100,21 @@ export function EventsPanel({
               </div>
               <div>
                 <p className="font-semibold">Events</p>
-                <p className="text-sm text-muted-foreground">{displayStats.upcomingEvents || 0} upcoming</p>
+                <p className="text-sm text-muted-foreground">{derivedStats.upcomingEvents ?? 0} upcoming</p>
               </div>
             </div>
             <Button size="sm" variant="ghost" onClick={() => navigate('/commerce/offerings?type=event')}>
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
-          {displayUpcoming.length > 0 && (
+          {displayUpcoming.length > 0 && displayUpcoming[0].date && (
             <div className="mt-3 text-sm">
               <span className="text-muted-foreground">Next:</span>{' '}
               <span className="font-medium">{displayUpcoming[0].name}</span>
-              <span className="text-muted-foreground"> in {differenceInDays(displayUpcoming[0].date, new Date())} days</span>
+              <span className="text-muted-foreground">
+                {' '}
+                in {differenceInDays(displayUpcoming[0].date, new Date())} days
+              </span>
             </div>
           )}
         </CardContent>
@@ -128,11 +123,11 @@ export function EventsPanel({
   }
 
   return (
-    <Card className={cn("border-l-4", className)} style={{ borderLeftColor: secondary }}>
+    <Card className={cn('border-l-4', className)} style={{ borderLeftColor: secondary }}>
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div 
+            <div
               className="p-2.5 rounded-xl"
               style={{ backgroundColor: rgba.secondary10, color: secondary }}
             >
@@ -150,15 +145,13 @@ export function EventsPanel({
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Stats Row */}
         <div className="grid grid-cols-4 gap-3">
-          <StatBox label="Events" value={displayStats.totalEvents || 0} />
-          <StatBox label="Upcoming" value={displayStats.upcomingEvents || 0} />
-          <StatBox label="Sold" value={displayStats.ticketsSold || 0} />
-          <StatBox label="Revenue" value={`$${displayStats.totalRevenue || 0}`} />
+          <StatBox label="Events" value={derivedStats.totalEvents ?? 0} />
+          <StatBox label="Upcoming" value={derivedStats.upcomingEvents ?? 0} />
+          <StatBox label="Sold" value={derivedStats.ticketsSold ?? 0} />
+          <StatBox label="Revenue" value={`$${Number(derivedStats.totalRevenue || 0).toLocaleString()}`} />
         </div>
 
-        {/* Upcoming Events */}
         <div>
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium">Upcoming Events</span>
@@ -167,13 +160,16 @@ export function EventsPanel({
             </Button>
           </div>
           <div className="space-y-3">
-            {displayUpcoming.slice(0, 3).map(event => {
-              const daysUntil = differenceInDays(event.date, new Date())
-              const fillPercent = Math.round((event.sold / event.capacity) * 100)
+            {displayUpcoming.slice(0, 3).map((event) => {
+              const date = event.date
+              const daysUntil = date ? differenceInDays(date, new Date()) : null
+              const capacity = event.capacity ?? 0
+              const sold = event.sold ?? 0
+              const fillPercent = capacity > 0 ? Math.round((sold / capacity) * 100) : 0
               const isAlmostFull = fillPercent >= 80
-              
+
               return (
-                <div 
+                <div
                   key={event.id}
                   className="p-4 rounded-lg border bg-card hover:bg-muted/50 cursor-pointer transition-colors"
                   onClick={() => navigate(`/commerce/offerings/${event.id}`)}
@@ -181,19 +177,23 @@ export function EventsPanel({
                   <div className="flex items-start justify-between mb-2">
                     <div>
                       <h4 className="font-medium">{event.name}</h4>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
-                        <CalendarDays className="h-3.5 w-3.5" />
-                        <span>{format(event.date, 'EEEE, MMMM d, yyyy')}</span>
-                      </div>
+                      {date && (
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
+                          <CalendarDays className="h-3.5 w-3.5" />
+                          <span>{format(date, 'EEEE, MMMM d, yyyy')}</span>
+                        </div>
+                      )}
                     </div>
-                    <Badge 
-                      variant={daysUntil <= 3 ? 'default' : 'outline'}
-                      className={daysUntil <= 3 ? 'bg-amber-500' : ''}
-                    >
-                      {daysUntil === 0 ? 'Today' : daysUntil === 1 ? 'Tomorrow' : `${daysUntil} days`}
-                    </Badge>
+                    {daysUntil != null && (
+                      <Badge
+                        variant={daysUntil <= 3 ? 'default' : 'outline'}
+                        className={daysUntil <= 3 ? 'bg-amber-500' : ''}
+                      >
+                        {daysUntil === 0 ? 'Today' : daysUntil === 1 ? 'Tomorrow' : `${daysUntil} days`}
+                      </Badge>
+                    )}
                   </div>
-                  
+
                   <div className="flex items-center gap-4 text-sm">
                     <div className="flex items-center gap-1.5 text-muted-foreground">
                       {event.type === 'virtual' ? (
@@ -201,44 +201,40 @@ export function EventsPanel({
                           <Video className="h-3.5 w-3.5" />
                           <span>Virtual</span>
                         </>
-                      ) : (
+                      ) : event.venue ? (
                         <>
                           <MapPin className="h-3.5 w-3.5" />
                           <span>{event.venue}</span>
                         </>
-                      )}
+                      ) : null}
                     </div>
                     <div className="flex-1" />
-                    <div className="flex items-center gap-2">
-                      <span className={cn(
-                        "font-medium",
-                        isAlmostFull && "text-amber-600"
-                      )}>
-                        {event.sold}/{event.capacity}
-                      </span>
-                      <div className="w-20 h-2 bg-muted rounded-full overflow-hidden">
-                        <div 
-                          className="h-full rounded-full transition-all"
-                          style={{ 
-                            width: `${fillPercent}%`,
-                            backgroundColor: isAlmostFull ? '#f59e0b' : secondary
-                          }}
-                        />
+                    {capacity > 0 && (
+                      <div className="flex items-center gap-2">
+                        <span className={cn('font-medium', isAlmostFull && 'text-amber-600')}>
+                          {sold}/{capacity}
+                        </span>
+                        <div className="w-20 h-2 bg-muted rounded-full overflow-hidden">
+                          <div
+                            className="h-full rounded-full transition-all"
+                            style={{
+                              width: `${fillPercent}%`,
+                              backgroundColor: isAlmostFull ? '#f59e0b' : secondary,
+                            }}
+                          />
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
                 </div>
               )
             })}
             {displayUpcoming.length === 0 && (
-              <div className="text-center py-6 text-muted-foreground text-sm">
-                No upcoming events
-              </div>
+              <div className="text-center py-6 text-muted-foreground text-sm">No upcoming events</div>
             )}
           </div>
         </div>
 
-        {/* Quick Actions */}
         <div className="grid grid-cols-2 gap-2">
           <Button variant="outline" className="justify-start" asChild>
             <Link to="/commerce/events/calendar">

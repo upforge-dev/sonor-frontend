@@ -19,65 +19,6 @@ import {
 import { cn } from '@/lib/utils'
 import { formatDistanceToNow } from 'date-fns'
 
-const mockActivity = [
-  {
-    id: '1',
-    type: 'sale',
-    offeringType: 'product',
-    title: 'GWA Logo Hoodie - Black (XL)',
-    customer: { name: 'Sarah Johnson', email: 'sarah@example.com', avatar: null },
-    amount: 59.99,
-    timestamp: new Date(Date.now() - 1000 * 60 * 15), // 15 min ago
-  },
-  {
-    id: '2',
-    type: 'booking',
-    offeringType: 'service',
-    title: 'Personal Training Session',
-    customer: { name: 'Mike Thompson', email: 'mike@example.com', avatar: null },
-    amount: 75.00,
-    timestamp: new Date(Date.now() - 1000 * 60 * 45), // 45 min ago
-  },
-  {
-    id: '3',
-    type: 'registration',
-    offeringType: 'class',
-    title: 'Morning HIIT Bootcamp',
-    customer: { name: 'Emily Chen', email: 'emily@example.com', avatar: null },
-    amount: 15.00,
-    timestamp: new Date(Date.now() - 1000 * 60 * 90), // 1.5 hours ago
-  },
-  {
-    id: '4',
-    type: 'ticket',
-    offeringType: 'event',
-    title: 'Summer Fitness Challenge Kickoff',
-    customer: { name: 'James Wilson', email: 'james@example.com', avatar: null },
-    amount: 25.00,
-    quantity: 2,
-    timestamp: new Date(Date.now() - 1000 * 60 * 120), // 2 hours ago
-  },
-  {
-    id: '5',
-    type: 'sale',
-    offeringType: 'product',
-    title: 'Fitness Resistance Bands Set',
-    customer: { name: 'Lisa Park', email: 'lisa@example.com', avatar: null },
-    amount: 29.99,
-    timestamp: new Date(Date.now() - 1000 * 60 * 180), // 3 hours ago
-  },
-  {
-    id: '6',
-    type: 'review',
-    offeringType: 'service',
-    title: 'Nutrition Consultation',
-    customer: { name: 'David Kim', email: 'david@example.com', avatar: null },
-    rating: 5,
-    comment: 'Amazing session! Learned so much about meal planning.',
-    timestamp: new Date(Date.now() - 1000 * 60 * 240), // 4 hours ago
-  },
-]
-
 const typeIcons = {
   product: Package,
   service: Briefcase,
@@ -93,15 +34,14 @@ const typeLabels = {
   review: 'New Review',
 }
 
-export function RecentActivity({ 
-  activity = [], 
-  showMockData = true,
+export function RecentActivity({
+  activity = [],
   isLoading = false,
   onRefresh,
   brandColors = {},
-  className 
+  className,
 }) {
-  const displayActivity = activity.length > 0 ? activity : (showMockData ? mockActivity : [])
+  const displayActivity = activity
   
   const primary = brandColors.primary || '#4bbf39'
   const secondary = brandColors.secondary || '#39bfb0'
@@ -167,11 +107,13 @@ export function RecentActivity({
                       <p className="text-sm font-medium">{item.title}</p>
                       <div className="flex items-center gap-2 mt-0.5">
                         <span className="text-xs text-muted-foreground">
-                          {item.customer.name}
+                          {item.customer?.name ?? '—'}
                         </span>
                         <span className="text-xs text-muted-foreground">•</span>
                         <span className="text-xs text-muted-foreground">
-                          {formatDistanceToNow(item.timestamp, { addSuffix: true })}
+                          {item.timestamp
+                            ? formatDistanceToNow(new Date(item.timestamp), { addSuffix: true })
+                            : ''}
                         </span>
                       </div>
                     </div>
@@ -184,15 +126,15 @@ export function RecentActivity({
                             key={i}
                             className={cn(
                               "h-3 w-3",
-                              i < item.rating ? "text-amber-500 fill-amber-500" : "text-muted"
+                              i < (item.rating ?? 0) ? 'text-amber-500 fill-amber-500' : 'text-muted'
                             )}
                           />
                         ))}
                       </div>
                     ) : (
                       <Badge variant="outline" className="font-mono text-xs">
-                        ${item.amount.toFixed(2)}
-                        {item.quantity && item.quantity > 1 && (
+                        {item.amount != null ? `$${Number(item.amount).toFixed(2)}` : '—'}
+                        {item.quantity != null && item.quantity > 1 && (
                           <span className="ml-1 text-muted-foreground">×{item.quantity}</span>
                         )}
                       </Badge>

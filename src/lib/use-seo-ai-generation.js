@@ -79,31 +79,7 @@ export function useSEOAIGeneration() {
     } catch (err) {
       console.error('Failed to generate titles:', err)
       setError(err.message || 'Failed to generate titles')
-      
-      // Return mock suggestions for development/demo
-      if (import.meta.env.DEV) {
-        const mockSuggestions = [
-          {
-            id: generateId(),
-            text: `${currentTitle ? currentTitle.split('|')[0].trim() : 'Page'} | ${currentProject?.name || 'Brand'}`,
-            reasoning: 'Brand-optimized title with consistent format'
-          },
-          {
-            id: generateId(),
-            text: `${targetKeywords[0] || 'Topic'}: Expert Guide & Tips (2025)`,
-            reasoning: 'Keyword-focused with freshness indicator'
-          },
-          {
-            id: generateId(),
-            text: `How to ${h1 || 'Achieve Results'} - Complete Guide`,
-            reasoning: 'Action-oriented with clear value proposition'
-          }
-        ].slice(0, count)
-        
-        setSuggestions(mockSuggestions)
-        return mockSuggestions
-      }
-      
+      setSuggestions([])
       return []
     } finally {
       setIsGenerating(false)
@@ -164,31 +140,7 @@ export function useSEOAIGeneration() {
     } catch (err) {
       console.error('Failed to generate meta descriptions:', err)
       setError(err.message || 'Failed to generate meta descriptions')
-      
-      // Return mock suggestions for development/demo
-      if (import.meta.env.DEV) {
-        const mockSuggestions = [
-          {
-            id: generateId(),
-            text: `Discover ${targetKeywords[0] || 'expert insights'} with our comprehensive guide. Learn proven strategies, tips, and best practices to achieve results.`,
-            reasoning: 'Keyword-rich with clear value proposition'
-          },
-          {
-            id: generateId(),
-            text: `Looking for ${h1 || 'solutions'}? Our expert team breaks down everything you need to know. Get started today with actionable tips.`,
-            reasoning: 'Question-based hook with call to action'
-          },
-          {
-            id: generateId(),
-            text: `${title || 'Expert Guide'} - Learn from industry experts. We cover key strategies, common mistakes to avoid, and proven methods for success.`,
-            reasoning: 'Authority-focused with comprehensive promise'
-          }
-        ].slice(0, count)
-        
-        setSuggestions(mockSuggestions)
-        return mockSuggestions
-      }
-      
+      setSuggestions([])
       return []
     } finally {
       setIsGenerating(false)
@@ -243,31 +195,7 @@ export function useSEOAIGeneration() {
     } catch (err) {
       console.error('Failed to generate H1s:', err)
       setError(err.message || 'Failed to generate H1s')
-      
-      // Return mock suggestions for development/demo
-      if (import.meta.env.DEV) {
-        const mockSuggestions = [
-          {
-            id: generateId(),
-            text: `The Complete Guide to ${targetKeywords[0] || 'Success'}`,
-            reasoning: 'Comprehensive and keyword-focused'
-          },
-          {
-            id: generateId(),
-            text: `${targetKeywords[0] || 'Topic'}: Everything You Need to Know`,
-            reasoning: 'Clear and exhaustive scope'
-          },
-          {
-            id: generateId(),
-            text: `How to Master ${currentH1 || 'This Topic'} in 2025`,
-            reasoning: 'Action-oriented with freshness'
-          }
-        ].slice(0, count)
-        
-        setSuggestions(mockSuggestions)
-        return mockSuggestions
-      }
-      
+      setSuggestions([])
       return []
     } finally {
       setIsGenerating(false)

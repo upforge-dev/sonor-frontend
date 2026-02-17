@@ -430,7 +430,7 @@ export default function OrganizationUsersPanel({
           <DialogHeader>
             <DialogTitle>Add Team Member</DialogTitle>
             <DialogDescription>
-              Invite a new user or add an existing user to {organizationName || 'your organization'}
+              Invite a new user or add an existing user to {organizationName || 'your organization'}. You can restrict access to specific projects only.
             </DialogDescription>
           </DialogHeader>
           
@@ -447,6 +447,74 @@ export default function OrganizationUsersPanel({
             </TabsList>
 
             <TabsContent value="invite" className="space-y-4 py-4">
+              {/* Access Level first - key for project-scoped invites */}
+              <div className="space-y-2">
+                <Label htmlFor="invite-access">Access Level</Label>
+                <Select value={inviteAccessLevel} onValueChange={(v) => { setInviteAccessLevel(v); if (v === 'organization') setInviteProjectIds([]); }}>
+                  <SelectTrigger id="invite-access">
+                    <SelectValue placeholder="Select access level" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="organization">
+                      <div className="flex items-center gap-2">
+                        <Building2 className="h-4 w-4 text-emerald-500" />
+                        Organization — Full access to all projects
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="project">
+                      <div className="flex items-center gap-2">
+                        <FolderOpen className="h-4 w-4 text-blue-500" />
+                        Project Only — Access to selected projects only
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-[var(--text-tertiary)]">
+                  {inviteAccessLevel === 'project'
+                    ? 'User will only see their assigned projects — no billing, proposals, or org settings'
+                    : 'User will have access to all projects, billing, and org settings'}
+                </p>
+              </div>
+
+              {inviteAccessLevel === 'project' && availableProjects.length > 0 && (
+                <div className="space-y-2">
+                  <Label>Assign to Projects</Label>
+                  <div className="border border-[var(--glass-border)] rounded-lg max-h-[160px] overflow-y-auto">
+                    {availableProjects.map((project) => (
+                      <label
+                        key={project.id}
+                        className="flex items-center gap-3 p-2.5 hover:bg-[var(--glass-bg-hover)] cursor-pointer transition-colors"
+                      >
+                        <input
+                          type="checkbox"
+                          className="w-4 h-4 rounded border-[var(--input-border)] text-[var(--brand-primary)] focus:ring-[var(--brand-primary)]"
+                          checked={inviteProjectIds.includes(project.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setInviteProjectIds(prev => [...prev, project.id])
+                            } else {
+                              setInviteProjectIds(prev => prev.filter(id => id !== project.id))
+                            }
+                          }}
+                        />
+                        <span className="text-sm text-[var(--text-primary)]">{project.title || project.name}</span>
+                      </label>
+                    ))}
+                  </div>
+                  {inviteProjectIds.length > 0 && (
+                    <p className="text-xs text-[var(--text-tertiary)]">
+                      {inviteProjectIds.length} project{inviteProjectIds.length !== 1 ? 's' : ''} selected
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {inviteAccessLevel === 'project' && availableProjects.length === 0 && (
+                <p className="text-sm text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 p-3 rounded-lg">
+                  No projects found for this organization. Refresh the page or switch to a project and back to load projects.
+                </p>
+              )}
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2 col-span-2">
                   <Label htmlFor="email">Email Address</Label>
@@ -497,69 +565,6 @@ export default function OrganizationUsersPanel({
                   </SelectContent>
                 </Select>
               </div>
-              
-              {/* Access Level */}
-              <div className="space-y-2">
-                <Label htmlFor="invite-access">Access Level</Label>
-                <Select value={inviteAccessLevel} onValueChange={(v) => { setInviteAccessLevel(v); if (v === 'organization') setInviteProjectIds([]); }}>
-                  <SelectTrigger id="invite-access">
-                    <SelectValue placeholder="Select access level" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="organization">
-                      <div className="flex items-center gap-2">
-                        <Building2 className="h-4 w-4 text-emerald-500" />
-                        Organization — Full access
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="project">
-                      <div className="flex items-center gap-2">
-                        <FolderOpen className="h-4 w-4 text-blue-500" />
-                        Project Only — Limited access
-                      </div>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-[var(--text-tertiary)]">
-                  {inviteAccessLevel === 'project' 
-                    ? 'User will only see assigned projects — no billing, proposals, or org settings' 
-                    : 'User will have access to all projects, billing, and org settings'}
-                </p>
-              </div>
-              
-              {/* Project Selector (shown when project-level) */}
-              {inviteAccessLevel === 'project' && availableProjects.length > 0 && (
-                <div className="space-y-2">
-                  <Label>Assign to Projects</Label>
-                  <div className="border border-[var(--glass-border)] rounded-lg max-h-[160px] overflow-y-auto">
-                    {availableProjects.map((project) => (
-                      <label 
-                        key={project.id} 
-                        className="flex items-center gap-3 p-2.5 hover:bg-[var(--glass-bg-hover)] cursor-pointer transition-colors"
-                      >
-                        <input
-                          type="checkbox"
-                          className="w-4 h-4 rounded border-[var(--input-border)] text-[var(--brand-primary)] focus:ring-[var(--brand-primary)]"
-                          checked={inviteProjectIds.includes(project.id)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setInviteProjectIds(prev => [...prev, project.id])
-                            } else {
-                              setInviteProjectIds(prev => prev.filter(id => id !== project.id))
-                            }
-                          }}
-                        />
-                        <span className="text-sm text-[var(--text-primary)]">{project.title || project.name}</span>
-                      </label>
-                    ))}
-                  </div>
-                  {inviteProjectIds.length > 0 && (
-                    <p className="text-xs text-[var(--text-tertiary)]">
-                      {inviteProjectIds.length} project{inviteProjectIds.length !== 1 ? 's' : ''} selected
-                    </p>
-                  )}
-                </div>
-              )}
             </TabsContent>
 
             <TabsContent value="existing" className="space-y-4 py-4">

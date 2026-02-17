@@ -80,16 +80,22 @@ export default function ScheduleManagement({
   const [showAddForm, setShowAddForm] = useState(false)
   const [newSchedule, setNewSchedule] = useState(getDefaultSchedule())
 
+  const ALLOWED_STATUSES = ['scheduled', 'cancelled', 'completed']
+
   function getDefaultSchedule() {
     return {
       start_time: '',
       end_time: '',
       location: '',
       max_capacity: defaultCapacity ? defaultCapacity.toString() : '',
-      status: 'active',
+      status: 'scheduled',
       recurrence: 'none',
       recurrence_end_date: '',
     }
+  }
+
+  function normalizeStatusForApi(status) {
+    return ALLOWED_STATUSES.includes(status) ? status : 'scheduled'
   }
 
   // Load schedules
@@ -103,7 +109,15 @@ export default function ScheduleManagement({
     try {
       setLoading(true)
       const response = await portalApi.get(`/commerce/schedules/${offeringId}`)
-      setSchedules(response.data || [])
+      const raw = response.data || []
+      // API returns starts_at/ends_at; normalize for display/edit (start_time/end_time for datetime-local)
+      setSchedules(raw.map((s) => ({
+        ...s,
+        start_time: s.starts_at || s.start_time,
+        end_time: s.ends_at || s.end_time,
+        max_capacity: s.capacity ?? s.max_capacity,
+        current_enrollment: s.capacity != null && s.spots_remaining != null ? s.capacity - s.spots_remaining : (s.current_enrollment ?? 0),
+      })))
     } catch (error) {
       console.error('Failed to load schedules:', error)
       toast.error('Failed to load schedules')
@@ -121,13 +135,13 @@ export default function ScheduleManagement({
     try {
       setSaving(true)
       
+      const cap = newSchedule.max_capacity ? parseInt(newSchedule.max_capacity) : null
       const scheduleData = {
-        start_time: new Date(newSchedule.start_time).toISOString(),
-        end_time: newSchedule.end_time ? new Date(newSchedule.end_time).toISOString() : null,
-        location: newSchedule.location || null,
-        max_capacity: newSchedule.max_capacity ? parseInt(newSchedule.max_capacity) : null,
-        status: newSchedule.status,
-        current_enrollment: 0,
+        starts_at: new Date(newSchedule.start_time).toISOString(),
+        ends_at: newSchedule.end_time ? new Date(newSchedule.end_time).toISOString() : new Date(newSchedule.start_time).toISOString(),
+        capacity: cap,
+        spots_remaining: cap,
+        status: normalizeStatusForApi(newSchedule.status),
       }
 
       // If recurring, generate multiple schedules
@@ -137,12 +151,14 @@ export default function ScheduleManagement({
         const schedulesToCreate = []
 
         while (currentDate <= endDate) {
+          const startIso = currentDate.toISOString()
+          const endIso = newSchedule.end_time
+            ? new Date(new Date(newSchedule.end_time).getTime() + (currentDate.getTime() - new Date(newSchedule.start_time).getTime())).toISOString()
+            : startIso
           schedulesToCreate.push({
             ...scheduleData,
-            start_time: currentDate.toISOString(),
-            end_time: newSchedule.end_time 
-              ? new Date(new Date(newSchedule.end_time).getTime() + (currentDate.getTime() - new Date(newSchedule.start_time).getTime())).toISOString()
-              : null,
+            starts_at: startIso,
+            ends_at: endIso,
           })
 
           // Advance date based on recurrence
@@ -164,7 +180,7 @@ export default function ScheduleManagement({
           }
         }
 
-        // Create all schedules
+        // Create all schedules (API expects starts_at, ends_at, capacity, status)
         for (const schedule of schedulesToCreate) {
           await portalApi.post(`/commerce/schedules/${offeringId}`, schedule)
         }
@@ -187,19 +203,21 @@ export default function ScheduleManagement({
   }
 
   const handleUpdateSchedule = async () => {
-    if (!editingSchedule?.start_time) {
-      toast.error('Start time is required')
+    const startAt = editingSchedule?.start_time || editingSchedule?.starts_at
+    if (!startAt) {
+      toast.error('Start date & time is required')
       return
     }
 
     try {
       setSaving(true)
       await portalApi.put(`/commerce/schedule/${editingSchedule.id}`, {
-        start_time: new Date(editingSchedule.start_time).toISOString(),
-        end_time: editingSchedule.end_time ? new Date(editingSchedule.end_time).toISOString() : null,
-        location: editingSchedule.location || null,
-        max_capacity: editingSchedule.max_capacity ? parseInt(editingSchedule.max_capacity) : null,
-        status: editingSchedule.status,
+        starts_at: new Date(startAt).toISOString(),
+        ends_at: (editingSchedule.end_time || editingSchedule.ends_at)
+          ? new Date(editingSchedule.end_time || editingSchedule.ends_at).toISOString()
+          : new Date(startAt).toISOString(),
+        capacity: editingSchedule.max_capacity ? parseInt(editingSchedule.max_capacity) : (editingSchedule.capacity ?? null),
+        status: normalizeStatusForApi(editingSchedule.status),
       })
 
       toast.success('Schedule updated')
@@ -234,23 +252,30 @@ export default function ScheduleManagement({
   }
 
   const formatScheduleTime = (schedule) => {
-    const start = parseISO(schedule.start_time)
+    const startRaw = schedule.starts_at || schedule.start_time
+    if (!startRaw) return 'No date set'
+    const start = typeof startRaw === 'string' ? parseISO(startRaw) : startRaw
     const dateStr = format(start, 'EEE, MMM d, yyyy')
     const timeStr = format(start, 'h:mm a')
-    
-    if (schedule.end_time) {
-      const end = parseISO(schedule.end_time)
-      return `${dateStr} at ${timeStr} - ${format(end, 'h:mm a')}`
+    const endRaw = schedule.ends_at || schedule.end_time
+    if (endRaw) {
+      const end = typeof endRaw === 'string' ? parseISO(endRaw) : endRaw
+      return `${dateStr} at ${timeStr} – ${format(end, 'h:mm a')}`
     }
     return `${dateStr} at ${timeStr}`
   }
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'active': return 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
-      case 'cancelled': return 'bg-red-500/15 text-red-600 dark:text-red-400 border-red-500/20'
-      case 'completed': return 'bg-gray-500/15 text-gray-600 dark:text-gray-400 border-gray-500/20'
-      default: return 'bg-gray-500/15 text-gray-600'
+      case 'scheduled':
+      case 'active':
+        return 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+      case 'cancelled':
+        return 'bg-red-500/15 text-red-600 dark:text-red-400 border-red-500/20'
+      case 'completed':
+        return 'bg-gray-500/15 text-gray-600 dark:text-gray-400 border-gray-500/20'
+      default:
+        return 'bg-gray-500/15 text-gray-600'
     }
   }
 
@@ -263,7 +288,7 @@ export default function ScheduleManagement({
           <Input
             id="start_time"
             type="datetime-local"
-            value={schedule.start_time?.slice(0, 16) || ''}
+            value={(schedule.start_time || schedule.starts_at || '')?.slice(0, 16) || ''}
             onChange={(e) => setSchedule({ ...schedule, start_time: e.target.value })}
             autoFocus={!isEdit}
           />
@@ -273,7 +298,7 @@ export default function ScheduleManagement({
           <Input
             id="end_time"
             type="datetime-local"
-            value={schedule.end_time?.slice(0, 16) || ''}
+            value={(schedule.end_time || schedule.ends_at || '')?.slice(0, 16) || ''}
             onChange={(e) => setSchedule({ ...schedule, end_time: e.target.value })}
           />
         </div>
@@ -456,8 +481,8 @@ export default function ScheduleManagement({
                                 )}
                                 <div className="flex items-center gap-1">
                                   <Users className="h-3.5 w-3.5" />
-                                  {schedule.current_enrollment || 0}
-                                  {schedule.max_capacity ? ` / ${schedule.max_capacity}` : ''} enrolled
+                                  {schedule.current_enrollment ?? (schedule.capacity != null && schedule.spots_remaining != null ? schedule.capacity - schedule.spots_remaining : 0)}
+                                  {(schedule.max_capacity ?? schedule.capacity) != null ? ` / ${schedule.max_capacity ?? schedule.capacity}` : ''} enrolled
                                 </div>
                               </div>
                             </div>

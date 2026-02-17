@@ -16,71 +16,43 @@ import {
   MapPin,
   ArrowRight,
 } from 'lucide-react'
+import { useMemo } from 'react'
 import { cn } from '@/lib/utils'
-import { format, addDays, setHours, setMinutes } from 'date-fns'
+import { format } from 'date-fns'
 
-// Mock data for demo
-const mockClasses = [
-  { id: '1', name: 'Morning HIIT Bootcamp', duration: 45, capacity: 20, price: 15, recurring: true },
-  { id: '2', name: 'Yoga Flow', duration: 60, capacity: 15, price: 12, recurring: true },
-  { id: '3', name: 'Strength Training 101', duration: 50, capacity: 12, price: 18, recurring: true },
-  { id: '4', name: 'Meditation Workshop', duration: 30, capacity: 25, price: 10, recurring: false },
-]
-
-const mockUpcoming = [
-  { 
-    id: '1', 
-    class: 'Morning HIIT Bootcamp', 
-    date: setMinutes(setHours(addDays(new Date(), 0), 6), 30),
-    capacity: 20,
-    enrolled: 18,
-    location: 'Main Studio'
-  },
-  { 
-    id: '2', 
-    class: 'Yoga Flow', 
-    date: setMinutes(setHours(addDays(new Date(), 0), 9), 0),
-    capacity: 15,
-    enrolled: 12,
-    location: 'Studio B'
-  },
-  { 
-    id: '3', 
-    class: 'Strength Training 101', 
-    date: setMinutes(setHours(addDays(new Date(), 0), 17), 30),
-    capacity: 12,
-    enrolled: 10,
-    location: 'Weight Room'
-  },
-  { 
-    id: '4', 
-    class: 'Morning HIIT Bootcamp', 
-    date: setMinutes(setHours(addDays(new Date(), 1), 6), 30),
-    capacity: 20,
-    enrolled: 15,
-    location: 'Main Studio'
-  },
-]
-
-export function ClassesPanel({ 
-  classes = [], 
+export function ClassesPanel({
+  classes = [],
   upcomingSessions = [],
   stats = {},
-  showMockData = true,
   compact = false,
   brandColors = {},
-  className 
+  className,
 }) {
   const navigate = useNavigate()
-  
-  const displayClasses = classes.length > 0 ? classes : (showMockData ? mockClasses : [])
-  const displayUpcoming = upcomingSessions.length > 0 ? upcomingSessions : (showMockData ? mockUpcoming : [])
-  const displayStats = Object.keys(stats).length > 0 ? stats : (showMockData ? {
-    totalClasses: 8,
-    activeClasses: 6,
-    todaySessions: 5,
-    weekAttendees: 156,
-  } : {})
+
+  const displayClasses = classes
+  const displayUpcoming = upcomingSessions
+  const derivedStats = useMemo(() => {
+    if (Object.keys(stats).length > 0) return stats
+    const totalClasses = classes.length
+    const activeClasses = classes.filter((c) => c.status !== 'archived' && c.status !== 'draft').length
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const tomorrow = new Date(today)
+    tomorrow.setDate(tomorrow.getDate() + 1)
+    const todaySessions = upcomingSessions.filter((s) => {
+      const d = s.date ? new Date(s.date) : null
+      return d && d >= today && d < tomorrow
+    }).length
+    const weekAttendees = upcomingSessions.reduce((sum, s) => sum + (s.enrolled ?? 0), 0)
+    return {
+      totalClasses,
+      activeClasses,
+      todaySessions,
+      weekAttendees,
+      recurringClasses: classes.filter((c) => c.recurring).length,
+    }
+  }, [classes, upcomingSessions, stats])
 
   const primary = brandColors.primary || '#4bbf39'
   const rgba = brandColors.rgba || { primary10: 'rgba(75, 191, 57, 0.1)', primary20: 'rgba(75, 191, 57, 0.2)' }
@@ -99,18 +71,18 @@ export function ClassesPanel({
               </div>
               <div>
                 <p className="font-semibold">Classes</p>
-                <p className="text-sm text-muted-foreground">{displayStats.todaySessions || 0} sessions today</p>
+                <p className="text-sm text-muted-foreground">{derivedStats.todaySessions ?? 0} sessions today</p>
               </div>
             </div>
             <Button size="sm" variant="ghost" onClick={() => navigate('/commerce/offerings?type=class')}>
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
-          {displayUpcoming.length > 0 && (
+          {displayUpcoming.length > 0 && displayUpcoming[0].date && (
             <div className="mt-3 text-sm">
               <span className="text-muted-foreground">Next:</span>{' '}
               <span className="font-medium">{displayUpcoming[0].class}</span>
-              <span className="text-muted-foreground"> at {format(displayUpcoming[0].date, 'h:mm a')}</span>
+              <span className="text-muted-foreground"> at {format(new Date(displayUpcoming[0].date), 'h:mm a')}</span>
             </div>
           )}
         </CardContent>
@@ -143,10 +115,10 @@ export function ClassesPanel({
       <CardContent className="space-y-4">
         {/* Stats Row */}
         <div className="grid grid-cols-4 gap-3">
-          <StatBox label="Classes" value={displayStats.totalClasses || 0} />
-          <StatBox label="Today" value={displayStats.todaySessions || 0} />
-          <StatBox label="Week" value={displayStats.weekAttendees || 0} />
-          <StatBox label="Recurring" value={displayStats.recurringClasses || 6} />
+          <StatBox label="Classes" value={derivedStats.totalClasses ?? 0} />
+          <StatBox label="Today" value={derivedStats.todaySessions ?? 0} />
+          <StatBox label="Week" value={derivedStats.weekAttendees ?? 0} />
+          <StatBox label="Recurring" value={derivedStats.recurringClasses ?? 0} />
         </div>
 
         {/* Today's Schedule */}
@@ -158,8 +130,10 @@ export function ClassesPanel({
             </Button>
           </div>
           <div className="space-y-2">
-            {displayUpcoming.slice(0, 4).map(session => {
-              const fillPercent = Math.round((session.enrolled / session.capacity) * 100)
+            {displayUpcoming.slice(0, 4).map((session) => {
+              const capacity = session.capacity ?? 0
+              const enrolled = session.enrolled ?? 0
+              const fillPercent = capacity > 0 ? Math.round((enrolled / capacity) * 100) : 0
               const isAlmostFull = fillPercent >= 80
               
               return (
@@ -171,7 +145,7 @@ export function ClassesPanel({
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
                       <Badge variant="outline" className="font-mono text-xs">
-                        {format(session.date, 'h:mm a')}
+                        {session.date ? format(new Date(session.date), 'h:mm a') : '—'}
                       </Badge>
                       <span className="text-sm font-medium">{session.class}</span>
                     </div>
@@ -188,7 +162,7 @@ export function ClassesPanel({
                     </div>
                     <div className="flex items-center gap-2">
                       <Users className="h-3 w-3" />
-                      <span>{session.enrolled}/{session.capacity}</span>
+                      <span>{enrolled}/{capacity}</span>
                       <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
                         <div 
                           className="h-full rounded-full transition-all"
@@ -220,7 +194,7 @@ export function ClassesPanel({
             </Button>
           </div>
           <div className="grid grid-cols-2 gap-2">
-            {displayClasses.slice(0, 4).map(cls => (
+            {displayClasses.slice(0, 4).map((cls) => (
               <div 
                 key={cls.id}
                 className="p-3 rounded-lg bg-muted/50 hover:bg-muted cursor-pointer transition-colors"
@@ -239,6 +213,9 @@ export function ClassesPanel({
                 </div>
               </div>
             ))}
+            {displayClasses.length === 0 && (
+              <div className="col-span-2 text-center py-6 text-muted-foreground text-sm">No classes yet</div>
+            )}
           </div>
         </div>
 

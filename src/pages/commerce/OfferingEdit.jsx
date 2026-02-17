@@ -45,7 +45,9 @@ import {
   Image as ImageIcon,
 } from 'lucide-react'
 import CommerceImageUploader from '@/components/commerce/CommerceImageUploader'
+import ScheduleManagement from '@/components/commerce/ScheduleManagement'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { format } from 'date-fns'
 
 // Type configuration
 const typeConfig = {
@@ -270,6 +272,7 @@ export default function OfferingEdit({ offeringId, onBack }) {
         onBack={onBack}
         navigate={navigate}
         brandColors={brandColors}
+        queryClient={queryClient}
       />
     )
   }
@@ -764,9 +767,17 @@ function EventEditView({
   onBack,
   navigate,
   brandColors,
+  queryClient,
 }) {
+  const [showScheduleDialog, setShowScheduleDialog] = useState(false)
   if (!formData) return null
-  
+
+  const schedules = offering.schedules || []
+  const scheduleStartsAt = (s) => s.starts_at || s.start_time
+  const upcomingSchedules = schedules
+    .filter((s) => scheduleStartsAt(s))
+    .sort((a, b) => new Date(scheduleStartsAt(a)) - new Date(scheduleStartsAt(b)))
+
   const featuredImage = images.find(img => img.is_featured)?.url || offering.featured_image
   const primary = brandColors?.primary || '#4bbf39'
   const primaryRgba = brandColors?.toRgba?.(primary, 0.2) || 'rgba(75, 191, 57, 0.2)'
@@ -904,6 +915,55 @@ function EventEditView({
 
                 {/* Sidebar */}
                 <div className="space-y-6">
+                  {/* Date & time */}
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <CardTitle className="text-sm">Date & time</CardTitle>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setShowScheduleDialog(true)}
+                        >
+                          <Clock className="h-3.5 w-3.5 mr-1.5" />
+                          {upcomingSchedules.length > 0 ? 'Edit' : 'Add'}
+                        </Button>
+                      </div>
+                      <CardDescription>
+                        When your event takes place
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      {upcomingSchedules.length > 0 ? (
+                        <div className="space-y-2">
+                          {upcomingSchedules.slice(0, 5).map((s) => {
+                            const at = scheduleStartsAt(s)
+                            const endAt = s.ends_at || s.end_time
+                            return (
+                              <div key={s.id} className="flex items-center gap-2 text-sm">
+                                <Calendar className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                                <span>
+                                  {format(new Date(at), 'EEE, MMM d')} at {format(new Date(at), 'h:mm a')}
+                                  {endAt && ` – ${format(new Date(endAt), 'h:mm a')}`}
+                                </span>
+                              </div>
+                            )
+                          })}
+                          {upcomingSchedules.length > 5 && (
+                            <p className="text-xs text-muted-foreground pt-1">
+                              +{upcomingSchedules.length - 5} more session{upcomingSchedules.length - 5 !== 1 ? 's' : ''}
+                            </p>
+                          )}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-muted-foreground italic">
+                          No dates set. Click Add to set when this event runs.
+                        </p>
+                      )}
+                    </CardContent>
+                  </Card>
+
                   {/* Quick Stats Preview */}
                   <Card>
                     <CardHeader className="pb-3">
@@ -924,11 +984,28 @@ function EventEditView({
                           </p>
                         </div>
                       </div>
+
+                      {upcomingSchedules.length > 0 && (
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-900/30">
+                            <Clock className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                          </div>
+                          <div>
+                            <p className="text-sm text-muted-foreground">Date</p>
+                            <p className="font-semibold text-sm">
+                              {format(new Date(scheduleStartsAt(upcomingSchedules[0])), 'MMM d, yyyy')} at {format(new Date(scheduleStartsAt(upcomingSchedules[0])), 'h:mm a')}
+                            </p>
+                            {upcomingSchedules.length > 1 && (
+                              <p className="text-xs text-muted-foreground">+{upcomingSchedules.length - 1} more</p>
+                            )}
+                          </div>
+                        </div>
+                      )}
                       
                       {formData.capacity && (
                         <div className="flex items-center gap-3">
-                          <div className="p-2 rounded-lg bg-blue-100">
-                            <Users className="h-4 w-4 text-blue-600" />
+                          <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30">
+                            <Users className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                           </div>
                           <div>
                             <p className="text-sm text-muted-foreground">Capacity</p>
@@ -1159,6 +1236,19 @@ function EventEditView({
               </Card>
             </TabsContent>
           </Tabs>
+
+          {/* Schedule management dialog */}
+          <ScheduleManagement
+            open={showScheduleDialog}
+            onOpenChange={setShowScheduleDialog}
+            offeringId={id}
+            offeringName={offering.name}
+            offeringType="event"
+            defaultCapacity={offering.capacity ? Number(offering.capacity) : undefined}
+            onScheduleChange={() => {
+              queryClient?.invalidateQueries({ queryKey: commerceKeys.offeringDetail(id) })
+            }}
+          />
 
           {/* Floating Save Bar */}
           <div className="sticky bottom-4 mt-8">

@@ -17,60 +17,41 @@ import {
   MapPin,
   ArrowRight,
 } from 'lucide-react'
+import { useMemo } from 'react'
 import { cn } from '@/lib/utils'
-import { format, addDays, setHours, setMinutes } from 'date-fns'
+import { format } from 'date-fns'
 
-// Mock data for demo
-const mockServices = [
-  { id: '1', name: 'Personal Training Session', duration: 60, price: 75, type: 'in_person' },
-  { id: '2', name: 'Nutrition Consultation', duration: 45, price: 50, type: 'virtual' },
-  { id: '3', name: 'Fitness Assessment', duration: 90, price: 100, type: 'in_person' },
-  { id: '4', name: '30-Min Quick Consult', duration: 30, price: 35, type: 'virtual' },
-]
-
-const mockUpcoming = [
-  { 
-    id: '1', 
-    service: 'Personal Training Session', 
-    customer: 'Sarah Johnson',
-    date: setMinutes(setHours(addDays(new Date(), 0), 14), 0),
-    type: 'in_person'
-  },
-  { 
-    id: '2', 
-    service: 'Nutrition Consultation', 
-    customer: 'Mike Thompson',
-    date: setMinutes(setHours(addDays(new Date(), 0), 16), 30),
-    type: 'virtual'
-  },
-  { 
-    id: '3', 
-    service: 'Personal Training Session', 
-    customer: 'Emily Chen',
-    date: setMinutes(setHours(addDays(new Date(), 1), 9), 0),
-    type: 'in_person'
-  },
-]
-
-export function ServicesPanel({ 
-  services = [], 
+export function ServicesPanel({
+  services = [],
   upcomingAppointments = [],
   stats = {},
-  showMockData = true,
   compact = false,
   brandColors = {},
-  className 
+  className,
 }) {
   const navigate = useNavigate()
-  
-  const displayServices = services.length > 0 ? services : (showMockData ? mockServices : [])
-  const displayUpcoming = upcomingAppointments.length > 0 ? upcomingAppointments : (showMockData ? mockUpcoming : [])
-  const displayStats = Object.keys(stats).length > 0 ? stats : (showMockData ? {
-    totalServices: 12,
-    activeServices: 10,
-    todayBookings: 4,
-    weekRevenue: 2340,
-  } : {})
+
+  const derivedStats = useMemo(() => {
+    if (Object.keys(stats).length > 0) return stats
+    const totalServices = services.length
+    const activeServices = services.filter((s) => s.status !== 'archived' && s.status !== 'draft').length
+    const weekRevenue = services.reduce((sum, s) => sum + (s.revenue || 0), 0)
+    return {
+      totalServices,
+      activeServices,
+      todayBookings: upcomingAppointments.filter((a) => {
+        const d = a.date ? new Date(a.date) : null
+        if (!d) return false
+        const today = new Date()
+        return d.toDateString() === today.toDateString()
+      }).length,
+      weekBookings: upcomingAppointments.length,
+      weekRevenue,
+    }
+  }, [services, upcomingAppointments, stats])
+
+  const displayServices = services
+  const displayUpcoming = upcomingAppointments
 
   const secondary = brandColors.secondary || '#39bfb0'
   const rgba = brandColors.rgba || { secondary10: 'rgba(57, 191, 176, 0.1)', secondary20: 'rgba(57, 191, 176, 0.2)' }
@@ -89,18 +70,18 @@ export function ServicesPanel({
               </div>
               <div>
                 <p className="font-semibold">Services</p>
-                <p className="text-sm text-muted-foreground">{displayStats.todayBookings || 0} today</p>
+                <p className="text-sm text-muted-foreground">{derivedStats.todayBookings ?? 0} today</p>
               </div>
             </div>
             <Button size="sm" variant="ghost" onClick={() => navigate('/commerce/offerings?type=service')}>
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
-          {displayUpcoming.length > 0 && (
+          {displayUpcoming.length > 0 && displayUpcoming[0].date && (
             <div className="mt-3 text-sm">
               <span className="text-muted-foreground">Next:</span>{' '}
               <span className="font-medium">{displayUpcoming[0].service}</span>
-              <span className="text-muted-foreground"> at {format(displayUpcoming[0].date, 'h:mm a')}</span>
+              <span className="text-muted-foreground"> at {format(new Date(displayUpcoming[0].date), 'h:mm a')}</span>
             </div>
           )}
         </CardContent>
@@ -133,10 +114,10 @@ export function ServicesPanel({
       <CardContent className="space-y-4">
         {/* Stats Row */}
         <div className="grid grid-cols-4 gap-3">
-          <StatBox label="Services" value={displayStats.totalServices || 0} />
-          <StatBox label="Today" value={displayStats.todayBookings || 0} />
-          <StatBox label="This Week" value={displayStats.weekBookings || 12} />
-          <StatBox label="Week Rev" value={`$${displayStats.weekRevenue || 0}`} />
+          <StatBox label="Services" value={derivedStats.totalServices ?? 0} />
+          <StatBox label="Today" value={derivedStats.todayBookings ?? 0} />
+          <StatBox label="This Week" value={derivedStats.weekBookings ?? 0} />
+          <StatBox label="Week Rev" value={`$${Number(derivedStats.weekRevenue ?? 0).toLocaleString()}`} />
         </div>
 
         {/* Upcoming Appointments */}
@@ -148,28 +129,31 @@ export function ServicesPanel({
             </Button>
           </div>
           <div className="space-y-2">
-            {displayUpcoming.slice(0, 3).map(appt => (
-              <div 
+            {displayUpcoming.slice(0, 3).map((appt) => {
+              const apptDate = appt.date ? new Date(appt.date) : null
+              const initials = appt.customer ? appt.customer.split(' ').map((n) => n[0]).join('') : '?'
+              return (
+              <div
                 key={appt.id}
                 className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted cursor-pointer transition-colors"
                 onClick={() => navigate(`/commerce/appointments/${appt.id}`)}
               >
                 <div className="flex-shrink-0">
                   <Avatar className="h-9 w-9">
-                    <AvatarFallback 
+                    <AvatarFallback
                       className="text-xs"
                       style={{ backgroundColor: rgba.secondary10, color: secondary }}
                     >
-                      {appt.customer.split(' ').map(n => n[0]).join('')}
+                      {initials}
                     </AvatarFallback>
                   </Avatar>
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">{appt.service}</p>
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <span>{appt.customer}</span>
-                    <span>•</span>
-                    <span>{format(appt.date, 'MMM d, h:mm a')}</span>
+                    {appt.customer && <span>{appt.customer}</span>}
+                    {appt.customer && apptDate && <span>•</span>}
+                    {apptDate && <span>{format(apptDate, 'MMM d, h:mm a')}</span>}
                   </div>
                 </div>
                 <div className="flex-shrink-0">
@@ -186,7 +170,8 @@ export function ServicesPanel({
                   )}
                 </div>
               </div>
-            ))}
+              )
+            }))}
             {displayUpcoming.length === 0 && (
               <div className="text-center py-6 text-muted-foreground text-sm">
                 No upcoming appointments
@@ -204,21 +189,28 @@ export function ServicesPanel({
             </Button>
           </div>
           <div className="grid grid-cols-2 gap-2">
-            {displayServices.slice(0, 4).map(service => (
-              <div 
+            {displayServices.slice(0, 4).map((service) => (
+              <div
                 key={service.id}
                 className="p-3 rounded-lg border bg-card hover:bg-muted/50 cursor-pointer transition-colors"
                 onClick={() => navigate(`/commerce/offerings/${service.id}`)}
               >
                 <p className="text-sm font-medium truncate">{service.name}</p>
                 <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
-                  <Clock className="h-3 w-3" />
-                  <span>{service.duration} min</span>
-                  <span>•</span>
-                  <span>${service.price}</span>
+                  {service.duration != null && (
+                    <>
+                      <Clock className="h-3 w-3" />
+                      <span>{service.duration} min</span>
+                      <span>•</span>
+                    </>
+                  )}
+                  <span>{service.price != null ? `$${service.price}` : ''}</span>
                 </div>
               </div>
             ))}
+            {displayServices.length === 0 && (
+              <div className="col-span-2 text-center py-6 text-muted-foreground text-sm">No services yet</div>
+            )}
           </div>
         </div>
 

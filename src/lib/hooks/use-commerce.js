@@ -175,30 +175,24 @@ export function useDeleteOffering() {
 
 export function useUploadOfferingImage() {
   const queryClient = useQueryClient()
-  
+
   return useMutation({
     mutationFn: async ({ offeringId, file, isFeatured = false }) => {
-      // Generate unique file ID and path
       const fileId = crypto.randomUUID()
       const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg'
       const storagePath = `commerce/${offeringId}/${fileId}.${ext}`
-      
-      // Upload directly to Supabase Storage
+
       const { error: uploadError } = await supabase.storage
         .from('files')
         .upload(storagePath, file, {
           contentType: file.type || 'image/jpeg',
           upsert: false,
         })
-      
+
       if (uploadError) throw uploadError
-      
-      // Get public URL
-      const { data: urlData } = supabase.storage
-        .from('files')
-        .getPublicUrl(storagePath)
-      
-      // Register the file with the API
+
+      const { data: urlData } = supabase.storage.from('files').getPublicUrl(storagePath)
+
       const response = await portalApi.post(`/commerce/offering/${offeringId}/images/register`, {
         fileId,
         filename: file.name,
@@ -206,7 +200,7 @@ export function useUploadOfferingImage() {
         fileSize: file.size,
         storagePath,
         publicUrl: urlData.publicUrl,
-        isFeatured
+        isFeatured,
       })
       return response.data
     },

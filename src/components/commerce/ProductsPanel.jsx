@@ -13,42 +13,34 @@ import {
   RefreshCw,
   Store,
 } from 'lucide-react'
+import { useMemo } from 'react'
 import { cn } from '@/lib/utils'
 
-// Mock data for demo
-const mockProducts = [
-  { id: '1', name: 'GWA Logo Hoodie - Black', price: 59.99, stock: 23, status: 'active', image: null },
-  { id: '2', name: 'Fitness Resistance Bands Set', price: 29.99, stock: 45, status: 'active', image: null },
-  { id: '3', name: 'Premium Workout Guide', price: 19.99, stock: null, status: 'active', image: null, digital: true },
-  { id: '4', name: 'Protein Shaker Bottle', price: 14.99, stock: 8, status: 'low_stock', image: null },
-]
-
-const mockLowStock = [
-  { id: '1', name: 'GWA Logo Hoodie - Black', stock: 3, threshold: 10 },
-  { id: '2', name: 'Fitness Resistance Bands', stock: 5, threshold: 15 },
-  { id: '3', name: 'Protein Shaker Bottle', stock: 8, threshold: 20 },
-]
-
-export function ProductsPanel({ 
-  products = [], 
+export function ProductsPanel({
+  products = [],
   lowStockItems = [],
   stats = {},
   shopifyConnected = false,
-  showMockData = true,
   compact = false,
   brandColors = {},
-  className 
+  className,
 }) {
   const navigate = useNavigate()
-  
-  const displayProducts = products.length > 0 ? products : (showMockData ? mockProducts : [])
-  const displayLowStock = lowStockItems.length > 0 ? lowStockItems : (showMockData ? mockLowStock : [])
-  const displayStats = Object.keys(stats).length > 0 ? stats : (showMockData ? {
-    totalProducts: 47,
-    activeProducts: 42,
-    totalInventory: 1234,
-    lowStockCount: 3,
-  } : {})
+
+  const displayLowStock = lowStockItems.length > 0 ? lowStockItems : []
+  const derivedStats = useMemo(() => {
+    if (Object.keys(stats).length > 0) return stats
+    const totalProducts = products.length
+    const activeProducts = products.filter((p) => p.status !== 'archived' && p.status !== 'draft').length
+    const totalInventory = products.reduce((sum, p) => sum + (p.stock ?? 0), 0)
+    return {
+      totalProducts,
+      activeProducts,
+      totalInventory,
+      lowStockCount: displayLowStock.length,
+    }
+  }, [products, displayLowStock.length, stats])
+  const displayProducts = products
 
   const primary = brandColors.primary || '#4bbf39'
   const rgba = brandColors.rgba || { primary10: 'rgba(75, 191, 57, 0.1)', primary20: 'rgba(75, 191, 57, 0.2)' }
@@ -67,7 +59,7 @@ export function ProductsPanel({
               </div>
               <div>
                 <p className="font-semibold">Products</p>
-                <p className="text-sm text-muted-foreground">{displayStats.activeProducts || 0} active</p>
+                <p className="text-sm text-muted-foreground">{derivedStats.activeProducts ?? 0} active</p>
               </div>
             </div>
             <Button size="sm" variant="ghost" onClick={() => navigate('/commerce/offerings?type=product')}>
@@ -118,13 +110,13 @@ export function ProductsPanel({
       <CardContent className="space-y-4">
         {/* Stats Row */}
         <div className="grid grid-cols-4 gap-3">
-          <StatBox label="Total" value={displayStats.totalProducts || 0} />
-          <StatBox label="Active" value={displayStats.activeProducts || 0} />
-          <StatBox label="Inventory" value={displayStats.totalInventory || 0} />
-          <StatBox 
-            label="Low Stock" 
-            value={displayStats.lowStockCount || 0} 
-            alert={displayStats.lowStockCount > 0}
+          <StatBox label="Total" value={derivedStats.totalProducts ?? 0} />
+          <StatBox label="Active" value={derivedStats.activeProducts ?? 0} />
+          <StatBox label="Inventory" value={derivedStats.totalInventory ?? 0} />
+          <StatBox
+            label="Low Stock"
+            value={derivedStats.lowStockCount ?? 0}
+            alert={(derivedStats.lowStockCount ?? 0) > 0}
           />
         </div>
 
@@ -162,7 +154,7 @@ export function ProductsPanel({
             </Button>
           </div>
           <div className="space-y-2">
-            {displayProducts.slice(0, 4).map(product => (
+            {displayProducts.slice(0, 4).map((product) => (
               <div 
                 key={product.id}
                 className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
@@ -178,11 +170,16 @@ export function ProductsPanel({
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">{product.name}</p>
                   <p className="text-xs text-muted-foreground">
-                    ${product.price} • {product.digital ? 'Digital' : `${product.stock} in stock`}
+                    {product.price != null ? `$${product.price}` : ''}
+                    {product.price != null && (product.digital || product.stock != null) ? ' • ' : ''}
+                    {product.digital ? 'Digital' : product.stock != null ? `${product.stock} in stock` : ''}
                   </p>
                 </div>
               </div>
             ))}
+            {displayProducts.length === 0 && (
+              <div className="text-center py-6 text-muted-foreground text-sm">No products yet</div>
+            )}
           </div>
         </div>
 

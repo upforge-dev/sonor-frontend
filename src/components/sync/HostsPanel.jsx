@@ -161,11 +161,12 @@ export default function HostsPanel({ isOpen, onClose, inline = false }) {
     if (!confirm(`Delete host "${host.name}"?`)) return
     
     try {
-      await syncApi.deleteHost(host.id)
+      const params = currentProject?.id ? { project_id: currentProject.id } : {}
+      await syncApi.deleteHost(host.id, params)
       toast.success('Host deleted')
       fetchHosts()
     } catch (error) {
-      toast.error('Failed to delete host')
+      toast.error(error.response?.data?.message || 'Failed to delete host')
     }
   }
 
