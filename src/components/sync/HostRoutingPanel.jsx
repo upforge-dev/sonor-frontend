@@ -92,8 +92,9 @@ export default function HostRoutingPanel({ isOpen, onClose, bookingType, hosts, 
   const fetchRoutes = async () => {
     setLoading(true)
     try {
-      const data = await syncApi.getBookingTypeRoutes(bookingType.id)
-      setRoutes(data || [])
+      const { data } = await syncApi.getBookingTypeRoutes(bookingType.id)
+      const list = Array.isArray(data?.routes) ? data.routes : (Array.isArray(data) ? data : [])
+      setRoutes(list)
     } catch (error) {
       console.error('Failed to fetch routes:', error)
       // Fallback to empty routes

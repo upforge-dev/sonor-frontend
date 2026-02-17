@@ -39,7 +39,7 @@ import {
 import { toast } from 'sonner'
 import {
   Plus,
-  Calendar,
+  Calendar as CalendarIcon,
   Clock,
   Users,
   Edit2,
@@ -53,6 +53,165 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { format, parseISO, addDays, addWeeks, addMonths } from 'date-fns'
+import { Calendar } from '@/components/ui/calendar'
+import { LocationInput } from '@/components/ui/location-input'
+
+// Branded date/time picker: shows a field that opens a modal to pick date and time, then confirm.
+function DateTimeField({ id, value, onChange, placeholder = 'Select date & time', autoFocus }) {
+  const [pickerOpen, setPickerOpen] = useState(false)
+  // value is datetime-local string "YYYY-MM-DDTHH:mm" or empty
+  const parsed = value ? (() => {
+    try {
+      const d = new Date(value)
+      return isNaN(d.getTime()) ? null : d
+    } catch {
+      return null
+    }
+  })() : null
+  const [date, setDate] = useState(parsed ? parsed : new Date())
+  const [time, setTime] = useState(parsed ? format(parsed, 'HH:mm') : '09:00')
+
+  const openPicker = () => {
+    if (value) {
+      try {
+        const d = new Date(value)
+        if (!isNaN(d.getTime())) {
+          setDate(d)
+          setTime(format(d, 'HH:mm'))
+        }
+      } catch {}
+    } else {
+      setDate(new Date())
+      setTime('09:00')
+    }
+    setPickerOpen(true)
+  }
+
+  const handleConfirm = () => {
+    const [h, m] = time.split(':').map(Number)
+    const combined = new Date(date)
+    combined.setHours(isNaN(h) ? 9 : h, isNaN(m) ? 0 : m, 0, 0)
+    onChange(format(combined, "yyyy-MM-dd'T'HH:mm"))
+    setPickerOpen(false)
+  }
+
+  const displayText = value
+    ? (() => {
+        try {
+          const d = new Date(value)
+          return isNaN(d.getTime()) ? '' : format(d, 'MMM d, yyyy · h:mm a')
+        } catch {
+          return ''
+        }
+      })()
+    : ''
+
+  return (
+    <>
+      <button
+        type="button"
+        id={id}
+        autoFocus={autoFocus}
+        onClick={openPicker}
+        className={cn(
+          'flex h-10 w-full rounded-[var(--radius-sm)] px-3 py-2 text-left text-base md:text-sm',
+          'bg-[var(--glass-bg-inset)] border border-[var(--glass-border)]',
+          'text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)]',
+          'focus:outline-none focus:bg-[var(--glass-bg)] focus:border-[var(--brand-primary)] focus:ring-2 focus:ring-[var(--brand-primary)]/20',
+          'flex items-center gap-2'
+        )}
+      >
+        <CalendarIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
+        <span className={displayText ? '' : 'text-muted-foreground'}>{displayText || placeholder}</span>
+      </button>
+      <Dialog open={pickerOpen} onOpenChange={setPickerOpen}>
+        <DialogContent className="max-w-md rounded-2xl border-[var(--glass-border)] bg-[var(--glass-bg)] shadow-[var(--shadow-lg)] p-0 gap-0 overflow-hidden flex flex-col max-h-[90vh]">
+          <DialogHeader className="px-6 pt-6 pb-4 border-b border-[var(--glass-border)] shrink-0">
+            <DialogTitle className="flex items-center gap-3 text-xl font-semibold text-[var(--text-primary)]">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--brand-primary)]/15">
+                <CalendarIcon className="h-5 w-5 text-[var(--brand-primary)]" />
+              </div>
+              Select date & time
+            </DialogTitle>
+            <p className="text-sm text-[var(--text-secondary)] mt-1">
+              Pick a date, set the time, then confirm.
+            </p>
+          </DialogHeader>
+
+          <div className="px-6 py-5 space-y-5 overflow-y-auto flex-1 min-h-0">
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wider text-[var(--text-tertiary)] mb-2">
+                Date
+              </p>
+              <div className="rounded-xl border border-[var(--glass-border)] bg-[var(--glass-bg-inset)] p-4 min-w-[280px] w-full min-h-[280px]">
+                <Calendar
+                  mode="single"
+                  selected={date}
+                  onSelect={(d) => d && setDate(d)}
+                  className="rounded-lg w-full"
+                  classNames={{
+                    months: 'w-full',
+                    month: 'w-full',
+                    month_grid: 'w-full',
+                    caption_label: 'text-sm font-semibold text-[var(--text-primary)]',
+                    nav_button: 'h-8 w-8 rounded-lg border border-[var(--glass-border)] bg-[var(--glass-bg)] hover:bg-[var(--glass-bg-hover)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]',
+                    head_row: 'grid grid-cols-7 w-full',
+                    head_cell: 'text-[var(--text-tertiary)] text-[0.7rem] font-medium flex items-center justify-center py-1.5 min-w-0',
+                    weekday: 'text-[var(--text-tertiary)] text-[0.7rem] font-medium flex items-center justify-center py-1.5 min-w-0',
+                    weekdays: 'grid grid-cols-7 w-full',
+                    row: 'grid grid-cols-7 w-full mt-2',
+                    week: 'grid grid-cols-7 w-full mt-2',
+                    cell: 'relative p-0 text-center text-sm min-w-0 flex items-center justify-center',
+                    day: 'size-10 w-full max-w-[2.5rem] rounded-lg font-normal hover:bg-[var(--glass-bg-hover)] focus:bg-[var(--glass-bg-hover)] aria-selected:opacity-100 inline-flex items-center justify-center mx-auto',
+                    selected: '!bg-[var(--brand-primary)] !text-white hover:!bg-[var(--brand-primary)] focus:!bg-[var(--brand-primary)]',
+                    day_selected: '!bg-[var(--brand-primary)] !text-white hover:!bg-[var(--brand-primary)] focus:!bg-[var(--brand-primary)]',
+                    day_today: 'border-2 border-[var(--brand-primary)]/60 font-semibold text-[var(--brand-primary)]',
+                    day_outside: 'text-[var(--text-tertiary)] opacity-50',
+                  }}
+                />
+              </div>
+            </div>
+
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wider text-[var(--text-tertiary)] mb-2">
+                Time
+              </p>
+              <div className="flex items-center gap-3 rounded-xl border border-[var(--glass-border)] bg-[var(--glass-bg-inset)] px-4 py-3">
+                <Clock className="h-5 w-5 shrink-0 text-[var(--brand-primary)]" />
+                <Input
+                  type="time"
+                  value={time}
+                  onChange={(e) => setTime(e.target.value)}
+                  className="flex-1 border-0 bg-transparent text-[var(--text-primary)] font-medium focus-visible:ring-0 focus-visible:ring-offset-0 min-h-[2.5rem]"
+                />
+              </div>
+            </div>
+
+            <div className="rounded-xl bg-[var(--brand-primary)]/10 border border-[var(--brand-primary)]/20 px-4 py-3 text-center">
+              <p className="text-xs font-medium text-[var(--brand-primary)] uppercase tracking-wider">Selected</p>
+              <p className="text-sm font-semibold text-[var(--text-primary)] mt-0.5">
+                {format(date, 'EEEE, MMM d, yyyy')} at {(() => {
+                  const [h, m] = (time || '09:00').split(':').map(Number)
+                  const t = new Date(2000, 0, 1, isNaN(h) ? 9 : h, isNaN(m) ? 0 : m)
+                  return format(t, 'h:mm a')
+                })()}
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter className="px-6 py-4 border-t border-[var(--glass-border)] bg-[var(--glass-bg)] shrink-0 gap-3 flex-row justify-end">
+            <Button variant="outline" onClick={() => setPickerOpen(false)} className="min-w-[88px]">
+              Cancel
+            </Button>
+            <Button onClick={handleConfirm} className="min-w-[88px] bg-[var(--brand-primary)] hover:opacity-90 text-white">
+              Confirm
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  )
+}
 
 // Recurrence options
 const RECURRENCE_OPTIONS = [
@@ -62,6 +221,114 @@ const RECURRENCE_OPTIONS = [
   { value: 'biweekly', label: 'Every 2 weeks' },
   { value: 'monthly', label: 'Monthly' },
 ]
+
+// Form component at module level so React keeps a stable component identity and inputs don't unmount on every keystroke.
+function ScheduleForm({ schedule, setSchedule, onSave, onCancel, isEdit, saving }) {
+  return (
+    <div className="space-y-4 rounded-lg border border-dashed border-[var(--glass-border-strong)] p-4 bg-[var(--glass-bg)]">
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="start_time">Start Date & Time *</Label>
+          <DateTimeField
+            id="start_time"
+            value={(schedule.start_time || schedule.starts_at || '')?.slice(0, 16) || ''}
+            onChange={(v) => setSchedule((prev) => ({ ...prev, start_time: v }))}
+            placeholder="Select date & time"
+            autoFocus={!isEdit}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="end_time">End Date & Time</Label>
+          <DateTimeField
+            id="end_time"
+            value={(schedule.end_time || schedule.ends_at || '')?.slice(0, 16) || ''}
+            onChange={(v) => setSchedule((prev) => ({ ...prev, end_time: v }))}
+            placeholder="Select date & time"
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="location">Location</Label>
+          <LocationInput
+            id="location"
+            value={schedule.location || ''}
+            onChange={(v) => setSchedule((prev) => ({ ...prev, location: v }))}
+            placeholder="e.g., Room 101, address, or Virtual"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="max_capacity">Max Capacity</Label>
+          <div className="relative">
+            <Users className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              id="max_capacity"
+              type="number"
+              min="1"
+              value={schedule.max_capacity || ''}
+              onChange={(e) => setSchedule((prev) => ({ ...prev, max_capacity: e.target.value }))}
+              placeholder="Unlimited"
+              className="pl-9"
+            />
+          </div>
+        </div>
+      </div>
+
+      {!isEdit && (
+        <>
+          <Separator />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="recurrence">Repeat</Label>
+              <Select
+                value={schedule.recurrence || 'none'}
+                onValueChange={(v) => setSchedule((prev) => ({ ...prev, recurrence: v }))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {RECURRENCE_OPTIONS.map(opt => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {schedule.recurrence && schedule.recurrence !== 'none' && (
+              <div className="space-y-2">
+                <Label htmlFor="recurrence_end_date">Repeat Until</Label>
+                <Input
+                  id="recurrence_end_date"
+                  type="date"
+                  value={schedule.recurrence_end_date || ''}
+                  onChange={(e) => setSchedule((prev) => ({ ...prev, recurrence_end_date: e.target.value }))}
+                />
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
+      <div className="flex items-center gap-2 pt-2">
+        <Button size="sm" onClick={onSave} disabled={saving}>
+          {saving ? (
+            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+          ) : (
+            <Save className="h-4 w-4 mr-2" />
+          )}
+          {isEdit ? 'Update' : 'Add Schedule'}
+        </Button>
+        <Button size="sm" variant="ghost" onClick={onCancel}>
+          <X className="h-4 w-4 mr-2" />
+          Cancel
+        </Button>
+      </div>
+    </div>
+  )
+}
 
 export default function ScheduleManagement({ 
   open, 
@@ -142,6 +409,7 @@ export default function ScheduleManagement({
         capacity: cap,
         spots_remaining: cap,
         status: normalizeStatusForApi(newSchedule.status),
+        location: newSchedule.location || null,
       }
 
       // If recurring, generate multiple schedules
@@ -218,6 +486,7 @@ export default function ScheduleManagement({
           : new Date(startAt).toISOString(),
         capacity: editingSchedule.max_capacity ? parseInt(editingSchedule.max_capacity) : (editingSchedule.capacity ?? null),
         status: normalizeStatusForApi(editingSchedule.status),
+        location: editingSchedule.location || null,
       })
 
       toast.success('Schedule updated')
@@ -279,124 +548,13 @@ export default function ScheduleManagement({
     }
   }
 
-  // Schedule form component (reused for add and edit)
-  const ScheduleForm = ({ schedule, setSchedule, onSave, onCancel, isEdit }) => (
-    <div className="space-y-4 rounded-lg border border-dashed border-[var(--glass-border-strong)] p-4 bg-[var(--glass-bg)]">
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="start_time">Start Date & Time *</Label>
-          <Input
-            id="start_time"
-            type="datetime-local"
-            value={(schedule.start_time || schedule.starts_at || '')?.slice(0, 16) || ''}
-            onChange={(e) => setSchedule({ ...schedule, start_time: e.target.value })}
-            autoFocus={!isEdit}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="end_time">End Date & Time</Label>
-          <Input
-            id="end_time"
-            type="datetime-local"
-            value={(schedule.end_time || schedule.ends_at || '')?.slice(0, 16) || ''}
-            onChange={(e) => setSchedule({ ...schedule, end_time: e.target.value })}
-          />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="location">Location</Label>
-          <div className="relative">
-            <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              id="location"
-              value={schedule.location || ''}
-              onChange={(e) => setSchedule({ ...schedule, location: e.target.value })}
-              placeholder="e.g., Room 101 or Virtual"
-              className="pl-9"
-            />
-          </div>
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="max_capacity">Max Capacity</Label>
-          <div className="relative">
-            <Users className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              id="max_capacity"
-              type="number"
-              min="1"
-              value={schedule.max_capacity || ''}
-              onChange={(e) => setSchedule({ ...schedule, max_capacity: e.target.value })}
-              placeholder="Unlimited"
-              className="pl-9"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Recurrence (only for new schedules) */}
-      {!isEdit && (
-        <>
-          <Separator />
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="recurrence">Repeat</Label>
-              <Select
-                value={schedule.recurrence || 'none'}
-                onValueChange={(v) => setSchedule({ ...schedule, recurrence: v })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {RECURRENCE_OPTIONS.map(opt => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            {schedule.recurrence && schedule.recurrence !== 'none' && (
-              <div className="space-y-2">
-                <Label htmlFor="recurrence_end_date">Repeat Until</Label>
-                <Input
-                  id="recurrence_end_date"
-                  type="date"
-                  value={schedule.recurrence_end_date || ''}
-                  onChange={(e) => setSchedule({ ...schedule, recurrence_end_date: e.target.value })}
-                />
-              </div>
-            )}
-          </div>
-        </>
-      )}
-
-      <div className="flex items-center gap-2 pt-2">
-        <Button size="sm" onClick={onSave} disabled={saving}>
-          {saving ? (
-            <Loader2 className="h-4 w-4 animate-spin mr-2" />
-          ) : (
-            <Save className="h-4 w-4 mr-2" />
-          )}
-          {isEdit ? 'Update' : 'Add Schedule'}
-        </Button>
-        <Button size="sm" variant="ghost" onClick={onCancel}>
-          <X className="h-4 w-4 mr-2" />
-          Cancel
-        </Button>
-      </div>
-    </div>
-  )
-
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5" />
+              <CalendarIcon className="h-5 w-5" />
               Manage Schedules
             </DialogTitle>
             <DialogDescription>
@@ -423,6 +581,7 @@ export default function ScheduleManagement({
                         setNewSchedule(getDefaultSchedule())
                       }}
                       isEdit={false}
+                      saving={saving}
                     />
                   ) : (
                     <Button
@@ -438,7 +597,7 @@ export default function ScheduleManagement({
                   {/* Schedules List */}
                   {schedules.length === 0 && !showAddForm ? (
                     <div className="text-center py-8 text-muted-foreground">
-                      <Calendar className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                      <CalendarIcon className="h-12 w-12 mx-auto mb-3 opacity-30" />
                       <p>No schedules yet</p>
                       <p className="text-sm">Add schedules to start accepting registrations</p>
                     </div>
@@ -458,6 +617,7 @@ export default function ScheduleManagement({
                             onSave={handleUpdateSchedule}
                             onCancel={() => setEditingSchedule(null)}
                             isEdit={true}
+                            saving={saving}
                           />
                         ) : (
                           <div className="flex items-start justify-between">

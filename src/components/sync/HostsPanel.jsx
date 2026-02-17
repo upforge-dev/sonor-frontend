@@ -65,6 +65,27 @@ const DAYS_OF_WEEK = [
   { value: 6, label: 'Saturday', short: 'Sat' },
 ]
 
+const DAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
+
+/** Convert API availability (monday/tuesday/etc. with enabled + slots) to Portal rules array */
+function availabilityToRules(availability) {
+  if (!availability || typeof availability !== 'object') return DEFAULT_AVAILABILITY
+  const rules = []
+  for (let dayOfWeek = 0; dayOfWeek <= 6; dayOfWeek++) {
+    const dayName = DAY_NAMES[dayOfWeek]
+    const day = availability[dayName]
+    if (day?.enabled && day.slots?.length) {
+      const slot = day.slots[0]
+      rules.push({
+        day_of_week: dayOfWeek,
+        start_time: slot.start ?? '09:00',
+        end_time: slot.end ?? '17:00',
+      })
+    }
+  }
+  return rules.length ? rules : DEFAULT_AVAILABILITY
+}
+
 const DEFAULT_AVAILABILITY = [
   { day_of_week: 1, start_time: '09:00', end_time: '17:00' },
   { day_of_week: 2, start_time: '09:00', end_time: '17:00' },
@@ -93,6 +114,11 @@ export default function HostsPanel({ isOpen, onClose, inline = false }) {
   // New panels
   const [showCalendarConnections, setShowCalendarConnections] = useState(null)
   const [showExceptions, setShowExceptions] = useState(false)
+  const [showUseExistingHost, setShowUseExistingHost] = useState(false)
+  const [orgHosts, setOrgHosts] = useState([])
+  const [selectedExistingHostId, setSelectedExistingHostId] = useState('')
+  const [useExistingLoading, setUseExistingLoading] = useState(false)
+  const [existingHostFromError, setExistingHostFromError] = useState(null)
 
   useEffect(() => {
     if (isOpen || inline) {
@@ -151,9 +177,16 @@ export default function HostsPanel({ isOpen, onClose, inline = false }) {
       }
       
       setEditingHost(null)
+      setExistingHostFromError(null)
       fetchHosts()
     } catch (error) {
-      toast.error('Failed to save host')
+      const data = error.response?.data
+      if (error.response?.status === 409 && data?.code === 'HOST_EMAIL_EXISTS') {
+        setExistingHostFromError({ host_id: data.host_id, name: data.name, email: data.email })
+        toast.error(data.message || 'A host with this email already exists. Use "Use existing host" to add them here.')
+      } else {
+        toast.error('Failed to save host')
+      }
     }
   }
 
@@ -183,7 +216,7 @@ export default function HostsPanel({ isOpen, onClose, inline = false }) {
   const handleShowAvailability = async (host) => {
     try {
       const { data } = await syncApi.getHostAvailability(host.id)
-      setAvailability(data.rules || DEFAULT_AVAILABILITY)
+      setAvailability(availabilityToRules(data?.availability))
       setShowAvailability(host)
     } catch (error) {
       setAvailability(DEFAULT_AVAILABILITY)
@@ -197,6 +230,7 @@ export default function HostsPanel({ isOpen, onClose, inline = false }) {
       await syncApi.updateHostAvailability(showAvailability.id, { rules: availability })
       toast.success('Availability saved')
       setShowAvailability(null)
+      fetchHosts() // refresh list so "Hours: Set" updates
     } catch (error) {
       toast.error('Failed to save availability')
     } finally {
@@ -219,6 +253,49 @@ export default function HostsPanel({ isOpen, onClose, inline = false }) {
     ))
   }
 
+  const openUseExistingHost = async () => {
+    setShowUseExistingHost(true)
+    setSelectedExistingHostId('')
+    try {
+      const { data } = await syncApi.getHosts({ scope: 'org' })
+      setOrgHosts(data.hosts || [])
+    } catch (e) {
+      toast.error('Failed to load hosts')
+      setOrgHosts([])
+    }
+  }
+
+  const availableExistingHosts = orgHosts.filter(h => !hosts.some(c => c.id === h.id))
+
+  const handleUseExistingHost = async () => {
+    if (!selectedExistingHostId) return
+    setUseExistingLoading(true)
+    try {
+      await syncApi.updateHost(selectedExistingHostId, { projectId: null })
+      toast.success('Host is now available for this project. Assign them to booking types in Host Routing.')
+      setShowUseExistingHost(false)
+      setSelectedExistingHostId('')
+      fetchHosts()
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to add host')
+    } finally {
+      setUseExistingLoading(false)
+    }
+  }
+
+  const handleUseExistingHostFromError = async () => {
+    if (!existingHostFromError?.host_id) return
+    try {
+      await syncApi.updateHost(existingHostFromError.host_id, { projectId: null })
+      toast.success('Host is now available for this project.')
+      setEditingHost(null)
+      setExistingHostFromError(null)
+      fetchHosts()
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to add host')
+    }
+  }
+
   const content = (
     <>
         <ScrollArea className={inline ? "flex-1" : "flex-1 -mx-6 px-6"}>
@@ -233,10 +310,16 @@ export default function HostsPanel({ isOpen, onClose, inline = false }) {
               <p className="text-sm text-muted-foreground mb-4">
                 Add team members who can accept bookings
               </p>
-              <Button onClick={handleCreateHost}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Host
-              </Button>
+              <div className="flex items-center justify-center gap-2 flex-wrap">
+                <Button onClick={handleCreateHost}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add New Host
+                </Button>
+                <Button variant="outline" onClick={openUseExistingHost}>
+                  <User className="h-4 w-4 mr-2" />
+                  Use Existing Host
+                </Button>
+              </div>
             </div>
           ) : (
             <div className="space-y-3 py-2">
@@ -260,8 +343,11 @@ export default function HostsPanel({ isOpen, onClose, inline = false }) {
 
                   {/* Info */}
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <h4 className="font-semibold truncate">{host.name}</h4>
+                      {!host.project_id && (
+                        <Badge variant="outline" className="text-xs font-normal">Org-level</Badge>
+                      )}
                       {!host.is_active && (
                         <Badge variant="secondary" className="text-xs">Inactive</Badge>
                       )}
@@ -270,7 +356,7 @@ export default function HostsPanel({ isOpen, onClose, inline = false }) {
                     <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
                       <span className="flex items-center gap-1">
                         <Clock className="h-3 w-3" />
-                        {host.timezone || 'Not set'}
+                        {host.has_hours ? 'Hours: Set' : 'Hours: Not set'}
                       </span>
                     </div>
                   </div>
@@ -323,7 +409,7 @@ export default function HostsPanel({ isOpen, onClose, inline = false }) {
         {/* Edit Host Modal */}
         <AnimatePresence>
           {editingHost && (
-            <Dialog open={!!editingHost} onOpenChange={() => setEditingHost(null)}>
+            <Dialog open={!!editingHost} onOpenChange={(open) => { if (!open) { setEditingHost(null); setExistingHostFromError(null) } }}>
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>
@@ -332,6 +418,16 @@ export default function HostsPanel({ isOpen, onClose, inline = false }) {
                 </DialogHeader>
                 
                 <div className="space-y-4 py-4">
+                  {existingHostFromError && !editingHost.id && (
+                    <div className="rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800 p-3 flex items-center justify-between gap-3">
+                      <p className="text-sm text-amber-800 dark:text-amber-200">
+                        <strong>{existingHostFromError.name}</strong> ({existingHostFromError.email}) is already a host in your organization.
+                      </p>
+                      <Button size="sm" onClick={handleUseExistingHostFromError}>
+                        Use this host for this project
+                      </Button>
+                    </div>
+                  )}
                   <div className="space-y-2">
                     <Label htmlFor="name">Name</Label>
                     <Input
@@ -386,6 +482,51 @@ export default function HostsPanel({ isOpen, onClose, inline = false }) {
             </Dialog>
           )}
         </AnimatePresence>
+
+        {/* Use Existing Host Modal */}
+        <Dialog open={showUseExistingHost} onOpenChange={setShowUseExistingHost}>
+          <DialogContent className="sm:max-w-[420px]">
+            <DialogHeader>
+              <DialogTitle>Use existing host</DialogTitle>
+              <DialogDescription>
+                Add a host that already exists in your organization (from another project or org-level) so they can accept bookings for this project.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-2">
+              <div className="space-y-2">
+                <Label>Select host</Label>
+                <Select value={selectedExistingHostId} onValueChange={setSelectedExistingHostId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choose a host..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableExistingHosts.length === 0 ? (
+                      <SelectItem value="_none" disabled>
+                        {orgHosts.length === 0 ? 'Loading...' : 'All org hosts are already in this project'}
+                      </SelectItem>
+                    ) : (
+                      availableExistingHosts.map((h) => (
+                        <SelectItem key={h.id} value={h.id}>
+                          {h.name} ({h.email}){h.project_id ? ' — other project' : ' — org-level'}
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowUseExistingHost(false)}>Cancel</Button>
+              <Button
+                onClick={handleUseExistingHost}
+                disabled={!selectedExistingHostId || selectedExistingHostId === '_none' || useExistingLoading}
+              >
+                {useExistingLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                Add to this project
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* Availability Modal */}
         <AnimatePresence>
@@ -517,6 +658,10 @@ export default function HostsPanel({ isOpen, onClose, inline = false }) {
               <CalendarOff className="h-4 w-4 mr-2" />
               PTO & Holidays
             </Button>
+            <Button variant="outline" onClick={openUseExistingHost}>
+              <User className="h-4 w-4 mr-2" />
+              Use Existing Host
+            </Button>
             <Button onClick={handleCreateHost}>
               <Plus className="h-4 w-4 mr-2" />
               Add Host
@@ -553,6 +698,10 @@ export default function HostsPanel({ isOpen, onClose, inline = false }) {
             PTO & Holidays
           </Button>
           <Button variant="outline" onClick={onClose}>Close</Button>
+          <Button variant="outline" onClick={openUseExistingHost}>
+            <User className="h-4 w-4 mr-2" />
+            Use Existing Host
+          </Button>
           <Button onClick={handleCreateHost}>
             <Plus className="h-4 w-4 mr-2" />
             Add Host
