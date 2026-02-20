@@ -314,7 +314,7 @@ function TemplateCard({ template, onEdit, onUse }) {
             <span className="text-xs text-[var(--text-tertiary)]">
               Used {template.useCount || 0} times
             </span>
-            <Button size="sm" className="bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] text-white hover:opacity-90" onClick={() => onUse(template)}>
+            <Button size="sm" className="bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-primary)] text-white hover:opacity-90" onClick={() => onUse(template)}>
               <Sparkles className="mr-2 h-3.5 w-3.5" />
               Use Template
             </Button>

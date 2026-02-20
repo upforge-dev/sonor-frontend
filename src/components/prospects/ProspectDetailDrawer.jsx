@@ -523,7 +523,7 @@ function ProposalsList({ prospectId, brandColors }) {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-4">
-        <UptradeSpinner size="sm" className="[&_p]:hidden [&_svg]:text-[var(--brand-secondary)]" />
+        <UptradeSpinner size="sm" className="[&_p]:hidden [&_svg]:text-[var(--brand-primary)]" />
       </div>
     )
   }
@@ -2058,8 +2058,8 @@ export default function ProspectDetailDrawer({
   onExpand,
 }) {
   const { currentProject } = useAuthStore()
-  const { primary: brandPrimary, secondary: brandSecondary, rgba, primaryHover } = useBrandColors()
-  const brandColors = { primary: brandPrimary, secondary: brandSecondary, rgba, primaryHover }
+  const { primary: brandPrimary, rgba, primaryHover } = useBrandColors()
+  const brandColors = { primary: brandPrimary, rgba, primaryHover }
   const pipelineStages = pipelineStagesProp || PIPELINE_STAGES
   
   const [activeTab, setActiveTab] = useState('overview')

@@ -122,7 +122,7 @@ export default function SEOModule() {
                   onClick={() => setBulkPipelineOpen(true)}
                   disabled={allPages.length === 0}
                   style={{ 
-                    background: 'linear-gradient(135deg, var(--brand-primary), var(--brand-secondary))'
+                    background: 'linear-gradient(135deg, var(--brand-primary), var(--brand-primary))'
                   }}
                   className="text-white shadow-lg"
                   title="Deep optimize all pages with comprehensive 8-phase Signal analysis"

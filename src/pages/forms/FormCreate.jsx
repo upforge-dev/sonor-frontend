@@ -181,7 +181,7 @@ export default function FormCreate() {
         <div className="space-y-6">
           {/* Signal AI suggestion */}
           {hasSignal && (
-            <Card className="bg-gradient-to-r from-[var(--brand-primary)]/5 to-[var(--brand-secondary)]/5 border-[var(--glass-border)]">
+            <Card className="bg-gradient-to-r from-[var(--brand-primary)]/5 to-[var(--brand-primary)]/5 border-[var(--glass-border)]">
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
                   <div 

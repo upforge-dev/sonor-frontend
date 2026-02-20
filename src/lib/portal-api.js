@@ -3357,10 +3357,16 @@ export const syncApi = {
    * Get unified tasks from all sources
    * Returns: needs_decision, today, overdue, upcoming, completed_today, summary
    */
-  getUnifiedTasks: (projectId) =>
-    portalApi.get('/sync/admin/unified-tasks', { 
-      params: projectId ? { project_id: projectId } : {} 
-    }),
+  /** projectId: single project; projectIds: array for sidebar aggregation (takes precedence) */
+  getUnifiedTasks: (projectId, projectIds) => {
+    const params = {}
+    if (projectIds?.length) {
+      params.project_ids = projectIds.join(',')
+    } else if (projectId) {
+      params.project_id = projectId
+    }
+    return portalApi.get('/sync/admin/unified-tasks', { params })
+  },
   
   /**
    * Get Signal autonomous activity (What Signal Did feed)

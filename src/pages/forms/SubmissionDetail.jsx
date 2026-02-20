@@ -349,7 +349,7 @@ export default function SubmissionDetail() {
         <div className="space-y-6">
           {/* Signal AI Analysis */}
           {hasSignal && (
-            <Card className="bg-gradient-to-br from-[var(--brand-primary)]/5 to-[var(--brand-secondary)]/5 border-[var(--glass-border)]">
+            <Card className="bg-gradient-to-br from-[var(--brand-primary)]/5 to-[var(--brand-primary)]/5 border-[var(--glass-border)]">
               <CardHeader>
                 <div className="flex items-center gap-2">
                   <SignalIcon className="h-5 w-5 text-[var(--brand-primary)]" />

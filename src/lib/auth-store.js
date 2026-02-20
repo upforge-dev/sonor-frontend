@@ -239,7 +239,7 @@ const useAuthStore = create(
                 domain: project.domain,
                 features: project.features || [],
                 brand_primary: project.brand_primary,
-                brand_secondary: project.brand_secondary,
+                brand_primary: project.brand_primary,
                 theme: { 
                   primaryColor: project.brand_primary || project.theme?.primaryColor || '#4bbf39',
                   logoUrl: project.theme?.logoUrl,
@@ -354,7 +354,7 @@ const useAuthStore = create(
                   domain: firstProject.domain,
                   features: firstProject.features || [],
                   brand_primary: firstProject.brand_primary,
-                  brand_secondary: firstProject.brand_secondary,
+                  brand_primary: firstProject.brand_primary,
                   theme: { 
                     primaryColor: firstProject.brand_primary || '#4bbf39',
                     logoUrl: firstProject.logo_url
@@ -441,7 +441,7 @@ const useAuthStore = create(
             domain: project.domain,
             features: project.features || [],
             brand_primary: project.brand_primary,
-            brand_secondary: project.brand_secondary,
+            brand_primary: project.brand_primary,
             theme: { 
               primaryColor: project.brand_primary || '#4bbf39',
               logoUrl: project.logo_url,

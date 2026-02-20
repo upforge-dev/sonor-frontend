@@ -332,7 +332,7 @@ export function ImpactPredictor({
             {predictionSource === 'signal' ? (
               <SignalIcon className="h-4 w-4" color="var(--brand-primary)" />
             ) : (
-              <Sparkles className="h-4 w-4 text-[var(--brand-secondary)]" />
+              <Sparkles className="h-4 w-4 text-[var(--brand-primary)]" />
             )}
             <span className="text-sm font-medium text-[var(--text-primary)]">
               Predicted Impact

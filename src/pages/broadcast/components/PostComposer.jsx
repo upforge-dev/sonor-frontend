@@ -423,7 +423,7 @@ export function PostComposer({
         
         {/* Platform tip */}
         <div className="flex items-start gap-2 border-t border-[var(--glass-border)] bg-[var(--surface-secondary)] px-4 py-3 text-xs text-[var(--text-tertiary)]">
-          <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--brand-secondary)]" />
+          <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--brand-primary)]" />
           <span>{PLATFORM_TIPS[platform]}</span>
         </div>
       </div>
@@ -442,7 +442,7 @@ export function PostComposer({
           )}
         >
           {/* Header */}
-          <DialogHeader className="flex-row items-center justify-between border-b border-[var(--glass-border)] bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] px-6 py-4">
+          <DialogHeader className="flex-row items-center justify-between border-b border-[var(--glass-border)] bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-primary)] px-6 py-4">
             <div>
               <DialogTitle className="text-lg font-semibold text-white">
                 {editPost ? 'Edit Post' : 'Create New Post'}
@@ -791,7 +791,7 @@ export function PostComposer({
                   variant="outline"
                   onClick={() => handleSubmit(false)}
                   disabled={isSubmitting}
-                  className="border-[var(--brand-secondary)]/30 text-[var(--brand-secondary)] hover:bg-[var(--brand-secondary)]/10"
+                  className="border-[var(--brand-primary)]/30 text-[var(--brand-primary)] hover:bg-[var(--brand-primary)]/10"
                 >
                   {isSubmitting ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -803,7 +803,7 @@ export function PostComposer({
                 <Button
                   onClick={() => handleSubmit(true)}
                   disabled={isSubmitting}
-                  className="bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] text-white shadow-sm hover:opacity-90"
+                  className="bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-primary)] text-white shadow-sm hover:opacity-90"
                 >
                   {isSubmitting ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />

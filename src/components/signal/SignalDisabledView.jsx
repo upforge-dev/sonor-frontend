@@ -40,7 +40,7 @@ export default function SignalDisabledView({ projectId, orgId, onEnabled }) {
         <div 
           className="w-20 h-20 mx-auto mb-6 rounded-2xl flex items-center justify-center"
           style={{ 
-            background: `linear-gradient(135deg, var(--brand-primary), var(--brand-secondary))` 
+            background: `linear-gradient(135deg, var(--brand-primary), var(--brand-primary))` 
           }}
         >
           <SignalIcon className="h-10 w-10 text-white" />
@@ -253,7 +253,7 @@ export default function SignalDisabledView({ projectId, orgId, onEnabled }) {
           size="lg"
           className="text-lg px-8 py-6 h-auto"
           style={{
-            background: `linear-gradient(135deg, var(--brand-primary), var(--brand-secondary))`,
+            background: `linear-gradient(135deg, var(--brand-primary), var(--brand-primary))`,
             color: 'white',
           }}
         >

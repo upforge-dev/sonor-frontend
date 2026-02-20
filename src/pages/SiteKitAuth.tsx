@@ -97,7 +97,7 @@ export default function SiteKitAuth() {
       <div className="max-w-md w-full mx-auto p-8">
         <div className="text-center mb-8">
           <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl mx-auto mb-4" />
-          <h1 className="text-2xl font-bold mb-2">Uptrade Portal</h1>
+          <h1 className="text-2xl font-bold mb-2">Sonor</h1>
           <p className="text-gray-400">Site-Kit Authentication</p>
         </div>
 

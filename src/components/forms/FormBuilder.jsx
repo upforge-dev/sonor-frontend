@@ -3,7 +3,7 @@
  * 
  * Full-screen inline experience matching PostComposerPage
  * 3-column layout with drag-and-drop, multi-step support
- * Uses brand_primary and brand_secondary exclusively
+ * Uses brand_primary and brand_primary exclusively
  */
 
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react'
@@ -132,7 +132,7 @@ const FIELD_TYPES = [
 
 const FIELD_CATEGORIES = {
   input: { label: 'Input Fields', icon: Type, color: 'var(--brand-primary)' },
-  choice: { label: 'Choice Fields', icon: List, color: 'var(--brand-secondary)' },
+  choice: { label: 'Choice Fields', icon: List, color: 'var(--brand-primary)' },
   advanced: { label: 'Advanced', icon: Zap, color: '#FF9500' },
   layout: { label: 'Layout', icon: LayoutGrid, color: '#8E8E93' }
 }
@@ -185,7 +185,7 @@ const FIELD_GROUPS = [
 
 const FORM_TYPES = {
   prospect: { label: 'Lead Capture', icon: Users, color: 'var(--brand-primary)', description: 'Capture leads for CRM' },
-  contact: { label: 'Contact Form', icon: MessageSquare, color: 'var(--brand-secondary)', description: 'General inquiries' },
+  contact: { label: 'Contact Form', icon: MessageSquare, color: 'var(--brand-primary)', description: 'General inquiries' },
   support: { label: 'Support Request', icon: AlertCircle, color: '#007AFF', description: 'Support tickets' },
   feedback: { label: 'Feedback', icon: Send, color: '#FF9500', description: 'Customer feedback' },
   newsletter: { label: 'Newsletter', icon: Mail, color: '#AF52DE', description: 'Email subscriptions' },
@@ -438,12 +438,12 @@ function FieldWithDropZones({ field, fieldIndex, children, onSideDrop }) {
         ref={setRightRef}
         className={cn(
           "absolute right-0 top-0 bottom-0 w-1/2 z-10 transition-all duration-200 pointer-events-none",
-          isOverRight && "opacity-100 bg-[var(--brand-secondary)]/10 border-2 border-dashed border-[var(--brand-secondary)] rounded-r-xl"
+          isOverRight && "opacity-100 bg-[var(--brand-primary)]/10 border-2 border-dashed border-[var(--brand-primary)] rounded-r-xl"
         )}
       >
         {isOverRight && (
           <div className="absolute inset-0 flex items-center justify-center">
-            <div className="bg-[var(--brand-secondary)] text-white text-xs px-2 py-1 rounded-lg shadow-lg">
+            <div className="bg-[var(--brand-primary)] text-white text-xs px-2 py-1 rounded-lg shadow-lg">
               Drop here (right half)
             </div>
           </div>
@@ -727,7 +727,7 @@ function FieldPalette({ onAddField, onAddFieldGroup, onAISuggest, isCollapsed, o
       {/* Header */}
       <div className="p-4 border-b border-[var(--glass-border)] flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[var(--brand-primary)]/20 to-[var(--brand-secondary)]/20">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[var(--brand-primary)]/20 to-[var(--brand-primary)]/20">
             <Plus className="h-4 w-4 text-[var(--brand-primary)]" />
           </div>
           <span className="font-semibold text-[var(--text-primary)]">Add Fields</span>
@@ -830,9 +830,9 @@ function FieldPalette({ onAddField, onAddFieldGroup, onAISuggest, isCollapsed, o
       <div className="p-3 border-t border-[var(--glass-border)] shrink-0">
         <button 
           onClick={onAISuggest}
-          className="w-full flex items-center gap-3 p-3 rounded-xl bg-gradient-to-r from-[var(--brand-primary)]/10 to-[var(--brand-secondary)]/10 border border-[var(--brand-primary)]/20 hover:border-[var(--brand-primary)]/40 transition-colors group"
+          className="w-full flex items-center gap-3 p-3 rounded-xl bg-gradient-to-r from-[var(--brand-primary)]/10 to-[var(--brand-primary)]/10 border border-[var(--brand-primary)]/20 hover:border-[var(--brand-primary)]/40 transition-colors group"
         >
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-secondary)] group-hover:scale-105 transition-transform">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-primary)] group-hover:scale-105 transition-transform">
             <Sparkles className="h-4 w-4 text-white" />
           </div>
           <div className="flex-1 text-left">
@@ -1005,10 +1005,10 @@ function AISuggestPanel({
   return (
     <div className="absolute right-0 top-0 bottom-0 w-96 bg-[var(--surface-card)] border-l border-[var(--glass-border)] flex flex-col shadow-2xl z-50">
       {/* Header */}
-      <div className="shrink-0 p-4 border-b border-[var(--glass-border)] bg-gradient-to-r from-[var(--brand-primary)]/10 to-[var(--brand-secondary)]/10">
+      <div className="shrink-0 p-4 border-b border-[var(--glass-border)] bg-gradient-to-r from-[var(--brand-primary)]/10 to-[var(--brand-primary)]/10">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-secondary)]">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-primary)]">
               <Sparkles className="h-5 w-5 text-white" />
             </div>
             <div>
@@ -1034,7 +1034,7 @@ function AISuggestPanel({
               )}
             >
               {msg.role === 'assistant' && (
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-secondary)]">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-primary)]">
                   <Sparkles className="h-4 w-4 text-white" />
                 </div>
               )}
@@ -1093,7 +1093,7 @@ function AISuggestPanel({
           
           {isLoading && (
             <div className="flex gap-3">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-secondary)]">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-primary)]">
                 <Loader2 className="h-4 w-4 text-white animate-spin" />
               </div>
               <div className="rounded-2xl rounded-bl-md bg-[var(--glass-bg)] px-4 py-2.5">
@@ -1115,7 +1115,7 @@ function AISuggestPanel({
         {suggestion?.fields?.length > 0 && (
           <Button
             onClick={handleApply}
-            className="w-full mb-3 bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] hover:opacity-90"
+            className="w-full mb-3 bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-primary)] hover:opacity-90"
           >
             <Check className="h-4 w-4 mr-2" />
             Apply {suggestion.fields.length} Fields
@@ -1223,7 +1223,7 @@ function FieldPropertyEditor({ field, onUpdate, onClose }) {
   if (!field) {
     return (
       <div className="h-full flex flex-col items-center justify-center p-6 text-center">
-        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-[var(--brand-primary)]/10 to-[var(--brand-secondary)]/10 mb-4">
+        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-[var(--brand-primary)]/10 to-[var(--brand-primary)]/10 mb-4">
           <MousePointer className="h-8 w-8 text-[var(--brand-primary)]" />
         </div>
         <h3 className="font-semibold text-[var(--text-primary)] mb-1">No Field Selected</h3>
@@ -1327,7 +1327,7 @@ function FieldPropertyEditor({ field, onUpdate, onClose }) {
           {hasOptions && (
             <div className="space-y-4">
               <div className="flex items-center gap-2 pb-2 border-b border-[var(--glass-border)]">
-                <List className="h-4 w-4 text-[var(--brand-secondary)]" />
+                <List className="h-4 w-4 text-[var(--brand-primary)]" />
                 <span className="font-medium text-sm text-[var(--text-primary)]">Choice Type</span>
               </div>
               <div className="grid grid-cols-3 gap-2">
@@ -1358,7 +1358,7 @@ function FieldPropertyEditor({ field, onUpdate, onClose }) {
           {hasOptions && (
             <div className="space-y-4">
               <div className="flex items-center gap-2 pb-2 border-b border-[var(--glass-border)]">
-                <ListOrdered className="h-4 w-4 text-[var(--brand-secondary)]" />
+                <ListOrdered className="h-4 w-4 text-[var(--brand-primary)]" />
                 <span className="font-medium text-sm text-[var(--text-primary)]">Choices</span>
               </div>
               <OptionsEditor
@@ -1671,7 +1671,7 @@ function FormCanvas({ form, fields, selectedField, selectedFieldIds, onSelect, o
                 "p-6 text-white",
                 previewMode === 'mobile' ? 'rounded-t-3xl' : 'rounded-t-2xl'
               )}
-              style={{ background: `linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-secondary) 100%)` }}
+              style={{ background: `linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-primary) 100%)` }}
             >
               <h2 className={cn(
                 "font-bold",
@@ -1807,7 +1807,7 @@ function FormCanvas({ form, fields, selectedField, selectedFieldIds, onSelect, o
                     />
                     <button 
                       className="w-full py-3 rounded-xl text-white font-semibold text-sm shadow-lg hover:opacity-90 transition-opacity mt-2"
-                      style={{ background: `linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-secondary) 100%)` }}
+                      style={{ background: `linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-primary) 100%)` }}
                       disabled
                     >
                       {form?.submit_text || 'Submit'}
@@ -2722,7 +2722,7 @@ export default function FormBuilder({ formId, projectId, initialData, onSave, on
               </Button>
               
               <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-secondary)] shadow-lg">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-primary)] shadow-lg">
                   <FileText className="h-6 w-6 text-white" />
                 </div>
                 <div>
@@ -2806,7 +2806,7 @@ export default function FormBuilder({ formId, projectId, initialData, onSave, on
               
               {canManageOrgTemplates ? (
                 <DropdownMenu>
-                  <div className="flex items-center rounded-xl overflow-hidden" style={{ background: 'linear-gradient(to right, var(--brand-primary), var(--brand-secondary))' }}>
+                  <div className="flex items-center rounded-xl overflow-hidden" style={{ background: 'linear-gradient(to right, var(--brand-primary), var(--brand-primary))' }}>
                     <button
                       onClick={handleSave}
                       disabled={isSaving || totalFields === 0}
@@ -2887,7 +2887,7 @@ export default function FormBuilder({ formId, projectId, initialData, onSave, on
                 <Button
                   onClick={handleSave}
                   disabled={isSaving || totalFields === 0}
-                  className="h-10 px-6 rounded-xl bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] hover:opacity-90 text-white"
+                  className="h-10 px-6 rounded-xl bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-primary)] hover:opacity-90 text-white"
                 >
                   {isSaving ? (
                     <>

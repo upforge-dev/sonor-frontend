@@ -189,9 +189,9 @@ export default function AuditPublicView({ audit, contact }) {
             title="SEO Analysis"
             description="Issues affecting your search engine visibility"
             icon={Search}
-            iconColor="text-[var(--brand-secondary)]"
-            iconBg="bg-[var(--brand-secondary)]/10"
-            shadowColor="hover:shadow-[var(--brand-secondary)]/5"
+            iconColor="text-[var(--brand-primary)]"
+            iconBg="bg-[var(--brand-primary)]/10"
+            shadowColor="hover:shadow-[var(--brand-primary)]/5"
           >
             <IssueList>
               {seoIssues.map((issue, i) => (
@@ -467,7 +467,7 @@ function CoreWebVitalsSection({ audit }) {
       <Card className="bg-[var(--glass-bg)] backdrop-blur-xl border-[var(--glass-border)] overflow-hidden hover:shadow-xl hover:shadow-[var(--brand-primary)]/5 transition-shadow duration-500">
         <CardHeader>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-secondary)] flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-primary)] flex items-center justify-center">
               <Activity className="w-5 h-5 text-white" />
             </div>
             <div>

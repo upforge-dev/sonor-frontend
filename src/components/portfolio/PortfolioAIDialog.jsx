@@ -208,7 +208,7 @@ function ChatMessage({ message, isUser }) {
         'w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm',
         isUser 
           ? 'bg-[var(--surface-tertiary)]' 
-          : 'bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-secondary)]'
+          : 'bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-primary)]'
       )}>
         {isUser ? (
           <User className="w-4 h-4 text-[var(--text-secondary)]" />
@@ -661,7 +661,7 @@ export default function PortfolioAIDialog({ open, onOpenChange, onSuccess }) {
         <DialogHeader className="px-6 py-4 border-b border-[var(--glass-border)] bg-[var(--glass-bg)] shrink-0">
           <div className="flex flex-col gap-4">
             <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-secondary)] flex items-center justify-center shadow-lg shrink-0">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-primary)] flex items-center justify-center shadow-lg shrink-0">
                 <Sparkles className="w-5 h-5 text-white" />
               </div>
               <div className="min-w-0">
@@ -911,7 +911,7 @@ export default function PortfolioAIDialog({ open, onOpenChange, onSuccess }) {
                     ))}
                     {isGenerating && (
                       <div className="flex gap-3">
-                        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-secondary)] flex items-center justify-center">
+                        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-primary)] flex items-center justify-center">
                           <Loader2 className="w-4 h-4 text-white animate-spin" />
                         </div>
                         <div className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-2xl rounded-bl-md px-4 py-3 text-sm text-[var(--text-secondary)]">
@@ -1071,7 +1071,7 @@ export default function PortfolioAIDialog({ open, onOpenChange, onSuccess }) {
             <ScrollArea className="h-full">
               <div className="p-8 max-w-2xl mx-auto">
                 <div className="text-center mb-8">
-                  <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-secondary)] flex items-center justify-center mx-auto mb-4 shadow-xl">
+                  <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-primary)] flex items-center justify-center mx-auto mb-4 shadow-xl">
                     <Rocket className="w-10 h-10 text-white" />
                   </div>
                   <h2 className="text-3xl font-bold text-[var(--text-primary)]">Ready to Launch!</h2>
@@ -1142,7 +1142,7 @@ export default function PortfolioAIDialog({ open, onOpenChange, onSuccess }) {
                   </Button>
                   <Button
                     size="lg"
-                    className="h-14 bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] hover:opacity-90"
+                    className="h-14 bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-primary)] hover:opacity-90"
                     onClick={() => handleSave(true)}
                     disabled={isSaving}
                   >

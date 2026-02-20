@@ -85,7 +85,7 @@ const FORM_TEMPLATES = [
     },
     preview: {
       style: 'card',
-      accent: 'brand-secondary',
+      accent: 'brand-primary',
     },
   },
   {
@@ -152,7 +152,7 @@ const FORM_TEMPLATES = [
     },
     preview: {
       style: 'card',
-      accent: 'brand-secondary',
+      accent: 'brand-primary',
     },
   },
 ]
@@ -178,7 +178,7 @@ function TemplateCard({ template, onUse, isCreating }) {
       <div 
         className="h-32 relative overflow-hidden"
         style={{ 
-          background: `linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-secondary) 100%)` 
+          background: `linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-primary) 100%)` 
         }}
       >
         {/* Decorative pattern */}
@@ -364,7 +364,7 @@ export default function FormDefaultsView({ projectId, onFormCreated }) {
       )}
       
       {/* Custom Form CTA */}
-      <Card className="bg-gradient-to-r from-[var(--brand-primary)]/5 to-[var(--brand-secondary)]/5 border-[var(--brand-primary)]/20">
+      <Card className="bg-gradient-to-r from-[var(--brand-primary)]/5 to-[var(--brand-primary)]/5 border-[var(--brand-primary)]/20">
         <CardContent className="flex items-center justify-between py-6">
           <div>
             <h3 className="font-semibold text-[var(--text-primary)]">Need something custom?</h3>

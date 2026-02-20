@@ -94,7 +94,7 @@ function StatsCard({ title, value, subtitle, icon: Icon, trend, trendValue, colo
   
   const colorClasses = {
     primary: 'bg-[var(--brand-primary)]/10 text-[var(--brand-primary)]',
-    secondary: 'bg-[var(--brand-secondary)]/10 text-[var(--brand-secondary)]',
+    secondary: 'bg-[var(--brand-primary)]/10 text-[var(--brand-primary)]',
     blue: 'bg-blue-500/10 text-blue-500',
     purple: 'bg-purple-500/10 text-purple-500',
     emerald: 'bg-emerald-500/10 text-emerald-500',

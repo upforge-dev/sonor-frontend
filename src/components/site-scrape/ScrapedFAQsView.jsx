@@ -201,7 +201,7 @@ export function ScrapedFAQsView({ scrapeId, projectId, onImported }) {
             size="sm" 
             onClick={handleImport}
             disabled={importing || importableCount === 0}
-            className="bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)]"
+            className="bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-primary)]"
           >
             {importing ? (
               <>

@@ -259,7 +259,7 @@ function CollapsibleHeader({
       'border-b border-[var(--glass-border)] transition-all duration-300',
       isCollapsed 
         ? 'bg-[var(--surface-secondary)]' 
-        : 'bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)]'
+        : 'bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-primary)]'
     )}>
       <div className={cn(
         'flex items-center justify-between transition-all duration-300',
@@ -373,7 +373,7 @@ function CollapsibleHeader({
             disabled={isSubmitting}
             className={cn(
               isCollapsed 
-                ? 'bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] text-white' 
+                ? 'bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-primary)] text-white' 
                 : 'bg-white text-[var(--brand-primary)] hover:bg-white/90 shadow-lg'
             )}
           >
@@ -545,7 +545,7 @@ function ReelsEditor({
             Sound
           </Label>
           <div className="flex items-center gap-3 rounded-xl border border-[var(--glass-border)] bg-[var(--glass-bg)] p-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-secondary)]">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-primary)]">
               <Volume2 className="h-5 w-5 text-white" />
             </div>
             <div className="flex-1 min-w-0">
@@ -672,7 +672,7 @@ function PlatformPreview({ platform, content, hashtags, mediaFiles }) {
           <div className="p-3">
             {/* User row */}
             <div className="mb-3 flex items-center gap-2">
-              <div className="h-8 w-8 rounded-full bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-secondary)]" />
+              <div className="h-8 w-8 rounded-full bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-primary)]" />
               <div>
                 <div className="text-xs font-semibold text-[var(--text-primary)]">Your Business</div>
                 <div className="text-[10px] text-[var(--text-tertiary)]">Just now</div>
@@ -755,7 +755,7 @@ function PlatformPreview({ platform, content, hashtags, mediaFiles }) {
       
       {/* Platform tip */}
       <div className="mt-3 flex items-start gap-2 rounded-lg bg-[var(--glass-bg)] px-3 py-2 text-[10px] text-[var(--text-tertiary)]">
-        <Sparkles className="mt-0.5 h-3 w-3 shrink-0 text-[var(--brand-secondary)]" />
+        <Sparkles className="mt-0.5 h-3 w-3 shrink-0 text-[var(--brand-primary)]" />
         <span>{PLATFORM_TIPS[platform]}</span>
       </div>
     </div>
@@ -933,7 +933,7 @@ function PlatformToolsPanel({
               <Button 
                 onClick={onGenerateContent}
                 disabled={!aiPrompt.trim() || isGenerating}
-                className="flex-1 bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] text-white"
+                className="flex-1 bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-primary)] text-white"
               >
                 {isGenerating ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -1667,7 +1667,7 @@ export function PostComposerPage({
                     {/* Carousel tip */}
                     {mediaFiles.length >= 2 && (
                       <p className="flex items-center gap-1.5 text-[10px] text-[var(--text-tertiary)]">
-                        <Sparkles className="h-3 w-3 text-[var(--brand-secondary)]" />
+                        <Sparkles className="h-3 w-3 text-[var(--brand-primary)]" />
                         Carousels get 3x more engagement! Swipe order matches upload order.
                       </p>
                     )}
@@ -1840,7 +1840,7 @@ export function PostComposerPage({
                 <Button 
                   onClick={() => handleSubmit(true)} 
                   disabled={isSubmitting}
-                  className="flex-1 bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] text-white"
+                  className="flex-1 bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-primary)] text-white"
                 >
                   {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
                   {scheduledAt ? 'Schedule Post' : 'Publish Now'}
@@ -1901,7 +1901,7 @@ export function PostComposerPage({
                       <div className="flex items-center gap-1.5">
                         <div className="h-1.5 w-20 rounded-full bg-[var(--surface-secondary)]">
                           <div 
-                            className="h-full rounded-full bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)]"
+                            className="h-full rounded-full bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-primary)]"
                             style={{ width: `${Math.min(100, Math.max(20, content.length / 2))}%` }}
                           />
                         </div>
@@ -1942,7 +1942,7 @@ export function PostComposerPage({
               <Save className="mr-1 h-3 w-3" />
               Draft
             </Button>
-            <Button size="sm" onClick={() => handleSubmit(true)} disabled={isSubmitting} className="bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)]">
+            <Button size="sm" onClick={() => handleSubmit(true)} disabled={isSubmitting} className="bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-primary)]">
               <Send className="mr-1 h-3 w-3" />
               {scheduledAt ? 'Schedule' : 'Post'}
             </Button>

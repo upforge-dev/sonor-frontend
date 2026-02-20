@@ -126,7 +126,7 @@ export const getScoreColor = (score) => {
 
 export const gradeColors = {
   'A': 'from-[var(--accent-green)] to-emerald-600',
-  'B': 'from-[var(--brand-secondary)] to-teal-600',
+  'B': 'from-[var(--brand-primary)] to-teal-600',
   'C': 'from-[var(--accent-orange)] to-amber-600',
   'D': 'from-orange-500 to-orange-600',
   'F': 'from-[var(--accent-red)] to-red-600',
@@ -202,10 +202,10 @@ export const severityConfig = {
     badge: 'bg-[var(--accent-orange)]/10 text-[var(--accent-orange)]'
   },
   info: { 
-    bg: 'border-l-[var(--brand-secondary)] bg-[var(--brand-secondary)]/5', 
-    iconColor: 'text-[var(--brand-secondary)]', 
-    glow: 'hover:shadow-[var(--brand-secondary)]/10',
-    badge: 'bg-[var(--brand-secondary)]/10 text-[var(--brand-secondary)]'
+    bg: 'border-l-[var(--brand-primary)] bg-[var(--brand-primary)]/5', 
+    iconColor: 'text-[var(--brand-primary)]', 
+    glow: 'hover:shadow-[var(--brand-primary)]/10',
+    badge: 'bg-[var(--brand-primary)]/10 text-[var(--brand-primary)]'
   }
 }
 
@@ -238,7 +238,7 @@ export const glassButton = `
 
 export const glassPrimary = `
   px-6 py-3
-  bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)]
+  bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-primary)]
   text-white font-bold
   rounded-xl
   transition-all duration-200

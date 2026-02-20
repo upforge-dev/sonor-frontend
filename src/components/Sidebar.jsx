@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
+import LogoSvg from '@/assets/logo.svg?react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
@@ -356,11 +357,7 @@ const Sidebar = ({
           <div className="flex items-center justify-between">
             {isExpanded && (
               <div className="flex items-center space-x-3">
-                <img 
-                  src="/favicon.svg" 
-                  alt="Uptrade Media" 
-                  className="w-8 h-8"
-                />
+                <LogoSvg className="w-8 h-8 text-black dark:text-white" fill="currentColor" />
                 <div>
                   <h2 className="font-semibold text-sm text-foreground">
                     {currentOrg?.name || 'Uptrade Media'}
@@ -370,11 +367,7 @@ const Sidebar = ({
               </div>
             )}
             {!isExpanded && (
-              <img 
-                src="/favicon.svg" 
-                alt="Uptrade" 
-                className="w-6 h-6 mx-auto"
-              />
+              <LogoSvg className="w-6 h-6 mx-auto text-black dark:text-white" fill="currentColor" />
             )}
             {!isMobile && !minimal && (
               <Button

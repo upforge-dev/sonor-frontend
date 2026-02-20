@@ -6,7 +6,7 @@ import { Loader2 } from 'lucide-react'
 import { reportsApi } from '@/lib/portal-api'
 
 const activityTypeConfig = {
-  project: { icon: '📁', color: 'bg-[var(--brand-secondary)]/20', textColor: 'text-[var(--brand-secondary)]' },
+  project: { icon: '📁', color: 'bg-[var(--brand-primary)]/20', textColor: 'text-[var(--brand-primary)]' },
   invoice: { icon: '📄', color: 'bg-green-100', textColor: 'text-green-700' },
   message: { icon: '💬', color: 'bg-purple-100', textColor: 'text-purple-700' },
   proposal: { icon: '✅', color: 'bg-orange-100', textColor: 'text-orange-700' },

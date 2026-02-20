@@ -21,7 +21,7 @@
  *
  * Exception: Signal module has its own design and does not use ModuleLayout.
  *
- * Uses design-system tokens only: var(--brand-primary), var(--brand-secondary),
+ * Uses design-system tokens only: var(--brand-primary), var(--brand-primary),
  * var(--glass-bg), var(--glass-border), var(--text-primary), var(--text-secondary).
  *
  * Sidebars: Left and right panel content wrappers apply base typography (MODULE_SIDEBAR_TYPOGRAPHY:
@@ -538,7 +538,7 @@ function ModuleHeader({ title, subtitle, breadcrumbs = [], actions, icon, classN
         <div className="min-w-0 flex-1 flex items-center gap-3">
           {/* Mandatory module icon with brand gradient tile; subtle hover/tap when motion allowed */}
           <motion.div
-            className="flex shrink-0 items-center justify-center rounded-lg p-2 bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-secondary)]"
+            className="flex shrink-0 items-center justify-center rounded-lg p-2 bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-primary)]"
             aria-hidden
             {...iconMotionProps}
           >

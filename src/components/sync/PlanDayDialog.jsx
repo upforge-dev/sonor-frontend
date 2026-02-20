@@ -243,8 +243,8 @@ export default function PlanDayDialog({
       
       // Parallel fetch tasks, suggestions, and calendar
       const [tasksResult, crmResult, briefingResult] = await Promise.allSettled([
-        // Unified tasks for today
-        syncApi.getUnifiedTasks({ project_id: projectId, date: dateStr }),
+        // Unified tasks (today + overdue) for project
+        syncApi.getUnifiedTasks(projectId),
         
         // CRM suggestions
         crmSkillsApi.prioritizeFollowups(5),
@@ -256,16 +256,12 @@ export default function PlanDayDialog({
         }),
       ])
 
-      // Process tasks
+      // Process tasks (unified-tasks returns today, overdue, upcoming)
       if (tasksResult.status === 'fulfilled') {
-        const allTasks = tasksResult.value?.data?.tasks || []
-        // Filter to pending/in-progress tasks for today
-        const todayTasks = allTasks.filter(t => 
-          t.status !== 'completed' && (
-            !t.due_date || 
-            isSameDay(new Date(t.due_date), selectedDate) ||
-            new Date(t.due_date) < selectedDate
-          )
+        const res = tasksResult.value?.data || tasksResult.value
+        const allTasks = [...(res?.today || []), ...(res?.overdue || [])]
+        const todayTasks = allTasks.filter(t =>
+          !t.status || !['completed', 'done', 'cancelled'].includes(t.status)
         )
         setTasks(todayTasks)
       }

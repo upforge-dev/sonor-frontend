@@ -66,7 +66,7 @@ export function StatsCard({ title, value, subtitle, icon: Icon, trend, trendValu
             </div>
           )}
         </div>
-        <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-secondary)] flex items-center justify-center">
+        <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-primary)] flex items-center justify-center">
           <Icon className="h-5 w-5 text-white" />
         </div>
       </div>

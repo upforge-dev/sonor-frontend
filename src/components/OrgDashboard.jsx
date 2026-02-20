@@ -342,7 +342,6 @@ function ProjectComparisonChart({ projects }) {
     pageViews: project.pageViews || 0,
     sessions: project.sessions || 0,
     brandPrimary: project.brand_primary || PROJECT_COLORS[index % PROJECT_COLORS.length],
-    brandSecondary: project.brand_secondary || PROJECT_COLORS[(index + 1) % PROJECT_COLORS.length],
   }))
 
   // Custom legend that shows project colors
@@ -352,7 +351,6 @@ function ProjectComparisonChart({ projects }) {
         <div key={index} className="flex items-center gap-2">
           <div className="flex items-center gap-1">
             <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: entry.brandPrimary }} />
-            <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: entry.brandSecondary }} />
           </div>
           <span className="text-zinc-400 text-xs">{entry.name}</span>
         </div>
@@ -399,7 +397,7 @@ function ProjectComparisonChart({ projects }) {
           radius={[4, 4, 0, 0]}
         >
           {chartData.map((entry, index) => (
-            <Cell key={`cell-s-${index}`} fill={entry.brandSecondary} />
+            <Cell key={`cell-s-${index}`} fill={entry.brandPrimary} />
           ))}
         </Bar>
       </BarChart>
@@ -584,7 +582,7 @@ export default function OrgDashboard({ onNavigate }) {
           name: project.name || project.title,
           domain: project.domain,
           brand_primary: project.brand_primary || PROJECT_COLORS[index % PROJECT_COLORS.length],
-          brand_secondary: project.brand_secondary,
+          brand_primary: project.brand_primary,
           pageViews: Math.floor(Math.random() * 10000) + 500, // Placeholder - TODO: fetch real data
           previousPageViews: Math.floor(Math.random() * 8000) + 400,
           sessions: Math.floor(Math.random() * 5000) + 200,
@@ -926,7 +924,7 @@ export default function OrgDashboard({ onNavigate }) {
           </Card>
           
           {/* From Uptrade Media */}
-          <Card className="bg-gradient-to-br from-[var(--brand-primary)]/5 to-[var(--brand-secondary)]/5 border-[var(--brand-primary)]/20">
+          <Card className="bg-gradient-to-br from-[var(--brand-primary)]/5 to-[var(--brand-primary)]/5 border-[var(--brand-primary)]/20">
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-base">
                 <img src="/favicon.svg" alt="Uptrade" className="w-5 h-5" />

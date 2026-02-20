@@ -396,7 +396,7 @@ export default function LocationIntelligenceWizard({
           <DialogTitle className="flex items-center gap-3 text-[var(--text-primary)]">
             <div 
               className="p-3 rounded-xl"
-              style={{ background: 'linear-gradient(135deg, var(--brand-primary), var(--brand-secondary))' }}
+              style={{ background: 'linear-gradient(135deg, var(--brand-primary), var(--brand-primary))' }}
             >
               <SignalIcon className="h-6 w-6 text-white" />
             </div>
@@ -1025,7 +1025,7 @@ export default function LocationIntelligenceWizard({
               <Button
                 onClick={handleGenerate}
                 disabled={!canProceed()}
-                className="bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] hover:opacity-90"
+                className="bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-primary)] hover:opacity-90"
               >
                 <Sparkles className="h-4 w-4 mr-2" />
                 Generate {totalPages} Pages

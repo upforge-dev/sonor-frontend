@@ -85,7 +85,7 @@ export function ScrapeProgressView({ scrapeId, scrapeData, onComplete }) {
               ? 'bg-green-100 dark:bg-green-900/30'
               : phase === 'failed'
               ? 'bg-red-100 dark:bg-red-900/30'
-              : 'bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)]'
+              : 'bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-primary)]'
           )}
         >
           <Icon

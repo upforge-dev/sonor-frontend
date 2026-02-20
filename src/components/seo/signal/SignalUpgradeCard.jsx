@@ -51,7 +51,7 @@ export default function SignalUpgradeCard({
         'flex items-center gap-3 p-3 rounded-lg border',
         className
       )} style={{
-        background: 'linear-gradient(to right, color-mix(in srgb, var(--brand-primary) 10%, transparent), color-mix(in srgb, var(--brand-secondary) 10%, transparent))',
+        background: 'linear-gradient(to right, color-mix(in srgb, var(--brand-primary) 10%, transparent), color-mix(in srgb, var(--brand-primary) 10%, transparent))',
         borderColor: 'color-mix(in srgb, var(--brand-primary) 20%, transparent)'
       }}>
         <div className="flex items-center justify-center w-8 h-8 rounded-full" style={{ backgroundColor: 'color-mix(in srgb, var(--brand-primary) 20%, transparent)' }}>
@@ -76,7 +76,7 @@ export default function SignalUpgradeCard({
         'flex items-center justify-between gap-4 p-4 rounded-lg border',
         className
       )} style={{
-        background: 'linear-gradient(to right, color-mix(in srgb, var(--brand-primary) 5%, transparent), color-mix(in srgb, var(--brand-secondary) 5%, transparent))',
+        background: 'linear-gradient(to right, color-mix(in srgb, var(--brand-primary) 5%, transparent), color-mix(in srgb, var(--brand-primary) 5%, transparent))',
         borderColor: 'color-mix(in srgb, var(--brand-primary) 20%, transparent)'
       }}>
         <div className="flex items-center gap-3">
@@ -105,11 +105,11 @@ export default function SignalUpgradeCard({
         className
       )} style={{
         borderColor: 'color-mix(in srgb, var(--brand-primary) 20%, transparent)',
-        background: 'linear-gradient(135deg, color-mix(in srgb, var(--brand-primary) 5%, transparent), transparent, color-mix(in srgb, var(--brand-secondary) 5%, transparent))'
+        background: 'linear-gradient(135deg, color-mix(in srgb, var(--brand-primary) 5%, transparent), transparent, color-mix(in srgb, var(--brand-primary) 5%, transparent))'
       }}>
         <CardContent className="py-8 px-6 text-center">
           <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 rounded-full" style={{
-            background: 'linear-gradient(135deg, color-mix(in srgb, var(--brand-primary) 20%, transparent), color-mix(in srgb, var(--brand-secondary) 20%, transparent))'
+            background: 'linear-gradient(135deg, color-mix(in srgb, var(--brand-primary) 20%, transparent), color-mix(in srgb, var(--brand-primary) 20%, transparent))'
           }}>
             <Sparkles className="h-8 w-8" style={{ color: 'var(--brand-primary)' }} />
           </div>

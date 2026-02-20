@@ -26,7 +26,7 @@ export function AuditHeader({
     <header className="relative bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white py-12 overflow-hidden">
       {/* Decorative gradient orbs - Liquid Glass effect */}
       <div className="absolute top-0 left-1/4 w-96 h-96 bg-[var(--brand-primary)]/20 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-[var(--brand-secondary)]/20 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-[var(--brand-primary)]/20 rounded-full blur-3xl pointer-events-none" />
       
       <div className="relative max-w-6xl mx-auto px-4 sm:px-6">
         <motion.div 

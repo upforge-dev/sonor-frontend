@@ -202,7 +202,7 @@ export function SubmissionDetailPanel({ submission, hasSignal, onClose, onUpdate
         <div className="p-4 space-y-5">
           {/* Signal Analysis */}
           {hasSignal && (submission.lead_score !== undefined || submission.quality_tier) && (
-            <div className="p-3 rounded-lg bg-gradient-to-r from-[var(--brand-primary)]/5 to-[var(--brand-secondary)]/5 border border-[var(--glass-border)]">
+            <div className="p-3 rounded-lg bg-gradient-to-r from-[var(--brand-primary)]/5 to-[var(--brand-primary)]/5 border border-[var(--glass-border)]">
               <div className="flex items-center gap-2 mb-3">
                 <SignalIcon className="h-4 w-4 text-[var(--brand-primary)]" />
                 <span className="text-xs font-medium text-[var(--text-primary)]">Signal Analysis</span>

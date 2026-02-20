@@ -1087,7 +1087,7 @@ export default function ProspectDetailPanel({
                 onComposeEmail={onComposeEmail}
                 brandColors={{
                   primary: 'var(--brand-primary)',
-                  secondary: 'var(--brand-secondary)'
+                  secondary: 'var(--brand-primary)'
                 }}
               />
               

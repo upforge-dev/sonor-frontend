@@ -213,7 +213,7 @@ function HashtagSetEditor({ set, onSave, onCancel, isCreating }) {
           <Button
             onClick={handleSave}
             disabled={isSaving || !name.trim() || parsedHashtags.length === 0}
-            className="bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] text-white hover:opacity-90"
+            className="bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-primary)] text-white hover:opacity-90"
           >
             {isSaving ? (
               <>
@@ -417,7 +417,7 @@ export function HashtagSets({ onSelectHashtags }) {
         </div>
         <Button
           onClick={handleCreate}
-          className="bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] text-white hover:opacity-90"
+          className="bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-primary)] text-white hover:opacity-90"
         >
           <Plus className="mr-2 h-4 w-4" />
           New Set

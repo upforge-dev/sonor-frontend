@@ -1656,6 +1656,7 @@ export default function SyncModule({ className }) {
                   {taskViewMode === 'personal' && (
                     <UnifiedTasksPanel
                       projectId={currentProject?.id}
+                      projectIds={activeProjectIds.size > 0 ? Array.from(activeProjectIds) : undefined}
                       className="h-full"
                       onTaskClick={(task) => toast.info(`Viewing: ${task.title}`)}
                       onShowShortcuts={() => setShowKeyboardShortcuts(true)}

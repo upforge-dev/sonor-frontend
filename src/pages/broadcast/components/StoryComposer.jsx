@@ -269,7 +269,7 @@ function StickersPanel({ onAddSticker, activeStickers, platforms }) {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="border-b border-[var(--glass-border)] bg-gradient-to-r from-[var(--brand-primary)]/10 to-[var(--brand-secondary)]/10 px-4 py-3">
+      <div className="border-b border-[var(--glass-border)] bg-[var(--brand-primary)]/10 px-4 py-3">
         <div className="flex items-center gap-2">
           <Sticker className="h-5 w-5 text-[var(--brand-primary)]" />
           <h3 className="font-semibold text-[var(--text-primary)]">Stickers & Tools</h3>
@@ -396,7 +396,7 @@ function StickersPanel({ onAddSticker, activeStickers, platforms }) {
                 }}
                 className="flex w-full items-center gap-3 rounded-xl border border-[var(--glass-border)] bg-[var(--glass-bg)] p-3 text-left transition-colors hover:border-[var(--brand-primary)]/50"
               >
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-secondary)] text-white">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--brand-primary)] text-white">
                   <Layers className="h-5 w-5" />
                 </div>
                 <div className="flex-1">
@@ -490,7 +490,7 @@ function StoryPreviewPanel({
                     <img src={mediaFile.url} alt="" className="h-full w-full object-cover" />
                   )
                 ) : (
-                  <div className="flex h-full w-full flex-col items-center justify-center bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-secondary)]">
+                  <div className="flex h-full w-full flex-col items-center justify-center bg-[var(--brand-primary)]">
                     {text ? (
                       <p className="p-6 text-center text-xl font-bold text-white">{text}</p>
                     ) : (
@@ -509,7 +509,7 @@ function StoryPreviewPanel({
 
                 {/* Profile */}
                 <div className="absolute left-3 top-6 flex items-center gap-2">
-                  <div className="h-8 w-8 rounded-full bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-secondary)] ring-2 ring-white" />
+                  <div className="h-8 w-8 rounded-full bg-[var(--brand-primary)] ring-2 ring-white" />
                   <span className="text-xs font-semibold text-white drop-shadow">yourbrand</span>
                   <span className="text-xs text-white/60">2h</span>
                 </div>
@@ -1268,7 +1268,7 @@ export function StoryComposer({
                   size="sm" 
                   onClick={() => handleSubmit(true)} 
                   disabled={isSubmitting}
-                  className="flex-1 bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] text-white hover:opacity-90"
+                  className="flex-1 bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-primary)] text-white hover:opacity-90"
                 >
                   {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
                   {scheduledAt ? 'Schedule' : 'Share Now'}

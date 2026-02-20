@@ -29,7 +29,7 @@ export default function GlassAvatar({
   }
 
   const gradients = {
-    brand: 'from-[var(--brand-primary)] to-[var(--brand-secondary)]',
+    brand: 'from-[var(--brand-primary)] to-[var(--brand-primary)]',
     blue: 'from-[#4bbf39] to-[#39bfb0]',
     purple: 'from-[#39bfb0] to-[#4bbf39]',
     orange: 'from-orange-500 to-yellow-400',

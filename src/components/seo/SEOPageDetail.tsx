@@ -754,7 +754,7 @@ function SEOPageDetailInner({ page, site, projectId }: SEOPageDetailInnerProps) 
               onClick={() => setPipelineModalOpen(true)}
               title="Run comprehensive 8-phase optimization with full site context, GSC data, and impact prediction"
               style={{ 
-                background: 'linear-gradient(135deg, var(--brand-primary), var(--brand-secondary))'
+                background: 'linear-gradient(135deg, var(--brand-primary), var(--brand-primary))'
               }}
               className="text-white shadow-lg"
             >
@@ -1858,7 +1858,7 @@ function SEOPageDetailInner({ page, site, projectId }: SEOPageDetailInnerProps) 
                       onClick={handleAnalyzeContent}
                       disabled={analyzeContentMutation.isPending}
                       style={{ 
-                        background: 'linear-gradient(135deg, var(--brand-primary), var(--brand-secondary))'
+                        background: 'linear-gradient(135deg, var(--brand-primary), var(--brand-primary))'
                       }}
                       className="text-white"
                     >
@@ -2176,7 +2176,7 @@ function SEOPageDetailInner({ page, site, projectId }: SEOPageDetailInnerProps) 
                 onClick={() => handleOptimizePage(false)}
                 disabled={optimizePageMutation.isPending || !Object.values(optimizeOptions).some(Boolean)}
                 style={{ 
-                  background: 'linear-gradient(135deg, var(--brand-primary), var(--brand-secondary))'
+                  background: 'linear-gradient(135deg, var(--brand-primary), var(--brand-primary))'
                 }}
                 className="text-white"
               >

@@ -47,9 +47,9 @@ export default function GlassMetric({
       accent: 'from-[var(--brand-primary)]/10 to-transparent'
     },
     purple: {
-      icon: 'bg-[var(--brand-secondary)]/10 text-[var(--brand-secondary)]',
-      value: 'text-[var(--brand-secondary)]',
-      accent: 'from-[var(--brand-secondary)]/10 to-transparent'
+      icon: 'bg-[var(--brand-primary)]/10 text-[var(--brand-primary)]',
+      value: 'text-[var(--brand-primary)]',
+      accent: 'from-[var(--brand-primary)]/10 to-transparent'
     }
   }
 

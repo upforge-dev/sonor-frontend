@@ -417,7 +417,7 @@ export function ScrapeReviewView({ scrapeId, scrapeData, projectId, enabledModul
           <Button
             onClick={handleImport}
             disabled={importing}
-            className="bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)]"
+            className="bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-primary)]"
           >
             {importing ? (
               <>
@@ -435,7 +435,7 @@ export function ScrapeReviewView({ scrapeId, scrapeData, projectId, enabledModul
       </div>
 
       {/* Next Steps */}
-      <div className="bg-gradient-to-r from-[var(--brand-primary)]/10 to-[var(--brand-secondary)]/10 rounded-lg p-6">
+      <div className="bg-gradient-to-r from-[var(--brand-primary)]/10 to-[var(--brand-primary)]/10 rounded-lg p-6">
         <h4 className="font-semibold text-[var(--text-primary)] mb-4">
           What happens next?
         </h4>

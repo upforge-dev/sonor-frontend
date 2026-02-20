@@ -131,23 +131,17 @@
   /* Brand colors */
   --brand-primary: #4bbf39;
   --brand-primary-hover: #3da82f;
-  --brand-secondary: #39bfb0;
-  --brand-secondary-hover: #2fa89c;
 
   /* Theme locks (exceptions) */
   /* Use this on subtrees that should NOT inherit org brand colors. */
   --brand-primary-default: #4bbf39;
   --brand-primary-hover-default: #3da82f;
-  --brand-secondary-default: #39bfb0;
-  --brand-secondary-hover-default: #2fa89c;
   
 
 /* Keep excluded UI areas on Uptrade defaults (Audit/Proposals/etc.). */
 [data-theme-lock="default"] {
   --brand-primary: var(--brand-primary-default);
   --brand-primary-hover: var(--brand-primary-hover-default);
-  --brand-secondary: var(--brand-secondary-default);
-  --brand-secondary-hover: var(--brand-secondary-hover-default);
 }
   /* Semantic colors */
   --color-success: var(--accent-green);

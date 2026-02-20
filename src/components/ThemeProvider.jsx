@@ -3,7 +3,6 @@ import useThemeStore from '@/lib/theme-store'
 import useAuthStore from '@/lib/auth-store'
 
 const DEFAULT_BRAND_PRIMARY = '#4bbf39'
-const DEFAULT_BRAND_SECONDARY = '#39bfb0'
 
 function isValidHexColor(value) {
   return typeof value === 'string' && /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(value)
@@ -39,13 +38,11 @@ function darkenHex(hex, amount = 0.14) {
   return `#${toHex(nr)}${toHex(ng)}${toHex(nb)}`
 }
 
-function applyBrandVars({ primary, secondary }) {
+function applyBrandVars({ primary }) {
   if (typeof document === 'undefined') return
   const root = document.documentElement
   root.style.setProperty('--brand-primary', primary)
   root.style.setProperty('--brand-primary-hover', darkenHex(primary, 0.18))
-  root.style.setProperty('--brand-secondary', secondary)
-  root.style.setProperty('--brand-secondary-hover', darkenHex(secondary, 0.18))
 }
 
 export function ThemeProvider({ children }) {
@@ -68,16 +65,13 @@ export function ThemeProvider({ children }) {
     const isAuditRoute = pathname.startsWith('/audit') || pathname.startsWith('/audits')
 
     if (isProposalRoute || isAuditRoute) {
-      applyBrandVars({
-        primary: DEFAULT_BRAND_PRIMARY,
-        secondary: DEFAULT_BRAND_SECONDARY,
-      })
+      applyBrandVars({ primary: DEFAULT_BRAND_PRIMARY })
       return
     }
 
     // Priority: project colors > org dedicated columns > legacy theme object > defaults
-    // 1. Project columns: project.brand_primary, project.brand_secondary (highest priority)
-    // 2. Org columns: org.brand_primary, org.brand_secondary
+    // 1. Project columns: project.brand_primary (highest priority)
+    // 2. Org columns: org.brand_primary
     // 3. Legacy theme object: org.theme.brandColor1, etc.
     // 4. Uptrade defaults
     const orgTheme = currentOrg?.theme || {}
@@ -91,17 +85,8 @@ export function ThemeProvider({ children }) {
       orgTheme.brandColor1 || orgTheme.primaryColor || orgTheme.primary,
       DEFAULT_BRAND_PRIMARY,
     )
-    const secondary = normalizeHexColor(
-      // Project-level color takes highest priority
-      currentProject?.brand_secondary ||
-      // Then org-level color
-      currentOrg?.brand_secondary ||
-      // Then legacy theme object
-      orgTheme.brandColor2 || orgTheme.secondaryColor || orgTheme.secondary,
-      DEFAULT_BRAND_SECONDARY,
-    )
 
-    applyBrandVars({ primary, secondary })
+    applyBrandVars({ primary })
   }, [currentOrg, currentProject])
   
   return children

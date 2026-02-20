@@ -170,8 +170,8 @@ export function ResourceBreakdownSection({ resources }) {
       <Card className="bg-[var(--glass-bg)] backdrop-blur-xl border-[var(--glass-border)] overflow-hidden">
         <CardHeader>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[var(--brand-secondary)]/10 flex items-center justify-center">
-              <FileCode className="w-5 h-5 text-[var(--brand-secondary)]" />
+            <div className="w-10 h-10 rounded-xl bg-[var(--brand-primary)]/10 flex items-center justify-center">
+              <FileCode className="w-5 h-5 text-[var(--brand-primary)]" />
             </div>
             <div>
               <CardTitle>Resource Breakdown</CardTitle>
@@ -186,10 +186,10 @@ export function ResourceBreakdownSection({ resources }) {
               <ResourceList 
                 title="Largest Images" 
                 icon={ImageIcon}
-                iconColor="text-[var(--brand-secondary)]"
+                iconColor="text-[var(--brand-primary)]"
                 total={resources.totals.images}
                 items={resources.heaviestImages.slice(0, 3)}
-                itemColor="text-[var(--brand-secondary)]"
+                itemColor="text-[var(--brand-primary)]"
               />
             )}
             
@@ -401,10 +401,10 @@ export function AIInsightsSection({ aiInsights }) {
   
   return (
     <motion.div variants={fadeInUp} initial="hidden" whileInView="visible" viewport={{ once: true }}>
-      <Card className="bg-gradient-to-br from-[var(--brand-primary)]/20 via-[var(--brand-secondary)]/10 to-emerald-900/20 backdrop-blur-xl border-[var(--brand-primary)]/20 overflow-hidden">
+      <Card className="bg-gradient-to-br from-[var(--brand-primary)]/20 via-[var(--brand-primary)]/10 to-emerald-900/20 backdrop-blur-xl border-[var(--brand-primary)]/20 overflow-hidden">
         <CardHeader>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-secondary)] flex items-center justify-center shadow-lg shadow-[var(--brand-primary)]/30">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-primary)] flex items-center justify-center shadow-lg shadow-[var(--brand-primary)]/30">
               <Sparkles className="w-5 h-5 text-white" />
             </div>
             <div>

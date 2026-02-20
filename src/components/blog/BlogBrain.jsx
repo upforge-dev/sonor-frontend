@@ -219,7 +219,7 @@ function ContentAuditContent({
               <Button 
                 onClick={handleFixAllEmDashes}
                 disabled={fixingEmDashes}
-                style={{ background: 'linear-gradient(135deg, var(--brand-primary), var(--brand-secondary))' }}
+                style={{ background: 'linear-gradient(135deg, var(--brand-primary), var(--brand-primary))' }}
                 className="text-white"
               >
                 <Wand2 className={`w-4 h-4 mr-2 ${fixingEmDashes ? 'animate-spin' : ''}`} />
@@ -709,7 +709,7 @@ export default function BlogBrain({
         <div className="flex items-center gap-3">
           <div 
             className="w-12 h-12 rounded-xl flex items-center justify-center"
-            style={{ background: 'linear-gradient(135deg, var(--brand-primary), var(--brand-secondary))' }}
+            style={{ background: 'linear-gradient(135deg, var(--brand-primary), var(--brand-primary))' }}
           >
             <SignalIcon className="w-6 h-6 text-white" />
           </div>

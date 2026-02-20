@@ -468,7 +468,7 @@ function Section({ title, icon: Icon, count, children, collapsible = true, defau
 // MAIN COMPONENT
 // ============================================================================
 
-export default function UnifiedTasksPanel({ projectId, className, onTaskClick, onShowShortcuts }) {
+export default function UnifiedTasksPanel({ projectId, projectIds, className, onTaskClick, onShowShortcuts }) {
   const { user } = useAuthStore()
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -492,7 +492,7 @@ export default function UnifiedTasksPanel({ projectId, className, onTaskClick, o
   const loadData = useCallback(async () => {
     try {
       setError(null)
-      const result = await syncApi.getUnifiedTasks(projectId)
+      const result = await syncApi.getUnifiedTasks(projectId, projectIds)
       setData(result.data || result)
       // Clear batch selection on refresh
       setSelectedTaskIds(new Set())
@@ -504,7 +504,7 @@ export default function UnifiedTasksPanel({ projectId, className, onTaskClick, o
       setLoading(false)
       setRefreshing(false)
     }
-  }, [projectId])
+  }, [projectId, projectIds?.length, projectIds?.join(',')])
 
   useEffect(() => {
     loadData()

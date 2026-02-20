@@ -185,9 +185,9 @@ export function UnifiedInbox() {
       <div className="flex h-full">
         {/* LEFT: Signal Assistance Sidebar */}
         <div className="hidden w-72 shrink-0 flex-col border-r border-[var(--glass-border)] bg-card/80 backdrop-blur-sm lg:flex xl:w-80">
-          <div className="border-b border-[var(--glass-border)] bg-gradient-to-r from-[var(--brand-primary)]/10 to-[var(--brand-secondary)]/10 p-4">
+          <div className="border-b border-[var(--glass-border)] bg-gradient-to-r from-[var(--brand-primary)]/10 to-[var(--brand-primary)]/10 p-4">
             <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)]">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-primary)]">
                 <Sparkles className="h-4 w-4 text-white" />
               </div>
               <div>
@@ -301,7 +301,7 @@ export function UnifiedInbox() {
         {/* CENTER: Message List */}
         <div className="flex w-[380px] min-w-[320px] shrink-0 flex-col border-r border-[var(--glass-border)] bg-card/80 backdrop-blur-sm">
           {/* Header */}
-          <div className="border-b border-[var(--glass-border)] bg-gradient-to-r from-[var(--brand-primary)]/10 to-[var(--brand-secondary)]/10 p-4">
+          <div className="border-b border-[var(--glass-border)] bg-gradient-to-r from-[var(--brand-primary)]/10 to-[var(--brand-primary)]/10 p-4">
             <div className="mb-3 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--brand-primary)]/20">
@@ -482,7 +482,7 @@ export function UnifiedInbox() {
                   <div className="relative">
                     <Avatar className="h-12 w-12 border-2 border-[var(--glass-border)] shadow-md">
                       <AvatarImage src={selectedMessage.senderAvatar} />
-                      <AvatarFallback className="bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-secondary)] text-white">
+                      <AvatarFallback className="bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-primary)] text-white">
                         {getInitials(selectedMessage.senderName)}
                       </AvatarFallback>
                     </Avatar>
@@ -607,7 +607,7 @@ export function UnifiedInbox() {
                         size="sm"
                         onClick={handleGetAiSuggestion}
                         disabled={aiSuggesting}
-                        className="gap-2 text-[var(--brand-secondary)] hover:bg-[var(--brand-secondary)]/10 hover:text-[var(--brand-secondary)]"
+                        className="gap-2 text-[var(--brand-primary)] hover:bg-[var(--brand-primary)]/10 hover:text-[var(--brand-primary)]"
                       >
                         <Sparkles className={cn('h-4 w-4', aiSuggesting && 'animate-pulse')} />
                         {aiSuggesting ? 'Generating...' : 'AI Suggest Reply'}
@@ -615,7 +615,7 @@ export function UnifiedInbox() {
                       <Button 
                         onClick={handleReply}
                         disabled={!replyText.trim() || replySending}
-                        className="gap-2 bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] text-white hover:opacity-90"
+                        className="gap-2 bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-primary)] text-white hover:opacity-90"
                       >
                         <Send className="h-4 w-4" />
                         {replySending ? 'Sending...' : 'Send'}
@@ -627,7 +627,7 @@ export function UnifiedInbox() {
             </>
           ) : (
             <div className="flex flex-1 flex-col items-center justify-center">
-              <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-[var(--brand-primary)]/20 to-[var(--brand-secondary)]/20">
+              <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-[var(--brand-primary)]/20 to-[var(--brand-primary)]/20">
                 <MessageSquare className="h-10 w-10 text-[var(--brand-primary)]" />
               </div>
               <p className="text-lg font-medium text-[var(--text-primary)]">Select a conversation</p>

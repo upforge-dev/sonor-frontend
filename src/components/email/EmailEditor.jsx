@@ -631,12 +631,9 @@ export function EmailEditor({
   const [htmlContent, setHtmlContent] = useState(() => {
     // Replace brand color placeholders with actual values on initial load
     let html = initialHtml || ''
-    if (html && (html.includes('{{brand_primary}}') || html.includes('{{brand_secondary}}'))) {
+    if (html && html.includes('{{brand_primary}}')) {
       const brandPrimary = currentProject?.brand_primary || '#4bbf39'
-      const brandSecondary = currentProject?.brand_secondary || '#39bfb0'
-      html = html
-        .replace(/\{\{brand_primary\}\}/g, brandPrimary)
-        .replace(/\{\{brand_secondary\}\}/g, brandSecondary)
+      html = html.replace(/\{\{brand_primary\}\}/g, brandPrimary)
     }
     return html
   })
@@ -656,9 +653,8 @@ export function EmailEditor({
   const imageFileInputRef = useRef(null)
   const { currentProject, currentOrg } = useAuthStore()
   
-  // Get brand colors from project (with fallback to Uptrade default)
+  // Get brand color from project (with fallback to Uptrade default)
   const brandPrimary = currentProject?.brand_primary || '#4bbf39'
-  const brandSecondary = currentProject?.brand_secondary || '#39bfb0'
   
   // Schedule Consultation block is Uptrade Media only
   const isUptradeMedia = currentOrg?.slug === 'uptrade-media' || 
@@ -674,7 +670,7 @@ export function EmailEditor({
   const [backgroundMode, setBackgroundMode] = useState('color') // 'color' | 'gradient' | 'image'
   const [backgroundColor, setBackgroundColor] = useState('#ffffff')
   const [gradientColor1, setGradientColor1] = useState(brandPrimary)
-  const [gradientColor2, setGradientColor2] = useState(brandSecondary)
+  const [gradientColor2, setGradientColor2] = useState(brandPrimary)
   const [gradientAngle, setGradientAngle] = useState(135)
   const [backgroundImage, setBackgroundImage] = useState('')
   
@@ -1757,7 +1753,7 @@ export function EmailEditor({
         tagName: 'div',
         style: { 
           padding: '60px 40px', 
-          background: `linear-gradient(135deg, ${brandPrimary} 0%, ${brandSecondary} 100%)`, 
+          background: `linear-gradient(135deg, ${brandPrimary} 0%, ${brandPrimary} 100%)`, 
           'text-align': 'center' 
         },
         components: [
@@ -2074,10 +2070,8 @@ export function EmailEditor({
     if (editorInstanceRef.current && selectedTemplate) {
       // Replace brand color placeholders with actual values
       let html = selectedTemplate.html
-      if (html && (html.includes('{{brand_primary}}') || html.includes('{{brand_secondary}}'))) {
-        html = html
-          .replace(/\{\{brand_primary\}\}/g, brandPrimary)
-          .replace(/\{\{brand_secondary\}\}/g, brandSecondary)
+      if (html && html.includes('{{brand_primary}}')) {
+        html = html.replace(/\{\{brand_primary\}\}/g, brandPrimary)
       }
       editorInstanceRef.current.setComponents(html)
       setHtmlContent(html)
@@ -2102,7 +2096,7 @@ export function EmailEditor({
       {/* Top Toolbar */}
       <div 
         className="flex items-center justify-between px-4 py-2 border-b shrink-0 rounded-t-xl"
-        style={{ background: `linear-gradient(135deg, ${brandPrimary} 0%, ${brandSecondary} 100%)` }}
+        style={{ background: `linear-gradient(135deg, ${brandPrimary} 0%, ${brandPrimary} 100%)` }}
       >
         <div className="flex items-center gap-3">
           {!isFullscreen && onBack && (

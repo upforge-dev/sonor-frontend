@@ -43,7 +43,7 @@ export function CTASection({ onScheduleClick }) {
           >
             <button 
               onClick={onScheduleClick}
-              className="group inline-flex items-center justify-center px-8 py-4 bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] text-white font-bold rounded-xl 
+              className="group inline-flex items-center justify-center px-8 py-4 bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-primary)] text-white font-bold rounded-xl 
                 hover:shadow-xl hover:shadow-[var(--brand-primary)]/30 hover:scale-[1.02] active:scale-[0.98] transition-all duration-300"
             >
               <Calendar className="w-5 h-5 mr-2" />
@@ -83,7 +83,7 @@ export function FloatingActions({ show, onScheduleClick, onBackToTop }) {
             onClick={onScheduleClick}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] text-white font-semibold rounded-full shadow-lg shadow-[var(--brand-primary)]/30 hover:shadow-xl transition-shadow"
+            className="flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-primary)] text-white font-semibold rounded-full shadow-lg shadow-[var(--brand-primary)]/30 hover:shadow-xl transition-shadow"
           >
             <Calendar className="w-5 h-5" />
             <span className="hidden sm:inline">Schedule Consultation</span>
@@ -118,11 +118,11 @@ export function PriorityActionsCard({
       <Card className="relative bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white overflow-hidden border-0 shadow-2xl">
         {/* Decorative glow */}
         <div className="absolute top-0 right-0 w-64 h-64 bg-[var(--brand-primary)]/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-64 h-64 bg-[var(--brand-secondary)]/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-[var(--brand-primary)]/10 rounded-full blur-3xl pointer-events-none" />
         
         <div className="relative p-6 border-b border-white/10">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-secondary)] flex items-center justify-center shadow-lg shadow-[var(--brand-primary)]/30">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-primary)] flex items-center justify-center shadow-lg shadow-[var(--brand-primary)]/30">
               <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
@@ -141,7 +141,7 @@ export function PriorityActionsCard({
               initial={{ opacity: 0, y: 10 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="mb-6 p-5 bg-gradient-to-r from-[var(--brand-primary)]/10 to-[var(--brand-secondary)]/10 rounded-2xl border border-white/10 backdrop-blur-sm"
+              className="mb-6 p-5 bg-gradient-to-r from-[var(--brand-primary)]/10 to-[var(--brand-primary)]/10 rounded-2xl border border-white/10 backdrop-blur-sm"
             >
               <div className="flex items-start gap-3">
                 <svg className="w-5 h-5 text-[var(--brand-primary)] flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 24 24">
@@ -193,7 +193,7 @@ function PriorityActionItem({ index, action }) {
       whileHover={{ x: 4, transition: { duration: 0.2 } }}
       className="flex items-start gap-4 bg-white/5 hover:bg-white/10 rounded-xl p-4 transition-colors duration-300 border border-white/5"
     >
-      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-secondary)] flex items-center justify-center flex-shrink-0 shadow-lg shadow-[var(--brand-primary)]/20">
+      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-primary)] flex items-center justify-center flex-shrink-0 shadow-lg shadow-[var(--brand-primary)]/20">
         <span className="text-white font-bold text-sm">{index + 1}</span>
       </div>
       <div className="flex-1">
@@ -252,7 +252,7 @@ function GeneratedPriorityActions({ scores, securityIssues, onScrollToSection })
   if (scores?.accessibility < 90) {
     actions.push({
       id: 'accessibility-issues',
-      color: 'var(--brand-secondary)',
+      color: 'var(--brand-primary)',
       title: 'Improve Accessibility',
       description: 'Make your site more accessible by adding alt text to images, ensuring sufficient color contrast, and using proper heading hierarchy.'
     })

@@ -70,7 +70,7 @@ const STATUS_CONFIG = {
   },
   scheduled: { 
     label: 'Scheduled', 
-    color: 'bg-[var(--brand-secondary)]/20 text-[var(--brand-secondary)]', 
+    color: 'bg-[var(--brand-primary)]/20 text-[var(--brand-primary)]', 
     icon: Calendar 
   },
   published: { 
@@ -342,7 +342,7 @@ function PostCard({ post, onEdit }) {
                   </div>
                   {metrics.reach && (
                     <div className="flex items-center gap-1 text-xs text-[var(--text-secondary)]">
-                      <Eye className="h-3.5 w-3.5 text-[var(--brand-secondary)]" />
+                      <Eye className="h-3.5 w-3.5 text-[var(--brand-primary)]" />
                       <span className="font-medium">{metrics.reach}</span>
                     </div>
                   )}

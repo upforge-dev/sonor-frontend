@@ -121,7 +121,7 @@ export default function BookingTypesPanel({ isOpen, onClose, inline = false }) {
       const params = {}
       if (currentProject?.id) params.project_id = currentProject.id
       const { data } = await syncApi.getBookingTypes(params)
-      setBookingTypes(data.types || [])
+      setBookingTypes(data?.types ?? [])
     } catch (error) {
       console.error('Failed to fetch booking types:', error)
       toast.error('Failed to load booking types')
@@ -217,6 +217,11 @@ export default function BookingTypesPanel({ isOpen, onClose, inline = false }) {
                     <p className="text-sm text-muted-foreground line-clamp-1">
                       {type.description || 'No description'}
                     </p>
+                    {type.slug && (
+                      <p className="text-xs text-muted-foreground font-mono mt-0.5">
+                        slug: {type.slug}
+                      </p>
+                    )}
                     <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
                       <span className="flex items-center gap-1">
                         <Clock className="h-3 w-3" />
@@ -412,30 +417,55 @@ function BookingTypeFormModal({ isOpen, onClose, editingType, projectId, onSaved
 
     setSaving(true)
     try {
-      const data = {
-        ...formData,
-        slug: formData.slug || formData.name.toLowerCase().replace(/\s+/g, '-'),
-        duration_minutes: parseInt(formData.duration_minutes),
-        buffer_after_minutes: parseInt(formData.buffer_after_minutes),
-        min_notice_hours: parseInt(formData.min_notice_hours),
-        max_advance_days: parseInt(formData.max_advance_days),
-      }
-
-      // Scope booking type to current project
-      if (projectId) {
-        data.projectId = projectId
-      }
+      const rawSlug = (formData.slug || formData.name.toLowerCase().replace(/\s+/g, '-')).replace(/-+/g, '-').replace(/^-|-$/g, '')
+      const slug = rawSlug || formData.name.toLowerCase().replace(/\s+/g, '-')
 
       if (editingType) {
+        const data = {
+          ...formData,
+          slug,
+          duration_minutes: parseInt(formData.duration_minutes),
+          buffer_after_minutes: parseInt(formData.buffer_after_minutes),
+          min_notice_hours: parseInt(formData.min_notice_hours),
+          max_advance_days: parseInt(formData.max_advance_days),
+        }
+        if (projectId) data.projectId = projectId
         await syncApi.updateBookingType(editingType.id, data)
         toast.success('Booking type updated')
       } else {
+        // API expects camelCase for create
+        const data = {
+          slug,
+          name: formData.name.trim(),
+          description: formData.description || undefined,
+          projectId: projectId || undefined,
+          durationMinutes: parseInt(formData.duration_minutes) || 30,
+          slotIntervalMinutes: 15,
+          bufferBeforeMinutes: 0,
+          bufferAfterMinutes: parseInt(formData.buffer_after_minutes) || 15,
+          minNoticeHours: parseInt(formData.min_notice_hours) || 24,
+          maxAdvanceDays: parseInt(formData.max_advance_days) || 60,
+          maxPerDay: 8,
+          allowGuestCancel: formData.allow_guest_cancel !== false,
+          allowGuestReschedule: formData.allow_guest_reschedule !== false,
+          icon: formData.icon || undefined,
+          color: formData.color || undefined,
+          isPublic: formData.is_public !== false,
+          sortOrder: 0,
+        }
         await syncApi.createBookingType(data)
         toast.success('Booking type created')
       }
       onSaved()
     } catch (error) {
-      toast.error(editingType ? 'Failed to update' : 'Failed to create')
+      const status = error?.response?.status
+      const msg = error?.response?.data?.error?.message ?? error?.message ?? (editingType ? 'Failed to update' : 'Failed to create')
+      if (status === 409) {
+        onSaved()
+        toast.warning('That slug already exists for this project. Refreshed the list—edit the existing booking type if needed.')
+      } else {
+        toast.error(msg)
+      }
     } finally {
       setSaving(false)
     }
@@ -499,6 +529,20 @@ function BookingTypeFormModal({ isOpen, onClose, editingType, projectId, onSaved
               value={formData.name}
               onChange={(e) => setFormData(f => ({ ...f, name: e.target.value }))}
             />
+          </div>
+
+          {/* Slug */}
+          <div className="space-y-2">
+            <Label htmlFor="slug">Slug</Label>
+            <Input
+              id="slug"
+              placeholder="schedule-a-tour"
+              value={formData.slug}
+              onChange={(e) => setFormData(f => ({ ...f, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-') }))}
+            />
+            <p className="text-xs text-muted-foreground">
+              URL-friendly identifier for the booking widget. Use this in <code className="rounded bg-muted px-1">bookingTypeSlug</code> (e.g. <code className="rounded bg-muted px-1">schedule-a-tour</code>). Leave blank to auto-generate from name.
+            </p>
           </div>
 
           {/* Description */}
@@ -615,6 +659,7 @@ function BookingTypeFormModal({ isOpen, onClose, editingType, projectId, onSaved
               </label>
             </div>
           </div>
+
         </div>
 
         <DialogFooter>

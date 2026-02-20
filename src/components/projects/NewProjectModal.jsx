@@ -127,7 +127,7 @@ export function NewProjectModal({
     description: '',
     logo_url: null,
     brand_primary: '',
-    brand_secondary: '',
+    brand_primary: '',
     resend_domain: '',
     resend_from_name: '',
     
@@ -189,7 +189,7 @@ export function NewProjectModal({
         description: '',
         logo_url: null,
         brand_primary: '',
-        brand_secondary: '',
+        brand_primary: '',
         resend_domain: '',
         resend_from_name: '',
         contactId: '',
@@ -331,7 +331,7 @@ export function NewProjectModal({
         features: formData.enabledModules,
         logo_url: formData.logo_url || undefined,
         brand_primary: formData.brand_primary || undefined,
-        brand_secondary: formData.brand_secondary || undefined,
+        brand_primary: formData.brand_primary || undefined,
         settings: {
           resend_domain: formData.resend_domain || undefined,
           resend_from_name: formData.resend_from_name || undefined,
@@ -586,13 +586,13 @@ export function NewProjectModal({
                   <div className="flex items-center gap-2">
                     <input
                       type="color"
-                      value={formData.brand_secondary || '#39bfb0'}
-                      onChange={(e) => handleChange('brand_secondary', e.target.value)}
+                      value={formData.brand_primary || '#39bfb0'}
+                      onChange={(e) => handleChange('brand_primary', e.target.value)}
                       className="w-10 h-9 rounded border cursor-pointer"
                     />
                     <Input
-                      value={formData.brand_secondary}
-                      onChange={(e) => handleChange('brand_secondary', e.target.value)}
+                      value={formData.brand_primary}
+                      onChange={(e) => handleChange('brand_primary', e.target.value)}
                       placeholder="#39bfb0"
                       className="flex-1 font-mono text-sm"
                     />

@@ -443,7 +443,7 @@ export function SEOBulkPipelineModal({
                 onClick={handleStart}
                 disabled={!hasSignalAccess}
                 style={{ 
-                  background: 'linear-gradient(135deg, var(--brand-primary), var(--brand-secondary))'
+                  background: 'linear-gradient(135deg, var(--brand-primary), var(--brand-primary))'
                 }}
                 className="text-white"
               >

@@ -533,7 +533,7 @@ export default function TargetCompanyModal({ company, open, onClose }) {
                 Unclaim
               </Button>
             ) : (
-              <Button onClick={handleClaim} className="bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] text-white">
+              <Button onClick={handleClaim} className="bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-primary)] text-white">
                 <Zap className="w-4 h-4 mr-2" />
                 Claim Prospect
               </Button>

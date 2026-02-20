@@ -27,14 +27,14 @@ export default function SignalStatusBanner({
         className
       )}
       style={{
-        background: 'linear-gradient(to right, color-mix(in srgb, var(--brand-primary) 10%, transparent), color-mix(in srgb, var(--brand-secondary) 10%, transparent), color-mix(in srgb, var(--brand-secondary) 10%, transparent))',
+        background: 'linear-gradient(to right, color-mix(in srgb, var(--brand-primary) 10%, transparent), color-mix(in srgb, var(--brand-primary) 10%, transparent), color-mix(in srgb, var(--brand-primary) 10%, transparent))',
         borderColor: 'color-mix(in srgb, var(--brand-primary) 20%, transparent)'
       }}
     >
       {/* Background glow effect */}
       <div 
         className="absolute inset-0 opacity-50" 
-        style={{ background: 'linear-gradient(to right, color-mix(in srgb, var(--brand-primary) 5%, transparent), color-mix(in srgb, var(--brand-secondary) 5%, transparent))' }} 
+        style={{ background: 'linear-gradient(to right, color-mix(in srgb, var(--brand-primary) 5%, transparent), color-mix(in srgb, var(--brand-primary) 5%, transparent))' }} 
       />
       
       <div className="relative p-4 md:p-5">
@@ -68,7 +68,7 @@ export default function SignalStatusBanner({
             {hasStats && (
               <div className="flex flex-wrap items-center gap-3 text-sm text-[var(--text-secondary)] mb-3">
                 <span className="flex items-center gap-1">
-                  <SignalIcon className="h-3.5 w-3.5" style={{ color: 'var(--brand-secondary)' }} />
+                  <SignalIcon className="h-3.5 w-3.5" style={{ color: 'var(--brand-primary)' }} />
                   Analyzing {siteDomain} for {analyzingDays} days
                 </span>
                 <span className="text-[var(--text-tertiary)]">•</span>

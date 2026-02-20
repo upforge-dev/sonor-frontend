@@ -187,7 +187,7 @@ export default function ProjectSettingsPanel({ project, isAdmin, onProjectUpdate
     status: project?.status || 'planning',
     logo_url: project?.logo_url || null,
     brand_primary: project?.brand_primary || '',
-    brand_secondary: project?.brand_secondary || '',
+    brand_primary: project?.brand_primary || '',
     domain: project?.domain || '',
     resend_domain: project?.settings?.resend_domain || '',
     resend_from_name: project?.settings?.resend_from_name || '',
@@ -238,7 +238,7 @@ export default function ProjectSettingsPanel({ project, isAdmin, onProjectUpdate
         status: project.status || 'planning',
         logo_url: project.logo_url || null,
         brand_primary: project.brand_primary || '',
-        brand_secondary: project.brand_secondary || '',
+        brand_primary: project.brand_primary || '',
         domain: project.domain || '',
         resend_domain: project.settings?.resend_domain || '',
         resend_from_name: project.settings?.resend_from_name || '',
@@ -432,7 +432,7 @@ export default function ProjectSettingsPanel({ project, isAdmin, onProjectUpdate
         status: formData.status,
         logo_url: formData.logo_url,
         brand_primary: formData.brand_primary || null,
-        brand_secondary: formData.brand_secondary || null,
+        brand_primary: formData.brand_primary || null,
         domain: formData.domain || null,
         features: formData.features,
         signal_enabled: formData.signal_enabled,
@@ -496,7 +496,7 @@ export default function ProjectSettingsPanel({ project, isAdmin, onProjectUpdate
           status: updatedProject.status || 'planning',
           logo_url: updatedProject.logo_url || null,
           brand_primary: updatedProject.brand_primary || '',
-          brand_secondary: updatedProject.brand_secondary || '',
+          brand_primary: updatedProject.brand_primary || '',
           domain: updatedProject.domain || '',
           resend_domain: updatedProject.settings?.resend_domain || '',
           resend_from_name: updatedProject.settings?.resend_from_name || '',
@@ -642,7 +642,7 @@ export default function ProjectSettingsPanel({ project, isAdmin, onProjectUpdate
         status: project.status || 'planning',
         logo_url: project.logo_url || null,
         brand_primary: project.brand_primary || '',
-        brand_secondary: project.brand_secondary || '',
+        brand_primary: project.brand_primary || '',
         domain: project.domain || '',
         features: Array.isArray(project.features) ? project.features : [],
         commerce_types: Array.isArray(project.settings?.commerce_types) ? project.settings.commerce_types : ['product', 'service'],
@@ -946,8 +946,8 @@ export default function ProjectSettingsPanel({ project, isAdmin, onProjectUpdate
               <ColorPicker
                 label="Secondary Color"
                 description="Secondary brand color for highlights and gradients"
-                value={formData.brand_secondary}
-                onChange={(v) => handleChange('brand_secondary', v)}
+                value={formData.brand_primary}
+                onChange={(v) => handleChange('brand_primary', v)}
                 defaultValue={DEFAULT_BRAND_SECONDARY}
               />
             
@@ -961,7 +961,7 @@ export default function ProjectSettingsPanel({ project, isAdmin, onProjectUpdate
                 />
                 <div 
                   className="w-12 h-12 rounded-lg border shadow-sm"
-                  style={{ backgroundColor: formData.brand_secondary || DEFAULT_BRAND_SECONDARY }}
+                  style={{ backgroundColor: formData.brand_primary || DEFAULT_BRAND_SECONDARY }}
                 />
                 <Button
                   size="sm"

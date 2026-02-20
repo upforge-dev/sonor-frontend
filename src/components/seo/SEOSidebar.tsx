@@ -280,7 +280,7 @@ function DesktopSidebar({ activeTab, onTabChange, alertCount, isCollapsed, onTog
           {/* Signal upgrade prompt */}
           {!hasSignalAccess && (
             <div className="mt-6 p-3 rounded-lg border" style={{
-              background: 'linear-gradient(135deg, color-mix(in srgb, var(--brand-primary) 10%, transparent), color-mix(in srgb, var(--brand-secondary) 10%, transparent))',
+              background: 'linear-gradient(135deg, color-mix(in srgb, var(--brand-primary) 10%, transparent), color-mix(in srgb, var(--brand-primary) 10%, transparent))',
               borderColor: 'color-mix(in srgb, var(--brand-primary) 20%, transparent)'
             }}>
               <div className="flex items-center gap-2 mb-2">
@@ -345,7 +345,7 @@ function DesktopSidebar({ activeTab, onTabChange, alertCount, isCollapsed, onTog
       {!hasSignalAccess && !isCollapsed && (
         <div className="p-3 border-t border-border/50">
           <div className="p-3 rounded-lg border" style={{
-            background: 'linear-gradient(135deg, color-mix(in srgb, var(--brand-primary) 10%, transparent), color-mix(in srgb, var(--brand-secondary) 10%, transparent))',
+            background: 'linear-gradient(135deg, color-mix(in srgb, var(--brand-primary) 10%, transparent), color-mix(in srgb, var(--brand-primary) 10%, transparent))',
             borderColor: 'color-mix(in srgb, var(--brand-primary) 20%, transparent)'
           }}>
             <div className="flex items-center gap-2 mb-2">

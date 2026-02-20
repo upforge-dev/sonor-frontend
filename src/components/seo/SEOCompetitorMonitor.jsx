@@ -121,7 +121,7 @@ function CompetitorCard({ competitor, keyword, onViewDetails }) {
         "transition-all duration-300",
         hasChanges 
           ? "border-amber-500/30 shadow-lg shadow-amber-500/5"
-          : "border-[var(--glass-border)] hover:border-[var(--brand-secondary)]/30"
+          : "border-[var(--glass-border)] hover:border-[var(--brand-primary)]/30"
       )}
       onClick={() => onViewDetails?.(competitor)}
     >
@@ -221,7 +221,7 @@ function CompetitorCard({ competitor, keyword, onViewDetails }) {
 function ChangeAlert({ change, onDismiss, onCounterAction }) {
   const alertTypes = {
     title_change: { icon: FileText, color: 'amber', label: 'Title Changed' },
-    position_gain: { icon: TrendingUp, color: 'brand-secondary', label: 'Position Gained' },
+    position_gain: { icon: TrendingUp, color: 'brand-primary', label: 'Position Gained' },
     new_competitor: { icon: Users, color: 'brand-primary', label: 'New Competitor' },
     content_update: { icon: RefreshCw, color: 'blue', label: 'Content Updated' },
   }
@@ -549,7 +549,7 @@ export default function SEOCompetitorMonitor({ projectId }) {
   // Signal access gate
   if (!hasSignalAccess) {
     return (
-      <Card className="border-[var(--brand-secondary)]/30">
+      <Card className="border-[var(--brand-primary)]/30">
         <CardContent className="py-12 text-center">
           <div className="relative w-20 h-20 mx-auto">
             <RadarPulse className="w-full h-full" />
@@ -659,7 +659,7 @@ export default function SEOCompetitorMonitor({ projectId }) {
       <div className="grid grid-cols-4 gap-4">
         {[
           { label: 'Keywords Tracked', value: keywords.length, icon: Target, color: 'brand-primary' },
-          { label: 'Competitors Monitored', value: competitors.length, icon: Users, color: 'brand-secondary' },
+          { label: 'Competitors Monitored', value: competitors.length, icon: Users, color: 'brand-primary' },
           { label: 'Changes (24h)', value: alerts.length, icon: Activity, color: 'amber' },
           { label: 'Avg. Your Position', value: '#6.2', icon: BarChart3, color: 'brand-primary' },
         ].map((stat, i) => (

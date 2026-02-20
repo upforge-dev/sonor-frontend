@@ -165,7 +165,6 @@ export function OrgNavigator({
                       const isActiveProject = project.id === activeProjectId
                       const isFavorite = favorites.includes(project.id)
                       const brandPrimary = project.brand_primary || '#4bbf39'
-                      const brandSecondary = project.brand_secondary || brandPrimary
 
                       return (
                         <button
@@ -179,7 +178,7 @@ export function OrgNavigator({
                           )}
                           style={{
                             borderLeft: isActiveProject ? '2px solid transparent' : 'none',
-                            borderImage: isActiveProject ? `linear-gradient(to bottom, ${brandPrimary}, ${brandSecondary}) 1` : 'none'
+                            borderImage: isActiveProject ? `linear-gradient(to bottom, ${brandPrimary}, ${brandPrimary}) 1` : 'none'
                           }}
                         >
                           {isActiveProject ? (
@@ -336,7 +335,6 @@ export function ProjectNavigator({
           {filteredProjects.map((project) => {
             const isActive = project.id === activeProjectId
             const brandPrimary = project.brand_primary || '#4bbf39'
-            const brandSecondary = project.brand_secondary || brandPrimary
             
             return (
               <button
@@ -350,7 +348,7 @@ export function ProjectNavigator({
                 )}
                 style={{
                   borderLeft: isActive ? '2px solid transparent' : 'none',
-                  borderImage: isActive ? `linear-gradient(to bottom, ${brandPrimary}, ${brandSecondary}) 1` : 'none'
+                  borderImage: isActive ? `linear-gradient(to bottom, ${brandPrimary}, ${brandPrimary}) 1` : 'none'
                 }}
               >
                 <div className="flex items-center gap-2">

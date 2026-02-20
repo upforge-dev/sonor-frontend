@@ -114,7 +114,7 @@ export const SYSTEM_EMAILS = [
       { name: '{{magic_link}}', description: 'One-time login link' },
       { name: '{{expires_in}}', description: 'Link expiration time' }
     ],
-    defaultSubject: 'Your login link for Uptrade Portal',
+    defaultSubject: 'Your login link for Sonor',
     editable: true
   },
   {
@@ -129,7 +129,7 @@ export const SYSTEM_EMAILS = [
       { name: '{{reset_link}}', description: 'Password reset link' },
       { name: '{{expires_in}}', description: 'Link expiration time' }
     ],
-    defaultSubject: 'Reset your Uptrade Portal password',
+    defaultSubject: 'Reset your Sonor password',
     editable: true
   },
 
@@ -377,7 +377,7 @@ export const SYSTEM_EMAILS = [
     ],
     defaultSubject: 'Thank you for your submission!',
     editable: true,
-    // Default branded template using brand_primary and brand_secondary
+    // Default branded template using brand_primary and brand_primary
     defaultHtml: `
 <!DOCTYPE html>
 <html>
@@ -392,7 +392,7 @@ export const SYSTEM_EMAILS = [
         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 600px; background-color: #ffffff; border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
           <!-- Header with gradient -->
           <tr>
-            <td style="background: linear-gradient(135deg, {{brand_primary}} 0%, {{brand_secondary}} 100%); padding: 40px; border-radius: 16px 16px 0 0; text-align: center;">
+            <td style="background: linear-gradient(135deg, {{brand_primary}} 0%, {{brand_primary}} 100%); padding: 40px; border-radius: 16px 16px 0 0; text-align: center;">
               <div style="width: 60px; height: 60px; background-color: rgba(255,255,255,0.2); border-radius: 50%; margin: 0 auto 16px auto; display: flex; align-items: center; justify-content: center;">
                 <span style="font-size: 28px;">✓</span>
               </div>

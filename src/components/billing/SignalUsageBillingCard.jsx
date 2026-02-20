@@ -163,7 +163,7 @@ export default function SignalUsageBillingCard() {
       
       <CardContent className="space-y-4">
         {/* Current Bill */}
-        <div className="flex items-center justify-between p-4 rounded-xl bg-gradient-to-r from-[var(--brand-primary)]/10 to-[var(--brand-secondary)]/10">
+        <div className="flex items-center justify-between p-4 rounded-xl bg-gradient-to-r from-[var(--brand-primary)]/10 to-[var(--brand-primary)]/10">
           <div>
             <p className="text-sm text-[var(--text-secondary)]">Current Bill</p>
             <p className="text-3xl font-bold text-[var(--text-primary)]">

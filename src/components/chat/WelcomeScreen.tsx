@@ -59,7 +59,7 @@ export function WelcomeScreen({
       {/* Logo/Avatar */}
       <div className="mb-6">
         {isEcho ? (
-          <div className="w-20 h-20 rounded-full flex items-center justify-center bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-secondary)] shadow-xl shadow-[var(--brand-primary)]/20">
+          <div className="w-20 h-20 rounded-full flex items-center justify-center bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-primary)] shadow-xl shadow-[var(--brand-primary)]/20">
             <EchoLogo size={48} animated />
           </div>
         ) : (

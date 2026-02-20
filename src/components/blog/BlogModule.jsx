@@ -150,8 +150,8 @@ const statusColors = {
 
 // Category colors using brand
 const getCategoryStyle = () => ({
-  backgroundColor: 'color-mix(in srgb, var(--brand-secondary) 15%, transparent)',
-  color: 'var(--brand-secondary)',
+  backgroundColor: 'color-mix(in srgb, var(--brand-primary) 15%, transparent)',
+  color: 'var(--brand-primary)',
 })
 
 // ============================================================================

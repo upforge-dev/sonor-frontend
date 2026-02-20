@@ -1039,7 +1039,7 @@ export default function ProposalAIDialog({
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       {triggerButton && (
         <DialogTrigger asChild>
-          <Button className="gap-2 bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] hover:opacity-90">
+          <Button className="gap-2 bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-primary)] hover:opacity-90">
             <Sparkles className="w-4 h-4" />
             New Proposal
           </Button>
@@ -1049,7 +1049,7 @@ export default function ProposalAIDialog({
       <DialogContent className="sm:max-w-none max-w-[95vw] w-[900px] max-h-[85vh] overflow-hidden flex flex-col glass-bg border-[var(--glass-border)]">
         <DialogHeader className="pb-2 border-b border-[var(--glass-border)]">
           <DialogTitle className="flex items-center gap-3 text-xl">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-secondary)] flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-primary)] flex items-center justify-center">
               <Sparkles className="w-5 h-5 text-white" />
             </div>
             <div>
@@ -1514,7 +1514,7 @@ export default function ProposalAIDialog({
               <div className="flex-1 overflow-y-auto space-y-4 p-4 rounded-2xl bg-[var(--surface-secondary)] border border-[var(--glass-border)]">
                 {aiMessages.map((msg, i) => (
                   <div key={i} className={cn('flex gap-3', msg.role === 'user' ? 'flex-row-reverse' : '')}>
-                    <div className={cn('w-8 h-8 rounded-full flex items-center justify-center shrink-0', msg.role === 'assistant' ? 'bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-secondary)]' : 'bg-[var(--surface-tertiary)]')}>
+                    <div className={cn('w-8 h-8 rounded-full flex items-center justify-center shrink-0', msg.role === 'assistant' ? 'bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-primary)]' : 'bg-[var(--surface-tertiary)]')}>
                       {msg.role === 'assistant' ? <Bot className="w-4 h-4 text-white" /> : <User className="w-4 h-4 text-[var(--text-secondary)]" />}
                     </div>
                     <div className={cn('max-w-[80%] p-3 rounded-2xl', msg.role === 'assistant' ? 'bg-[var(--glass-bg)] border border-[var(--glass-border)]' : 'bg-[var(--brand-primary)] text-white')}>
@@ -1524,7 +1524,7 @@ export default function ProposalAIDialog({
                 ))}
                 {isAiThinking && (
                   <div className="flex gap-3">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-secondary)] flex items-center justify-center">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-primary)] flex items-center justify-center">
                       <Bot className="w-4 h-4 text-white" />
                     </div>
                     <div className="p-3 rounded-2xl bg-[var(--glass-bg)] border border-[var(--glass-border)]">
@@ -1632,12 +1632,12 @@ export default function ProposalAIDialog({
           </Button>
 
           {step < 5 ? (
-            <Button type="button" onClick={() => setStep(step + 1)} disabled={!isStepValid()} className="gap-2 bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] hover:opacity-90">
+            <Button type="button" onClick={() => setStep(step + 1)} disabled={!isStepValid()} className="gap-2 bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-primary)] hover:opacity-90">
               Continue
               <ChevronRight className="w-4 h-4" />
             </Button>
           ) : (
-            <Button onClick={handleSubmit} disabled={isGenerating} className="gap-2 min-w-[180px] bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] hover:opacity-90">
+            <Button onClick={handleSubmit} disabled={isGenerating} className="gap-2 min-w-[180px] bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-primary)] hover:opacity-90">
               {isGenerating ? <><Loader2 className="w-4 h-4 animate-spin" />Generating...</> : <><Sparkles className="w-4 h-4" />Generate Proposal</>}
             </Button>
           )}

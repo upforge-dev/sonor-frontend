@@ -187,7 +187,7 @@ export default function LocalSeoGeoPages({ projectId }) {
           </Button>
           <Button 
             onClick={() => setShowIntelligenceWizard(true)}
-            className="bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] hover:opacity-90"
+            className="bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-primary)] hover:opacity-90"
           >
             <SignalIcon className="h-4 w-4 mr-2" />
             Location Intelligence

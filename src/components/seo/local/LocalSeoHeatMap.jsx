@@ -31,8 +31,8 @@ import {
 const getRankingColor = (position) => {
   if (!position) return 'var(--text-tertiary)' // Gray for not found
   if (position === 1) return 'var(--brand-primary)' // Brand primary - #1
-  if (position === 2) return 'var(--brand-secondary)' // Brand secondary - #2
-  if (position === 3) return 'color-mix(in srgb, var(--brand-primary) 70%, var(--brand-secondary) 30%)' // Blend - #3
+  if (position === 2) return 'var(--brand-primary)' // Brand secondary - #2
+  if (position === 3) return 'color-mix(in srgb, var(--brand-primary) 70%, var(--brand-primary) 30%)' // Blend - #3
   if (position <= 5) return 'var(--accent-yellow)' // Yellow for 4-5
   if (position <= 10) return 'var(--accent-orange)' // Orange for 6-10
   if (position <= 15) return 'var(--accent-red)' // Red for 11-15
@@ -701,7 +701,7 @@ export default function LocalSeoHeatMap({ projectId }) {
               <span className="text-sm text-[var(--text-secondary)]">#1</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded" style={{ backgroundColor: 'var(--brand-secondary)' }} />
+              <div className="w-4 h-4 rounded" style={{ backgroundColor: 'var(--brand-primary)' }} />
               <span className="text-sm text-[var(--text-secondary)]">2-3</span>
             </div>
             <div className="flex items-center gap-2">

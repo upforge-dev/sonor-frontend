@@ -338,7 +338,7 @@ export function MessageBubble({
       {/* Avatar */}
       <div className="flex-shrink-0 mt-1">
         {isAssistant ? (
-          <div className="w-8 h-8 rounded-full flex items-center justify-center bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-secondary)]">
+          <div className="w-8 h-8 rounded-full flex items-center justify-center bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-primary)]">
             <EchoLogo size={20} />
           </div>
         ) : (message.sender?.avatar || message.sender?.avatar_url) ? (

@@ -162,7 +162,7 @@ const portalModules = {
  * Highlight specific modules with descriptions of how they help
  */
 export function PortalModulesGrid({ 
-  title = "Your Uptrade Portal",
+  title = "Your Sonor",
   subtitle,
   modules = [] // [{ id: 'crm', benefit: 'Track all leads...' }, ...]
 }) {

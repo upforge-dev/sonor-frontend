@@ -214,7 +214,7 @@ function AuthorCard({ author, onEdit, onViewContent }) {
 function CitationCard({ citation, onAddToContent }) {
   const sourceTypes = {
     academic: { icon: BookOpen, color: 'brand-primary', label: 'Academic' },
-    government: { icon: Shield, color: 'brand-secondary', label: 'Government' },
+    government: { icon: Shield, color: 'brand-primary', label: 'Government' },
     industry: { icon: Target, color: 'amber', label: 'Industry' },
     news: { icon: FileCheck, color: 'blue', label: 'News' },
     expert: { icon: UserCheck, color: 'purple', label: 'Expert' },
@@ -230,7 +230,7 @@ function CitationCard({ citation, onAddToContent }) {
       className={cn(
         "p-4 rounded-xl border",
         "bg-[var(--glass-bg)] border-[var(--glass-border)]",
-        "hover:border-[var(--brand-secondary)]/30",
+        "hover:border-[var(--brand-primary)]/30",
         "transition-all duration-300"
       )}
     >
@@ -581,9 +581,9 @@ export default function SEOEEATModule({ projectId }) {
   // Signal access gate
   if (!hasSignalAccess) {
     return (
-      <Card className="border-[var(--brand-secondary)]/30">
+      <Card className="border-[var(--brand-primary)]/30">
         <CardContent className="py-12 text-center">
-          <div className="flex items-center justify-center w-16 h-16 mx-auto rounded-full bg-gradient-to-br from-[var(--brand-primary)]/20 to-[var(--brand-secondary)]/20">
+          <div className="flex items-center justify-center w-16 h-16 mx-auto rounded-full bg-gradient-to-br from-[var(--brand-primary)]/20 to-[var(--brand-primary)]/20">
             <Award className="h-8 w-8 text-[var(--brand-primary)]" />
           </div>
           <h3 className="text-lg font-semibold text-[var(--text-primary)] mt-4">
@@ -619,7 +619,7 @@ export default function SEOEEATModule({ projectId }) {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-[var(--text-primary)] flex items-center gap-3">
-            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-secondary)]">
+            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-primary)]">
               <Award className="h-5 w-5 text-white" />
             </div>
             E-E-A-T Analysis

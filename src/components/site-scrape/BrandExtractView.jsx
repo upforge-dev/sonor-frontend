@@ -355,7 +355,7 @@ export function BrandExtractView({ scrapeId, scrapeData, onRefresh }) {
               {brand.brand_personality.map((trait, i) => (
                 <Badge
                   key={i}
-                  className="bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] text-white"
+                  className="bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-primary)] text-white"
                 >
                   {trait}
                 </Badge>

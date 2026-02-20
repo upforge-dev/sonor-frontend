@@ -134,7 +134,7 @@ export default function MessagesWidget({ hidden = false }: MessagesWidgetProps) 
                 <div
                   className="w-9 h-9 rounded-xl flex items-center justify-center"
                   style={{
-                    background: `linear-gradient(135deg, ${brandColors.primary}, ${brandColors.secondary})`,
+                    background: brandColors.primary,
                   }}
                 >
                   <MessagesIcon size={20} className="text-white" />
@@ -247,7 +247,7 @@ export default function MessagesWidget({ hidden = false }: MessagesWidgetProps) 
         onClick={handleToggle}
         type="button"
         className={cn(
-          'fixed bottom-6 right-6 z-50',
+          'fixed bottom-4 right-6 z-50',
           'w-14 h-14 rounded-full',
           'flex items-center justify-center',
           'transition-all duration-300 ease-out',

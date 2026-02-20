@@ -84,7 +84,7 @@ function StepIndicator({ currentStep, steps }) {
             className={cn(
               'flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium transition-colors',
               currentStep === step.id
-                ? 'bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] text-white'
+                ? 'bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-primary)] text-white'
                 : currentStep > step.id
                 ? 'bg-[var(--brand-primary)] text-white'
                 : 'bg-[var(--surface-secondary)] text-[var(--text-tertiary)]'
@@ -625,7 +625,7 @@ export function BulkSchedule({ open, onClose, onComplete }) {
               onClick={() => handleModeSelect('recurring')}
             >
               <CardContent className="flex flex-col items-center p-6 text-center">
-                <Repeat className="mb-4 h-12 w-12 text-[var(--brand-secondary)]" />
+                <Repeat className="mb-4 h-12 w-12 text-[var(--brand-primary)]" />
                 <CardTitle className="mb-2 text-[var(--text-primary)]">Recurring Schedule</CardTitle>
                 <CardDescription className="text-[var(--text-tertiary)]">
                   Set up a repeating pattern for consistent posting times
@@ -707,7 +707,7 @@ export function BulkSchedule({ open, onClose, onComplete }) {
               <Button
                 onClick={() => setStep(step + 1)}
                 disabled={!canProceed()}
-                className="bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] text-white hover:opacity-90"
+                className="bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-primary)] text-white hover:opacity-90"
               >
                 Next
                 <ChevronRight className="ml-2 h-4 w-4" />
@@ -716,7 +716,7 @@ export function BulkSchedule({ open, onClose, onComplete }) {
               <Button
                 onClick={handleGenerate}
                 disabled={isGenerating}
-                className="bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] text-white hover:opacity-90"
+                className="bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-primary)] text-white hover:opacity-90"
               >
                 {isGenerating ? (
                   <>

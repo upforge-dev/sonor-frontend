@@ -156,7 +156,7 @@ export function ServiceCard({ service, brandColors, viewMode = 'list', onOpen })
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
               />
             ) : (
-              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[var(--brand-primary)]/10 to-[var(--brand-secondary)]/10">
+              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[var(--brand-primary)]/10 to-[var(--brand-primary)]/10">
                 <Zap className="h-12 w-12 text-[var(--brand-primary)]/50" />
               </div>
             )}
@@ -232,7 +232,7 @@ export function ServiceCard({ service, brandColors, viewMode = 'list', onOpen })
               )}
             </div>
           ) : (
-            <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-[var(--brand-primary)]/20 to-[var(--brand-secondary)]/20 flex items-center justify-center flex-shrink-0">
+            <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-[var(--brand-primary)]/20 to-[var(--brand-primary)]/20 flex items-center justify-center flex-shrink-0">
               <Zap className="h-6 w-6 text-[var(--brand-primary)]" />
             </div>
           )}
@@ -358,7 +358,7 @@ export function EventCard({ event, brandColors, viewMode = 'list', onOpen }) {
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
               />
             ) : (
-              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[var(--brand-primary)]/10 to-[var(--brand-secondary)]/10">
+              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[var(--brand-primary)]/10 to-[var(--brand-primary)]/10">
                 <Calendar className="h-12 w-12 text-[var(--brand-primary)]/50" />
               </div>
             )}
@@ -487,7 +487,7 @@ export function EventCard({ event, brandColors, viewMode = 'list', onOpen }) {
           ) : (
             <div className={cn(
               "w-20 flex-shrink-0 flex flex-col items-center justify-center py-4 border-r border-[var(--glass-border)]",
-              isPast ? "bg-[var(--glass-bg-inset)]" : "bg-gradient-to-br from-[var(--brand-primary)]/10 to-[var(--brand-secondary)]/10"
+              isPast ? "bg-[var(--glass-bg-inset)]" : "bg-gradient-to-br from-[var(--brand-primary)]/10 to-[var(--brand-primary)]/10"
             )}>
               {eventDate ? (
                 <>

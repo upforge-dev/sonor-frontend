@@ -1,7 +1,7 @@
 /**
  * Forms Manager - Broadcast-style UI for managing website forms
  * 
- * Uses brand_primary and brand_secondary colors exclusively
+ * Uses brand_primary and brand_primary colors exclusively
  * Matches Broadcast module design patterns
  */
 
@@ -159,7 +159,7 @@ const TABS = [
 
 const FORM_TYPES = {
   'prospect': { label: 'Lead Capture', color: 'var(--brand-primary)', icon: Users },
-  'contact': { label: 'Contact', color: 'var(--brand-secondary)', icon: MessageSquare },
+  'contact': { label: 'Contact', color: 'var(--brand-primary)', icon: MessageSquare },
   'support': { label: 'Support', color: '#007AFF', icon: AlertCircle },
   'feedback': { label: 'Feedback', color: '#FF9500', icon: Send },
   'newsletter': { label: 'Newsletter', color: '#AF52DE', icon: Mail },
@@ -176,7 +176,7 @@ function StatusBadge({ status }) {
   const statusConfig = {
     new: { label: 'New', className: 'bg-[var(--brand-primary)] text-white' },
     contacted: { label: 'Contacted', className: 'bg-amber-500 text-white' },
-    qualified: { label: 'Qualified', className: 'bg-[var(--brand-secondary)] text-white' },
+    qualified: { label: 'Qualified', className: 'bg-[var(--brand-primary)] text-white' },
     converted: { label: 'Converted', className: 'bg-emerald-600 text-white' },
     spam: { label: 'Spam', className: 'bg-red-500 text-white' }
   }
@@ -239,7 +239,7 @@ function StatCard({ icon: Icon, label, value, trend, trendUp, subtitle, onClick,
           </div>
           <div className={cn(
             'flex h-10 w-10 items-center justify-center rounded-xl',
-            'bg-gradient-to-br from-[var(--brand-primary)]/10 to-[var(--brand-secondary)]/10',
+            'bg-gradient-to-br from-[var(--brand-primary)]/10 to-[var(--brand-primary)]/10',
             'text-[var(--brand-primary)]'
           )}>
             <Icon className="h-5 w-5" />
@@ -338,7 +338,7 @@ function FormDetailView({
             <Button
               size="sm"
               onClick={() => onEdit?.(form)}
-              className="bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] text-white"
+              className="bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-primary)] text-white"
             >
               <Pencil className="h-4 w-4 mr-2" />
               Edit Form
@@ -358,8 +358,8 @@ function FormDetailView({
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--brand-secondary)]/10">
-              <TrendingUp className="h-4 w-4 text-[var(--brand-secondary)]" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--brand-primary)]/10">
+              <TrendingUp className="h-4 w-4 text-[var(--brand-primary)]" />
             </div>
             <div>
               <p className="text-lg font-semibold text-[var(--text-primary)]">{form.conversion_rate || '0%'}</p>
@@ -610,7 +610,7 @@ function FormDetailView({
                   <div className="flex items-center justify-between">
                     <Button
                       onClick={() => onEdit?.(form)}
-                      className="bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] text-white"
+                      className="bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-primary)] text-white"
                     >
                       <Pencil className="h-4 w-4 mr-2" />
                       Edit Form
@@ -772,8 +772,8 @@ function FormCard({ form, onSelect, onEdit, onViewCode }) {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--brand-secondary)]/10">
-              <TrendingUp className="h-4 w-4 text-[var(--brand-secondary)]" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--brand-primary)]/10">
+              <TrendingUp className="h-4 w-4 text-[var(--brand-primary)]" />
             </div>
             <div>
               <p className="text-sm font-semibold text-[var(--text-primary)]">{form.conversionRate || form.conversion_rate || '0%'}</p>
@@ -917,8 +917,8 @@ function SubmissionDetailModal({ submission, open, onOpenChange, onUpdateStatus,
               </div>
               {sub.phone && (
                 <div className="flex items-center gap-3 p-3 rounded-lg bg-[var(--surface-page)] border border-[var(--glass-border)]">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--brand-secondary)]/10">
-                    <Phone className="h-4 w-4 text-[var(--brand-secondary)]" />
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--brand-primary)]/10">
+                    <Phone className="h-4 w-4 text-[var(--brand-primary)]" />
                   </div>
                   <div>
                     <p className="text-[10px] text-[var(--text-tertiary)] uppercase">Phone</p>
@@ -939,8 +939,8 @@ function SubmissionDetailModal({ submission, open, onOpenChange, onUpdateStatus,
               )}
               {sub.source_page && (
                 <div className="flex items-center gap-3 p-3 rounded-lg bg-[var(--surface-page)] border border-[var(--glass-border)]">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--brand-secondary)]/10">
-                    <Globe className="h-4 w-4 text-[var(--brand-secondary)]" />
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--brand-primary)]/10">
+                    <Globe className="h-4 w-4 text-[var(--brand-primary)]" />
                   </div>
                   <div className="min-w-0">
                     <p className="text-[10px] text-[var(--text-tertiary)] uppercase">Source Page</p>
@@ -1315,6 +1315,7 @@ export default function FormsManager() {
           helpText: f.help_text || f.helpText,
           defaultValue: f.default_value || f.defaultValue,
           isRequired: f.is_required ?? f.isRequired,
+          hideLabel: f.hide_label ?? f.hideLabel ?? false,
           validation: f.validation,
           options: f.options,
           conditional: f.conditional,
@@ -1413,7 +1414,7 @@ export default function FormsManager() {
         {/* HERO HEADER - Brand gradient tile (Broadcast-style) */}
         {/* ================================================================== */}
         <div className={cn(
-          "shrink-0 relative overflow-hidden rounded-2xl bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] shadow-lg transition-all duration-300 mx-4 mt-4",
+          "shrink-0 relative overflow-hidden rounded-2xl bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-primary)] shadow-lg transition-all duration-300 mx-4 mt-4",
           isHeaderCollapsed ? "py-0" : ""
         )}>
           {/* Background pattern */}
@@ -1579,7 +1580,7 @@ export default function FormsManager() {
             <TabsContent value="create" className="m-0 h-full data-[state=inactive]:hidden">
               <Card className="h-full border-[var(--glass-border)] bg-[var(--glass-bg)]">
                 <CardContent className="flex flex-col items-center justify-center h-full">
-                  <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-[var(--brand-primary)]/20 to-[var(--brand-secondary)]/20 mb-6">
+                  <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-[var(--brand-primary)]/20 to-[var(--brand-primary)]/20 mb-6">
                     <Plus className="h-10 w-10 text-[var(--brand-primary)]" />
                   </div>
                   <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-2">Create a New Form</h2>
@@ -1591,7 +1592,7 @@ export default function FormsManager() {
                     <Button
                       size="lg"
                       onClick={handleCreateForm}
-                      className="bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] text-white hover:opacity-90"
+                      className="bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-primary)] text-white hover:opacity-90"
                     >
                       <Plus className="h-5 w-5 mr-2" />
                       Start Building
@@ -1640,7 +1641,7 @@ export default function FormsManager() {
               ) : forms.length === 0 ? (
                 <Card className="border-[var(--glass-border)] bg-[var(--glass-bg)]">
                   <CardContent className="flex flex-col items-center justify-center h-64">
-                    <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-[var(--brand-primary)]/10 to-[var(--brand-secondary)]/10 mb-4">
+                    <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-[var(--brand-primary)]/10 to-[var(--brand-primary)]/10 mb-4">
                       <FileText className="h-8 w-8 text-[var(--brand-primary)]" />
                     </div>
                     <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2">No forms yet</h3>
@@ -1649,7 +1650,7 @@ export default function FormsManager() {
                     </p>
                     <Button 
                       onClick={handleCreateForm}
-                      className="bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] text-white"
+                      className="bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-primary)] text-white"
                     >
                       <Plus className="h-4 w-4 mr-2" />
                       Create Form

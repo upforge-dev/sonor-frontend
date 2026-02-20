@@ -251,7 +251,7 @@ export default function EditProposalDialog({
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col glass-bg border-[var(--glass-border)]">
         <DialogHeader className="pb-4 border-b border-[var(--glass-border)]">
           <DialogTitle className="flex items-center gap-3 text-xl">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-secondary)] flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-primary)] flex items-center justify-center">
               <FileText className="w-5 h-5 text-white" />
             </div>
             <div className="flex-1">
@@ -619,7 +619,7 @@ export default function EditProposalDialog({
             <Button
               onClick={handleSend}
               disabled={isSaving || isSending || isExpired}
-              className="gap-2 bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] hover:opacity-90"
+              className="gap-2 bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-primary)] hover:opacity-90"
             >
               {isSending ? (
                 <Loader2 className="w-4 h-4 animate-spin" />

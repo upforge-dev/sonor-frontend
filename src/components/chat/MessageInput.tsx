@@ -572,7 +572,7 @@ export function MessageInput({
           className={cn(
             'shrink-0 p-2.5 rounded-xl transition-all duration-200',
             canSend
-              ? 'text-white bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] hover:opacity-90 shadow-lg shadow-[var(--brand-primary)]/20'
+              ? 'text-white bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-primary)] hover:opacity-90 shadow-lg shadow-[var(--brand-primary)]/20'
               : 'text-[var(--text-tertiary)] bg-[var(--surface-tertiary)] cursor-not-allowed'
           )}
         >

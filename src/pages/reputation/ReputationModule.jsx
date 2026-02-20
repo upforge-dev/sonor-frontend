@@ -420,7 +420,7 @@ function ReviewDetailPanel({ review, onClose, settings, onGenerateResponse, onAp
                         key={i} 
                         variant="outline" 
                         className="text-xs"
-                        style={{ borderColor: 'var(--brand-secondary)', color: 'var(--brand-secondary)' }}
+                        style={{ borderColor: 'var(--brand-primary)', color: 'var(--brand-primary)' }}
                       >
                         {topic}
                       </Badge>

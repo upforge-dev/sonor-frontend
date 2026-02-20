@@ -54,7 +54,7 @@ function StepIndicator({ currentStep, steps }) {
               className={cn(
                 'flex h-10 w-10 items-center justify-center rounded-full text-sm font-medium transition-all',
                 currentStep === step.id
-                  ? 'bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] text-white shadow-lg'
+                  ? 'bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-primary)] text-white shadow-lg'
                   : currentStep > step.id
                   ? 'bg-[var(--brand-primary)] text-white'
                   : 'bg-[var(--surface-secondary)] text-[var(--text-tertiary)]'
@@ -239,7 +239,7 @@ export function SiteScrapeWizard({ open, onOpenChange, projectId }) {
         return (
           <div className="space-y-6">
             <div className="text-center mb-8">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] mb-4">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-primary)] mb-4">
                 <Globe className="h-8 w-8 text-white" />
               </div>
               <h3 className="text-xl font-semibold text-[var(--text-primary)]">
@@ -362,7 +362,7 @@ export function SiteScrapeWizard({ open, onOpenChange, projectId }) {
               <Button
                 onClick={handleStartScrape}
                 disabled={!url || isLoading}
-                className="bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)]"
+                className="bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-primary)]"
               >
                 {isLoading ? (
                   <>

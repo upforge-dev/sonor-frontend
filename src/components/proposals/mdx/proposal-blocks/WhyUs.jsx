@@ -31,7 +31,7 @@ export const WhyUs = ({
   }
 
   return (
-    <div className="my-8 p-6 md:p-8 rounded-xl bg-gradient-to-br from-[var(--brand-primary)]/5 to-[var(--brand-secondary,var(--brand-primary))]/10 border border-[var(--brand-primary)]/20">
+    <div className="my-8 p-6 md:p-8 rounded-xl bg-gradient-to-br from-[var(--brand-primary)]/5 to-[var(--brand-primary)]/10 border border-[var(--brand-primary)]/20">
       {/* Header */}
       <div className="text-center mb-8">
         <h2 className="text-2xl md:text-3xl font-bold text-[var(--text-primary)] mb-2">

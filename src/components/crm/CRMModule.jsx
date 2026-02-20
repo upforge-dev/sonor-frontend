@@ -471,14 +471,13 @@ export default function CRMDashboard() {
   const orgId = currentOrg?.id
   const orgName = currentOrg?.name
   const brandPrimary = brandColors.primary
-  const brandSecondary = brandColors.secondary
   const brandColorSource = brandColors.colorSource
 
   // Debug: Log project context
   useEffect(() => {
     console.log('[CRM] Project Context:', { projectId, projectName, orgId, orgName })
-    console.log('[CRM] Brand Colors:', { primary: brandPrimary, secondary: brandSecondary, colorSource: brandColorSource })
-  }, [projectId, projectName, orgId, orgName, brandPrimary, brandSecondary, brandColorSource])
+    console.log('[CRM] Brand Colors:', { primary: brandPrimary, colorSource: brandColorSource })
+  }, [projectId, projectName, orgId, orgName, brandPrimary, brandColorSource])
   
   // Computed stats
   const stats = useMemo(() => {

@@ -204,7 +204,6 @@ function ProjectTile({
   
   // Brand colors for gradient accent bar
   const brandPrimary = project.brand_primary || project.theme_color || '#4bbf39'
-  const brandSecondary = project.brand_secondary || brandPrimary
 
   return (
     <div
@@ -244,7 +243,7 @@ function ProjectTile({
         {/* Brand color gradient accent bar */}
         <div 
           className="absolute bottom-0 left-0 right-0 h-1"
-          style={{ background: `linear-gradient(90deg, ${brandPrimary} 0%, ${brandSecondary} 100%)` }}
+          style={{ background: `linear-gradient(90deg, ${brandPrimary} 0%, ${brandPrimary} 100%)` }}
         />
         
         {/* Hover overlay */}

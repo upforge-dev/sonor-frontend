@@ -2,7 +2,6 @@ import { useMemo } from 'react'
 import useAuthStore from '@/lib/auth-store'
 
 const DEFAULT_BRAND_PRIMARY = '#4bbf39'
-const DEFAULT_BRAND_SECONDARY = '#39bfb0'
 const DEFAULT_BRAND_ACCENT = '#10B981'
 
 /**
@@ -80,16 +79,16 @@ function hexToRgba(hex, alpha = 1) {
  * Hook to access brand colors with auto-generated variants.
  * 
  * Priority order (project colors now take precedence):
- * 1. Project columns: project.brand_primary, project.brand_secondary
- * 2. Organization columns: org.brand_primary, org.brand_secondary, org.brand_accent
+ * 1. Project columns: project.brand_primary
+ * 2. Organization columns: org.brand_primary, org.brand_accent
  * 3. Legacy theme object: org.theme.brandColor1, org.theme.primaryColor, etc.
  * 4. Uptrade defaults
- * 
+ *
  * @returns {Object} Brand colors with variants
- * 
+ *
  * @example
- * const { primary, secondary, accent, primaryHover, primaryLight, rgba } = useBrandColors()
- * 
+ * const { primary, accent, primaryHover, primaryLight, rgba } = useBrandColors()
+ *
  * <button style={{ backgroundColor: primary }}>
  * <div style={{ backgroundColor: rgba.primary10 }}>
  */
@@ -111,16 +110,6 @@ export function useBrandColors() {
       DEFAULT_BRAND_PRIMARY
     )
 
-    const secondary = normalizeHexColor(
-      // 1. Project-level color (highest priority)
-      currentProject?.brand_secondary ||
-      // 2. Org-level direct column
-      currentOrg?.brand_secondary ||
-      // 3. Legacy org theme
-      orgTheme.brandColor2 || orgTheme.secondaryColor || orgTheme.secondary,
-      DEFAULT_BRAND_SECONDARY
-    )
-
     const accent = normalizeHexColor(
       currentOrg?.brand_accent ||
       orgTheme.accentColor || orgTheme.accent,
@@ -135,22 +124,18 @@ export function useBrandColors() {
     return {
       // Base colors
       primary,
-      secondary,
       accent,
 
       // Hover variants (18% darker)
       primaryHover: darkenHex(primary, 0.18),
-      secondaryHover: darkenHex(secondary, 0.18),
       accentHover: darkenHex(accent, 0.18),
 
       // Light variants (25% lighter)
       primaryLight: lightenHex(primary, 0.25),
-      secondaryLight: lightenHex(secondary, 0.25),
       accentLight: lightenHex(accent, 0.25),
 
       // Dark variants (35% darker)
       primaryDark: darkenHex(primary, 0.35),
-      secondaryDark: darkenHex(secondary, 0.35),
       accentDark: darkenHex(accent, 0.35),
 
       // RGBA variants for opacity overlays
@@ -159,10 +144,6 @@ export function useBrandColors() {
         primary20: hexToRgba(primary, 0.2),
         primary30: hexToRgba(primary, 0.3),
         primary50: hexToRgba(primary, 0.5),
-        secondary10: hexToRgba(secondary, 0.1),
-        secondary20: hexToRgba(secondary, 0.2),
-        secondary30: hexToRgba(secondary, 0.3),
-        secondary50: hexToRgba(secondary, 0.5),
         accent10: hexToRgba(accent, 0.1),
         accent20: hexToRgba(accent, 0.2),
       },
@@ -175,7 +156,6 @@ export function useBrandColors() {
       // Defaults (for reference/fallback)
       defaults: {
         primary: DEFAULT_BRAND_PRIMARY,
-        secondary: DEFAULT_BRAND_SECONDARY,
         accent: DEFAULT_BRAND_ACCENT,
       },
 

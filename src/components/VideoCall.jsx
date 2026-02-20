@@ -147,7 +147,7 @@ export default function VideoCall({
   return (
     <div className={cn("relative flex flex-col bg-[var(--surface-primary)] rounded-xl overflow-hidden", className)}>
       {/* Header */}
-      <div className="flex items-center justify-between p-4 bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] text-white">
+      <div className="flex items-center justify-between p-4 bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-primary)] text-white">
         <div>
           <h3 className="font-semibold">{contactName}</h3>
           <p className="text-xs opacity-80">{contactEmail}</p>

@@ -248,7 +248,7 @@ const SUGGESTED_TIMES = [
 function SoundsPanel({ selectedSound, onSelectSound, onAddEffect, selectedPlatforms = [] }) {
   return (
     <div className="flex flex-col">
-      <div className="border-b border-[var(--glass-border)] bg-gradient-to-r from-[var(--brand-primary)]/10 to-[var(--brand-secondary)]/10 px-4 py-3">
+      <div className="border-b border-[var(--glass-border)] bg-gradient-to-r from-[var(--brand-primary)]/10 to-[var(--brand-primary)]/10 px-4 py-3">
         <div className="flex items-center gap-2">
           <Music className="h-5 w-5 text-[var(--brand-primary)]" />
           <h3 className="font-semibold text-[var(--text-primary)]">Audio</h3>
@@ -261,7 +261,7 @@ function SoundsPanel({ selectedSound, onSelectSound, onAddEffect, selectedPlatfo
       <div className="p-4 space-y-4">
         {/* Original Audio Indicator */}
         <div className="flex items-center gap-3 rounded-xl border border-[var(--brand-primary)]/30 bg-[var(--brand-primary)]/10 p-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-secondary)]">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-primary)]">
             <Volume2 className="h-6 w-6 text-white" />
           </div>
           <div className="flex-1">
@@ -574,9 +574,9 @@ function PlatformToolsPanel({
           </div>
 
           {/* AI Assistant */}
-          <div className="rounded-xl border border-[var(--glass-border)] bg-gradient-to-br from-[var(--brand-primary)]/10 to-[var(--brand-secondary)]/10 p-4">
+          <div className="rounded-xl border border-[var(--glass-border)] bg-gradient-to-br from-[var(--brand-primary)]/10 to-[var(--brand-primary)]/10 p-4">
             <div className="flex items-center gap-2 mb-3">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)]">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-primary)]">
                 <Sparkles className="h-4 w-4 text-white" />
               </div>
               <div>
@@ -1267,7 +1267,7 @@ export function ReelComposer({
                   size="sm" 
                   onClick={() => handleSubmit(true)} 
                   disabled={isSubmitting}
-                  className="flex-1 bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] text-white hover:opacity-90"
+                  className="flex-1 bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-primary)] text-white hover:opacity-90"
                 >
                   {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
                   {scheduledAt && scheduledAt > new Date() ? 'Schedule' : 'Publish'}

@@ -388,7 +388,7 @@ function DayCell({ date, posts, isToday, isCurrentMonth, onAddPost, onPostClick,
       className={cn(
         'group relative min-h-[120px] border-b border-r border-[var(--glass-border)] p-1.5 transition-colors',
         !isCurrentMonth && 'bg-[var(--surface-secondary)]/50',
-        isToday && 'bg-gradient-to-br from-[var(--brand-primary)]/10 to-[var(--brand-secondary)]/10',
+        isToday && 'bg-[var(--brand-primary)]/10',
         'hover:bg-[var(--surface-secondary)]/80'
       )}
     >
@@ -398,7 +398,7 @@ function DayCell({ date, posts, isToday, isCurrentMonth, onAddPost, onPostClick,
           <span
             className={cn(
               'flex h-7 w-7 items-center justify-center rounded-full text-sm font-medium transition-colors',
-              isToday && 'bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] text-white shadow-sm',
+              isToday && 'bg-[var(--brand-primary)] text-white shadow-sm',
               !isToday && isCurrentMonth && 'text-[var(--text-primary)] group-hover:bg-[var(--surface-secondary)]',
               !isCurrentMonth && 'text-[var(--text-tertiary)]'
             )}
@@ -948,7 +948,7 @@ export function BroadcastCalendar({
 
             <Button 
               onClick={() => handleAddPost(new Date())}
-              className="bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] text-white shadow-sm hover:opacity-90"
+              className="bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-primary)] text-white shadow-sm hover:opacity-90"
             >
               <Plus className="mr-2 h-4 w-4" />
               New Post
@@ -970,7 +970,7 @@ export function BroadcastCalendar({
             </div>
             <div className="h-8 w-px bg-[var(--glass-border)]" />
             <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--brand-secondary)]/20 text-[var(--brand-secondary)]">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--brand-primary)]/20 text-[var(--brand-primary)]">
                 <Clock className="h-4 w-4" />
               </div>
               <div>

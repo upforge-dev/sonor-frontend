@@ -1,6 +1,7 @@
 // src/components/TopHeader.jsx
 // Supabase-style top header bar with org/project switchers, search, help, and user menu
 import { useState, useCallback } from 'react'
+import LogoSvg from '@/assets/logo.svg?react'
 import { useLocation } from 'react-router-dom'
 import { 
   Search, 
@@ -525,11 +526,7 @@ export default function TopHeader({ onNavigate, onOpenSearch }) {
         <div className="flex items-center">
           {/* Uptrade Logo - aligned with sidebar icons (56px = w-14) */}
           <a href="/" className="w-14 flex items-center justify-center hover:bg-muted/50 transition-colors h-12">
-            <img 
-              src="/favicon.svg" 
-              alt="Uptrade" 
-              className="w-5 h-5"
-            />
+            <LogoSvg className="w-7 h-7 text-black dark:text-white" fill="currentColor" />
           </a>
 
           {/* Separator */}

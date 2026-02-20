@@ -243,7 +243,7 @@ function CallDetailModal({ call, isOpen, onClose, onLookupBusiness }) {
               <GlassCard padding="md">
                 <h4 className="text-sm font-semibold text-[var(--text-primary)] mb-3">Matched Contact</h4>
                 <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-secondary)] flex items-center justify-center text-white font-semibold">
+                  <div className="h-10 w-10 rounded-full bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-primary)] flex items-center justify-center text-white font-semibold">
                     {call.contact.name?.charAt(0)?.toUpperCase() || '?'}
                   </div>
                   <div>

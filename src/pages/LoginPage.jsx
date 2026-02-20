@@ -6,7 +6,7 @@ import { Input } from '../components/ui/input'
 import { Label } from '../components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
 import { Lock, Mail, Eye, EyeOff, ShieldCheck, Loader2, HelpCircle, ChevronRight } from 'lucide-react'
-const logo = '/logo.svg'
+import LogoSvg from '@/assets/logo.svg?react'
 import useAuthStore from '../lib/auth-store'
 import { signInWithGoogle, resetPasswordForEmail } from '../lib/supabase-auth'
 import { authApi } from '../lib/portal-api'
@@ -14,8 +14,8 @@ import { authApi } from '../lib/portal-api'
 // purely visual; server enforces access
 const BRAND_UI = {
   default: {
-    title: 'Uptrade Portal',
-    tagline: 'Your secure client hub for projects, reports, and collaboration',
+    title: 'Sonor',
+    tagline: 'Your unified marketing command center powered by Signal AI',
   },
   row94: {
     title: 'Row 94 — Client Portal',
@@ -207,7 +207,7 @@ export default function LoginPage() {
       {/* Subtle gradient background */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute -top-1/2 -left-1/2 w-full h-full bg-gradient-to-br from-[var(--brand-primary)]/5 to-transparent rounded-full blur-3xl" />
-        <div className="absolute -bottom-1/2 -right-1/2 w-full h-full bg-gradient-to-tl from-[var(--brand-secondary)]/5 to-transparent rounded-full blur-3xl" />
+        <div className="absolute -bottom-1/2 -right-1/2 w-full h-full bg-gradient-to-tl from-[var(--brand-primary)]/5 to-transparent rounded-full blur-3xl" />
       </div>
 
       {/* Logout Button - Top Right */}
@@ -226,11 +226,7 @@ export default function LoginPage() {
         <CardHeader className="space-y-4 text-center pb-2">
           {/* Logo */}
           <div className="flex justify-center">
-            <img
-              src={logo}
-              alt="Uptrade Media"
-              className="h-14 w-14"
-            />
+            <LogoSvg className="h-14 w-14 text-black dark:text-white" fill="currentColor" />
           </div>
           
           <div className="space-y-2">
@@ -342,7 +338,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => { setForgotOpen(!forgotOpen); setForgotMsg('') }}
-                className="text-[var(--brand-primary)] hover:text-[var(--brand-secondary)] transition-colors font-medium"
+                className="text-[var(--brand-primary)] hover:text-[var(--brand-primary)] transition-colors font-medium"
               >
                 Forgot password?
               </button>
@@ -359,7 +355,7 @@ export default function LoginPage() {
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="w-full h-11 bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] hover:opacity-90 text-white font-medium shadow-[var(--shadow-md)] transition-all duration-200"
+              className="w-full h-11 bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-primary)] hover:opacity-90 text-white font-medium shadow-[var(--shadow-md)] transition-all duration-200"
             >
               {isSubmitting ? (
                 <span className="inline-flex items-center gap-2">
@@ -389,7 +385,7 @@ export default function LoginPage() {
                   <Button
                     type="submit"
                     disabled={forgotLoading}
-                    className="w-full bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)]"
+                    className="w-full bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-primary)]"
                   >
                     {forgotLoading ? 'Sending…' : 'Send reset instructions'}
                   </Button>
@@ -456,7 +452,7 @@ export default function LoginPage() {
                 <Button
                   type="submit"
                   disabled={supportLoading}
-                  className="w-full bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)]"
+                  className="w-full bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-primary)]"
                 >
                   {supportLoading ? 'Sending…' : 'Send message'}
                 </Button>

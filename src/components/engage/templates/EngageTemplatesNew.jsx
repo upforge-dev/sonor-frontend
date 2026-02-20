@@ -1,6 +1,6 @@
 // src/components/engage/templates/EngageTemplatesNew.jsx
 // JSX-based templates for the new EngageStudio design format
-// Each template uses CSS variables (var(--brand-primary), var(--brand-secondary)) for brand consistency
+// Each template uses CSS variables (var(--brand-primary), var(--brand-primary)) for brand consistency
 
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -183,7 +183,7 @@ const TEMPLATES = [
           name: 'Header Band',
           props: {},
           style: {
-            background: 'linear-gradient(135deg, var(--brand-primary), var(--brand-secondary))',
+            background: 'linear-gradient(135deg, var(--brand-primary), var(--brand-primary))',
             padding: '24px',
             textAlign: 'center',
           },
@@ -523,7 +523,7 @@ const TEMPLATES = [
       name: 'Banner Container',
       props: {},
       style: {
-        background: 'linear-gradient(135deg, var(--brand-primary), var(--brand-secondary))',
+        background: 'linear-gradient(135deg, var(--brand-primary), var(--brand-primary))',
         padding: '12px 24px',
         display: 'flex',
         alignItems: 'center',
@@ -706,7 +706,7 @@ function TemplateCard({ template, onSelect }) {
       <div 
         className="w-full h-full flex items-center justify-center p-3"
         style={{
-          background: rootStyle.background || 'linear-gradient(135deg, var(--brand-primary), var(--brand-secondary))',
+          background: rootStyle.background || 'linear-gradient(135deg, var(--brand-primary), var(--brand-primary))',
         }}
       >
         <div

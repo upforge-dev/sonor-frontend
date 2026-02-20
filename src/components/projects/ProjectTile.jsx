@@ -121,8 +121,7 @@ const ProjectTile = memo(function ProjectTile({
   
   // Get brand colors for gradient accent
   const brandPrimary = project.brand_primary || project.theme_color || '#4bbf39'
-  const brandSecondary = project.brand_secondary || brandPrimary
-  
+
   // Show fallback if no URL, API error, or image load error
   const showFallback = !screenshotUrl || screenshotError || imageError
 
@@ -160,7 +159,7 @@ const ProjectTile = memo(function ProjectTile({
           <div 
             className="absolute inset-0 flex flex-col items-center justify-center"
             style={{ 
-              background: `linear-gradient(135deg, ${brandPrimary}20 0%, ${brandSecondary}10 100%)` 
+              background: `linear-gradient(135deg, ${brandPrimary}20 0%, ${brandPrimary}10 100%)` 
             }}
           >
             {project.logo_url ? (
@@ -283,7 +282,7 @@ const ProjectTile = memo(function ProjectTile({
         {/* Brand color gradient accent bar */}
         <div 
           className="absolute bottom-0 left-0 right-0 h-1"
-          style={{ background: `linear-gradient(90deg, ${brandPrimary} 0%, ${brandSecondary} 100%)` }}
+          style={{ background: `linear-gradient(90deg, ${brandPrimary} 0%, ${brandPrimary} 100%)` }}
         />
       </div>
       
@@ -354,8 +353,7 @@ export function ProjectListItem({
   orgName,
 }) {
   const brandPrimary = project.brand_primary || project.theme_color || '#4bbf39'
-  const brandSecondary = project.brand_secondary || brandPrimary
-  
+
   return (
     <button
       onClick={() => onSelect?.(project)}
@@ -369,7 +367,7 @@ export function ProjectListItem({
       {/* Color gradient dot */}
       <div 
         className="w-2.5 h-2.5 rounded-full shrink-0"
-        style={{ background: `linear-gradient(135deg, ${brandPrimary} 0%, ${brandSecondary} 100%)` }}
+        style={{ background: `linear-gradient(135deg, ${brandPrimary} 0%, ${brandPrimary} 100%)` }}
       />
       
       {/* Content */}

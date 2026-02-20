@@ -1850,16 +1850,16 @@ function Canvas() {
 // Brand color constants
 const BRAND_COLORS = [
   { id: 'primary', label: 'Primary', value: 'var(--brand-primary)' },
-  { id: 'secondary', label: 'Secondary', value: 'var(--brand-secondary)' },
+  { id: 'secondary', label: 'Secondary', value: 'var(--brand-primary)' },
   { id: 'primary-light', label: 'Primary 15%', value: 'color-mix(in srgb, var(--brand-primary) 15%, transparent)' },
-  { id: 'secondary-light', label: 'Secondary 15%', value: 'color-mix(in srgb, var(--brand-secondary) 15%, transparent)' },
+  { id: 'secondary-light', label: 'Secondary 15%', value: 'color-mix(in srgb, var(--brand-primary) 15%, transparent)' },
 ]
 
 const GRADIENT_PRESETS = [
-  { id: 'brand', label: 'Brand', value: 'linear-gradient(135deg, var(--brand-primary), var(--brand-secondary))' },
-  { id: 'brand-reverse', label: 'Brand Rev', value: 'linear-gradient(135deg, var(--brand-secondary), var(--brand-primary))' },
+  { id: 'brand', label: 'Brand', value: 'linear-gradient(135deg, var(--brand-primary), var(--brand-primary))' },
+  { id: 'brand-reverse', label: 'Brand Rev', value: 'linear-gradient(135deg, var(--brand-primary), var(--brand-primary))' },
   { id: 'primary-fade', label: 'Primary Fade', value: 'linear-gradient(180deg, var(--brand-primary), transparent)' },
-  { id: 'secondary-fade', label: 'Secondary Fade', value: 'linear-gradient(180deg, var(--brand-secondary), transparent)' },
+  { id: 'secondary-fade', label: 'Secondary Fade', value: 'linear-gradient(180deg, var(--brand-primary), transparent)' },
 ]
 
 // Reusable color picker with brand swatches and gradient support
@@ -1869,7 +1869,7 @@ function ColorPicker({ value, onChange, label, showGradients = true }) {
   const [gType, setGType] = useState('linear')
   const [gAngle, setGAngle] = useState('135')
   const [gStart, setGStart] = useState('var(--brand-primary)')
-  const [gEnd, setGEnd] = useState('var(--brand-secondary)')
+  const [gEnd, setGEnd] = useState('var(--brand-primary)')
   
   const isGradient = value?.includes('gradient')
   const isBrandVar = value?.includes('var(--brand')
@@ -2015,7 +2015,7 @@ function ColorPicker({ value, onChange, label, showGradients = true }) {
                     onChange={(e) => setGStart(e.target.value)}
                   >
                     <option value="var(--brand-primary)">Primary</option>
-                    <option value="var(--brand-secondary)">Secondary</option>
+                    <option value="var(--brand-primary)">Secondary</option>
                     <option value="#ffffff">White</option>
                     <option value="#000000">Black</option>
                     <option value="transparent">Transparent</option>
@@ -2028,7 +2028,7 @@ function ColorPicker({ value, onChange, label, showGradients = true }) {
                     value={gEnd}
                     onChange={(e) => setGEnd(e.target.value)}
                   >
-                    <option value="var(--brand-secondary)">Secondary</option>
+                    <option value="var(--brand-primary)">Secondary</option>
                     <option value="var(--brand-primary)">Primary</option>
                     <option value="#ffffff">White</option>
                     <option value="#000000">Black</option>

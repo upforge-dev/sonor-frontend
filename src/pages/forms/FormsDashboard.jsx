@@ -859,7 +859,7 @@ export default function FormsDashboard() {
             </ScrollArea>
             {hasSignal && (
               <div className="p-3 border-t border-[var(--glass-border)]">
-                <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-[var(--brand-primary)]/10 to-[var(--brand-secondary)]/10">
+                <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-[var(--brand-primary)]/10 to-[var(--brand-primary)]/10">
                   <SignalIcon className="h-4 w-4 text-[var(--brand-primary)]" />
                   <span className="text-xs font-medium text-[var(--text-primary)]">Signal AI Active</span>
                 </div>

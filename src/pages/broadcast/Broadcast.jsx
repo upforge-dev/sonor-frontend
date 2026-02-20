@@ -360,7 +360,7 @@ export function Broadcast({ onNavigate }) {
       </Tooltip>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button className="h-8 px-3 gap-1.5 bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] text-white shadow-sm hover:opacity-90">
+          <Button className="h-8 px-3 gap-1.5 bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-primary)] text-white shadow-sm hover:opacity-90">
             <Plus className="h-4 w-4" />
             Create
           </Button>
@@ -426,7 +426,7 @@ export function Broadcast({ onNavigate }) {
                         className={cn(
                           "w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all duration-200",
                           currentView === item.id
-                            ? "bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] text-white font-medium shadow-sm" 
+                            ? "bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-primary)] text-white font-medium shadow-sm" 
                             : "text-[var(--text-secondary)] hover:bg-[var(--glass-bg-hover)] hover:text-[var(--text-primary)]"
                         )}
                       >

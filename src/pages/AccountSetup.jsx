@@ -168,7 +168,7 @@ export default function AccountSetup() {
       {/* Subtle gradient background - matching login page */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute -top-1/2 -left-1/2 w-full h-full bg-gradient-to-br from-[var(--brand-primary)]/5 to-transparent rounded-full blur-3xl" />
-        <div className="absolute -bottom-1/2 -right-1/2 w-full h-full bg-gradient-to-tl from-[var(--brand-secondary)]/5 to-transparent rounded-full blur-3xl" />
+        <div className="absolute -bottom-1/2 -right-1/2 w-full h-full bg-gradient-to-tl from-[var(--brand-primary)]/5 to-transparent rounded-full blur-3xl" />
       </div>
 
       <Card className="relative z-20 w-full max-w-md mx-4">
@@ -306,7 +306,7 @@ export default function AccountSetup() {
                 <Button
                   type="submit"
                   disabled={isSubmitting || !password || !confirmPassword}
-                  className="w-full h-11 bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] hover:opacity-90 text-white font-medium shadow-[var(--shadow-md)] transition-all duration-200"
+                  className="w-full h-11 bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-primary)] hover:opacity-90 text-white font-medium shadow-[var(--shadow-md)] transition-all duration-200"
                 >
                   {isSubmitting ? (
                     <span className="inline-flex items-center gap-2">
@@ -377,7 +377,7 @@ export default function AccountSetup() {
               </div>
               <Button
                 onClick={() => navigate('/login')}
-                className="w-full h-11 bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] hover:opacity-90 text-white font-medium shadow-[var(--shadow-md)] transition-all duration-200"
+                className="w-full h-11 bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-primary)] hover:opacity-90 text-white font-medium shadow-[var(--shadow-md)] transition-all duration-200"
               >
                 Go to Login
               </Button>

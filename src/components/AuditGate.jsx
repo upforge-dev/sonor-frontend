@@ -246,7 +246,7 @@ export default function AuditGate() {
           <p className="text-[var(--text-secondary)] mb-6">{errorInfo.message}</p>
           <a 
             href="https://uptrademedia.com/free-audit/"
-            className="inline-flex items-center justify-center px-6 py-3 bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] text-white font-semibold rounded-xl hover:shadow-lg transition-all"
+            className="inline-flex items-center justify-center px-6 py-3 bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-primary)] text-white font-semibold rounded-xl hover:shadow-lg transition-all"
           >
             <RefreshCw className="w-4 h-4 mr-2" />
             Request a New Audit

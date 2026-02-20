@@ -190,7 +190,7 @@ export function AiImageGenerator({
             <Button
               onClick={handleGenerate}
               disabled={!prompt.trim() || isGenerating}
-              className="w-full bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] text-white hover:opacity-90"
+              className="w-full bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-primary)] text-white hover:opacity-90"
             >
               {isGenerating ? (
                 <>
@@ -276,7 +276,7 @@ export function AiImageGenerator({
           <Button
             onClick={handleSelectAndUse}
             disabled={!selectedImage}
-            className="bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] text-white hover:opacity-90"
+            className="bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-primary)] text-white hover:opacity-90"
           >
             <Check className="mr-2 h-4 w-4" />
             Use Selected Image

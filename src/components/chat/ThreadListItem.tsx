@@ -198,7 +198,7 @@ export function ThreadListItem({
       {/* Avatar + presence (Phase 2.10) */}
       <div className="flex-shrink-0 relative">
         {isEcho ? (
-          <div className="w-10 h-10 rounded-full flex items-center justify-center bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-secondary)]">
+          <div className="w-10 h-10 rounded-full flex items-center justify-center bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-primary)]">
             <EchoLogo size={24} />
           </div>
         ) : (thread.recipient?.avatar || thread.recipient?.avatar_url) ? (

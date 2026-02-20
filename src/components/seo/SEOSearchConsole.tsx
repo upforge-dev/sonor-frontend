@@ -488,7 +488,7 @@ export default function SEOSearchConsole({ projectId }: SEOSearchConsoleProps) {
         <Card className="border-dashed">
           <CardContent className="py-12 text-center">
             <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 rounded-full" style={{
-              background: 'linear-gradient(135deg, color-mix(in srgb, var(--brand-primary) 15%, transparent), color-mix(in srgb, var(--brand-secondary) 15%, transparent))'
+              background: 'linear-gradient(135deg, color-mix(in srgb, var(--brand-primary) 15%, transparent), color-mix(in srgb, var(--brand-primary) 15%, transparent))'
             }}>
               <Globe className="h-8 w-8" style={{ color: 'var(--brand-primary)' }} />
             </div>
@@ -566,7 +566,7 @@ export default function SEOSearchConsole({ projectId }: SEOSearchConsoleProps) {
                 onClick={handleAutoFix}
                 disabled={isReconciling || !issues?.length}
                 className="gap-1.5 text-white"
-                style={{ background: 'linear-gradient(135deg, var(--brand-primary), var(--brand-secondary))' }}
+                style={{ background: 'linear-gradient(135deg, var(--brand-primary), var(--brand-primary))' }}
               >
                 {autoFix.isPending ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />

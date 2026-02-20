@@ -380,7 +380,7 @@ export default function SchedulerModal({
         </button>
 
         {/* Header */}
-        <div className="bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] px-4 py-4 sm:px-6 sm:py-5 text-white flex-shrink-0">
+        <div className="bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-primary)] px-4 py-4 sm:px-6 sm:py-5 text-white flex-shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0">
               <CalendarDays className="w-5 h-5" />
@@ -435,7 +435,7 @@ export default function SchedulerModal({
                           onClick={() => setSelectedDate(date)}
                           className={`w-full p-3 rounded-xl text-left transition-all flex items-center gap-3 ${
                             isSelected 
-                              ? 'bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] text-white shadow-lg' 
+                              ? 'bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-primary)] text-white shadow-lg' 
                               : 'bg-[var(--glass-bg)] hover:bg-[var(--glass-bg-hover)] text-[var(--text-primary)] border border-[var(--glass-border)]'
                           }`}
                         >
@@ -511,7 +511,7 @@ export default function SchedulerModal({
                               ${!dayInfo.isCurrentMonth ? 'text-[var(--text-tertiary)]/30' : ''}
                               ${isAvailable && !isSelected ? 'text-[var(--text-primary)] hover:bg-[var(--brand-primary)]/10 hover:text-[var(--brand-primary)]' : ''}
                               ${!isAvailable && dayInfo.isCurrentMonth ? 'text-[var(--text-tertiary)]/50 bg-[var(--glass-bg)] cursor-not-allowed line-through' : ''}
-                              ${isSelected ? 'bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] text-white shadow-md' : ''}
+                              ${isSelected ? 'bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-primary)] text-white shadow-md' : ''}
                             `}
                           >
                             {dayInfo.day}
@@ -582,7 +582,7 @@ export default function SchedulerModal({
                             p-2.5 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-2
                             ${isBooked ? 'bg-[var(--glass-bg)] text-[var(--text-tertiary)] cursor-not-allowed line-through' : ''}
                             ${!isBooked && !isSelected ? 'bg-[var(--glass-bg)] text-[var(--text-primary)] hover:bg-[var(--brand-primary)]/10 hover:text-[var(--brand-primary)] border border-[var(--glass-border)]' : ''}
-                            ${isSelected ? 'bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] text-white shadow-md' : ''}
+                            ${isSelected ? 'bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-primary)] text-white shadow-md' : ''}
                           `}
                         >
                           <Clock className="w-3.5 h-3.5" />
@@ -706,7 +706,7 @@ export default function SchedulerModal({
                 transition={{ duration: 0.3 }}
                 className="text-center py-4"
               >
-                <div className="w-16 h-16 rounded-full bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] flex items-center justify-center mx-auto mb-4">
+                <div className="w-16 h-16 rounded-full bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-primary)] flex items-center justify-center mx-auto mb-4">
                   <Check className="w-8 h-8 text-white" />
                 </div>
                 
@@ -738,7 +738,7 @@ export default function SchedulerModal({
 
                 <button
                   onClick={onClose}
-                  className="w-full px-6 py-3 rounded-xl font-bold bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] text-white shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all"
+                  className="w-full px-6 py-3 rounded-xl font-bold bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-primary)] text-white shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all"
                 >
                   Done
                 </button>
@@ -773,7 +773,7 @@ export default function SchedulerModal({
                   (step === 3 && (!formData.name || !formData.email)) ||
                   isSubmitting
                 }
-                className="flex-1 px-4 py-2.5 rounded-xl font-bold bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] text-white shadow-md hover:shadow-lg hover:scale-[1.02] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 text-sm flex items-center justify-center gap-2"
+                className="flex-1 px-4 py-2.5 rounded-xl font-bold bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-primary)] text-white shadow-md hover:shadow-lg hover:scale-[1.02] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 text-sm flex items-center justify-center gap-2"
               >
                 {isSubmitting ? (
                   <>

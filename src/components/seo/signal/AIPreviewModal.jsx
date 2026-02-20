@@ -295,7 +295,7 @@ export default function AIPreviewModal({
             <div className="flex flex-col items-center justify-center py-12 gap-3">
               <div className="relative">
                 <Loader2 className="h-8 w-8 animate-spin" style={{ color: 'var(--brand-primary)' }} />
-                <Sparkles className="h-3 w-3 absolute -top-1 -right-1 animate-pulse" style={{ color: 'var(--brand-secondary)' }} />
+                <Sparkles className="h-3 w-3 absolute -top-1 -right-1 animate-pulse" style={{ color: 'var(--brand-primary)' }} />
               </div>
               <p className="text-sm text-[var(--text-secondary)]">
                 Generating AI suggestions...

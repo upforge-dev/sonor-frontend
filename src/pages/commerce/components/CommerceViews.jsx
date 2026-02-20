@@ -158,7 +158,7 @@ export function HighlightsView({ stats, products, services = [], events = [], tr
                 <span className="text-[var(--text-secondary)]">Revenue</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <div className="w-2.5 h-2.5 rounded-full bg-[var(--brand-secondary)]" />
+                <div className="w-2.5 h-2.5 rounded-full bg-[var(--brand-primary)]" />
                 <span className="text-[var(--text-secondary)]">Orders</span>
               </div>
             </div>

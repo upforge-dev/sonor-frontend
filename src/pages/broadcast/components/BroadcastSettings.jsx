@@ -165,7 +165,7 @@ function PlatformCard({ platform, connections, onConnect }) {
                   Connected
                 </Badge>
               ) : (
-                <Button size="sm" className="bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] text-white hover:opacity-90" onClick={() => onConnect(platform.id)}>
+                <Button size="sm" className="bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-primary)] text-white hover:opacity-90" onClick={() => onConnect(platform.id)}>
                   <Plus className="mr-2 h-4 w-4" />
                   Connect
                 </Button>
@@ -277,7 +277,7 @@ function CredentialsCard({ platform, credentials, onSave }) {
                   />
                 </div>
                 <div className="flex gap-2">
-                  <Button size="sm" className="bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-secondary)] text-white hover:opacity-90" onClick={handleSave} disabled={isSaving}>
+                  <Button size="sm" className="bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-primary)] text-white hover:opacity-90" onClick={handleSave} disabled={isSaving}>
                     {isSaving ? 'Saving...' : 'Save'}
                   </Button>
                   <Button 
