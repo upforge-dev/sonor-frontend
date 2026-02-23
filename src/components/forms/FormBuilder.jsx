@@ -234,6 +234,18 @@ const FORM_TEMPLATES = [
 // LIVE FIELD INPUT - Renders actual form inputs for live preview
 // =============================================================================
 
+// Normalize field.options to an array of { label, value } (API may return object or non-array)
+function getFieldOptions(field) {
+  const raw = field?.options
+  if (!raw) return []
+  if (!Array.isArray(raw)) return []
+  return raw.map(opt =>
+    typeof opt === 'string'
+      ? { label: opt, value: opt.toLowerCase().replace(/\s+/g, '_') }
+      : { label: opt?.label ?? opt?.value ?? '', value: opt?.value ?? String(opt?.label ?? '').toLowerCase().replace(/\s+/g, '_') }
+  )
+}
+
 function LiveFieldInput({ field, isPreview = true }) {
   // Use the label as placeholder when hide_label is true
   const effectivePlaceholder = field.hide_label 
@@ -287,7 +299,7 @@ function LiveFieldInput({ field, isPreview = true }) {
       return (
         <select className={cn(baseInputClass, "cursor-pointer")} disabled={isPreview}>
           <option value="">{field.hide_label ? field.label : (field.placeholder || 'Select an option...')}</option>
-          {field.options?.map((opt, i) => (
+          {getFieldOptions(field).map((opt, i) => (
             <option key={i} value={opt.value}>{opt.label}</option>
           ))}
         </select>
@@ -305,10 +317,11 @@ function LiveFieldInput({ field, isPreview = true }) {
         </label>
       )
     
-    case 'radio':
+    case 'radio': {
+      const opts = getFieldOptions(field)
       return (
         <div className="space-y-2">
-          {(field.options?.length > 0 ? field.options : [{ label: 'Option 1', value: 'option_1' }]).map((opt, i) => (
+          {(opts.length > 0 ? opts : [{ label: 'Option 1', value: 'option_1' }]).map((opt, i) => (
             <label key={i} className="flex items-center gap-3 cursor-pointer">
               <input 
                 type="radio" 
@@ -321,6 +334,7 @@ function LiveFieldInput({ field, isPreview = true }) {
           ))}
         </div>
       )
+    }
     
     case 'date':
       return (
@@ -1362,7 +1376,7 @@ function FieldPropertyEditor({ field, onUpdate, onClose }) {
                 <span className="font-medium text-sm text-[var(--text-primary)]">Choices</span>
               </div>
               <OptionsEditor
-                options={field.options || []}
+                options={getFieldOptions(field)}
                 onChange={(options) => onUpdate({ ...field, options })}
               />
             </div>

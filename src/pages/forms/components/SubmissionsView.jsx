@@ -109,9 +109,9 @@ export function SubmissionDetailPanel({ submission, hasSignal, onClose, onUpdate
   } : null
   
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full min-h-0 overflow-hidden">
       {/* Header */}
-      <div className="p-4 border-b border-[var(--glass-border)]">
+      <div className="shrink-0 p-4 border-b border-[var(--glass-border)]">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3 min-w-0">
             <div 
@@ -198,7 +198,7 @@ export function SubmissionDetailPanel({ submission, hasSignal, onClose, onUpdate
       </div>
       
       {/* Scrollable Content */}
-      <ScrollArea className="flex-1">
+      <ScrollArea className="flex-1 min-h-0 overflow-auto">
         <div className="p-4 space-y-5">
           {/* Signal Analysis */}
           {hasSignal && (submission.lead_score !== undefined || submission.quality_tier) && (
@@ -353,7 +353,7 @@ export function SubmissionDetailPanel({ submission, hasSignal, onClose, onUpdate
       </ScrollArea>
       
       {/* Footer Actions */}
-      <div className="p-3 border-t border-[var(--glass-border)] flex gap-2">
+      <div className="shrink-0 p-3 border-t border-[var(--glass-border)] flex gap-2">
         {contactForEmail ? (
           <Button 
             variant="outline" 

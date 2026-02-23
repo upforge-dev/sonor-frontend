@@ -17,6 +17,18 @@ import {
   Tablet
 } from 'lucide-react'
 
+// Normalize field.options to an array of { label, value } (API may return object or non-array)
+function getFieldOptions(field) {
+  const raw = field?.options
+  if (!raw) return []
+  if (!Array.isArray(raw)) return []
+  return raw.map(opt =>
+    typeof opt === 'string'
+      ? { label: opt, value: opt.toLowerCase().replace(/\s+/g, '_') }
+      : { label: opt?.label ?? opt?.value ?? '', value: opt?.value ?? String(opt?.label ?? '').toLowerCase().replace(/\s+/g, '_') }
+  )
+}
+
 // =============================================================================
 // PREVIEW FIELD INPUT - Renders actual form inputs for preview
 // =============================================================================
@@ -71,7 +83,7 @@ function PreviewFieldInput({ field }) {
       return (
         <select className={cn(baseInputClass, "cursor-not-allowed")} disabled>
           <option value="">{field.placeholder || 'Select an option...'}</option>
-          {field.options?.map((opt, i) => (
+          {getFieldOptions(field).map((opt, i) => (
             <option key={i} value={opt.value}>{opt.label}</option>
           ))}
         </select>
@@ -89,10 +101,11 @@ function PreviewFieldInput({ field }) {
         </label>
       )
     
-    case 'radio':
+    case 'radio': {
+      const opts = getFieldOptions(field)
       return (
         <div className="space-y-2">
-          {(field.options?.length > 0 ? field.options : [{ label: 'Option 1', value: 'option_1' }]).map((opt, i) => (
+          {(opts.length > 0 ? opts : [{ label: 'Option 1', value: 'option_1' }]).map((opt, i) => (
             <label key={i} className="flex items-center gap-3">
               <input 
                 type="radio" 
@@ -105,6 +118,7 @@ function PreviewFieldInput({ field }) {
           ))}
         </div>
       )
+    }
     
     case 'date':
       return (
