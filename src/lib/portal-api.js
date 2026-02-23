@@ -2726,6 +2726,9 @@ export const adminApi = {
   updateOrgMember: (organizationId, contactId, updates) => 
     portalApi.put(`/admin/organizations/${organizationId}/members/${contactId}`, updates),
   
+  resendOrgMemberInvite: (organizationId, contactId) =>
+    portalApi.post(`/admin/organizations/${organizationId}/members/${contactId}/resend-invite`),
+  
   removeOrgMember: (organizationId, contactId) => 
     portalApi.delete(`/admin/organizations/${organizationId}/members/${contactId}`),
   

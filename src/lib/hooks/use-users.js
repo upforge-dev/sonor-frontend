@@ -80,15 +80,16 @@ export function useUpdateOrgMember() {
 }
 
 /**
- * Remove organization member
+ * Remove organization member.
+ * Pass contactId (member.contact?.id) — API expects contact ID, not the member row id.
  */
 export function useRemoveOrgMember() {
   const queryClient = useQueryClient()
   
   return useMutation({
-    mutationFn: async ({ organizationId, userId }) => {
-      await adminApi.removeOrgMember(organizationId, userId)
-      return { organizationId, userId }
+    mutationFn: async ({ organizationId, contactId }) => {
+      await adminApi.removeOrgMember(organizationId, contactId)
+      return { organizationId, contactId }
     },
     onSuccess: ({ organizationId }) => {
       queryClient.invalidateQueries({ queryKey: usersKeys.orgMembers(organizationId) })
@@ -97,15 +98,33 @@ export function useRemoveOrgMember() {
 }
 
 /**
- * Update organization member role
+ * Resend invitation email for a pending organization member.
+ */
+export function useResendOrgMemberInvite() {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: async ({ organizationId, contactId }) => {
+      await adminApi.resendOrgMemberInvite(organizationId, contactId)
+      return { organizationId, contactId }
+    },
+    onSuccess: ({ organizationId }) => {
+      queryClient.invalidateQueries({ queryKey: usersKeys.orgMembers(organizationId) })
+    },
+  })
+}
+
+/**
+ * Update organization member role.
+ * Pass contactId (member.contact?.id) — API expects contact ID in the URL.
  */
 export function useUpdateOrgMemberRole() {
   const queryClient = useQueryClient()
   
   return useMutation({
-    mutationFn: async ({ organizationId, userId, role }) => {
-      await adminApi.updateOrgMember(organizationId, userId, { role })
-      return { organizationId, userId, role }
+    mutationFn: async ({ organizationId, contactId, role }) => {
+      await adminApi.updateOrgMember(organizationId, contactId, { role })
+      return { organizationId, contactId, role }
     },
     onSuccess: ({ organizationId }) => {
       queryClient.invalidateQueries({ queryKey: usersKeys.orgMembers(organizationId) })

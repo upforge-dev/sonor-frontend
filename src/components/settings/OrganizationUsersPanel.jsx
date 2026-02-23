@@ -61,7 +61,7 @@ import {
   CommandList,
 } from '@/components/ui/command'
 import { toast } from '@/lib/toast'
-import { useOrgMembers, useInviteOrgMember, useRemoveOrgMember, useUpdateOrgMemberRole } from '@/lib/hooks'
+import { useOrgMembers, useInviteOrgMember, useRemoveOrgMember, useResendOrgMemberInvite, useUpdateOrgMemberRole } from '@/lib/hooks'
 import { adminApi } from '@/lib/portal-api'
 import useAuthStore from '@/lib/auth-store'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
@@ -112,17 +112,10 @@ export default function OrganizationUsersPanel({
   const { data: membersData, isLoading } = useOrgMembers(organizationId)
   const inviteMemberMutation = useInviteOrgMember()
   const removeMemberMutation = useRemoveOrgMember()
+  const resendInviteMutation = useResendOrgMemberInvite()
   const updateRoleMutation = useUpdateOrgMemberRole()
 
   const members = membersData?.members || membersData || []
-  
-  console.log('[OrganizationUsersPanel]', { 
-    organizationId, 
-    organizationName, 
-    membersData, 
-    members,
-    membersLength: members.length 
-  })
   
   const memberUserIds = useMemo(
     () => new Set(members.map(m => m.user_id || m.id)),
@@ -226,28 +219,61 @@ export default function OrganizationUsersPanel({
     }
   }
 
+  // API expects contact ID (member.contact.id), not the member row id
+  const getContactId = (member) => member.contact?.id ?? member.id
+
   const handleRemove = async (member) => {
+    const contactId = getContactId(member)
+    if (!contactId) {
+      toast.error('Cannot remove this member')
+      return
+    }
     try {
       await removeMemberMutation.mutateAsync({
         organizationId,
-        userId: member.user_id || member.id,
+        contactId,
       })
-      toast.success(`${member.name || member.email} removed from organization`)
+      const contact = member.contact || member
+      toast.success(`${contact.name || contact.email} removed from organization`)
     } catch (error) {
-      toast.error('Failed to remove member')
+      toast.error(error.message || 'Failed to remove member')
     }
   }
 
   const handleRoleChange = async (member, newRole) => {
+    const contactId = getContactId(member)
+    if (!contactId) {
+      toast.error('Cannot update role for this member')
+      return
+    }
     try {
       await updateRoleMutation.mutateAsync({
         organizationId,
-        userId: member.user_id || member.id,
+        contactId,
         role: newRole,
       })
-      toast.success(`${member.name || member.email} is now a ${newRole}`)
+      const contact = member.contact || member
+      toast.success(`${contact.name || contact.email} is now a ${newRole}`)
     } catch (error) {
       toast.error('Failed to update role')
+    }
+  }
+
+  const handleResendInvite = async (member) => {
+    const contactId = member.contact?.id
+    if (!contactId) {
+      toast.error('Cannot resend invite for this member')
+      return
+    }
+    try {
+      await resendInviteMutation.mutateAsync({
+        organizationId,
+        contactId,
+      })
+      const contact = member.contact || member
+      toast.success(`Invitation resent to ${contact.email}`)
+    } catch (error) {
+      toast.error(error.message || 'Failed to resend invitation')
     }
   }
 
@@ -405,6 +431,19 @@ export default function OrganizationUsersPanel({
                               <Briefcase className="h-4 w-4 mr-2 text-blue-400" />
                               Make Member
                             </DropdownMenuItem>
+                            {status === 'pending' && contact?.id && (
+                              <DropdownMenuItem
+                                onClick={(e) => { e.stopPropagation(); handleResendInvite(member); }}
+                                disabled={resendInviteMutation.isPending}
+                              >
+                                {resendInviteMutation.isPending ? (
+                                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                ) : (
+                                  <Send className="h-4 w-4 mr-2" />
+                                )}
+                                Resend invitation
+                              </DropdownMenuItem>
+                            )}
                             <DropdownMenuItem 
                               onClick={(e) => { e.stopPropagation(); handleRemove(member); }}
                               className="text-destructive focus:text-destructive"
@@ -869,6 +908,20 @@ export default function OrganizationUsersPanel({
           })()}
           
           <DialogFooter>
+            {selectedMember && (selectedMember.status || selectedMember.invite_status || (selectedMember.contact?.auth_user_id ? 'active' : 'pending')) === 'pending' && selectedMember.contact?.id && (
+              <Button
+                variant="outline"
+                onClick={() => handleResendInvite(selectedMember)}
+                disabled={resendInviteMutation.isPending}
+              >
+                {resendInviteMutation.isPending ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Send className="h-4 w-4 mr-2" />
+                )}
+                Resend invitation
+              </Button>
+            )}
             <Button variant="outline" onClick={() => setShowMemberDetails(false)}>
               Close
             </Button>

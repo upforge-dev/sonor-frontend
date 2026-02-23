@@ -513,6 +513,7 @@ export {
   useUpdateOrgMember,
   useUpdateOrgMemberRole,
   useRemoveOrgMember,
+  useResendOrgMemberInvite,
   useProjectMembers,
   useAddProjectMember,
   useUpdateProjectMember,
