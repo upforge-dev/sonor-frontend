@@ -62,13 +62,16 @@ export function useUpdateCommerceSettings() {
 // DASHBOARD
 // ═══════════════════════════════════════════════════════════════════════════
 
+/** Fetch commerce dashboard stats (for use outside React Query, e.g. loadStats). */
+export async function getCommerceDashboard(projectId) {
+  const response = await portalApi.get(`/commerce/dashboard/${projectId}`)
+  return response.data
+}
+
 export function useCommerceDashboard(projectId, options = {}) {
   return useQuery({
     queryKey: commerceKeys.dashboard(projectId),
-    queryFn: async () => {
-      const response = await portalApi.get(`/commerce/dashboard/${projectId}`)
-      return response.data
-    },
+    queryFn: () => getCommerceDashboard(projectId),
     enabled: !!projectId,
     ...options,
   })

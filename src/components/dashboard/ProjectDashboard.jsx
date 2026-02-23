@@ -62,7 +62,7 @@ import {
 import useAuthStore from '@/lib/auth-store'
 import { useBrandColors } from '@/hooks/useBrandColors'
 import { useSiteAnalyticsOverview, useSiteTopPages, usePageViewsByDay } from '@/lib/hooks'
-import { useCommerceDashboard, useCommerceOfferings, commerceKeys } from '@/lib/hooks'
+import { useCommerceDashboard, getCommerceDashboard, useCommerceOfferings, commerceKeys } from '@/lib/hooks'
 import { useQueryClient } from '@tanstack/react-query'
 import { seoApi, syncApi } from '@/lib/portal-api'
 import { cn } from '@/lib/utils'

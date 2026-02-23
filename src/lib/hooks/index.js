@@ -113,6 +113,7 @@ export {
   commerceKeys,
   useCommerceSettings,
   useUpdateCommerceSettings,
+  getCommerceDashboard,
   useCommerceDashboard,
   useCategories as useCommerceCategories,
   useOfferings as useCommerceOfferings,
