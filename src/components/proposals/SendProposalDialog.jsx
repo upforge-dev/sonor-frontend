@@ -240,7 +240,7 @@ export default function SendProposalDialog({
                       <tr>
                         <td class="mobile-full-width" width="50%" valign="top" style="padding-right: 16px;">
                           <p style="margin: 0 0 4px; color: #64748b; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">Investment</p>
-                          <p class="mobile-font-xl" style="margin: 0; color: #059669; font-size: 28px; font-weight: 700;">$${parseFloat(proposal?.totalAmount || 0).toLocaleString()}</p>
+                          <p class="mobile-font-xl" style="margin: 0; color: #059669; font-size: 28px; font-weight: 700;">$${parseFloat(proposal?.totalAmount ?? proposal?.total_amount ?? 0).toLocaleString()}</p>
                         </td>
                         ${validUntilFormatted ? `
                         <td class="mobile-full-width" width="50%" valign="top">
@@ -429,7 +429,7 @@ export default function SendProposalDialog({
                 <div className="flex items-center gap-4 text-sm">
                   <div className="flex items-center gap-1 text-green-600">
                     <DollarSign className="w-4 h-4" />
-                    <span className="font-medium">${parseFloat(proposal.totalAmount || 0).toLocaleString()}</span>
+                    <span className="font-medium">${parseFloat(proposal.totalAmount ?? proposal.total_amount ?? 0).toLocaleString()}</span>
                   </div>
                   {proposal.validUntil && (
                     <div className="flex items-center gap-1 text-[var(--text-secondary)]">
