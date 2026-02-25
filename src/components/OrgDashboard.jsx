@@ -582,7 +582,6 @@ export default function OrgDashboard({ onNavigate }) {
           name: project.name || project.title,
           domain: project.domain,
           brand_primary: project.brand_primary || PROJECT_COLORS[index % PROJECT_COLORS.length],
-          brand_primary: project.brand_primary,
           pageViews: Math.floor(Math.random() * 10000) + 500, // Placeholder - TODO: fetch real data
           previousPageViews: Math.floor(Math.random() * 8000) + 400,
           sessions: Math.floor(Math.random() * 5000) + 200,

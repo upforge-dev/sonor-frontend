@@ -43,8 +43,8 @@ export function AuditHeader({
               animate="visible"
               className="flex items-center gap-2 mb-6"
             >
-              <img src="/favicon.svg" alt="Uptrade Media" className="w-10 h-10" />
-              <span className="font-semibold text-white/90 text-lg">Uptrade Media</span>
+              <img src="/favicon.svg" alt="Upforge" className="w-10 h-10" />
+              <span className="font-semibold text-white/90 text-lg">Upforge</span>
             </motion.div>
             
             <h1 className="text-3xl font-bold mb-2">Website Audit Report</h1>
@@ -139,8 +139,8 @@ export function AuditFooter() {
       className="text-center py-8 border-t border-[var(--glass-border)]"
     >
       <div className="flex items-center justify-center gap-2 mb-4">
-        <img src="/favicon.svg" alt="Uptrade Media" className="w-10 h-10" />
-        <span className="font-semibold text-[var(--text-primary)] text-lg">Uptrade Media</span>
+        <img src="/favicon.svg" alt="Upforge" className="w-10 h-10" />
+        <span className="font-semibold text-[var(--text-primary)] text-lg">Upforge</span>
       </div>
       <p className="text-[var(--text-tertiary)] text-sm">
         High-Performance Websites & Digital Marketing<br />

@@ -535,6 +535,9 @@ export default function CRMEmailHub({ brandColors }) {
     includeSpam: false,
     classification: null,
   })
+  // CRM contact emails for active client/prospect filtering (lowercase for match)
+  const [clientEmailsSet, setClientEmailsSet] = useState(new Set())
+  const [prospectEmailsSet, setProspectEmailsSet] = useState(new Set())
   
   // Fetch Gmail status
   const fetchGmailStatus = useCallback(async () => {
@@ -624,8 +627,44 @@ export default function CRMEmailHub({ brandColors }) {
     }
   }, [gmailStatus?.connected, fetchEmails, fetchInboxStats])
   
-  // Filter emails by search
+  // Load CRM client/prospect emails when Clients or Prospects tab is active (for active filtering)
+  useEffect(() => {
+    if (!currentOrg?.id || !gmailStatus?.connected) return
+    if (activeView !== 'clients' && activeView !== 'prospects') return
+    
+    const load = async () => {
+      try {
+        const [clientsRes, prospectsRes] = await Promise.all([
+          crmApi.listClients({ limit: 500 }).catch(() => ({ data: { clients: [] } })),
+          crmApi.listProspects({ limit: 500 }).catch(() => ({ data: { prospects: [] } })),
+        ])
+        const clients = clientsRes.data?.clients ?? clientsRes.data ?? []
+        const prospects = prospectsRes.data?.prospects ?? prospectsRes.data ?? []
+        const toLower = (s) => (s && String(s).trim() ? String(s).trim().toLowerCase() : null)
+        setClientEmailsSet(new Set(
+          clients.map((c) => toLower(c.email || c.contact_email)).filter(Boolean)
+        ))
+        setProspectEmailsSet(new Set(
+          prospects.map((p) => toLower(p.email)).filter(Boolean)
+        ))
+      } catch (err) {
+        console.error('Failed to load CRM contacts for email filter:', err)
+      }
+    }
+    load()
+  }, [currentOrg?.id, gmailStatus?.connected, activeView])
+  
+  // Filter emails by search and by CRM clients/prospects when tab is Clients or Prospects
   const filteredEmails = emails.filter(email => {
+    // Active filter by existing CRM clients / prospects: only show emails from those contacts
+    if (activeView === 'clients' && clientEmailsSet.size > 0) {
+      const from = email.from_email?.trim().toLowerCase()
+      if (!from || !clientEmailsSet.has(from)) return false
+    }
+    if (activeView === 'prospects' && prospectEmailsSet.size > 0) {
+      const from = email.from_email?.trim().toLowerCase()
+      if (!from || !prospectEmailsSet.has(from)) return false
+    }
     if (searchQuery) {
       const query = searchQuery.toLowerCase()
       return (
@@ -827,8 +866,8 @@ export default function CRMEmailHub({ brandColors }) {
             </div>
           </div>
           
-          {/* Email List */}
-          <ScrollArea className="flex-1">
+          {/* Email List - flex-1 min-h-0 so it scrolls within sidebar */}
+          <ScrollArea className="flex-1 min-h-0">
             {filteredEmails.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 px-4">
                 <div 

@@ -1030,6 +1030,34 @@
         height: 16px;
         fill: currentColor;
       }
+      /* Quick action / option chips – ensure selected/focus never white-on-white */
+      .engage-quick-action {
+        padding: 8px 14px;
+        border-radius: 9999px;
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background 0.2s, color 0.2s, border-color 0.2s;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        background: rgba(55, 65, 81, 0.9);
+        color: #ffffff;
+      }
+      .engage-quick-action:hover {
+        background: #4b5563;
+        color: #ffffff;
+      }
+      /* Selected/focus: always dark text on light bg so we never get white-on-white */
+      .engage-quick-action:focus,
+      .engage-quick-action:active,
+      .engage-quick-action.active {
+        outline: none;
+        background: #e5e7eb;
+        color: #1a1a1a;
+        border-color: #d1d5db;
+      }
+      .engage-quick-action svg {
+        fill: currentColor;
+      }
       /* Handoff form */
       .engage-widget-handoff-form {
         background: white;

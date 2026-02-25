@@ -1633,7 +1633,9 @@ export default function Audits() {
               {/* Error Alert */}
               {error && (
                 <Alert variant="destructive" className="mx-6">
-                  <AlertDescription>{error}</AlertDescription>
+                  <AlertDescription>
+                    {typeof error === 'string' ? error : (error?.message ?? error?.response?.data?.message ?? 'Failed to load audits')}
+                  </AlertDescription>
                 </Alert>
               )}
 

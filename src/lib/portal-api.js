@@ -86,7 +86,9 @@ portalApi.interceptors.response.use(
     // Handle 401 - session expired
     if (error.response?.status === 401) {
       const isOnAuthPage = window.location.pathname.includes('/login') ||
-                           window.location.pathname.includes('/reset-password')
+                           window.location.pathname.includes('/reset-password') ||
+                           window.location.pathname.includes('/setup') ||
+                           window.location.pathname.includes('/auth/callback')
       
       if (!isOnAuthPage) {
         const { data: { session }, error: refreshError } = await supabase.auth.refreshSession()
