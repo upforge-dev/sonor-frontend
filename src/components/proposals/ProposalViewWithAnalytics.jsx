@@ -25,9 +25,11 @@ import {
   Activity,
   ChevronDown,
   ChevronUp,
-  ExternalLink
+  ExternalLink,
+  Send
 } from 'lucide-react'
 import ProposalView from './ProposalView'
+import SendProposalDialog from './SendProposalDialog'
 import { proposalsApi } from '@/lib/portal-api'
 import { cn } from '@/lib/utils'
 
@@ -161,6 +163,8 @@ export default function ProposalViewWithAnalytics({ proposal, onBack, onEdit }) 
   const [analytics, setAnalytics] = useState(null)
   const [loadingAnalytics, setLoadingAnalytics] = useState(true)
   const [showAnalyticsPanel, setShowAnalyticsPanel] = useState(true)
+  const [showSendDialog, setShowSendDialog] = useState(false)
+  const [currentProposal, setCurrentProposal] = useState(proposal)
 
   // Fetch analytics data
   useEffect(() => {
@@ -236,9 +240,9 @@ export default function ProposalViewWithAnalytics({ proposal, onBack, onEdit }) 
             
             {onEdit && (
               <Button
+                variant="outline"
                 size="sm"
                 onClick={onEdit}
-                className="bg-[var(--brand-primary)] hover:bg-[var(--brand-primary-hover)]"
               >
                 Edit Proposal
               </Button>
@@ -251,6 +255,15 @@ export default function ProposalViewWithAnalytics({ proposal, onBack, onEdit }) 
             >
               <ExternalLink className="w-4 h-4 mr-2" />
               Open Public Link
+            </Button>
+
+            <Button
+              size="sm"
+              onClick={() => setShowSendDialog(true)}
+              className="bg-[var(--brand-primary)] hover:bg-[var(--brand-primary-hover)] gap-2"
+            >
+              <Send className="w-4 h-4" />
+              Send Proposal
             </Button>
           </div>
         </div>
@@ -352,12 +365,25 @@ export default function ProposalViewWithAnalytics({ proposal, onBack, onEdit }) 
           hasBeenViewed && showAnalyticsPanel ? "max-w-4xl" : "max-w-6xl mx-auto"
         )}>
           <ProposalView 
-            proposal={proposal} 
+            proposal={currentProposal} 
             isPublicView={false}
             showSignature={false}
           />
         </div>
       </div>
+
+      <SendProposalDialog
+        proposal={currentProposal}
+        client={currentProposal?.contact}
+        isOpen={showSendDialog}
+        onClose={() => setShowSendDialog(false)}
+        onSuccess={() => {
+          setShowSendDialog(false)
+          proposalsApi.get(currentProposal.id)
+            .then(res => setCurrentProposal(res.data.proposal || res.data))
+            .catch(() => {})
+        }}
+      />
     </div>
   )
 }

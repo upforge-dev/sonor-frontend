@@ -27,7 +27,7 @@ export default function ProposalGate() {
       
       console.log('[ProposalGate] Fetching proposal by slug:', slug)
       
-      const response = await proposalsApi.get(slug)
+      const response = await proposalsApi.getBySlug(slug)
       
       if (response.data?.proposal || response.data) {
         const proposalData = response.data.proposal || response.data
@@ -41,7 +41,13 @@ export default function ProposalGate() {
       }
     } catch (err) {
       console.error('[ProposalGate] Failed to fetch proposal:', err)
-      setError(err.response?.data?.error || 'Failed to load proposal')
+      const raw = err.response?.data?.error
+      const message = typeof raw === 'object' && raw !== null && 'message' in raw
+        ? String(raw.message)
+        : typeof raw === 'string'
+          ? raw
+          : 'Failed to load proposal'
+      setError(message)
     } finally {
       setIsLoading(false)
     }
@@ -64,11 +70,12 @@ export default function ProposalGate() {
   }
 
   if (error || !proposal) {
+    const message = typeof error === 'string' ? error : (error?.message ?? 'Proposal not found')
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-red-600 mb-2">Unable to Load Proposal</h1>
-          <p className="text-gray-600 mb-4">{error || 'Proposal not found'}</p>
+          <p className="text-gray-600 mb-4">{message}</p>
         </div>
       </div>
     )

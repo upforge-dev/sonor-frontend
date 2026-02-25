@@ -26,6 +26,7 @@ export {
   UrgencyBanner,
   Testimonial,
   ComparisonTable,
+  ComparisonRow,
   ProcessSteps,
   MetricHighlight,
   CTASection,
@@ -67,6 +68,7 @@ import {
   UrgencyBanner,
   Testimonial,
   ComparisonTable,
+  ComparisonRow,
   ProcessSteps,
   MetricHighlight,
   CTASection,
@@ -120,8 +122,12 @@ import {
   Workflow
 } from 'lucide-react'
 
+// Paragraph as div to avoid invalid HTML: <p> cannot contain block elements like <div> (e.g. MetricHighlight)
+const MdxP = (props) => <div className="mdx-p my-2 text-[var(--text-secondary)]" {...props} />
+
 // Export all components for MDX runtime
 export const mdxComponents = {
+  p: MdxP,
   // Core components
   ProposalHero,
   Section,
@@ -147,6 +153,7 @@ export const mdxComponents = {
   UrgencyBanner,
   Testimonial,
   ComparisonTable,
+  ComparisonRow,
   ProcessSteps,
   MetricHighlight,
   CTASection,

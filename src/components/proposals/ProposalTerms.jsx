@@ -18,7 +18,7 @@ export default function ProposalTerms({ proposalTitle, depositPercentage = 50, t
             Agreement
           </h4>
           <p className="leading-relaxed">
-            By signing this proposal, you ("Client") agree to engage Uptrade Media LLC ("Company") 
+            By signing this proposal, you ("Client") agree to engage Upforge LLC ("Company") 
             to provide the services described herein. This document, once signed, constitutes a 
             legally binding agreement between both parties.
           </p>

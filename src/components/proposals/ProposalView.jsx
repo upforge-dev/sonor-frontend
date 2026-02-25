@@ -22,6 +22,12 @@ function sanitizeMDXContent(mdxSource) {
   
   let sanitized = mdxSource
   
+  // Strip HTML comments (<!-- ... -->) — MDX only supports {/* */}
+  sanitized = sanitized.replace(/<!--[\s\S]*?-->/g, '')
+
+  // Strip <!DOCTYPE ...> or any other <! constructs
+  sanitized = sanitized.replace(/<![\s\S]*?>/g, '')
+  
   // FIRST: Fix malformed JSX array attributes
   // AI sometimes generates: items=[ instead of items={[
   sanitized = sanitized.replace(/(\w+)=\[(\s*[\[\{"\w])/g, '$1={[$2')
@@ -231,6 +237,8 @@ export default function ProposalView({
         subtitle={proposal.description}
         heroImage={heroImageUrl}
         brandName={brandName}
+        agencyName={proposal.project?.title}
+        agencyLogo={proposal.project?.logo_url}
         totalAmount={totalAmount}
         validUntil={validUntil}
         stats={[

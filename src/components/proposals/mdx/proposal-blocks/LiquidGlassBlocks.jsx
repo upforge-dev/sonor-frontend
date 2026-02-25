@@ -1,8 +1,8 @@
 /**
  * Liquid Glass MDX Components
  * 
- * Apple-inspired liquid glass aesthetic with Uptrade brand gradients
- * Green (#4bbf39) → Teal (#39bfb0) gradients throughout
+ * Apple-inspired liquid glass aesthetic with Upforge brand teal
+ * Brand color: Teal (#39bfb0)
  */
 
 import { useState } from 'react'
@@ -43,6 +43,15 @@ import {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 const liquidGlassBase = `
+  relative
+  bg-gradient-to-br from-white/10 to-white/5
+  backdrop-blur-xl
+  border border-white/20
+  shadow-[0_8px_32px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.2)]
+  rounded-3xl
+`
+
+const liquidGlassClipped = `
   relative overflow-hidden
   bg-gradient-to-br from-white/10 to-white/5
   backdrop-blur-xl
@@ -58,8 +67,8 @@ const liquidGlassHover = `
   hover:scale-[1.02]
 `
 
-const brandGradient = 'bg-gradient-to-r from-[#4bbf39] to-[#39bfb0]'
-const brandGradientText = 'bg-gradient-to-r from-[#4bbf39] to-[#39bfb0] bg-clip-text text-transparent'
+const brandGradient = 'bg-[#39bfb0]'
+const brandGradientText = 'text-[#39bfb0]'
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // GLASS HERO - Premium proposal opener
@@ -73,35 +82,35 @@ export function GlassHero({
   title, 
   subtitle, 
   clientName,
-  proposalType, // 'portal-integration' | 'new-brand' | 'app-development' | 'rebuild'
+  proposalType, // 'new-brand' | 'rebuild' | 'app-development' | 'ai-automation'
   stats = []
 }) {
   const typeLabels = {
-    'portal-integration': 'Portal API Integration',
-    'new-brand': 'New Site & Brand',
-    'app-development': 'App Development',
-    'rebuild': 'Website Rebuild'
+    'new-brand': 'New Website',
+    'rebuild': 'Website Rebuild',
+    'app-development': 'Application Development',
+    'ai-automation': 'AI & Automations'
   }
 
   const typeIcons = {
-    'portal-integration': Plug,
     'new-brand': Palette,
+    'rebuild': Layers,
     'app-development': Smartphone,
-    'rebuild': Layers
+    'ai-automation': Bot
   }
 
   const TypeIcon = typeIcons[proposalType] || Sparkles
 
   return (
-    <div className={`${liquidGlassBase} p-8 md:p-12 mb-10`}>
+    <div className={`${liquidGlassClipped} p-8 md:p-12 mb-10`}>
       {/* Animated gradient orbs */}
-      <div className="absolute -top-20 -right-20 w-60 h-60 bg-gradient-to-br from-[#4bbf39]/30 to-[#39bfb0]/30 rounded-full blur-3xl animate-pulse" />
-      <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-gradient-to-br from-[#39bfb0]/20 to-[#4bbf39]/20 rounded-full blur-2xl animate-pulse" style={{ animationDelay: '1s' }} />
+      <div className="absolute -top-20 -right-20 w-60 h-60 bg-[#39bfb0]/30 rounded-full blur-3xl animate-pulse" />
+      <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-[#39bfb0]/20 rounded-full blur-2xl animate-pulse" style={{ animationDelay: '1s' }} />
       
       <div className="relative z-10">
         {/* Type badge */}
         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 mb-6">
-          <TypeIcon className="w-4 h-4 text-[#4bbf39]" />
+          <TypeIcon className="w-4 h-4 text-[#39bfb0]" />
           <span className="text-sm font-medium text-white/80">{typeLabels[proposalType] || 'Proposal'}</span>
         </div>
 
@@ -146,15 +155,15 @@ export function GlassHero({
 // ═══════════════════════════════════════════════════════════════════════════════
 
 const portalModules = {
-  crm: { icon: Users, label: 'CRM & Pipelines', color: '#4bbf39' },
+  crm: { icon: Users, label: 'CRM & Pipelines', color: '#39bfb0' },
   commerce: { icon: ShoppingCart, label: 'Commerce', color: '#39bfb0' },
-  forms: { icon: FileText, label: 'Forms & Intake', color: '#4bbf39' },
+  forms: { icon: FileText, label: 'Forms & Intake', color: '#39bfb0' },
   analytics: { icon: BarChart3, label: 'Analytics', color: '#39bfb0' },
-  seo: { icon: Search, label: 'SEO Tracking', color: '#4bbf39' },
+  seo: { icon: Search, label: 'SEO Tracking', color: '#39bfb0' },
   engage: { icon: Bell, label: 'Engage', color: '#39bfb0' },
-  outreach: { icon: Mail, label: 'Outreach', color: '#4bbf39' },
+  outreach: { icon: Mail, label: 'Outreach', color: '#39bfb0' },
   sync: { icon: Calendar, label: 'Sync', color: '#39bfb0' },
-  signal: { icon: Bot, label: 'Signal AI', color: '#4bbf39' }
+  signal: { icon: Bot, label: 'Signal AI', color: '#39bfb0' }
 }
 
 /**
@@ -175,7 +184,7 @@ export function PortalModulesGrid({
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {modules.map((mod, i) => {
-          const moduleInfo = portalModules[mod.id] || { icon: Sparkles, label: mod.id, color: '#4bbf39' }
+          const moduleInfo = portalModules[mod.id] || { icon: Sparkles, label: mod.id, color: '#39bfb0' }
           const Icon = moduleInfo.icon
 
           return (
@@ -253,20 +262,16 @@ export function AppFeatureShowcase({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {features.map((feature, i) => {
           const Icon = iconMap[feature.icon] || Sparkles
-          const isEven = i % 2 === 0
 
           return (
             <div 
               key={i}
-              className={`${liquidGlassBase} ${liquidGlassHover} p-8 group`}
+              className={`${liquidGlassBase} ${liquidGlassHover} p-8 group overflow-hidden`}
             >
-              {/* Gradient accent */}
-              <div 
-                className={`absolute top-0 ${isEven ? 'left-0' : 'right-0'} w-1/2 h-1 rounded-full ${brandGradient}`}
-              />
+              <div className={`absolute top-0 left-0 right-0 h-[2px] ${brandGradient} opacity-60`} />
 
               <div className="relative z-10 flex gap-5">
-                <div className={`flex-shrink-0 w-14 h-14 rounded-2xl ${brandGradient} flex items-center justify-center shadow-lg shadow-[#4bbf39]/20`}>
+                <div className={`flex-shrink-0 w-14 h-14 rounded-2xl ${brandGradient} flex items-center justify-center shadow-lg shadow-[#39bfb0]/20`}>
                   <Icon className="w-7 h-7 text-white" />
                 </div>
 
@@ -298,18 +303,18 @@ export function AppFeatureShowcase({
 export function BrandShowcase({
   brandName,
   tagline,
-  colorPalette = [], // [{ name: 'Primary', hex: '#4bbf39' }]
+  colorPalette = [], // [{ name: 'Primary', hex: '#39bfb0' }]
   typography,
   moodWords = [] // ['Modern', 'Bold', 'Innovative']
 }) {
   return (
     <div className={`${liquidGlassBase} p-8 md:p-10 my-10`}>
       {/* Background orbs */}
-      <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-[#4bbf39]/20 to-[#39bfb0]/20 rounded-full blur-3xl" />
+      <div className="absolute top-0 right-0 w-40 h-40 bg-[#39bfb0]/20 rounded-full blur-3xl" />
       
       <div className="relative z-10">
         <div className="text-center mb-10">
-          <span className="text-sm uppercase tracking-widest text-[#4bbf39] mb-2 block">Brand Vision</span>
+          <span className="text-sm uppercase tracking-widest text-[#39bfb0] mb-2 block">Brand Vision</span>
           <h2 className="text-4xl md:text-5xl font-bold text-[var(--text-primary)] mb-3">{brandName}</h2>
           {tagline && <p className="text-xl text-[var(--text-secondary)] italic">"{tagline}"</p>}
         </div>
@@ -377,27 +382,25 @@ export function IntegrationFlow({
       
       <div className="relative">
         {/* Connection line */}
-        <div className="hidden md:block absolute top-1/2 left-0 right-0 h-0.5 bg-gradient-to-r from-[#4bbf39]/50 via-[#39bfb0]/50 to-[#4bbf39]/50 -translate-y-1/2" />
+        <div className="hidden md:block absolute top-1/2 left-0 right-0 h-0.5 bg-[#39bfb0]/50 -translate-y-1/2" />
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {steps.map((step, i) => (
-            <div key={i} className="relative">
-              <div className={`${liquidGlassBase} ${liquidGlassHover} p-6 text-center`}>
-                {/* Step number */}
-                <div className={`absolute -top-3 left-1/2 -translate-x-1/2 w-8 h-8 rounded-full ${brandGradient} flex items-center justify-center text-white text-sm font-bold shadow-lg`}>
-                  {i + 1}
-                </div>
+            <div key={i} className="relative pt-4">
+              {/* Step number - outside card so it's not clipped */}
+              <div className={`absolute top-0 left-1/2 -translate-x-1/2 w-8 h-8 rounded-full ${brandGradient} flex items-center justify-center text-white text-sm font-bold shadow-lg z-10`}>
+                {i + 1}
+              </div>
 
-                <div className="pt-4">
-                  <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2">{step.label}</h3>
-                  <p className="text-sm text-[var(--text-secondary)]">{step.description}</p>
-                </div>
+              <div className={`${liquidGlassBase} ${liquidGlassHover} p-6 pt-8 text-center`}>
+                <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2">{step.label}</h3>
+                <p className="text-sm text-[var(--text-secondary)]">{step.description}</p>
               </div>
 
               {/* Arrow between steps (mobile) */}
               {i < steps.length - 1 && (
                 <div className="md:hidden flex justify-center my-4">
-                  <ArrowRight className="w-6 h-6 text-[#4bbf39]" />
+                  <ArrowRight className="w-6 h-6 text-[#39bfb0]" />
                 </div>
               )}
             </div>
@@ -440,7 +443,7 @@ export function SiteAnalysisCard({
             </div>
           )}
           <div className="mt-3 text-center">
-            <a href={url} target="_blank" rel="noopener noreferrer" className="text-sm text-[#4bbf39] hover:underline">
+            <a href={url} target="_blank" rel="noopener noreferrer" className="text-sm text-[#39bfb0] hover:underline">
               {url?.replace(/^https?:\/\//, '')}
             </a>
           </div>
@@ -532,17 +535,17 @@ export function SignalAIGlass({
   price = "199"
 }) {
   return (
-    <div className={`${liquidGlassBase} p-8 md:p-10 my-10 relative overflow-hidden`}>
+    <div className={`${liquidGlassClipped} p-8 md:p-10 my-10`}>
       {/* Animated gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#4bbf39]/5 via-transparent to-[#39bfb0]/5" />
-      <div className="absolute -top-20 -right-20 w-60 h-60 bg-[#4bbf39]/10 rounded-full blur-3xl animate-pulse" />
+      <div className="absolute inset-0 bg-gradient-to-br from-[#39bfb0]/5 via-transparent to-[#39bfb0]/5" />
+      <div className="absolute -top-20 -right-20 w-60 h-60 bg-[#39bfb0]/10 rounded-full blur-3xl animate-pulse" />
       <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-[#39bfb0]/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1.5s' }} />
 
       <div className="relative z-10">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6 mb-8">
           <div className="flex items-center gap-4">
-            <div className={`w-14 h-14 rounded-2xl ${brandGradient} flex items-center justify-center shadow-lg shadow-[#4bbf39]/30`}>
+            <div className={`w-14 h-14 rounded-2xl ${brandGradient} flex items-center justify-center shadow-lg shadow-[#39bfb0]/30`}>
               <Bot className="w-8 h-8 text-white" />
             </div>
             <div>
@@ -570,8 +573,8 @@ export function SignalAIGlass({
               key={i}
               className="flex items-start gap-4 p-4 rounded-2xl bg-white/5 border border-white/10"
             >
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#4bbf39]/20 to-[#39bfb0]/20 flex items-center justify-center flex-shrink-0">
-                <Sparkles className="w-5 h-5 text-[#4bbf39]" />
+              <div className="w-10 h-10 rounded-xl bg-[#39bfb0]/20 flex items-center justify-center flex-shrink-0">
+                <Sparkles className="w-5 h-5 text-[#39bfb0]" />
               </div>
               <div>
                 <h4 className="font-semibold text-[var(--text-primary)] mb-1">{cap.title}</h4>
@@ -604,46 +607,42 @@ export function GlassPricing({
 
       <div className={`grid grid-cols-1 ${tiers.length > 1 ? 'md:grid-cols-2' : ''} ${tiers.length > 2 ? 'lg:grid-cols-3' : ''} gap-6`}>
         {tiers.map((tier, i) => (
-          <div 
-            key={i}
-            className={`
-              ${liquidGlassBase} 
-              ${tier.highlighted ? 'border-[#4bbf39]/50 scale-105' : ''} 
-              p-8 relative
-            `}
-          >
-            {/* Highlighted gradient top */}
-            {tier.highlighted && (
-              <div className={`absolute top-0 left-0 right-0 h-1 ${brandGradient} rounded-t-3xl`} />
-            )}
-
-            {/* Badge */}
+          <div key={i} className={`relative ${tier.badge ? 'pt-4' : ''}`}>
+            {/* Badge - centered above card */}
             {tier.badge && (
-              <div className={`absolute -top-3 right-6 px-4 py-1 ${brandGradient} rounded-full text-white text-xs font-semibold shadow-lg`}>
+              <div className={`absolute top-0 left-1/2 -translate-x-1/2 px-5 py-1.5 ${brandGradient} rounded-full text-white text-xs font-semibold shadow-lg z-10`}>
                 {tier.badge}
               </div>
             )}
 
-            <div className="relative z-10">
-              <h3 className="text-xl font-semibold text-[var(--text-primary)] mb-2">{tier.name}</h3>
-              {tier.description && (
-                <p className="text-sm text-[var(--text-secondary)] mb-6">{tier.description}</p>
-              )}
+            <div 
+              className={`
+                ${liquidGlassBase} 
+                ${tier.highlighted ? 'border-[#39bfb0]/50' : ''} 
+                p-8 relative
+              `}
+            >
+              <div className="relative z-10">
+                <h3 className="text-xl font-semibold text-[var(--text-primary)] mb-2">{tier.name}</h3>
+                {tier.description && (
+                  <p className="text-sm text-[var(--text-secondary)] mb-6">{tier.description}</p>
+                )}
 
-              <div className="flex items-baseline gap-1 mb-6">
-                <span className={`text-4xl font-bold ${tier.highlighted ? brandGradientText : 'text-[var(--text-primary)]'}`}>
-                  {tier.price}
-                </span>
-                {tier.period && <span className="text-[var(--text-tertiary)]">/{tier.period}</span>}
-              </div>
+                <div className="flex items-baseline gap-1 mb-6">
+                  <span className={`text-4xl font-bold ${tier.highlighted ? brandGradientText : 'text-[var(--text-primary)]'}`}>
+                    {tier.price}
+                  </span>
+                  {tier.period && <span className="text-[var(--text-tertiary)]">/{tier.period}</span>}
+                </div>
 
-              <div className="space-y-3">
-                {tier.features?.map((feature, j) => (
-                  <div key={j} className="flex items-start gap-3">
-                    <CheckCircle className="w-5 h-5 text-[#4bbf39] flex-shrink-0 mt-0.5" />
-                    <span className="text-sm text-[var(--text-secondary)]">{feature}</span>
-                  </div>
-                ))}
+                <div className="space-y-3">
+                  {tier.features?.map((feature, j) => (
+                    <div key={j} className="flex items-start gap-3">
+                      <CheckCircle className="w-5 h-5 text-[#39bfb0] flex-shrink-0 mt-0.5" />
+                      <span className="text-sm text-[var(--text-secondary)]">{feature}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
@@ -726,9 +725,9 @@ export function GlassCTA({
   urgency
 }) {
   return (
-    <div className={`${liquidGlassBase} p-8 md:p-12 my-10 text-center relative overflow-hidden`}>
+    <div className={`${liquidGlassClipped} p-8 md:p-12 my-10 text-center`}>
       {/* Gradient orbs */}
-      <div className="absolute -top-10 -left-10 w-40 h-40 bg-[#4bbf39]/20 rounded-full blur-3xl" />
+      <div className="absolute -top-10 -left-10 w-40 h-40 bg-[#39bfb0]/20 rounded-full blur-3xl" />
       <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-[#39bfb0]/20 rounded-full blur-3xl" />
 
       <div className="relative z-10">

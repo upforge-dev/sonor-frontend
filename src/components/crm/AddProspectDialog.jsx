@@ -23,7 +23,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Loader2, UserPlus, Building2, Mail, Phone, Globe, Tag, FileText } from 'lucide-react'
-import { adminApi } from '@/lib/portal-api'
+import { crmApi } from '@/lib/portal-api'
 import { toast } from '@/lib/toast'
 
 const LEAD_SOURCES = [
@@ -68,10 +68,17 @@ export default function AddProspectDialog({ open, onOpenChange, onSuccess }) {
 
     setIsSubmitting(true)
     try {
-      await adminApi.createClient({
-        ...formData,
-        pipeline_stage: 'new_lead'
+      const response = await crmApi.createProspect({
+        name: formData.name,
+        email: formData.email || undefined,
+        company: formData.company || undefined,
+        phone: formData.phone || undefined,
+        website: formData.website || undefined,
+        source: formData.source || undefined,
+        notes: formData.notes || undefined,
+        pipelineStage: 'new_lead',
       })
+      const newProspect = response.data?.prospect || response.data
       toast.success('Prospect added successfully')
       setFormData({
         name: '',
@@ -83,10 +90,12 @@ export default function AddProspectDialog({ open, onOpenChange, onSuccess }) {
         notes: ''
       })
       onOpenChange(false)
-      onSuccess?.()
+      onSuccess?.(newProspect)
     } catch (err) {
       console.error('Failed to add prospect:', err)
-      toast.error(err.response?.data?.error || 'Failed to add prospect')
+      const errData = err.response?.data?.error
+      const msg = typeof errData === 'string' ? errData : errData?.message || err.response?.data?.message || 'Failed to add prospect'
+      toast.error(msg)
     } finally {
       setIsSubmitting(false)
     }

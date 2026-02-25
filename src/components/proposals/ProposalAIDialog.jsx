@@ -74,16 +74,27 @@ import AddProspectDialog from '@/components/crm/AddProspectDialog'
 import ProspectSelector from '@/components/ProspectSelector'
 import { cn } from '@/lib/utils'
 
+/** Extract a safe string from an API/axios error so we never show "Object object". */
+function getErrorMessage(error, fallback = 'Something went wrong') {
+  if (!error) return fallback
+  const data = error.response?.data
+  if (data) {
+    const m = data.message
+    if (Array.isArray(m)) return m.filter(Boolean).join(' ') || fallback
+    if (typeof m === 'string' && m.trim()) return m.trim()
+    if (typeof data.error === 'string') return data.error
+    if (typeof data.detail === 'string') return data.detail
+  }
+  const msg = error.message
+  return typeof msg === 'string' && msg.trim() ? msg.trim() : fallback
+}
+
 // Icon mapping for proposal types
 const TYPE_ICONS = {
   Sparkles,
   RefreshCw,
-  MapPin,
-  TrendingUp,
-  Megaphone,
-  Video,
   LayoutDashboard,
-  MousePointerClick
+  Bot
 }
 
 // Timeline options
@@ -678,11 +689,12 @@ export default function ProposalAIDialog({
       }
     } catch (error) {
       console.error('AI clarification failed:', error)
-      setAiClarificationsDone(true)
+      const msg = getErrorMessage(error, 'AI clarification failed')
       setAiMessages([{
         role: 'assistant',
-        content: "I'm ready to generate your proposal. Click 'Continue' to proceed."
+        content: `Sorry, something went wrong: ${msg}. You can click 'Continue' to review and generate anyway.`
       }])
+      setAiClarificationsDone(true)
     } finally {
       setIsAiThinking(false)
     }
@@ -730,9 +742,10 @@ export default function ProposalAIDialog({
       }
     } catch (error) {
       console.error('AI message failed:', error)
-      setAiMessages(prev => [...prev, { 
-        role: 'assistant', 
-        content: "I'm ready to proceed. Click 'Continue' to review and generate your proposal." 
+      const msg = getErrorMessage(error, 'Request failed')
+      setAiMessages(prev => [...prev, {
+        role: 'assistant',
+        content: `Sorry, something went wrong: ${msg}. You can click 'Continue' to review and generate anyway.`
       }])
       setAiClarificationsDone(true)
     } finally {
@@ -787,7 +800,7 @@ export default function ProposalAIDialog({
   const isStepValid = () => {
     switch (step) {
       case 1: return !!selectedType
-      case 2: return !!formData.contactId && !!formData.totalPrice && !!formData.brandName
+      case 2: return !!formData.totalPrice && !!formData.brandName
       case 3: return !!formData.goals
       case 4: return aiClarificationsDone || aiMessages.length > 0
       case 5: return true
@@ -833,10 +846,9 @@ export default function ProposalAIDialog({
         heroImageUrl = uploadResponse.data.url
       }
 
-      // Start background generation - returns immediately with proposalId
+      // Start background generation - returns immediately with proposalId (contact optional; attach later)
       const response = await proposalsApi.createAI({
-        contactId: formData.contactId,
-        contactType: formData.contactType || undefined,
+        ...(formData.contactId?.trim() ? { contactId: formData.contactId.trim(), contactType: formData.contactType || undefined } : {}),
         proposalType: selectedType,
         offeringId: selectedOffering?.id || undefined, // Phase 4: Link to commerce offering
         offeringData: selectedOffering ? { // Phase 4: Pass offering context to AI
@@ -916,7 +928,7 @@ export default function ProposalAIDialog({
             }
             
             if (currentStatus === 'failed') {
-              throw new Error(error || 'Generation failed')
+              throw new Error(typeof error === 'string' ? error : 'Generation failed')
             }
             
             // Still generating, continue polling
@@ -937,7 +949,8 @@ export default function ProposalAIDialog({
       
     } catch (error) {
       console.error('[ProposalAI] Error:', error)
-      alert('Failed to generate proposal: ' + (error.response?.data?.error || error.message))
+      const msg = getErrorMessage(error, 'Generation failed')
+      alert('Failed to generate proposal: ' + msg)
       setIsGenerating(false)
     }
   }
@@ -954,7 +967,7 @@ export default function ProposalAIDialog({
       callback?.()
     } catch (error) {
       console.error('[ProposalAI] Edit error:', error)
-      callback?.(error.message)
+      callback?.(getErrorMessage(error, 'Edit failed'))
     }
   }
 
@@ -1132,10 +1145,10 @@ export default function ProposalAIDialog({
               <div className="p-4 rounded-2xl bg-[var(--surface-secondary)] border border-[var(--glass-border)] space-y-4">
                 <div className="flex items-center gap-2 text-sm font-medium text-[var(--text-primary)]">
                   <Users className="w-4 h-4 text-[var(--brand-primary)]" />
-                  Select Prospect or Client
+                  Select Prospect or Client (optional)
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-[var(--text-secondary)]">Search and select *</Label>
+                  <Label className="text-[var(--text-secondary)]">Search and select — you can attach a contact after review</Label>
                   <ProspectSelector
                     value={formData.contactId}
                     onChange={(selected) => {
@@ -1500,7 +1513,7 @@ export default function ProposalAIDialog({
                       <input type="file" accept="image/*" onChange={handleHeroImageChange} className="hidden" />
                     </label>
                   )}
-                  <p className="text-sm text-[var(--text-tertiary)]">Recommended: 1920×1080 or higher. Will appear with Uptrade logo overlay.</p>
+                  <p className="text-sm text-[var(--text-tertiary)]">Recommended: 1920×1080 or higher. Will appear with Upforge logo overlay.</p>
                 </div>
               </div>
             </div>
@@ -1670,8 +1683,8 @@ export default function ProposalAIDialog({
 
     {/* Add New Prospect Dialog */}
     <AddProspectDialog
-      isOpen={showAddProspectDialog}
-      onClose={() => setShowAddProspectDialog(false)}
+      open={showAddProspectDialog}
+      onOpenChange={(v) => { if (!v) setShowAddProspectDialog(false) }}
       onSuccess={(newProspect) => {
         // Trigger revalidation of the ProspectSelector
         setProspectRevalidateKey(prev => prev + 1)

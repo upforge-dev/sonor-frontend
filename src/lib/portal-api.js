@@ -580,6 +580,9 @@ export const proposalsApi = {
   
   get: (id) => 
     portalApi.get(`/proposals/${id}`),
+
+  getBySlug: (slug) =>
+    portalApi.get(`/proposals/view/${slug}`),
   
   create: (data) => 
     portalApi.post('/proposals', data),
@@ -598,6 +601,9 @@ export const proposalsApi = {
   
   accept: (id, data = {}) => 
     portalApi.post(`/proposals/${id}/accept`, data),
+
+  sign: (id, data) =>
+    portalApi.post(`/proposals/${id}/sign`, data),
   
   decline: (id, data = {}) => 
     portalApi.post(`/proposals/${id}/decline`, data),

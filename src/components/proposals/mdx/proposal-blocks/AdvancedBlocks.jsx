@@ -1,3 +1,4 @@
+import React from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { 
@@ -137,21 +138,42 @@ export function Testimonial({ quote, author, company, image, result }) {
  * Comparison Table Component
  * Before/After or Feature comparison
  */
-export function ComparisonTable({ title, beforeLabel = 'Without Us', afterLabel = 'With Uptrade', items = [] }) {
+export function ComparisonTable({ title, beforeLabel, afterLabel, columns, items = [], rows, children }) {
+  const colLabels = columns
+    ? { before: columns[0], after: columns[1] }
+    : { before: beforeLabel || 'Without Us', after: afterLabel || 'With Us' }
+
+  let resolvedItems
+  if (rows && rows.length > 0) {
+    resolvedItems = rows.map(r => ({
+      feature: r.label,
+      before: r.cells?.[0],
+      after: r.cells?.[1],
+    }))
+  } else if (items.length > 0) {
+    resolvedItems = items
+  } else {
+    resolvedItems = React.Children.toArray(children)
+      .filter(child => child?.props)
+      .map(child => ({
+        feature: child.props.feature,
+        before: child.props.before,
+        after: child.props.after,
+      }))
+  }
+
   return (
     <div className="my-10">
       {title && (
         <h3 className="text-xl font-bold text-[var(--text-primary)] mb-6">{title}</h3>
       )}
       <div className="rounded-2xl overflow-hidden border border-[var(--glass-border)]">
-        {/* Header */}
         <div className="grid grid-cols-3 bg-[var(--glass-bg-elevated)]">
           <div className="p-4 font-medium text-[var(--text-secondary)]">Feature</div>
-          <div className="p-4 font-medium text-[var(--accent-red)] text-center border-l border-[var(--glass-border)]">{beforeLabel}</div>
-          <div className="p-4 font-medium text-[var(--brand-primary)] text-center border-l border-[var(--glass-border)]">{afterLabel}</div>
+          <div className="p-4 font-medium text-[var(--accent-red)] text-center border-l border-[var(--glass-border)]">{colLabels.before}</div>
+          <div className="p-4 font-medium text-[var(--brand-primary)] text-center border-l border-[var(--glass-border)]">{colLabels.after}</div>
         </div>
-        {/* Rows */}
-        {items.map((item, i) => (
+        {resolvedItems.map((item, i) => (
           <div key={i} className="grid grid-cols-3 border-t border-[var(--glass-border)]">
             <div className="p-4 text-[var(--text-primary)] font-medium">{item.feature}</div>
             <div className="p-4 text-center border-l border-[var(--glass-border)] text-[var(--text-secondary)]">
@@ -166,6 +188,8 @@ export function ComparisonTable({ title, beforeLabel = 'Without Us', afterLabel 
     </div>
   )
 }
+
+export function ComparisonRow() { return null }
 
 /**
  * Process Steps Component
@@ -464,6 +488,7 @@ export default {
   UrgencyBanner,
   Testimonial,
   ComparisonTable,
+  ComparisonRow,
   ProcessSteps,
   MetricHighlight,
   CTASection,

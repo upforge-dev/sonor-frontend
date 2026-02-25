@@ -342,7 +342,7 @@ function ClientProposalRow({
           {fromUptrade && (
             <Badge variant="outline" className="text-[10px] py-0 h-4 border-blue-200 text-blue-600">
               <Building2 className="w-2.5 h-2.5 mr-1" />
-              From Uptrade
+              From Upforge
             </Badge>
           )}
           {isMyContract && (
@@ -406,8 +406,8 @@ function ClientProposalRow({
 const Proposals = ({ onNavigate }) => {
   const { user, currentOrg, currentProject, isSuperAdmin } = useAuthStore()
   const isAdmin = user?.role === 'admin'
-  // Uptrade Media org should show admin view, client orgs show tenant view
-  const isUptradeMediaOrg = currentOrg?.slug === 'uptrade-media' || currentOrg?.domain === 'uptrademedia.com' || currentOrg?.org_type === 'agency'
+  // Upforge org should show admin view, client orgs show tenant view
+  const isUptradeMediaOrg = currentOrg?.slug === 'uptrade-media' || currentOrg?.slug === 'upforge' || currentOrg?.domain === 'uptrademedia.com' || currentOrg?.domain === 'upforge.io' || currentOrg?.org_type === 'agency'
   const isInTenantContext = (!!currentProject && !isUptradeMediaOrg) || (!!currentOrg && !isUptradeMediaOrg)
   const canManageProposals = (isAdmin || isSuperAdmin) && !isInTenantContext
   // Client orgs can create contracts
@@ -568,7 +568,7 @@ const Proposals = ({ onNavigate }) => {
 
   // Client view OR org/project context view (they view proposals sent TO them + contracts they create)
   if (!isAdmin || isInTenantContext) {
-    // Separate proposals from Uptrade vs contracts created by this org
+    // Separate proposals from Upforge vs contracts created by this org
     const receivedProposals = proposals.filter(p => p.doc_type === 'proposal' || !p.doc_type)
     const myContracts = proposals.filter(p => p.doc_type === 'contract')
     
@@ -586,8 +586,8 @@ const Proposals = ({ onNavigate }) => {
             </h1>
             <p className="text-[var(--text-secondary)]">
               {canCreateContracts 
-                ? 'Review proposals from Uptrade Media and manage your contracts'
-                : 'Review and sign proposals from Uptrade Media'
+                ? 'Review proposals from Upforge and manage your contracts'
+                : 'Review and sign proposals from Upforge'
               }
             </p>
           </div>
@@ -606,7 +606,7 @@ const Proposals = ({ onNavigate }) => {
           <TabsList>
             <TabsTrigger value="received" className="flex items-center gap-1.5">
               <Building2 className="w-3.5 h-3.5" />
-              From Uptrade
+              From Upforge
               {pendingReceived.length > 0 && (
                 <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
                   {pendingReceived.length}
@@ -635,7 +635,7 @@ const Proposals = ({ onNavigate }) => {
             </TabsTrigger>
           </TabsList>
 
-          {/* Received proposals from Uptrade */}
+          {/* Received proposals from Upforge */}
           <TabsContent value="received" className="space-y-4 mt-4">
             {isLoading ? (
               <div className="flex items-center justify-center py-12">
@@ -645,7 +645,7 @@ const Proposals = ({ onNavigate }) => {
               <EmptyState
                 icon={Send}
                 title="No pending proposals"
-                description="You don't have any proposals waiting for review from Uptrade Media."
+                description="You don't have any proposals waiting for review from Upforge."
               />
             ) : (
               <div className="space-y-3">

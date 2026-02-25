@@ -60,7 +60,7 @@ export default function SendProposalDialog({
   const [recipientError, setRecipientError] = useState('')
   const inputRef = useRef(null)
   const [emailData, setEmailData] = useState({
-    subject: `Your Proposal from Uptrade Media: ${proposal?.title || ''}`,
+    subject: `Your Proposal from Upforge: ${proposal?.title || ''}`,
     personalMessage: ''
   })
 
@@ -202,7 +202,7 @@ export default function SendProposalDialog({
           <!-- Header -->
           <tr>
             <td align="center" class="mobile-padding-header" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); padding: 40px 40px 32px;">
-              <img src="https://portal.uptrademedia.com/logo.png" alt="Uptrade Media" width="140" style="display: block; margin-bottom: 20px; max-width: 140px; height: auto;" />
+              <img src="https://upforge.io/logo.png" alt="Upforge" width="140" style="display: block; margin-bottom: 20px; max-width: 140px; height: auto;" />
               <h1 class="mobile-font-lg" style="margin: 0; color: #94a3b8; font-size: 26px; font-weight: 700; line-height: 1.3;">Your Proposal is Ready</h1>
               <p style="margin: 10px 0 0; color: #94a3b8; font-size: 15px; line-height: 1.5;">A custom proposal prepared just for you</p>
             </td>
@@ -295,7 +295,7 @@ export default function SendProposalDialog({
           <!-- Footer -->
           <tr>
             <td class="mobile-padding" style="background-color: #f8fafc; border-top: 1px solid #e2e8f0; padding: 28px 40px; text-align: center;">
-              <p style="margin: 0 0 4px; color: #0f172a; font-size: 15px; font-weight: 700;">Uptrade Media</p>
+              <p style="margin: 0 0 4px; color: #0f172a; font-size: 15px; font-weight: 700;">Upforge</p>
               <p style="margin: 0 0 16px; color: #64748b; font-size: 13px;">Premium Digital Marketing & Web Design</p>
               <p style="margin: 0; color: #94a3b8; font-size: 12px;">This email was sent to ${recipientEmail}</p>
             </td>
@@ -446,7 +446,7 @@ export default function SendProposalDialog({
                 <Input
                   value={emailData.subject}
                   onChange={(e) => setEmailData({ ...emailData, subject: e.target.value })}
-                  placeholder="Your proposal from Uptrade Media"
+                  placeholder="Your proposal from Upforge"
                   className="glass-bg border-[var(--glass-border)]"
                 />
               </div>

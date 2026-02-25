@@ -494,12 +494,13 @@ export default function ProposalEditor({ proposalId, onBack }) {
       {/* Send Dialog */}
       <SendProposalDialog
         proposal={proposal}
+        client={proposal?.contact}
         isOpen={showSendDialog}
         onClose={() => setShowSendDialog(false)}
-        onSent={() => {
+        onSuccess={() => {
           setShowSendDialog(false)
           proposalsApi.get(proposalId)
-            .then(res => setProposal(res.data.proposal))
+            .then(res => setProposal(res.data.proposal || res.data))
         }}
       />
 

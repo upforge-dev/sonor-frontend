@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { CheckCircle, X, Pen, Loader2, Mail, Calendar, User } from 'lucide-react'
 import { proposalsApi } from '@/lib/portal-api'
+import { supabase } from '@/lib/supabase'
 import ProposalDepositPayment from './ProposalDepositPayment'
 
 export default function ProposalSignature({ 
@@ -127,46 +128,53 @@ export default function ProposalSignature({
     setError('')
 
     try {
-      const sigData = sigPad.current.toDataURL('image/png')
-      const signedAt = new Date().toISOString()
-      
-      const response = await proposalsApi.accept(proposalId, {
-        signature: sigData,
-        signedAt,
-        signedBy: printedName.trim(),
-        clientEmail
+      // Convert canvas to PNG blob and upload to Supabase Storage
+      const canvas = sigPad.current.getCanvas()
+      const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'))
+      const fileName = `${proposalId}/${Date.now()}.png`
+
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('proposal-signatures')
+        .upload(fileName, blob, { contentType: 'image/png', upsert: true })
+
+      if (uploadError) throw new Error('Failed to upload signature: ' + uploadError.message)
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('proposal-signatures')
+        .getPublicUrl(uploadData.path)
+
+      // Call the sign endpoint with the Storage URL
+      const response = await proposalsApi.sign(proposalId, {
+        signatureUrl: publicUrl,
+        signerName: printedName.trim(),
       })
 
       const data = response.data
+      const signedAt = data.signed_at || new Date().toISOString()
 
-      // Store signature data for inline display
-      setSignatureData(sigData)
+      setSignatureData(publicUrl)
       setSignedDate(signedAt)
       setSigned(true)
       setSigning(false)
       
-      // Check if there's a deposit to pay
+      // Check if there's a deposit invoice to pay
       const payment = data.payment
       if (payment?.paymentToken && payment.depositAmount > 0) {
-        // Redirect to invoice payment page instead of showing inline payment
-        // This consolidates all billing through the invoice system
         window.location.href = payment.paymentUrl
         return
       } else if (payment?.depositAmount && payment.depositAmount > 0) {
-        // Fallback for older API responses without paymentToken - show inline payment
         setPaymentInfo({
           depositAmount: payment.depositAmount,
           totalAmount: payment.totalAmount
         })
         setShowPayment(true)
       } else {
-        // No deposit required - just show confirmation
         setPaymentComplete(true)
       }
       
     } catch (err) {
       console.error('Signature error:', err)
-      setError(err.message || 'Failed to process signature. Please try again.')
+      setError(err.response?.data?.message || err.message || 'Failed to process signature. Please try again.')
       setSigning(false)
     }
   }

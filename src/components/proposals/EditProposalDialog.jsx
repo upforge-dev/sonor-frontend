@@ -557,7 +557,7 @@ export default function EditProposalDialog({
 
                   <div className="flex-1">
                     <p className="text-sm text-[var(--text-secondary)]">
-                      The hero image appears at the top of the proposal with your Uptrade Media logo overlaid.
+                      The hero image appears at the top of the proposal with your Upforge logo overlaid.
                     </p>
                     <p className="text-sm text-[var(--text-tertiary)] mt-2">
                       For best results, use a high-quality image that represents the client's industry or project.

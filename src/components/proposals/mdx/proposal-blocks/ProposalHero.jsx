@@ -10,12 +10,14 @@ export function ProposalHero({
   subtitle, 
   heroImage, 
   brandName,
+  agencyName,
+  agencyLogo,
   totalAmount,
   validUntil,
   stats = []
 }) {
-  // Debug: log what heroImage value we're receiving
-  console.log('[ProposalHero] heroImage:', heroImage)
+  const displayName = agencyName || 'Upforge'
+  const displayLogo = agencyLogo || '/logo.svg'
   
   return (
     <div className="relative overflow-hidden rounded-2xl mb-8 min-h-[300px]">
@@ -26,8 +28,6 @@ export function ProposalHero({
             src={heroImage} 
             alt="" 
             className="w-full h-full object-cover"
-            onError={(e) => console.error('[ProposalHero] Image failed to load:', e)}
-            onLoad={() => console.log('[ProposalHero] Image loaded successfully')}
           />
           <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/60 to-black/40" />
         </div>
@@ -40,11 +40,11 @@ export function ProposalHero({
       
       {/* Content */}
       <div className="relative z-10 text-white p-8 sm:p-12">
-        {/* Uptrade Logo */}
+        {/* Agency Logo */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
-            <img src="/logo.svg" alt="Uptrade Media" className="w-10 h-10" />
-            <span className="text-sm font-medium opacity-80">Uptrade Media</span>
+            <img src={displayLogo} alt={displayName} className="w-10 h-10" />
+            <span className="text-sm font-medium opacity-80">{displayName}</span>
           </div>
           {totalAmount && (
             <div className="text-right">

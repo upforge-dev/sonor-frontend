@@ -15,7 +15,7 @@ export const PROPOSAL_TYPES = {
   brand_website: {
     id: 'brand_website',
     label: 'New Brand + Website',
-    shortLabel: 'Brand + Site',
+    shortLabel: 'New Website',
     description: 'Complete brand creation with custom website for new businesses or full rebrands',
     icon: 'Sparkles',
     color: 'purple',
@@ -91,170 +91,11 @@ export const PROPOSAL_TYPES = {
 - Migration plan from old to new`
   },
 
-  local_seo: {
-    id: 'local_seo',
-    label: 'Local SEO Expansion',
-    shortLabel: 'Local SEO',
-    description: 'City/county-specific pages and local search dominance package',
-    icon: 'MapPin',
-    color: 'green',
-    sections: [
-      'hero',
-      'executive_summary',
-      'local_opportunity',
-      'keyword_research',
-      'location_pages',
-      'schema_strategy',
-      'timeline',
-      'investment',
-      'next_steps'
-    ],
-    suggestedComponents: [
-      'LocalOpportunityMap',
-      'KeywordResearchTable',
-      'LocationPageStrategy',
-      'SchemaMarkupPlan',
-      'InternalLinkingDiagram',
-      'CompetitorGapAnalysis',
-      'PricingTable',
-      'ProjectTimeline'
-    ],
-    aiPromptContext: `This is a Local SEO expansion package, often sold as phase 2 after a core site. Common for law firms and home services. Include:
-- City and county-specific service pages
-- Keyword research based on SEMrush data
-- Schema markup strategy for local business
-- Internal linking architecture
-- Google Business Profile optimization
-- Local citations and directory strategy
-- Content outlines for each location page`
-  },
-
-  seo_retainer: {
-    id: 'seo_retainer',
-    label: 'SEO & Content Retainer',
-    shortLabel: 'SEO Retainer',
-    description: 'Ongoing monthly SEO and content growth program',
-    icon: 'TrendingUp',
-    color: 'emerald',
-    sections: [
-      'hero',
-      'executive_summary',
-      'current_performance',
-      'growth_strategy',
-      'monthly_deliverables',
-      'reporting_cadence',
-      'investment',
-      'next_steps'
-    ],
-    suggestedComponents: [
-      'CurrentPerformanceSnapshot',
-      'GrowthStrategyRoadmap',
-      'MonthlyDeliverablesGrid',
-      'ContentCalendar',
-      'BacklinkStrategy',
-      'ReportingDashboardPreview',
-      'RetainerPricing',
-      'KPITargets'
-    ],
-    aiPromptContext: `This is an ongoing SEO and content retainer, billed monthly. Include:
-- Current performance baseline with metrics
-- 6-12 month growth roadmap
-- Monthly deliverables breakdown:
-  - Content strategy and new pages/blogs
-  - On-page updates and technical cleanup
-  - Schema updates and structured data
-  - Backlink outreach and local citations
-  - Call tracking integration
-  - Keyword expansion strategy
-- Monthly reporting and communication cadence
-- KPI targets and success metrics`
-  },
-
-  paid_ads: {
-    id: 'paid_ads',
-    label: 'Paid Ads + Lead Engine',
-    shortLabel: 'Paid Ads',
-    description: 'Google Ads and Meta campaigns with landing pages and conversion tracking',
-    icon: 'Megaphone',
-    color: 'orange',
-    sections: [
-      'hero',
-      'executive_summary',
-      'campaign_strategy',
-      'ad_platforms',
-      'landing_pages',
-      'conversion_tracking',
-      'testing_plan',
-      'investment',
-      'next_steps'
-    ],
-    suggestedComponents: [
-      'CampaignStrategyOverview',
-      'PlatformBreakdown',
-      'LandingPageConcepts',
-      'ConversionTrackingSetup',
-      'ABTestingPlan',
-      'AdCreativeExamples',
-      'BudgetAllocation',
-      'RetainerPricing'
-    ],
-    aiPromptContext: `This is a paid advertising and lead generation package. Include:
-- Campaign strategy and goals
-- Platform recommendations (Google Ads, Meta, etc.)
-- Ad creative concepts and examples
-- Landing page design and development
-- Conversion tracking setup (GA4, call tracking)
-- A/B testing plan for headlines, offers, forms
-- Monthly optimization and reporting
-- Budget recommendations and expected ROI`
-  },
-
-  media_package: {
-    id: 'media_package',
-    label: 'Media Package',
-    shortLabel: 'Photo/Video',
-    description: 'Professional photography, video production, and drone footage',
-    icon: 'Video',
-    color: 'pink',
-    sections: [
-      'hero',
-      'executive_summary',
-      'creative_vision',
-      'shoot_schedule',
-      'deliverables',
-      'usage_rights',
-      'investment',
-      'next_steps'
-    ],
-    suggestedComponents: [
-      'CreativeVisionBoard',
-      'ShootSchedule',
-      'DeliverablesList',
-      'AssetFormats',
-      'UsageRights',
-      'EquipmentOverview',
-      'PricingBreakdown',
-      'ProductionTimeline'
-    ],
-    aiPromptContext: `This is a media production package (photo, video, drone). Include:
-- Creative vision and style direction
-- Shoot day schedule and logistics
-- Deliverables breakdown:
-  - Brand video, service explainers
-  - Testimonial videos, case studies
-  - Property tours, drone footage
-  - B-roll library
-- Edit packages for web, social, ads
-- File formats and specifications
-- Usage rights and licensing
-- Typically scoped as X shoot days + Y finished assets`
-  },
-
   web_app: {
     id: 'web_app',
-    label: 'Custom Portal / Web App',
-    shortLabel: 'Web App',
-    description: 'Custom admin portals, client dashboards, and web applications',
+    label: 'Application Development',
+    shortLabel: 'App Dev',
+    description: 'Custom portals, client dashboards, SaaS apps, and complex web applications',
     icon: 'LayoutDashboard',
     color: 'indigo',
     sections: [
@@ -296,43 +137,48 @@ export const PROPOSAL_TYPES = {
 - Often sold as phase 2 after marketing site proves itself`
   },
 
-  landing_page: {
-    id: 'landing_page',
-    label: 'Campaign Landing Page',
-    shortLabel: 'Landing Page',
-    description: 'Single conversion-focused page for campaigns or lead magnets',
-    icon: 'MousePointerClick',
-    color: 'cyan',
+  ai_automation: {
+    id: 'ai_automation',
+    label: 'AI & Automations',
+    shortLabel: 'AI & Auto',
+    description: 'Custom AI systems, automation workflows, intelligent outreach, and data pipelines',
+    icon: 'Bot',
+    color: 'violet',
     sections: [
       'hero',
       'executive_summary',
-      'campaign_context',
-      'page_structure',
-      'conversion_elements',
-      'integration',
+      'problem_statement',
+      'system_architecture',
+      'ai_components',
+      'automation_workflows',
+      'integration_map',
+      'data_pipeline',
+      'security_compliance',
       'timeline',
       'investment',
       'next_steps'
     ],
     suggestedComponents: [
-      'CampaignContext',
-      'PageWireframe',
-      'ConversionElements',
-      'FormIntegration',
-      'TrackingSetup',
-      'ABTestingPlan',
-      'QuickPricing',
-      'FastTimeline'
+      'SystemArchitectureDiagram',
+      'AIComponentBreakdown',
+      'AutomationWorkflowMap',
+      'IntegrationsList',
+      'DataFlowDiagram',
+      'TechStackOverview',
+      'DevelopmentPhases',
+      'PricingTiers'
     ],
-    aiPromptContext: `This is a single landing page for a specific campaign or funnel. Include:
-- Campaign context and goals
-- Target audience and offer
-- Page structure and sections
-- Conversion elements (forms, CTAs, social proof)
-- Integration requirements (email, CRM)
-- Tracking and analytics setup
-- Usually paired with ads or email sequences
-- Fast turnaround timeline (1-2 weeks)`
+    aiPromptContext: `This is a custom AI & automation system proposal. The client needs intelligent automation that replaces or augments manual workflows. Include:
+- System architecture overview (what components exist and how they connect)
+- AI engine: LLM selection (GPT-4o, Claude, etc.), prompt engineering, context management
+- Automation workflows: step-by-step sequences with triggers, conditions, and actions
+- Data ingestion: scraping, API polling, webhooks, file uploads
+- Outreach infrastructure (if applicable): multi-domain rotation, warmup, deliverability
+- Integration map: CRM, email platforms, databases, third-party APIs
+- Monitoring & observability: error handling, rate limiting, alerting, dashboards
+- Security: API key management, data handling, compliance
+- Phased rollout with measurable milestones
+- Pricing broken down by system component`
   }
 }
 
@@ -343,7 +189,7 @@ export const PROPOSAL_TYPES = {
 /**
  * Base system prompt for all proposal generation
  */
-export const AI_SYSTEM_PROMPT = `You are an expert proposal writer for Uptrade Media, a boutique digital agency specializing in web design, development, SEO, and marketing for small-to-medium businesses, particularly professional services (law firms, medical practices, home services).
+export const AI_SYSTEM_PROMPT = `You are an expert proposal writer for Upforge (upforge.io), a premium digital agency specializing in web design, development, AI & automation, and custom applications for ambitious businesses across industries.
 
 Your proposals are:
 - Professional yet conversational
@@ -353,7 +199,7 @@ Your proposals are:
 - Legally binding documents that protect both parties
 
 Writing Style:
-- Use "we" for Uptrade Media
+- Use "we" for Upforge
 - Address the client directly as "you" or by name
 - Be specific, not vague ("increase organic traffic by 40%" not "improve your online presence")
 - Include concrete deliverables with clear descriptions
@@ -602,228 +448,111 @@ Set measurable targets:
 - Maintenance package: $300-500/month
 `,
 
-  local_seo: `
-### Local SEO Expansion Proposal Structure
+  ai_automation: `
+### AI & Automations Proposal Structure
 
 **Executive Summary:**
-Position as market expansion - they'll dominate search in surrounding cities/counties, capturing leads competitors don't even know exist.
+Position as a force multiplier — this system will do the work of a full team at a fraction of the cost, without the bottlenecks of manual processes.
 
-**Local Opportunity Section:**
-- List target cities/areas with search volume
-- Show keyword opportunities by location
-- Competitor presence analysis
-- Map/visual of service area coverage
+**Problem Statement:**
+Describe the specific operational pain:
+- Manual, repetitive tasks consuming team time
+- Inconsistent outreach or follow-up
+- Data trapped in silos
+- Slow response times losing deals
+- No visibility into what's working
 
-**Keyword Research Section:**
-Present a table of opportunities:
-| Location | Service + City | Monthly Volume | Difficulty | Opportunity |
-Example: "Personal Injury Lawyer Dallas" - 2,400/mo - Medium - High
+**System Architecture Overview:**
+Present the "brain + body" framing:
+- The Brain: AI/LLM layer (GPT-4o or Claude) — intent understanding, content generation, decision routing
+- The Body: Automation layer (n8n, Make, or custom Node.js) — triggers, sequences, integrations
+- The Memory: Data layer (Postgres/Supabase) — CRM, logs, state management
+- The Nervous System: Integration layer — APIs connecting everything
 
-**Location Pages Strategy:**
-- Number of pages to create
-- Content structure for each (500-800 words)
-- Unique local content strategy (not just find/replace city name)
-- Local testimonials and case studies integration
-- Schema markup for each location
+**AI Component Breakdown:**
+For each AI-powered feature:
+- Component name
+- What it does
+- Input → Output
+- LLM used and why
+- Prompt strategy overview
 
-**Technical SEO Components:**
-- LocalBusiness schema for each location
-- Internal linking architecture
-- XML sitemap updates
-- Google Business Profile optimization per location
-- Local citation building strategy
+Common components:
+- Personalized message drafting
+- Lead scoring and prioritization
+- Sentiment analysis and reply classification
+- Context-aware follow-up sequencing
+- Document or report generation
+- Data extraction and enrichment
 
-**Recommended Pricing:**
-- 5-10 location pages: $3,000-5,000
-- 10-20 location pages: $5,000-8,000
-- 20+ location pages: $8,000-15,000
-- Plus ongoing SEO retainer recommended
+**Automation Workflows:**
+For each workflow, describe:
+- Trigger (what starts it)
+- Steps (numbered, clear actions)
+- Conditions (if/then logic)
+- Output (what gets created or sent)
+- Error handling
 
-**Typical Add-ons:**
-- GBP management: $500/location
-- Local citation building: $1,000-2,000
-- Monthly content updates: $500-1,000/month
-- Call tracking setup: $500 + $100/month
-`,
+**Integration Map:**
+List every external system connected:
+- CRM (HubSpot, Salesforce, Supabase)
+- Email platform (Gmail, Outlook, Sendgrid, Instantly)
+- Data sources (APIs, scrapers, webhooks)
+- Notification channels (Slack, SMS)
+- Storage (Google Drive, S3, Supabase Storage)
 
-  seo_retainer: `
-### SEO & Content Retainer Proposal Structure
+**Outreach Infrastructure (if applicable):**
+- Domain pool strategy (primary vs. secondary domains)
+- Warm-up schedule and ramp timeline
+- Sending limits per inbox/domain
+- Blacklist monitoring and domain health
+- Unibox / reply centralization setup
 
-**Executive Summary:**
-Position as ongoing growth partnership, not just maintenance. Show the compounding value of consistent SEO investment.
+**Data Pipeline (if applicable):**
+- Data sources (FAA registry, LinkedIn, news, internal CRM)
+- Scraping strategy (Scrapy, Bright Data, Playwright)
+- Enrichment steps (normalize, deduplicate, score)
+- Storage schema overview
+- Trigger event detection logic
 
-**Current Performance Snapshot:**
-- Organic traffic trends (6-12 months)
-- Keyword rankings summary
-- Top performing pages
-- Conversion rates from organic
-- Competitor comparison
+**Security & Compliance:**
+- API key vault and rotation
+- PII handling and data residency
+- Rate limiting and abuse prevention
+- Audit logging
+- Relevant compliance (CAN-SPAM, GDPR, CCPA)
 
-**Growth Strategy Roadmap:**
-6-12 month plan with quarterly goals:
-- Q1: Foundation and quick wins
-- Q2: Content expansion
-- Q3: Authority building
-- Q4: Scaling and optimization
-
-**Monthly Deliverables Grid:**
-Create a clear breakdown of what's included each month:
-- X new blog posts/pages
-- X pages optimized/updated
-- Technical SEO audit items
-- Schema updates
-- Backlink outreach
-- Reporting and strategy call
-
-**Content Calendar Preview:**
-Show example topics for first 3 months based on keyword research.
-
-**Reporting & Communication:**
-- Monthly performance reports
-- Keyword ranking tracking
-- Traffic and conversion trends
-- Strategy call schedule
-- Slack/email access
-
-**Recommended Pricing:**
-- Starter (small sites): $1,500-2,000/month
-- Growth (medium sites): $2,500-4,000/month
-- Enterprise: $5,000-10,000/month
-Minimum 6-month commitment recommended
-
-**Typical Add-ons:**
-- Premium backlink acquisition: $1,000-2,000/month
-- Video content creation: $500-1,500/video
-- Paid ads management: $1,000-2,000/month
-- Advanced analytics setup: $1,500 one-time
-`,
-
-  paid_ads: `
-### Paid Ads + Lead Engine Proposal Structure
-
-**Executive Summary:**
-Position as a complete lead generation system, not just ad management. They're buying leads, not clicks.
-
-**Campaign Strategy Section:**
-- Campaign objectives and KPIs
-- Target audience definition
-- Geographic targeting
-- Budget allocation by platform
-- Expected lead volume and cost-per-lead
-
-**Platform Breakdown:**
-For each platform (Google Ads, Meta, etc.):
-- Campaign structure
-- Targeting strategy
-- Ad types (Search, Display, Video, etc.)
-- Estimated performance
-
-**Landing Page Section:**
-- Number of landing pages needed
-- Conversion-focused design approach
-- A/B testing plan
-- Form strategy and lead capture
-
-**Conversion Tracking Setup:**
-- Google Analytics 4 configuration
-- Conversion tracking pixels
-- Call tracking integration
-- CRM integration (if applicable)
-- Attribution modeling
-
-**Testing & Optimization Plan:**
-- Initial testing phase approach
-- Headline and creative testing
-- Audience testing
-- Landing page optimization
-- Scaling criteria
+**Development Phases:**
+- Phase 1 — Discovery & Architecture (1-2 weeks)
+  - Requirements finalization, workflow mapping, API audit
+- Phase 2 — Core Infrastructure (2-4 weeks)
+  - Database schema, base integrations, auth layer
+- Phase 3 — AI & Automation Build (3-6 weeks)
+  - LLM integrations, workflow automation, testing
+- Phase 4 — Outreach / Data Layer (2-4 weeks, if applicable)
+  - Domain setup, scraping pipeline, sequencing engine
+- Phase 5 — Testing, Hardening & Launch (1-2 weeks)
+  - QA, monitoring setup, team training
 
 **Recommended Pricing:**
-Setup:
-- Basic (1 platform, 1-2 campaigns): $2,500-4,000
-- Standard (2 platforms, landing pages): $5,000-8,000
-- Enterprise (full funnel): $10,000-15,000
-
-Management:
-- 15-20% of ad spend OR
-- Flat fee: $1,500-5,000/month
+- Simple automation (1-3 workflows): $5,000-12,000
+- Mid-complexity system (4-8 workflows + AI): $15,000-30,000
+- Full AI infrastructure (outreach + data + AI): $35,000-75,000
+- Enterprise custom: $75,000+
 
 **Typical Add-ons:**
-- Additional landing pages: $1,500-2,500 each
-- Video ad production: $2,000-5,000
-- Retargeting sequences: $1,500
-- Email automation: $2,000-4,000
-`,
-
-  media_package: `
-### Media Package Proposal Structure
-
-**Executive Summary:**
-Position as brand asset creation - these are investments that will be used across all marketing for years.
-
-**Creative Vision Section:**
-- Visual style direction
-- Mood board references
-- Shot list overview
-- Brand alignment notes
-
-**Shoot Schedule:**
-Day-by-day breakdown:
-- Locations
-- Shot types
-- Subjects/talent
-- Equipment needs
-- Time estimates
-
-**Deliverables Breakdown:**
-Video deliverables:
-- Hero brand video (length, style)
-- Service explainer videos
-- Testimonial interviews
-- Property/product tours
-- B-roll library footage
-- Social media cuts
-
-Photo deliverables:
-- Team/headshot portraits
-- Office/location shots
-- Product/service photography
-- Lifestyle/action shots
-- Stock library for marketing
-
-**Technical Specs:**
-- Video resolution/format
-- Photo resolution/format
-- Delivery method
-- Raw footage availability
-
-**Usage Rights:**
-- Full commercial use
-- Social media
-- Advertising
-- Website
-- Print materials
-- Duration/territory
-
-**Recommended Pricing:**
-- Half-day shoot (4 hrs): $2,000-3,500
-- Full-day shoot (8 hrs): $4,000-6,000
-- Multi-day production: $6,000-15,000
-Plus editing/post-production
-
-**Typical Add-ons:**
-- Drone footage: $800-1,500
-- Talent/actors: $500-1,000/day
-- Location fees: Varies
-- Rush editing: +50%
-- Additional edits: $200-500/revision round
+- Additional workflow automations: $1,500-4,000 each
+- Custom dashboard / reporting: $3,000-8,000
+- Ongoing monitoring & iteration retainer: $1,500-4,000/month
+- Staff training and runbook: $2,000-4,000
+- Data enrichment API subscriptions: pass-through
 `,
 
   web_app: `
-### Custom Portal / Web App Proposal Structure
+### Application Development Proposal Structure
 
 **Executive Summary:**
-Position as a competitive advantage - custom software that solves their specific problems, not a one-size-fits-all SaaS.
+Position as a competitive advantage — custom software that solves their specific problems, not a one-size-fits-all SaaS.
 
 **Requirements Overview:**
 - Business problem being solved
@@ -857,10 +586,10 @@ Common modules:
 
 **Tech Stack Recommendations:**
 - Frontend: React/Next.js/Vite
-- Backend: Node.js/Netlify Functions
+- Backend: Node.js/NestJS
 - Database: Postgres/Supabase
-- Storage: Netlify Blobs/S3
-- Hosting: Netlify/Vercel
+- Storage: S3/Supabase Storage
+- Hosting: Vercel/Railway
 - Integrations: List relevant APIs
 
 **Security & Compliance:**
@@ -888,62 +617,6 @@ Common modules:
 - AI features: $5,000-15,000
 - Mobile app: $15,000-30,000
 - Ongoing maintenance: $500-2,000/month
-`,
-
-  landing_page: `
-### Campaign Landing Page Proposal Structure
-
-**Executive Summary:**
-Position as conversion optimization - this page exists for one purpose: turn visitors into leads.
-
-**Campaign Context:**
-- What's driving traffic (ads, email, social)
-- Target audience
-- Offer/CTA
-- Success metrics
-
-**Page Structure:**
-Section-by-section breakdown:
-1. Hero (headline, subhead, CTA)
-2. Problem/Pain points
-3. Solution overview
-4. Features/Benefits
-5. Social proof (testimonials, logos)
-6. FAQ/Objection handling
-7. Final CTA
-
-**Conversion Elements:**
-- Form strategy (fields, placement)
-- CTA design and copy
-- Trust signals
-- Urgency elements
-- Exit intent strategy
-
-**Integration Requirements:**
-- Form submission destination
-- Email automation trigger
-- CRM integration
-- Thank you page/redirect
-- Tracking pixels
-
-**A/B Testing Plan:**
-Elements to test:
-- Headlines
-- CTA copy/color
-- Form length
-- Social proof placement
-- Offer variations
-
-**Recommended Pricing:**
-- Simple landing page: $1,500-2,500
-- Conversion-optimized page: $2,500-4,000
-- Full funnel (landing + thank you + email): $4,000-6,000
-
-**Typical Add-ons:**
-- Additional page variants: $500-1,000
-- Email sequence (3-5 emails): $1,500-2,500
-- A/B testing management: $500/month
-- Conversion rate optimization: $1,000-2,000/month
 `
 }
 
@@ -966,12 +639,8 @@ export function getProposalTypeIcon(id) {
   const icons = {
     brand_website: 'Sparkles',
     website_rebuild: 'RefreshCw',
-    local_seo: 'MapPin',
-    seo_retainer: 'TrendingUp',
-    paid_ads: 'Megaphone',
-    media_package: 'Video',
     web_app: 'LayoutDashboard',
-    landing_page: 'MousePointerClick'
+    ai_automation: 'Bot'
   }
   return icons[id] || 'FileText'
 }
@@ -1034,6 +703,13 @@ export function getProposalTypeColors(id) {
       text: 'text-cyan-600',
       border: 'border-cyan-200',
       gradient: 'from-cyan-500 to-blue-600'
+    },
+    violet: {
+      bg: 'bg-violet-500',
+      bgLight: 'bg-violet-50',
+      text: 'text-violet-600',
+      border: 'border-violet-200',
+      gradient: 'from-violet-500 to-fuchsia-600'
     }
   }
   
