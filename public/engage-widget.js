@@ -244,6 +244,8 @@
   if (scriptTag.getAttribute('data-signal-url')) SIGNAL_URL = scriptTag.getAttribute('data-signal-url');
   if (scriptTag.getAttribute('data-portal-url')) PORTAL_URL = scriptTag.getAttribute('data-portal-url');
   if (scriptTag.getAttribute('data-portal-api-url')) PORTAL_API_URL = scriptTag.getAttribute('data-portal-api-url');
+  // Never use .netlify/functions — use Portal API (api.uptrademedia.com) only
+  if (PORTAL_API_URL && PORTAL_API_URL.indexOf('.netlify/functions') !== -1) PORTAL_API_URL = 'https://api.uptrademedia.com';
 
   const WIDGET_ORIGIN = scriptTag.src ? new URL(scriptTag.src).origin : PORTAL_URL;
 
