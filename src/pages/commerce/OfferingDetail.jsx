@@ -913,11 +913,143 @@ function OfferingAnalytics({ offeringId }) {
   )
 }
 
-// Sales history component for offering
-function OfferingSalesHistory({ offeringId, projectId }) {
+// Helper: sale is successfully paid/completed (exclude refunded/cancelled)
+function isPaidSale(sale) {
+  if (sale.status === 'refunded' || sale.status === 'cancelled') return false
+  return sale.payment_status === 'paid' || sale.status === 'completed'
+}
+
+// Attendees list component - shows paid registrations only
+function OfferingAttendees({ offeringId, projectId }) {
   const [sales, setSales] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+
+  useEffect(() => {
+    if (offeringId && projectId) {
+      loadSales()
+    }
+  }, [offeringId, projectId])
+
+  const loadSales = async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const response = await portalApi.get(`/commerce/sales/${projectId}?offering_id=${offeringId}&limit=100`)
+      setSales(response.data || [])
+    } catch (err) {
+      console.error('Failed to load attendees:', err)
+      setError('Failed to load attendees')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const paidAttendees = sales.filter(isPaidSale)
+
+  if (loading) {
+    return (
+      <Card>
+        <CardContent className="py-8">
+          <div className="flex items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  if (error) {
+    return (
+      <Card>
+        <CardContent className="py-8 text-center">
+          <p className="text-muted-foreground">{error}</p>
+          <Button variant="outline" className="mt-4" onClick={loadSales}>
+            Try Again
+          </Button>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  if (paidAttendees.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Registered Attendees</CardTitle>
+          <CardDescription>Successfully registered and paid</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8">
+            <Users className="h-12 w-12 mx-auto text-muted-foreground/30 mb-3" />
+            <p className="text-muted-foreground">No registrations yet</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              Attendees will appear here once they register and pay
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle>Registered Attendees</CardTitle>
+            <CardDescription>Successfully registered and paid ({paidAttendees.length} total)</CardDescription>
+          </div>
+          <Badge variant="outline">{paidAttendees.length} registered</Badge>
+        </div>
+      </CardHeader>
+      <CardContent className="p-0">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-muted/50">
+              <tr>
+                <th className="text-left p-3 text-sm font-medium">Name</th>
+                <th className="text-left p-3 text-sm font-medium">Email</th>
+                <th className="text-left p-3 text-sm font-medium hidden md:table-cell">Phone</th>
+                <th className="text-right p-3 text-sm font-medium">Qty</th>
+                <th className="text-left p-3 text-sm font-medium">Registered</th>
+              </tr>
+            </thead>
+            <tbody>
+              {paidAttendees.map((sale) => (
+                <tr key={sale.id} className="border-t">
+                  <td className="p-3">
+                    <p className="font-medium">{sale.customer_name || 'Guest'}</p>
+                  </td>
+                  <td className="p-3">
+                    <p className="text-sm text-muted-foreground">{sale.customer_email}</p>
+                  </td>
+                  <td className="p-3 hidden md:table-cell">
+                    <p className="text-sm text-muted-foreground">{sale.customer_phone || sale.metadata?.phone || '—'}</p>
+                  </td>
+                  <td className="p-3 text-right text-sm">
+                    {sale.quantity}
+                  </td>
+                  <td className="p-3 text-sm text-muted-foreground">
+                    {format(new Date(sale.created_at), 'MMM d, yyyy')}
+                    <span className="ml-1 text-xs">{format(new Date(sale.created_at), 'h:mm a')}</span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+// Sales history component for offering
+function OfferingSalesHistory({ offeringId, projectId, defaultFilterPaid = true }) {
+  const [sales, setSales] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [filterPaid, setFilterPaid] = useState(defaultFilterPaid)
 
   useEffect(() => {
     if (offeringId && projectId) {
@@ -938,6 +1070,8 @@ function OfferingSalesHistory({ offeringId, projectId }) {
       setLoading(false)
     }
   }
+
+  const displayedSales = filterPaid ? sales.filter(isPaidSale) : sales
 
   const getStatusBadge = (status) => {
     const statusConfig = {
@@ -993,10 +1127,42 @@ function OfferingSalesHistory({ offeringId, projectId }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Sales History</CardTitle>
-        <CardDescription>All sales of this offering ({sales.length} total)</CardDescription>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <CardTitle>Sales History</CardTitle>
+            <CardDescription>
+              {filterPaid
+                ? `Paid / completed sales (${displayedSales.length} of ${sales.length} total)`
+                : `All sales (${sales.length} total)`}
+            </CardDescription>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant={filterPaid ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setFilterPaid(true)}
+            >
+              Paid / Completed
+            </Button>
+            <Button
+              variant={!filterPaid ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setFilterPaid(false)}
+            >
+              All
+            </Button>
+          </div>
+        </div>
       </CardHeader>
       <CardContent className="p-0">
+        {displayedSales.length === 0 ? (
+          <div className="py-12 text-center">
+            <p className="text-muted-foreground">No paid sales in this filter</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              Switch to &quot;All&quot; to see pending or other statuses
+            </p>
+          </div>
+        ) : (
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-muted/50">
@@ -1009,7 +1175,7 @@ function OfferingSalesHistory({ offeringId, projectId }) {
               </tr>
             </thead>
             <tbody>
-              {sales.map((sale) => (
+              {displayedSales.map((sale) => (
                 <tr key={sale.id} className="border-t">
                   <td className="p-3">
                     <span className="text-sm">
@@ -1039,6 +1205,7 @@ function OfferingSalesHistory({ offeringId, projectId }) {
             </tbody>
           </table>
         </div>
+        )}
       </CardContent>
     </Card>
   )
@@ -1314,26 +1481,7 @@ function EventDetailView({
               </TabsContent>
 
               <TabsContent value="attendees" className="mt-4">
-                <Card>
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <CardTitle>Registered Attendees</CardTitle>
-                      <Badge variant="outline">{totalEnrolled} registered</Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    {totalEnrolled > 0 ? (
-                      <p className="text-muted-foreground">
-                        View attendee list in the Sales History tab
-                      </p>
-                    ) : (
-                      <div className="text-center py-8">
-                        <Users className="h-12 w-12 mx-auto text-muted-foreground/30 mb-3" />
-                        <p className="text-muted-foreground">No registrations yet</p>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
+                <OfferingAttendees offeringId={id} projectId={projectId} />
               </TabsContent>
 
               <TabsContent value="sales" className="mt-4">

@@ -609,10 +609,10 @@ export const proposalsApi = {
     portalApi.post(`/proposals/${id}/decline`, data),
   
   trackView: (id) => 
-    portalApi.post(`/proposals/${id}/view`),
+    portalApi.post(`/proposals/${id}/track-view`),
   
   getAnalytics: (id) =>
-    portalApi.get(`/proposals/${id}`),
+    portalApi.get(`/proposals/${id}/analytics`),
   
   payDeposit: (id, data) =>
     portalApi.post(`/proposals/${id}/pay-deposit`, data),

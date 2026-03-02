@@ -237,13 +237,13 @@ export function EventsPanel({
 
         <div className="grid grid-cols-2 gap-2">
           <Button variant="outline" className="justify-start" asChild>
-            <Link to="/commerce/events/calendar">
+            <Link to="/commerce?view=events">
               <CalendarDays className="h-4 w-4 mr-2" />
-              Event Calendar
+              Events
             </Link>
           </Button>
           <Button variant="outline" className="justify-start" asChild>
-            <Link to="/commerce/events/attendees">
+            <Link to="/commerce?view=customers&tab=event-attendees">
               <Users className="h-4 w-4 mr-2" />
               Attendees
             </Link>

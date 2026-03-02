@@ -4,7 +4,7 @@
 // MIGRATED TO REACT QUERY HOOKS - Jan 29, 2026
 
 import { useState, useEffect, useMemo } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import useAuthStore from '@/lib/auth-store'
 import { supabase } from '@/lib/supabase'
 import { useBrandColors } from '@/hooks/useBrandColors'
@@ -103,6 +103,7 @@ async function getOfferings(projectId, params) {
 }
 
 export default function CommerceDashboard({ onNavigate }) {
+  const [searchParams] = useSearchParams()
   const { currentProject, currentOrg } = useAuthStore()
   const brandColors = useBrandColors()
   const projectId = currentProject?.id
@@ -201,6 +202,17 @@ export default function CommerceDashboard({ onNavigate }) {
   const hasSignal = currentProject?.features?.signal === true || currentProject?.features?.includes?.('signal')
   // Is operating in fallback mode (no commerce tables)
   const isFallbackMode = stats?._fallbackMode
+
+  // Sync URL params (view, tab) to state on mount and when params change
+  useEffect(() => {
+    const view = searchParams.get('view')
+    const tab = searchParams.get('tab')
+    if (view) {
+      setCurrentView(view)
+      if (view === 'customers' && tab) setCustomersTab(tab)
+      if (view === 'sales' && tab) setSalesTab(tab)
+    }
+  }, [searchParams])
 
   // Redirect to highlights if view is 'offering' but no offeringId
   useEffect(() => {
