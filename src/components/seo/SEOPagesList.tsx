@@ -508,7 +508,7 @@ export default function SEOPagesList({ site, projectId }: SEOPagesListProps) {
       <SEOBulkEditModal
         open={bulkEditOpen}
         onOpenChange={setBulkEditOpen}
-        projectId={site?.id}
+        projectId={siteId}
         pages={filteredPages}
         field="both"
         onComplete={() => {

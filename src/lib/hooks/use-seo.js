@@ -188,7 +188,7 @@ export function useBulkUpdateSeoPages() {
   
   return useMutation({
     mutationFn: async ({ projectId, pageIds, updates }) => {
-      const response = await seoApi.bulkUpdatePages(projectId, pageIds, updates)
+      const response = await seoApi.bulkUpdatePages(projectId, { pageIds, ...updates })
       return { ...(response.data || response), projectId }
     },
     onSuccess: (_, { projectId }) => {

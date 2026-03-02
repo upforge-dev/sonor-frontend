@@ -133,6 +133,8 @@ export {
   useSale as useCommerceSale,
   useCreateSale as useCreateCommerceSale,
   useUpdateSale as useUpdateCommerceSale,
+  useShipSale,
+  useBatchShip,
   useUploadOfferingImage as useUploadCommerceImage,
   useDeleteOfferingImage as useDeleteCommerceImage,
 } from './use-commerce'

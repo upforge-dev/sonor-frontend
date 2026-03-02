@@ -128,14 +128,19 @@ export default function AuditPublicView({ audit, contact }) {
     document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
   }
   
+  const projectLogo = audit.project?.logoUrl
+  const projectTitle = audit.project?.title
+
   return (
     <div className="min-h-screen bg-[var(--surface-page)]">
-      {/* Header */}
+      {/* Header - uses Upforge project logo_url from settings */}
       <AuditHeader 
         audit={audit}
         contact={contact}
         grade={grade}
         gradeColor={gradeColor}
+        logoUrl={projectLogo}
+        brandName={projectTitle}
       />
 
       {/* Score Cards Grid */}
@@ -415,8 +420,8 @@ export default function AuditPublicView({ audit, contact }) {
         {/* CTA Section */}
         <CTASection onScheduleClick={() => setShowScheduler(true)} />
 
-        {/* Footer */}
-        <AuditFooter />
+        {/* Footer - uses project logo from settings */}
+        <AuditFooter logoUrl={projectLogo} brandName={projectTitle} />
       </motion.div>
 
       {/* Floating Action Buttons */}
@@ -445,6 +450,27 @@ export default function AuditPublicView({ audit, contact }) {
       />
     </div>
   )
+}
+
+/**
+ * CWV score helpers - use Google's thresholds: Good / Needs Improvement / Poor
+ * LCP: Good < 2.5s, Needs Improvement 2.5-4s, Poor > 4s
+ * FCP: Good < 1.8s, Needs Improvement 1.8-3s, Poor > 3s
+ */
+function getLcpScore(ms) {
+  if (ms < 2500) return 100
+  if (ms < 4000) return 50
+  return 0
+}
+function getFcpScore(ms) {
+  if (ms < 1800) return 100
+  if (ms < 3000) return 50
+  return 0
+}
+function getClsScore(score) {
+  if (score < 0.1) return 100
+  if (score < 0.25) return 50
+  return 0
 }
 
 /**
@@ -489,19 +515,19 @@ function CoreWebVitalsSection({ audit }) {
               name="Largest Contentful Paint (LCP)"
               value={formatMs(lcpMs)}
               target="< 2.5s"
-              score={lcpMs ? Math.max(0, 100 - (parseFloat(lcpMs) / 25)) : null}
+              score={lcpMs != null ? getLcpScore(parseFloat(lcpMs)) : null}
             />
             <MetricCard 
               name="First Contentful Paint (FCP)"
               value={formatMs(fcpMs)}
               target="< 1.8s"
-              score={fcpMs ? Math.max(0, 100 - (parseFloat(fcpMs) / 18)) : null}
+              score={fcpMs != null ? getFcpScore(parseFloat(fcpMs)) : null}
             />
             <MetricCard 
               name="Cumulative Layout Shift (CLS)"
               value={clsScore != null ? clsScore.toFixed(3) : 'N/A'}
               target="< 0.1"
-              score={clsScore != null ? Math.max(0, 100 - (parseFloat(clsScore) * 1000)) : null}
+              score={clsScore != null ? getClsScore(parseFloat(clsScore)) : null}
             />
             <MetricCard 
               name="Total Blocking Time (TBT)"

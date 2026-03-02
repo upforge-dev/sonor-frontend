@@ -419,13 +419,43 @@ export function useUpdateSale() {
   const queryClient = useQueryClient()
   
   return useMutation({
-    mutationFn: async ({ saleId, data }) => {
-      const response = await portalApi.put(`/commerce/sale/${saleId}`, data)
+    mutationFn: async ({ projectId, saleId, data }) => {
+      const response = await portalApi.put(`/commerce/sales/${projectId}/${saleId}`, data)
       return response.data
     },
     onSuccess: (data, { saleId }) => {
       queryClient.setQueryData(commerceKeys.saleDetail(saleId), data)
       queryClient.invalidateQueries({ queryKey: commerceKeys.sales() })
+    },
+  })
+}
+
+export function useShipSale() {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: async ({ projectId, saleId, options }) => {
+      const response = await portalApi.post(`/commerce/sales/${projectId}/${saleId}/ship`, options || {})
+      return response.data
+    },
+    onSuccess: (_, { projectId }) => {
+      queryClient.invalidateQueries({ queryKey: commerceKeys.sales() })
+      queryClient.invalidateQueries({ queryKey: commerceKeys.dashboard(projectId) })
+    },
+  })
+}
+
+export function useBatchShip() {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: async ({ projectId, saleIds }) => {
+      const response = await portalApi.post(`/commerce/sales/${projectId}/ship/batch`, { saleIds })
+      return response.data
+    },
+    onSuccess: (_, { projectId }) => {
+      queryClient.invalidateQueries({ queryKey: commerceKeys.sales() })
+      queryClient.invalidateQueries({ queryKey: commerceKeys.dashboard(projectId) })
     },
   })
 }

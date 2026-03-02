@@ -15,13 +15,19 @@ import { slideInLeft, fadeInUp } from './utils'
 
 /**
  * AuditHeader - Main header with gradient background and glass effects
+ * Uses project.logoUrl and project.title from audit when available (Upforge project settings)
  */
 export function AuditHeader({ 
   audit, 
   contact, 
   grade, 
-  gradeColor 
+  gradeColor,
+  logoUrl,
+  brandName 
 }) {
+  const logoSrc = logoUrl || audit?.project?.logoUrl || '/favicon.svg'
+  const brand = brandName || audit?.project?.title || 'Upforge'
+
   return (
     <header className="relative bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white py-12 overflow-hidden">
       {/* Decorative gradient orbs - Liquid Glass effect */}
@@ -36,15 +42,15 @@ export function AuditHeader({
           className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6"
         >
           <div className="flex-1">
-            {/* Logo */}
+            {/* Logo - uses project logo_url from settings */}
             <motion.div 
               variants={slideInLeft}
               initial="hidden"
               animate="visible"
               className="flex items-center gap-2 mb-6"
             >
-              <img src="/favicon.svg" alt="Upforge" className="w-10 h-10" />
-              <span className="font-semibold text-white/90 text-lg">Upforge</span>
+              <img src={logoSrc} alt={brand} className="w-10 h-10" />
+              <span className="font-semibold text-white/90 text-lg">{brand}</span>
             </motion.div>
             
             <h1 className="text-3xl font-bold mb-2">Website Audit Report</h1>
@@ -128,8 +134,12 @@ export function SectionHeader({
 
 /**
  * AuditFooter - Footer with branding
+ * Uses project logo_url and title from audit when available
  */
-export function AuditFooter() {
+export function AuditFooter({ logoUrl, brandName }) {
+  const logoSrc = logoUrl || '/favicon.svg'
+  const brand = brandName || 'Upforge'
+
   return (
     <motion.footer 
       variants={fadeInUp}
@@ -139,8 +149,8 @@ export function AuditFooter() {
       className="text-center py-8 border-t border-[var(--glass-border)]"
     >
       <div className="flex items-center justify-center gap-2 mb-4">
-        <img src="/favicon.svg" alt="Upforge" className="w-10 h-10" />
-        <span className="font-semibold text-[var(--text-primary)] text-lg">Upforge</span>
+        <img src={logoSrc} alt={brand} className="w-10 h-10" />
+        <span className="font-semibold text-[var(--text-primary)] text-lg">{brand}</span>
       </div>
       <p className="text-[var(--text-tertiary)] text-sm">
         High-Performance Websites & Digital Marketing<br />

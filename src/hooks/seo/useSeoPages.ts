@@ -186,8 +186,8 @@ export function useBulkUpdateSeoPages() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ pageIds, updates }: { pageIds: string[]; updates: any }) =>
-      seoApi.bulkUpdatePages({ pageIds, updates }),
+    mutationFn: ({ projectId, pageIds, updates }: { projectId: string; pageIds: string[]; updates: any }) =>
+      seoApi.bulkUpdatePages(projectId, { pageIds, ...updates }),
     onMutate: async ({ pageIds, updates }) => {
       // Cancel outgoing refetches
       await Promise.all(

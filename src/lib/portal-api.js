@@ -1003,8 +1003,14 @@ export const seoApi = {
   deleteOpportunity: (opportunityId) =>
     portalApi.delete(`/seo/opportunities/${opportunityId}`),
   
-  bulkUpdateOpportunities: (data) =>
-    portalApi.post('/seo/opportunities/bulk-update', data),
+  bulkUpdateOpportunities: (data) => {
+    // Normalize: hook may pass { opportunityIds, updates }; API expects { opportunityIds, status?, priority? }
+    const body = data.updates ? { opportunityIds: data.opportunityIds, ...data.updates } : data
+    return portalApi.post('/seo/opportunities/bulk-update', body)
+  },
+
+  getOpportunitySummary: (projectId) =>
+    portalApi.get(`/seo/projects/${projectId}/opportunities/summary`),
   
   getPageOpportunities: (pageId) =>
     portalApi.get(`/seo/pages/${pageId}/opportunities`),
@@ -1447,6 +1453,9 @@ export const seoApi = {
   /** Crawl sitemap / extract pages metadata (triggers discovery for technical audit & CWV) */
   crawlSitemap: (projectId) =>
     portalApi.post(`/seo/projects/${projectId}/extract-metadata`),
+
+  /** Single-page crawl: deprecated – pages are auto-discovered via site-kit. No-op that resolves for UI compatibility. */
+  crawlPage: (_pageId) => Promise.resolve({ data: { success: true } }),
   
   // ==================== SITE REVALIDATION ====================
   revalidateSite: (data) =>
@@ -3130,6 +3139,14 @@ export const commerceApi = {
   /** Get sales stats */
   getSalesStats: (projectId, params = {}) =>
     portalApi.get(`/commerce/sales/${projectId}/stats`, { params }),
+
+  /** Generate shipping label for a sale */
+  shipSale: (projectId, saleId, options = {}) =>
+    portalApi.post(`/commerce/sales/${projectId}/${saleId}/ship`, options),
+
+  /** Batch ship multiple orders */
+  batchShip: (projectId, saleIds) =>
+    portalApi.post(`/commerce/sales/${projectId}/ship/batch`, { saleIds }),
   
   // ==================== CUSTOMERS ====================
   

@@ -107,8 +107,8 @@ export default function SEOBulkEditModal({
     }
   }, [open])
 
-  // Filter pages that need optimization for the selected field
-  const pagesNeedingOptimization = pages.filter(page => {
+  // Filter pages that need optimization for the selected field (use pageList for array safety)
+  const pagesNeedingOptimization = pageList.filter(page => {
     if (selectedField === 'title') {
       return !page.title || page.title.length < 10 || page.title.length > 60
     }
@@ -218,7 +218,7 @@ export default function SEOBulkEditModal({
 
   // Regenerate single suggestion
   const regenerateSingle = async (pageId) => {
-    const page = pages.find(p => p.id === pageId)
+    const page = pageList.find(p => p.id === pageId)
     if (!page) return
     
     try {

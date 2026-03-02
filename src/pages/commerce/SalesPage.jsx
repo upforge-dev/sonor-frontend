@@ -4,7 +4,7 @@
 
 import { useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { useCommerceSales, useUpdateCommerceSale } from '@/lib/hooks'
+import { useCommerceSales, useUpdateCommerceSale, useShipSale, useBatchShip } from '@/lib/hooks'
 import { useQueryClient } from '@tanstack/react-query'
 import useAuthStore from '@/lib/auth-store'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -43,6 +43,8 @@ import {
   Check,
   RefreshCw,
   Calendar,
+  Package,
+  ExternalLink,
 } from 'lucide-react'
 import { toast } from '@/lib/toast'
 
@@ -58,7 +60,10 @@ export default function SalesPage() {
   const { currentProject } = useAuthStore()
   const [statusFilter, setStatusFilter] = useState('all')
   const [dateFilter, setDateFilter] = useState('all')
+  const [selectedForShip, setSelectedForShip] = useState(new Set())
   const updateSaleMutation = useUpdateCommerceSale()
+  const shipSaleMutation = useShipSale()
+  const batchShipMutation = useBatchShip()
 
   const filters = useMemo(() => {
     const filterObj = {
@@ -123,6 +128,7 @@ export default function SalesPage() {
     if (window.confirm('Mark this sale as completed?')) {
       try {
         await updateSaleMutation.mutateAsync({
+          projectId: currentProject?.id,
           saleId,
           data: { status: 'completed' }
         })
@@ -138,6 +144,7 @@ export default function SalesPage() {
     if (reason !== null) {
       try {
         await updateSaleMutation.mutateAsync({
+          projectId: currentProject?.id,
           saleId,
           data: { 
             status: 'refunded',
@@ -151,6 +158,46 @@ export default function SalesPage() {
     }
   }
 
+  const handleShip = async (saleId) => {
+    try {
+      const result = await shipSaleMutation.mutateAsync({
+        projectId: currentProject?.id,
+        saleId,
+      })
+      toast.success('Label generated')
+      if (result?.labelUrl) {
+        window.open(result.labelUrl, '_blank')
+      }
+    } catch (error) {
+      toast.error(error?.response?.data?.message || 'Failed to generate label')
+    }
+  }
+
+  const handleBatchShip = async () => {
+    const ids = Array.from(selectedForShip)
+    if (ids.length === 0) {
+      toast.error('Select orders to ship')
+      return
+    }
+    try {
+      const result = await batchShipMutation.mutateAsync({
+        projectId: currentProject?.id,
+        saleIds: ids,
+      })
+      const { success, failed } = result
+      if (failed?.length > 0) {
+        toast.warning(`Shipped ${success.length}, failed ${failed.length}`)
+      } else {
+        toast.success(`Shipped ${success.length} order(s)`)
+      }
+      setSelectedForShip(new Set())
+    } catch (error) {
+      toast.error(error?.response?.data?.message || 'Batch ship failed')
+    }
+  }
+
+  const shippableSales = sales.filter(s => s.shipping_address && (s.payment_status === 'paid' || s.status === 'completed') && s.shipping_status !== 'shipped')
+
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
@@ -161,6 +208,19 @@ export default function SalesPage() {
             View and manage all transactions
           </p>
         </div>
+        {shippableSales.length > 0 && (
+          <div className="flex items-center gap-2">
+            {selectedForShip.size > 0 && (
+              <Button
+                onClick={handleBatchShip}
+                disabled={batchShipMutation.isPending}
+              >
+                <Package className="h-4 w-4 mr-2" />
+                Ship {selectedForShip.size} Selected
+              </Button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Stats Cards */}
@@ -270,20 +330,55 @@ export default function SalesPage() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  {shippableSales.length > 0 && (
+                    <TableHead className="w-[40px]">
+                      <input
+                        type="checkbox"
+                        checked={selectedForShip.size === shippableSales.length && shippableSales.length > 0}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedForShip(new Set(shippableSales.map(s => s.id)))
+                          } else {
+                            setSelectedForShip(new Set())
+                          }
+                        }}
+                        className="rounded"
+                      />
+                    </TableHead>
+                  )}
                   <TableHead>Date</TableHead>
                   <TableHead>Customer</TableHead>
                   <TableHead>Offering</TableHead>
                   <TableHead>Amount</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Shipping</TableHead>
                   <TableHead className="w-[80px]"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {sales.map(sale => {
                   const config = statusConfig[sale.status] || statusConfig.pending
+                  const canShip = sale.shipping_address && (sale.payment_status === 'paid' || sale.status === 'completed') && sale.shipping_status !== 'shipped'
                   
                   return (
                     <TableRow key={sale.id}>
+                      {shippableSales.length > 0 && (
+                        <TableCell>
+                          {canShip ? (
+                            <input
+                              type="checkbox"
+                              checked={selectedForShip.has(sale.id)}
+                              onChange={(e) => {
+                                const next = new Set(selectedForShip)
+                                if (e.target.checked) next.add(sale.id)
+                                else next.delete(sale.id)
+                                setSelectedForShip(next)
+                              }}
+                              className="rounded"
+                            />
+                          ) : null}
+                        </TableCell>
+                      )}
                       <TableCell>
                         <div>
                           <p className="font-medium">
@@ -342,6 +437,37 @@ export default function SalesPage() {
                         </Badge>
                       </TableCell>
                       <TableCell>
+                        {sale.shipping_status === 'shipped' ? (
+                          <div className="space-y-1">
+                            {sale.shipping_tracking_number && (
+                              <a
+                                href={sale.shipping_status === 'shipped' && sale.shipping_tracking_number ? `https://tools.usps.com/go/TrackConfirmAction?tLabels=${sale.shipping_tracking_number}` : '#'}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-sm text-primary hover:underline flex items-center gap-1"
+                              >
+                                {sale.shipping_tracking_number}
+                                <ExternalLink className="h-3 w-3" />
+                              </a>
+                            )}
+                            {sale.shipping_label_url && (
+                              <a
+                                href={sale.shipping_label_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-xs text-muted-foreground hover:underline"
+                              >
+                                Print label
+                              </a>
+                            )}
+                          </div>
+                        ) : sale.shipping_address ? (
+                          <Badge variant="outline" className="text-amber-600 border-amber-500/30">Unshipped</Badge>
+                        ) : (
+                          <span className="text-muted-foreground text-sm">—</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="icon">
@@ -353,6 +479,15 @@ export default function SalesPage() {
                               <Eye className="h-4 w-4 mr-2" />
                               View Details
                             </DropdownMenuItem>
+                            {canShip && (
+                              <DropdownMenuItem
+                                onClick={() => handleShip(sale.id)}
+                                disabled={shipSaleMutation.isPending}
+                              >
+                                <Package className="h-4 w-4 mr-2" />
+                                Ship
+                              </DropdownMenuItem>
+                            )}
                             {(sale.status === 'pending' || sale.status === 'deposit_paid') && (
                               <DropdownMenuItem onClick={() => handleComplete(sale.id)}>
                                 <Check className="h-4 w-4 mr-2" />

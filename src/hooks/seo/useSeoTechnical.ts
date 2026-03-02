@@ -202,7 +202,7 @@ export function useAnalyzeCompetitor() {
 
   return useMutation({
     mutationFn: ({ projectId, competitorId }: { projectId: string; competitorId: string }) =>
-      seoApi.analyzeCompetitor(competitorId),
+      seoApi.analyzeCompetitor(projectId, { competitorId }),
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ 
         queryKey: seoTechnicalKeys.competitors(variables.projectId) 
