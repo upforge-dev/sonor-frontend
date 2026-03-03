@@ -85,12 +85,14 @@ portalApi.interceptors.response.use(
     
     // Handle 401 - session expired
     if (error.response?.status === 401) {
-      const isOnAuthPage = window.location.pathname.includes('/login') ||
-                           window.location.pathname.includes('/reset-password') ||
-                           window.location.pathname.includes('/setup') ||
-                           window.location.pathname.includes('/auth/callback')
+      const path = window.location.pathname
+      const isOnAuthPage = path.includes('/login') ||
+                           path.includes('/reset-password') ||
+                           path.includes('/setup') ||
+                           path.includes('/auth/callback')
+      const isPublicPage = path.startsWith('/p/') || path.startsWith('/audit/') || path.startsWith('/pay/')
       
-      if (!isOnAuthPage) {
+      if (!isOnAuthPage && !isPublicPage) {
         const { data: { session }, error: refreshError } = await supabase.auth.refreshSession()
         
         if (!session || refreshError) {
