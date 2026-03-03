@@ -6,6 +6,7 @@
  */
 
 import { useState } from 'react'
+import SignalAILogo from '@/components/signal/SignalAILogo'
 import { 
   Sparkles, 
   Zap, 
@@ -546,7 +547,7 @@ export function SignalAIGlass({
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6 mb-8">
           <div className="flex items-center gap-4">
             <div className={`w-14 h-14 rounded-2xl ${brandGradient} flex items-center justify-center shadow-lg shadow-[#39bfb0]/30`}>
-              <Bot className="w-8 h-8 text-white" />
+              <SignalAILogo size={32} white className="w-8 h-8" />
             </div>
             <div>
               <h2 className="text-2xl md:text-3xl font-bold text-[var(--text-primary)]">{title}</h2>

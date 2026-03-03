@@ -1,6 +1,6 @@
 # CMC Migration Scripts
 
-Scripts to migrate Cincy Mahjong Club data from standalone Supabase to Uptrade Portal.
+Scripts to migrate Cincy Mahjong Club data from standalone Supabase to Sonor.
 
 ## Prerequisites
 

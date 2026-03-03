@@ -1,4 +1,4 @@
-// Service worker for Uptrade Portal PWA
+// Service worker for Sonor PWA
 // Controls page and start_url for add-to-homescreen, offline, and splash screen support
 
 const CACHE_VERSION = 'portal-v1';
