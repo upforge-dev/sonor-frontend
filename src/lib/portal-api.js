@@ -794,7 +794,7 @@ export const billingApi = {
     portalApi.get('/billing/invoices/public', { params: { token } }),
   
   payPublicInvoice: (data) => 
-    portalApi.post('/billing/invoices/public/pay', data),
+    portalApi.post('/billing/pay-public', data),
 }
 
 // ============================================================================

@@ -31,22 +31,21 @@ function formatDate(dateString) {
   })
 }
 
-// Uptrade Logo Component - uses actual logo file with text
-const UptradeLogo = ({ className = "h-10", showText = true }) => (
+// Brand Logo Component - uses project logo_url and brand name (default: Upforge)
+const BrandLogo = ({ logoUrl, brandName = 'Upforge', className = "h-10", showText = true }) => (
   <div className="flex items-center gap-3">
     <img 
-      src="/logo.svg" 
-      alt="Uptrade Media" 
+      src={logoUrl || '/logo.svg'} 
+      alt={brandName} 
       className={className}
       onError={(e) => {
-        // Fallback to PNG if SVG fails
         e.target.onerror = null
-        e.target.src = '/logo.png'
+        e.target.src = '/logo.svg'
       }}
     />
     {showText && (
       <span className="text-xl font-bold text-gray-900">
-        Uptrade <span className="text-[#4bbf39]">Media</span>
+        {brandName}
       </span>
     )}
   </div>
@@ -73,6 +72,9 @@ export default function InvoicePayment() {
   
   const cardContainerRef = useRef(null)
   const cardInitializedRef = useRef(false)
+
+  const brandName = invoice?.project?.title || 'Upforge'
+  const logoUrl = invoice?.project?.logoUrl
 
   // Fetch invoice and Square config on mount
   useEffect(() => {
@@ -107,7 +109,7 @@ export default function InvoicePayment() {
         configApi.getSquareConfigByInvoiceToken(token)
       ])
       
-      setInvoice(invoiceResponse.data.invoice)
+      setInvoice(invoiceResponse.data?.invoice ?? invoiceResponse.data)
       setSquareConfig(config)
     } catch (err) {
       console.error('Failed to fetch invoice:', err)
@@ -260,10 +262,10 @@ export default function InvoicePayment() {
     return (
       <div className="min-h-screen bg-[#fafafa] flex items-center justify-center p-4">
         <div className="text-center">
-          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#4bbf39] to-[#3a9c2d] flex items-center justify-center mx-auto mb-6 animate-pulse">
+          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center mx-auto mb-6 animate-pulse">
             <CreditCard className="w-8 h-8 text-white" />
           </div>
-          <Loader2 className="w-6 h-6 animate-spin text-[#4bbf39] mx-auto mb-3" />
+          <Loader2 className="w-6 h-6 animate-spin text-teal-500 mx-auto mb-3" />
           <p className="text-gray-500 font-medium">Loading your invoice...</p>
         </div>
       </div>
@@ -282,7 +284,7 @@ export default function InvoicePayment() {
             <h2 className="text-2xl font-bold text-gray-900 mb-3">Unable to Load Invoice</h2>
             <p className="text-gray-500 mb-8 leading-relaxed">{error}</p>
             <a 
-              href="mailto:hello@uptrademedia.com"
+              href="mailto:hello@upforge.com"
               className="inline-flex items-center gap-2 bg-gray-900 text-white px-6 py-3 rounded-full font-medium hover:bg-gray-800 transition-colors"
             >
               Contact Support
@@ -300,12 +302,12 @@ export default function InvoicePayment() {
       <div className="min-h-screen bg-gradient-to-b from-[#f0fdf4] to-white flex items-center justify-center p-4">
         <div className="max-w-md w-full">
           <div className="text-center mb-8">
-            <UptradeLogo className="h-10 mx-auto" />
+            <BrandLogo logoUrl={logoUrl} brandName={brandName} className="h-10 mx-auto" />
           </div>
           
           <div className="bg-white rounded-3xl shadow-xl shadow-green-100/50 overflow-hidden">
             {/* Success Header */}
-            <div className="bg-gradient-to-br from-[#4bbf39] to-[#2d8a24] p-8 text-center relative overflow-hidden">
+            <div className="bg-gradient-to-br from-teal-500 to-teal-600 p-8 text-center relative overflow-hidden">
               <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
               <div className="relative">
                 <div className="w-20 h-20 rounded-full bg-white/20 backdrop-blur flex items-center justify-center mx-auto mb-4">
@@ -329,7 +331,7 @@ export default function InvoicePayment() {
                 </div>
                 <div className="flex justify-between items-center py-3">
                   <span className="text-gray-500">Amount Paid</span>
-                  <span className="text-2xl font-bold text-[#4bbf39]">{formatCurrency(invoice?.totalAmount)}</span>
+                  <span className="text-2xl font-bold text-teal-600">{formatCurrency(invoice?.totalAmount)}</span>
                 </div>
               </div>
               
@@ -342,7 +344,7 @@ export default function InvoicePayment() {
           </div>
           
           <p className="text-center text-sm text-gray-400 mt-8">
-            Questions? <a href="mailto:hello@uptrademedia.com" className="text-[#4bbf39] hover:underline">Contact us</a>
+            Questions? <a href="mailto:hello@upforge.com" className="text-teal-600 hover:underline">Contact us</a>
           </p>
         </div>
       </div>
@@ -355,9 +357,9 @@ export default function InvoicePayment() {
       {/* Header */}
       <header className="bg-white border-b border-gray-100 sticky top-0 z-10">
         <div className="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between">
-          <UptradeLogo className="h-8 md:h-10" />
+          <BrandLogo logoUrl={logoUrl} brandName={brandName} className="h-8 md:h-10" />
           <div className="flex items-center gap-2 text-sm text-gray-500">
-            <Lock className="w-4 h-4 text-[#4bbf39]" />
+            <Lock className="w-4 h-4 text-teal-500" />
             <span className="hidden sm:inline">Secure Checkout</span>
           </div>
         </div>
@@ -425,7 +427,7 @@ export default function InvoicePayment() {
               </div>
               <div className="flex justify-between items-center pt-4 border-t border-gray-200">
                 <span className="text-lg font-semibold text-gray-900">Total Due</span>
-                <span className="text-3xl font-bold text-[#4bbf39]">{formatCurrency(invoice?.totalAmount)}</span>
+                <span className="text-3xl font-bold text-teal-600">{formatCurrency(invoice?.totalAmount)}</span>
               </div>
             </div>
           </div>
@@ -435,8 +437,8 @@ export default function InvoicePayment() {
         <div className="bg-white rounded-3xl shadow-xl shadow-gray-200/50 overflow-hidden">
           <div className="p-6 md:p-8">
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 rounded-full bg-[#4bbf39]/10 flex items-center justify-center">
-                <CreditCard className="w-5 h-5 text-[#4bbf39]" />
+              <div className="w-10 h-10 rounded-full bg-teal-500/10 flex items-center justify-center">
+                <CreditCard className="w-5 h-5 text-teal-500" />
               </div>
               <div>
                 <h2 className="text-lg font-semibold text-gray-900">Payment Details</h2>
@@ -461,7 +463,7 @@ export default function InvoicePayment() {
             <Button 
               onClick={handlePayment}
               disabled={processing || !cardReady}
-              className="w-full bg-gradient-to-r from-[#4bbf39] to-[#3a9c2d] hover:from-[#43ac33] hover:to-[#348a28] text-white py-6 text-lg rounded-2xl font-semibold shadow-lg shadow-green-500/25 transition-all duration-200 hover:shadow-xl hover:shadow-green-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white py-6 text-lg rounded-2xl font-semibold shadow-lg shadow-teal-500/25 transition-all duration-200 hover:shadow-xl hover:shadow-teal-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {processing ? (
                 <>
@@ -500,12 +502,12 @@ export default function InvoicePayment() {
         <footer className="text-center mt-8 space-y-2">
           <p className="text-sm text-gray-500">
             Questions about this invoice?{' '}
-            <a href="mailto:hello@uptrademedia.com" className="text-[#4bbf39] hover:underline font-medium">
+            <a href="mailto:hello@upforge.com" className="text-teal-600 hover:underline font-medium">
               Contact us
             </a>
           </p>
           <p className="text-xs text-gray-400">
-            © {new Date().getFullYear()} Uptrade Media. All rights reserved.
+            © {new Date().getFullYear()} {brandName}. All rights reserved.
           </p>
         </footer>
       </main>
