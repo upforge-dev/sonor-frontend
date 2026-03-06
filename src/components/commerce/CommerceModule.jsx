@@ -16,10 +16,11 @@ export default function CommerceModuleWrapper({ onNavigate }) {
   const navigate = useNavigate()
 
   useEffect(() => {
-    const match = location.pathname.match(/^\/commerce\/offerings\/([^/]+)(?:\/(edit))?$/)
-    if (match) {
-      const offeringId = match[1]
-      const isEdit = match[2] === 'edit'
+    const path = location.pathname
+    const offeringsMatch = path.match(/^\/commerce\/offerings\/([^/]+)(?:\/(edit))?$/)
+    if (offeringsMatch) {
+      const offeringId = offeringsMatch[1]
+      const isEdit = offeringsMatch[2] === 'edit'
       const params = new URLSearchParams({
         view: 'offering',
         offeringId,
@@ -28,6 +29,17 @@ export default function CommerceModuleWrapper({ onNavigate }) {
         params.set('mode', 'edit')
       }
       navigate(`/commerce?${params.toString()}`, { replace: true })
+      return
+    }
+    const invoicesNewMatch = path.match(/^\/commerce\/invoices\/new$/)
+    if (invoicesNewMatch) {
+      navigate('/commerce?view=sales&tab=invoices&invoiceCreate=1', { replace: true })
+      return
+    }
+    const invoiceDetailMatch = path.match(/^\/commerce\/invoices\/([^/]+)$/)
+    if (invoiceDetailMatch) {
+      const invoiceId = invoiceDetailMatch[1]
+      navigate(`/commerce?view=sales&tab=invoices&invoiceId=${invoiceId}`, { replace: true })
     }
   }, [location.pathname, navigate])
 

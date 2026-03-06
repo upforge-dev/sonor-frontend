@@ -3,14 +3,14 @@
 // Dark theme compatible, renders as rounded tile inside MainLayout
 // MIGRATED TO REACT QUERY HOOKS - Jan 29, 2026
 
-import { useState, useEffect, useMemo } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { useState, useEffect, useMemo, useRef } from 'react'
+import { Link, useSearchParams, useNavigate } from 'react-router-dom'
 import useAuthStore from '@/lib/auth-store'
 import { supabase } from '@/lib/supabase'
 import { useBrandColors } from '@/hooks/useBrandColors'
 import { useCommerceSettings, useCommerceDashboard, getCommerceDashboard, useCommerceOfferings, useCommerceOffering, commerceKeys } from '@/lib/hooks'
 import { useQueryClient } from '@tanstack/react-query'
-import portalApi, { commerceApi } from '@/lib/portal-api'
+import portalApi, { commerceApi, proposalsApi } from '@/lib/portal-api'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -18,10 +18,14 @@ import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 
 // Extracted view components
-import { SalesOverviewView, InvoicesView, TransactionsView, InvoiceSkeleton, INVOICE_STATUS_CONFIG } from './components/SalesViews'
+import { SalesOverviewView, InvoicesView, TransactionsView, InvoiceSkeleton, INVOICE_STATUS_CONFIG, InvoiceDetailPanel } from './components/SalesViews'
 import { ContractsView } from './components/ContractsView'
 import { CustomersView } from './components/CustomersView'
 import { InvoiceCreateDialog } from './components/InvoiceCreateDialog'
+import { InvoiceEditDialog } from './components/InvoiceEditDialog'
+import ProposalAIEditorPanel from '@/components/proposals/ProposalAIEditorPanel'
+import { ConfirmDialog } from '@/components/ConfirmDialog'
+import { useDeleteInvoice, useVoidInvoice } from '@/lib/hooks/use-billing'
 import { HighlightsView, ProductsView, ServicesView, EventsView } from './components/CommerceViews'
 import { STATUS_CONFIG, PRICE_TYPE_CONFIG, SIDEBAR_SECTIONS } from './components/CommerceConstants'
 import { ActivityItem, StatsCard } from './components/CommerceStats'
@@ -94,8 +98,10 @@ import OfferingDetail from './OfferingDetail'
 import OfferingEdit from './OfferingEdit'
 import { ModuleLayout } from '@/components/ModuleLayout'
 import { MODULE_ICONS } from '@/lib/module-icons'
+import usePageContextStore from '@/lib/page-context-store'
 import { cn } from '@/lib/utils'
 import { format, subDays } from 'date-fns'
+import { toast } from '@/lib/toast'
 
 async function getOfferings(projectId, params) {
   const res = await commerceApi.getOfferings(projectId, params)
@@ -104,6 +110,7 @@ async function getOfferings(projectId, params) {
 
 export default function CommerceDashboard({ onNavigate }) {
   const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
   const { currentProject, currentOrg } = useAuthStore()
   const brandColors = useBrandColors()
   const projectId = currentProject?.id
@@ -125,6 +132,7 @@ export default function CommerceDashboard({ onNavigate }) {
   // Replace query params with React state for clean URLs
   const [currentView, setCurrentView] = useState('highlights')
   const [currentFilter, setCurrentFilter] = useState('all')
+  const [selectedCategoryId, setSelectedCategoryId] = useState(null)
   const [salesTab, setSalesTab] = useState('overview')
   const [customersTab, setCustomersTab] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
@@ -173,6 +181,17 @@ export default function CommerceDashboard({ onNavigate }) {
   const [categories, setCategories] = useState([])
   // Create mode state - which offering type is being created (null = not creating)
   const [creatingType, setCreatingType] = useState(null)
+  // Invoice detail panel actions (edit, delete, void)
+  const [editingInvoiceId, setEditingInvoiceId] = useState(null)
+  const [pendingDeleteId, setPendingDeleteId] = useState(null)
+  const [pendingVoidId, setPendingVoidId] = useState(null)
+  const [aiEditingContract, setAiEditingContract] = useState(null)
+  const [contractHasUnsavedChanges, setContractHasUnsavedChanges] = useState(false)
+  const [isSavingContract, setIsSavingContract] = useState(false)
+  const contractsViewRef = useRef(null)
+
+  const deleteInvoiceMutation = useDeleteInvoice()
+  const voidInvoiceMutation = useVoidInvoice()
   
   // Integration status derived from settings
   const integrations = useMemo(() => {
@@ -203,16 +222,104 @@ export default function CommerceDashboard({ onNavigate }) {
   // Is operating in fallback mode (no commerce tables)
   const isFallbackMode = stats?._fallbackMode
 
-  // Sync URL params (view, tab) to state on mount and when params change
+  // Sync URL params (view, tab, invoiceCreate, invoiceId) to state on mount and when params change
   useEffect(() => {
     const view = searchParams.get('view')
     const tab = searchParams.get('tab')
+    const invoiceCreate = searchParams.get('invoiceCreate')
+    const invoiceIdParam = searchParams.get('invoiceId')
     if (view) {
       setCurrentView(view)
       if (view === 'customers' && tab) setCustomersTab(tab)
       if (view === 'sales' && tab) setSalesTab(tab)
     }
+    if (invoiceCreate === '1') {
+      setCurrentView('sales')
+      setSalesTab('invoices')
+      setIsInvoiceDialogOpen(true)
+    }
+    if (invoiceIdParam) {
+      setCurrentView('sales')
+      setSalesTab('invoices')
+    }
   }, [searchParams])
+
+  const selectedInvoiceId = searchParams.get('invoiceId') || null
+  const onClearInvoice = () => {
+    navigate('/commerce?view=sales&tab=invoices', { replace: true })
+  }
+
+  const handleInvoiceEdit = () => setEditingInvoiceId(selectedInvoiceId)
+  const handleInvoiceEditSuccess = () => {
+    loadInvoices?.()
+    setEditingInvoiceId(null)
+  }
+  const handleInvoiceDeleteRequest = () => setPendingDeleteId(selectedInvoiceId)
+  const handleInvoiceDeleteConfirm = () => {
+    if (!pendingDeleteId) return
+    deleteInvoiceMutation.mutate(pendingDeleteId, {
+      onSuccess: () => {
+        toast.success('Invoice deleted')
+        onClearInvoice()
+        loadInvoices?.()
+      },
+      onError: (err) => toast.error(err?.message || 'Failed to delete invoice'),
+      onSettled: () => setPendingDeleteId(null),
+    })
+  }
+  const handleInvoiceVoidRequest = () => setPendingVoidId(selectedInvoiceId)
+
+  const handleSaveContract = async (updatedContractOrUndefined) => {
+    const updatedContract = updatedContractOrUndefined ?? aiEditingContract
+    if (!updatedContract?.id || !projectId) return
+    setIsSavingContract(true)
+    try {
+      const isProposal = updatedContract._isProposal || currentOrg?.slug === 'uptrade-media'
+      if (isProposal) {
+        await proposalsApi.update(updatedContract.id, {
+          mdx_content: updatedContract.mdxContent || updatedContract.mdx_content,
+          total_amount: updatedContract.totalAmount || updatedContract.total_amount,
+          payment_terms: updatedContract.paymentTerms || updatedContract.payment_terms,
+          timeline: updatedContract.timeline,
+        })
+      } else {
+        await commerceApi.updateContract(projectId, updatedContract.id, {
+          mdx_content: updatedContract.mdxContent || updatedContract.mdx_content,
+          total_amount: updatedContract.totalAmount || updatedContract.total_amount,
+          payment_terms: updatedContract.paymentTerms || updatedContract.payment_terms,
+          timeline: updatedContract.timeline,
+        })
+      }
+      setContractHasUnsavedChanges(false)
+      contractsViewRef.current?.updateContractInList?.({ ...updatedContract, _isProposal: updatedContract._isProposal })
+      setAiEditingContract(prev => prev?.id === updatedContract.id ? { ...updatedContract, _isProposal: prev._isProposal } : prev)
+      toast.success('Changes saved successfully')
+    } catch (err) {
+      console.error('Save contract error:', err)
+      toast.error('Failed to save changes')
+    } finally {
+      setIsSavingContract(false)
+    }
+  }
+
+  const handleInvoiceVoidConfirm = () => {
+    if (!pendingVoidId) return
+    voidInvoiceMutation.mutate(pendingVoidId, {
+      onSuccess: () => {
+        toast.success('Invoice voided')
+        onClearInvoice()
+        loadInvoices?.()
+      },
+      onError: (err) => toast.error(err?.message || 'Failed to void invoice'),
+      onSettled: () => setPendingVoidId(null),
+    })
+  }
+
+  // Hide messenger widget when editing a proposal (avoids overlap with AI Editor sidebar)
+  useEffect(() => {
+    usePageContextStore.getState().setHideMessengerWidget(!!aiEditingContract)
+    return () => usePageContextStore.getState().setHideMessengerWidget(false)
+  }, [aiEditingContract])
 
   // Redirect to highlights if view is 'offering' but no offeringId
   useEffect(() => {
@@ -227,21 +334,21 @@ export default function CommerceDashboard({ onNavigate }) {
     if (currentView === 'products' || currentView === 'highlights') {
       loadProducts()
     }
-  }, [projectId, currentFilter, searchQuery, currentView])
+  }, [projectId, currentFilter, selectedCategoryId, searchQuery, currentView])
 
   // Load services
   useEffect(() => {
     if (currentView === 'services' || currentView === 'highlights') {
       loadServices()
     }
-  }, [projectId, currentFilter, searchQuery, currentView])
+  }, [projectId, currentFilter, selectedCategoryId, searchQuery, currentView])
 
   // Load events
   useEffect(() => {
     if (currentView === 'events' || currentView === 'highlights') {
       loadEvents()
     }
-  }, [projectId, currentFilter, searchQuery, currentView])
+  }, [projectId, currentFilter, selectedCategoryId, searchQuery, currentView])
 
   // Load sales data (invoices and transactions)
   useEffect(() => {
@@ -282,6 +389,9 @@ export default function CommerceDashboard({ onNavigate }) {
       if (currentView === 'products' && currentFilter !== 'all') {
         filters.status = currentFilter
       }
+      if (selectedCategoryId) {
+        filters.category_id = selectedCategoryId
+      }
       if (searchQuery) {
         filters.search = searchQuery
       }
@@ -306,6 +416,9 @@ export default function CommerceDashboard({ onNavigate }) {
       if (currentView === 'services' && currentFilter !== 'all') {
         filters.status = currentFilter
       }
+      if (selectedCategoryId) {
+        filters.category_id = selectedCategoryId
+      }
       if (searchQuery) {
         filters.search = searchQuery
       }
@@ -329,6 +442,9 @@ export default function CommerceDashboard({ onNavigate }) {
       const filters = { type: 'event' }
       if (currentView === 'events' && currentFilter !== 'all') {
         filters.status = currentFilter
+      }
+      if (selectedCategoryId) {
+        filters.category_id = selectedCategoryId
       }
       if (searchQuery) {
         filters.search = searchQuery
@@ -369,13 +485,14 @@ export default function CommerceDashboard({ onNavigate }) {
         setInvoices(invoiceData.map(inv => ({ ...inv, _isBillingInvoice: true })))
       } else {
         // Other orgs: Use Commerce invoices API (project-level invoices)
-        // TODO: Implement commerce invoices endpoint for Sonor SaaS
-        // For now, commerce invoices aren't implemented yet - show empty state
-        setInvoices([])
+        const { commerceApi } = await import('@/lib/portal-api')
+        const res = await commerceApi.getInvoices(projectId, { params: { limit: 50 } })
+        const invoiceData = res?.data ?? res ?? []
+        setInvoices(Array.isArray(invoiceData) ? invoiceData : [])
       }
     } catch (err) {
       console.error('Failed to load invoices:', err)
-      // If no invoices or endpoint fails, show empty state
+      setInvoicesError(err?.message || 'Failed to load invoices')
       setInvoices([])
     } finally {
       setIsInvoicesLoading(false)
@@ -394,11 +511,13 @@ export default function CommerceDashboard({ onNavigate }) {
       setTransactions(Array.isArray(salesData) ? salesData : [])
     } catch (err) {
       console.error('Failed to load transactions:', err)
-      // If commerce_sales doesn't exist yet, show empty state
       setTransactions([])
-      if (!err.message?.includes('does not exist')) {
-        setTransactionsError('Failed to load transactions')
-      }
+      const msg = err?.message || ''
+      setTransactionsError(
+        msg.includes('does not exist')
+          ? 'Commerce sales table not set up yet'
+          : msg || 'Failed to load transactions'
+      )
     } finally {
       setIsTransactionsLoading(false)
     }
@@ -406,8 +525,33 @@ export default function CommerceDashboard({ onNavigate }) {
 
   async function handleRefresh() {
     setIsRefreshing(true)
-    await Promise.all([loadProducts(), loadServices(), loadEvents(), loadInvoices(), loadTransactions(), loadStats()])
-    setIsRefreshing(false)
+    try {
+      if (isShopifyMode && projectId) {
+        try {
+          await commerceApi.syncShopify(projectId)
+        } catch (err) {
+          toast.error(err?.response?.data || err?.message || 'Shopify sync failed')
+        }
+      }
+      await Promise.all([loadProducts(), loadServices(), loadEvents(), loadInvoices(), loadTransactions(), loadStats()])
+    } finally {
+      setIsRefreshing(false)
+    }
+  }
+
+  async function handleSyncShopify() {
+    if (!projectId) return
+    setIsRefreshing(true)
+    try {
+      const res = await commerceApi.syncShopify(projectId)
+      await loadProducts()
+      const count = res?.data?.productsSynced ?? res?.productsSynced
+      toast.success(count != null ? `Synced ${count} products from Shopify` : 'Shopify sync completed')
+    } catch (err) {
+      toast.error(err?.response?.data || err?.message || 'Shopify sync failed')
+    } finally {
+      setIsRefreshing(false)
+    }
   }
 
   // Count products by status
@@ -443,15 +587,21 @@ export default function CommerceDashboard({ onNavigate }) {
     return counts
   }, [events])
 
-  // Count invoices by status
+  // Count invoices by status (Billing API uses due_at, status: sent/viewed = unpaid)
   const invoiceCounts = useMemo(() => {
     const invoiceList = Array.isArray(invoices) ? invoices : []
     const counts = { all: invoiceList.length, pending: 0, paid: 0, overdue: 0, cancelled: 0 }
+    const dueDate = (inv) => inv?.due_at || inv?.due_date
     invoiceList.forEach(inv => {
-      if (inv.status === 'pending' && new Date(inv.due_date) < new Date()) {
+      const isUnpaid = ['pending', 'sent', 'viewed', 'draft'].includes(inv.status)
+      if (isUnpaid && dueDate(inv) && new Date(dueDate(inv)) < new Date()) {
         counts.overdue++
-      } else if (counts[inv.status] !== undefined) {
-        counts[inv.status]++
+      } else if (inv.status === 'paid') {
+        counts.paid++
+      } else if (inv.status === 'cancelled' || inv.status === 'refunded') {
+        counts.cancelled++
+      } else if (isUnpaid) {
+        counts.pending++
       }
     })
     return counts
@@ -944,16 +1094,32 @@ export default function CommerceDashboard({ onNavigate }) {
               </button>
             ) : (
               <div className="space-y-0.5">
+                {categories.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedCategoryId(null)}
+                    className={cn(
+                      "w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors",
+                      !selectedCategoryId
+                        ? "text-[var(--brand-primary)] bg-[var(--glass-bg-hover)]"
+                        : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-bg-hover)]"
+                    )}
+                  >
+                    <Folder className="h-3.5 w-3.5 text-[var(--text-tertiary)]" />
+                    <span className="truncate">All categories</span>
+                  </button>
+                )}
                 {categories.slice(0, 5).map(category => (
                   <button
                     key={category.id}
                     type="button"
-                    onClick={() => {
-                      // TODO: Filter offerings by category
-                      // setCurrentView(currentView)
-                      console.log('Category filter not yet implemented:', category.id)
-                    }}
-                    className="w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-bg-hover)] transition-colors"
+                    onClick={() => setSelectedCategoryId(selectedCategoryId === category.id ? null : category.id)}
+                    className={cn(
+                      "w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors",
+                      selectedCategoryId === category.id
+                        ? "text-[var(--brand-primary)] bg-[var(--glass-bg-hover)]"
+                        : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-bg-hover)]"
+                    )}
                   >
                     <Folder className="h-3.5 w-3.5 text-[var(--text-tertiary)]" />
                     <span className="truncate">{category.name}</span>
@@ -1066,6 +1232,38 @@ export default function CommerceDashboard({ onNavigate }) {
         }
         leftSidebarTitle="Commerce"
         defaultLeftSidebarOpen
+        rightSidebar={
+          currentView === 'sales' && salesTab === 'contracts' && aiEditingContract ? (
+            <ProposalAIEditorPanel
+              contract={aiEditingContract}
+              projectId={projectId}
+              isProposal={aiEditingContract._isProposal || currentOrg?.slug === 'uptrade-media'}
+              onSave={handleSaveContract}
+              onContractChange={setAiEditingContract}
+              onHasUnsavedChanges={setContractHasUnsavedChanges}
+            />
+          ) : currentView === 'sales' && salesTab === 'invoices' && selectedInvoiceId ? (
+            <InvoiceDetailPanel
+              invoiceId={selectedInvoiceId}
+              onClose={onClearInvoice}
+              onEdit={handleInvoiceEdit}
+              onDelete={handleInvoiceDeleteRequest}
+              onVoid={handleInvoiceVoidRequest}
+              brandColors={brandColors}
+            />
+          ) : undefined
+        }
+        rightSidebarTitle={
+          aiEditingContract ? 'AI Editor' : 'Invoice Details'
+        }
+        defaultRightSidebarOpen={!!(currentView === 'sales' && ((salesTab === 'contracts' && aiEditingContract) || (salesTab === 'invoices' && selectedInvoiceId)))}
+        rightSidebarOpen={!!(currentView === 'sales' && ((salesTab === 'contracts' && aiEditingContract) || (salesTab === 'invoices' && selectedInvoiceId)))}
+        onRightSidebarOpenChange={(open) => {
+          if (!open) {
+            if (aiEditingContract) setAiEditingContract(null)
+            else onClearInvoice()
+          }
+        }}
         ariaLabel="Commerce module"
       >
         <ModuleLayout.Header title="Commerce" icon={MODULE_ICONS.commerce} />
@@ -1265,8 +1463,12 @@ export default function CommerceDashboard({ onNavigate }) {
           </div>
         </div>
 
-        {/* Content Area */}
-        <div className={currentView === 'offering' && offeringId ? '' : 'px-6 py-4 pb-6'}>
+        {/* Content Area - no padding when editing proposal (full-bleed) or offering detail */}
+        <div className={
+          (currentView === 'offering' && offeringId) || (currentView === 'sales' && salesTab === 'contracts' && aiEditingContract)
+            ? ''
+            : 'px-6 py-4 pb-6'
+        }>
           {currentView === 'offering' && offeringId ? (
             offeringMode === 'edit' ? (
               <OfferingEdit
@@ -1423,6 +1625,7 @@ export default function CommerceDashboard({ onNavigate }) {
               {/* Sales View Content */}
               {salesTab === 'overview' ? (
                 <SalesOverviewView 
+                  projectId={projectId}
                   invoices={invoices}
                   transactions={transactions}
                   isLoading={isInvoicesLoading || isTransactionsLoading}
@@ -1433,6 +1636,7 @@ export default function CommerceDashboard({ onNavigate }) {
                 />
               ) : salesTab === 'contracts' ? (
                 <ContractsView 
+                  ref={contractsViewRef}
                   brandColors={brandColors}
                   onNavigate={onNavigate}
                   hasSignal={hasSignal}
@@ -1440,6 +1644,14 @@ export default function CommerceDashboard({ onNavigate }) {
                   isCreatingContract={isCreatingContract}
                   onNewContract={() => setIsCreatingContract(true)}
                   onCancelContract={() => setIsCreatingContract(false)}
+                  aiEditingContract={aiEditingContract}
+                  setAiEditingContract={setAiEditingContract}
+                  hasUnsavedChanges={contractHasUnsavedChanges}
+                  onSaveContract={handleSaveContract}
+                  isSavingContract={isSavingContract}
+                  onHasUnsavedChanges={setContractHasUnsavedChanges}
+                  showAnalytics={false}
+                  onToggleAnalytics={() => {}}
                 />
               ) : salesTab === 'invoices' ? (
                 <InvoicesView 
@@ -1449,6 +1661,8 @@ export default function CommerceDashboard({ onNavigate }) {
                   invoiceCounts={invoiceCounts}
                   brandColors={brandColors}
                   loadInvoices={loadInvoices}
+                  projectId={projectId}
+                  isUptradeMediaOrg={isUptradeMediaOrg}
                 />
               ) : (
                 <TransactionsView 
@@ -1524,6 +1738,7 @@ export default function CommerceDashboard({ onNavigate }) {
                 loadProducts={loadProducts}
                 onStartCreating={startCreating}
                 onOpenOffering={openOffering}
+                onSyncShopify={handleSyncShopify}
               />
             </>
             )
@@ -1542,6 +1757,37 @@ export default function CommerceDashboard({ onNavigate }) {
           // Reload invoices after creating one
           loadInvoices?.()
         }}
+      />
+
+      {/* Edit Invoice Dialog */}
+      <InvoiceEditDialog
+        open={!!editingInvoiceId}
+        onOpenChange={(open) => !open && setEditingInvoiceId(null)}
+        invoiceId={editingInvoiceId}
+        onSuccess={handleInvoiceEditSuccess}
+      />
+
+      {/* Delete invoice confirmation */}
+      <ConfirmDialog
+        open={!!pendingDeleteId}
+        onOpenChange={(open) => !open && setPendingDeleteId(null)}
+        title="Delete invoice"
+        description="This will permanently remove the invoice. This action cannot be undone."
+        confirmText="Delete"
+        onConfirm={handleInvoiceDeleteConfirm}
+        isLoading={deleteInvoiceMutation.isPending}
+      />
+
+      {/* Void invoice confirmation */}
+      <ConfirmDialog
+        open={!!pendingVoidId}
+        onOpenChange={(open) => !open && setPendingVoidId(null)}
+        title="Void invoice"
+        description="This will mark the invoice as cancelled. The record will be kept for your records."
+        confirmText="Void"
+        variant="default"
+        onConfirm={handleInvoiceVoidConfirm}
+        isLoading={voidInvoiceMutation.isPending}
       />
 
       {/* Create with Signal Dialog */}

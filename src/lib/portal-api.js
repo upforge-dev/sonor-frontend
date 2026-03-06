@@ -613,6 +613,9 @@ export const proposalsApi = {
   trackView: (id) => 
     portalApi.post(`/proposals/${id}/track-view`),
   
+  updateViewTime: (viewId, timeOnPage) =>
+    portalApi.patch(`/proposals/views/${viewId}`, { timeOnPage }),
+  
   getAnalytics: (id) =>
     portalApi.get(`/proposals/${id}/analytics`),
   
@@ -754,8 +757,8 @@ export const billingApi = {
   deleteInvoice: (id) => 
     portalApi.delete(`/billing/invoices/${id}`),
   
-  sendInvoice: (id) => 
-    portalApi.post(`/billing/invoices/${id}/send`),
+  sendInvoice: (id, data = {}) => 
+    portalApi.post(`/billing/invoices/${id}/send`, data),
   
   markPaid: (id, data = {}) => 
     portalApi.post(`/billing/invoices/${id}/paid`, data),
@@ -768,11 +771,15 @@ export const billingApi = {
     portalApi.post('/billing/invoices/quick', data),
   
   // Summary & Overdue
-  getSummary: () => 
-    portalApi.get('/billing/summary'),
+  getSummary: (params = {}) => 
+    portalApi.get('/billing/summary', { params }),
   
   getOverdue: () => 
     portalApi.get('/billing/overdue'),
+
+  // Aggregate analytics (conversion rate, avg time to pay, etc.)
+  getAnalytics: (params = {}) =>
+    portalApi.get('/billing/analytics', { params }),
   
   // Reminders
   sendReminder: (id) => 
@@ -795,6 +802,16 @@ export const billingApi = {
   
   payPublicInvoice: (data) => 
     portalApi.post('/billing/pay-public', data),
+
+  // Invoice analytics (view tracking + analytics)
+  trackInvoiceView: (invoiceId, token) =>
+    portalApi.post(`/billing/invoices/${invoiceId}/track-view`, { token }),
+
+  updateInvoiceViewTime: (viewId, token, timeOnPage) =>
+    portalApi.patch(`/billing/invoice-views/${viewId}/time`, { token, timeOnPage }),
+
+  getInvoiceAnalytics: (invoiceId) =>
+    portalApi.get(`/billing/invoices/${invoiceId}/analytics`),
 }
 
 // ============================================================================
@@ -3087,20 +3104,36 @@ export const commerceApi = {
     portalApi.get(`/commerce/offerings/${projectId}`, { params }),
   
   /** Get a single offering by ID */
-  getOffering: (projectId, id) =>
-    portalApi.get(`/commerce/offerings/${projectId}/${id}`),
+  getOffering: (id) =>
+    portalApi.get(`/commerce/offering/${id}`),
   
   /** Create a new offering */
   createOffering: (projectId, data) =>
     portalApi.post(`/commerce/offerings/${projectId}`, data),
   
   /** Update an offering */
-  updateOffering: (projectId, id, data) =>
-    portalApi.put(`/commerce/offerings/${projectId}/${id}`, data),
+  updateOffering: (id, data) =>
+    portalApi.put(`/commerce/offering/${id}`, data),
   
   /** Delete an offering */
-  deleteOffering: (projectId, id) =>
-    portalApi.delete(`/commerce/offerings/${projectId}/${id}`),
+  deleteOffering: (id) =>
+    portalApi.delete(`/commerce/offering/${id}`),
+
+  /** Get variants for an offering */
+  getVariants: (offeringId) =>
+    portalApi.get(`/commerce/variants/${offeringId}`),
+
+  /** Create a variant */
+  createVariant: (offeringId, data) =>
+    portalApi.post(`/commerce/variants/${offeringId}`, data),
+
+  /** Update a variant */
+  updateVariant: (variantId, data) =>
+    portalApi.put(`/commerce/variant/${variantId}`, data),
+
+  /** Delete a variant */
+  deleteVariant: (variantId) =>
+    portalApi.delete(`/commerce/variant/${variantId}`),
   
   // ==================== CATEGORIES ====================
   
@@ -3112,13 +3145,29 @@ export const commerceApi = {
   createCategory: (projectId, data) =>
     portalApi.post(`/commerce/categories/${projectId}`, data),
   
-  /** Update a category */
-  updateCategory: (projectId, id, data) =>
-    portalApi.put(`/commerce/categories/${projectId}/${id}`, data),
+  /** Update a category (id only; backend resolves from auth) */
+  updateCategory: (id, data) =>
+    portalApi.put(`/commerce/categories/${id}`, data),
   
-  /** Delete a category */
-  deleteCategory: (projectId, id) =>
-    portalApi.delete(`/commerce/categories/${projectId}/${id}`),
+  /** Delete a category (id only; backend resolves from auth) */
+  deleteCategory: (id) =>
+    portalApi.delete(`/commerce/categories/${id}`),
+  
+  /** Get invoices for a project */
+  getInvoices: (projectId, params = {}) =>
+    portalApi.get(`/commerce/invoices/${projectId}`, { params }),
+
+  /** Get a single invoice by ID (project-scoped) */
+  getInvoice: (projectId, invoiceId) =>
+    portalApi.get(`/commerce/invoices/${projectId}/${invoiceId}`),
+
+  /** Update an invoice (project-scoped) */
+  updateInvoice: (projectId, invoiceId, data) =>
+    portalApi.put(`/commerce/invoices/${projectId}/${invoiceId}`, data),
+
+  /** Delete an invoice (project-scoped) */
+  deleteInvoice: (projectId, invoiceId) =>
+    portalApi.delete(`/commerce/invoices/${projectId}/${invoiceId}`),
   
   // ==================== SALES / TRANSACTIONS ====================
   
@@ -3142,6 +3191,14 @@ export const commerceApi = {
   getSalesStats: (projectId, params = {}) =>
     portalApi.get(`/commerce/sales/${projectId}/stats`, { params }),
 
+  /** Get revenue chart data for last N days */
+  getRevenueChart: (projectId, days = 30) =>
+    portalApi.get(`/commerce/sales/${projectId}/revenue-chart`, { params: { days } }),
+
+  /** Trigger Shopify product sync for a project */
+  syncShopify: (projectId) =>
+    portalApi.post(`/commerce/shopify/sync/${projectId}`),
+
   /** Generate shipping label for a sale */
   shipSale: (projectId, saleId, options = {}) =>
     portalApi.post(`/commerce/sales/${projectId}/${saleId}/ship`, options),
@@ -3149,6 +3206,28 @@ export const commerceApi = {
   /** Batch ship multiple orders */
   batchShip: (projectId, saleIds) =>
     portalApi.post(`/commerce/sales/${projectId}/ship/batch`, { saleIds }),
+
+  // ==================== SHIPPING BILLING (Platform mode) ====================
+
+  /** Get shipping billing config (publishable key) */
+  getShippingBillingConfig: () =>
+    portalApi.get('/commerce/billing/shipping/config'),
+
+  /** Get shipping billing status for a project */
+  getShippingBillingStatus: (projectId) =>
+    portalApi.get(`/commerce/billing/shipping/status/${projectId}`),
+
+  /** Create Stripe SetupIntent for shipping billing card */
+  createShippingBillingSetupIntent: (projectId) =>
+    portalApi.post(`/commerce/billing/shipping/setup-intent/${projectId}`),
+
+  /** Attach payment method to shipping billing customer */
+  attachShippingBillingCard: (projectId, paymentMethodId) =>
+    portalApi.post(`/commerce/billing/shipping/attach-card/${projectId}`, { paymentMethodId }),
+
+  /** Add funds to shipping balance */
+  depositShippingBalance: (projectId, amountCents) =>
+    portalApi.post(`/commerce/billing/shipping/deposit/${projectId}`, { amountCents }),
   
   // ==================== CUSTOMERS ====================
   
@@ -3160,6 +3239,10 @@ export const commerceApi = {
   getCustomer: (projectId, id) =>
     portalApi.get(`/commerce/customers/${projectId}/${id}`),
   
+  /** Find or create customer by email */
+  findOrCreateCustomer: (projectId, data) =>
+    portalApi.post(`/commerce/customers/${projectId}/find-or-create`, data),
+
   /** Create a customer */
   createCustomer: (projectId, data) =>
     portalApi.post(`/commerce/customers/${projectId}`, data),
@@ -3191,6 +3274,9 @@ export const commerceApi = {
   /** Get a single contract by ID */
   getContract: (projectId, id) =>
     portalApi.get(`/commerce/contracts/${projectId}/${id}`),
+
+  getContractAnalytics: (contractId) =>
+    portalApi.get(`/commerce/contracts/analytics/${contractId}`),
   
   /** Create a new contract */
   createContract: (projectId, data) =>

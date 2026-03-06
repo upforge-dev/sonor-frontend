@@ -40,6 +40,11 @@ function sanitizeMDXContent(mdxSource) {
   // AI generates: description="...\"quoted text\"..." 
   // Replace \" with ' (single quote) to avoid parsing issues
   sanitized = sanitized.replace(/\\"/g, "'")
+
+  // SECOND-B: Fix apostrophe in contractions inside single-quoted attrs
+  // e.g. description='...doesn't support...' — the ' in "doesn't" closes the string
+  // Use Unicode apostrophe (U+2019) instead of escaping — avoids parser confusion
+  sanitized = sanitized.replace(/(\w)'(\w)/g, '$1\u2019$2')
   
   // THIRD: Handle square brackets in text that look like placeholders
   // Replace [word] or [word word] with 'word' using single quotes
@@ -50,6 +55,46 @@ function sanitizeMDXContent(mdxSource) {
   sanitized = sanitized.replace(/<(\d)/g, 'less than $1')
   sanitized = sanitized.replace(/>(\d)/g, 'more than $1')
   
+  // FIFTH: Do not globally rewrite nested quotes.
+  // Earlier heuristics here were mutating valid prose/JSX strings like "Free Intro"
+  // into malformed MDX, so only keep the more targeted fixes below.
+
+  // SEVENTH: Fix orphaned fragments after closing " — parser sees . as invalid attribute name
+  // E) "value" . "rest" (AI splits sentence at period: "21/100" . "Slow initial...")
+  // Allow \s* (optional) before period to catch "value". "rest" as well
+  sanitized = sanitized.replace(/"([^"]*)"\s*\.\s*"([^"]*)"/g, (_, prefix, suffix) => {
+    return `"${prefix}. ${suffix}"`
+  })
+  // A) "value" .com or "url" .png" (space before dot, optional trailing ")
+  sanitized = sanitized.replace(/"([^"]*)" (\.[a-zA-Z0-9]+)(")?/g, (_, value, fragment) => {
+    return `"${value}${fragment}"`
+  })
+  // B) "value".com (no space — dot directly after closing quote)
+  sanitized = sanitized.replace(/"([^"]*)"(\.[a-zA-Z0-9]+)(?=[\s>\/]|$)/g, (_, value, fragment) => {
+    return `"${value}${fragment}"`
+  })
+  // B2) "value". (orphan period only — e.g. "21/100".)
+  sanitized = sanitized.replace(/"([^"]*)"\.(?=[\s>\/"'\)]|$)/g, (_, value) => {
+    return `"${value}."`
+  })
+  // B3) "value" . (space before orphan period — e.g. "21/100" . before next attr)
+  sanitized = sanitized.replace(/"([^"]*)"\s+\.(?=[\s>\/"'\)]|$)/g, (_, value) => {
+    return `"${value}."`
+  })
+  // C) "value" 2.5 or "value" example.com (decimal or domain-like fragment)
+  sanitized = sanitized.replace(/"([^"]*)" ([a-zA-Z0-9]*\.[a-zA-Z0-9]+)(?=[\s>\/]|$)/g, (_, value, fragment) => {
+    return `"${value} ${fragment}"`
+  })
+  // D) Catch-all: "value" .anything (any orphaned . fragment we missed)
+  sanitized = sanitized.replace(/"([^"]*)"\s+(\.[^\s"<>\/=]*)(?=[\s>\/"']|$)/g, (_, value, fragment) => {
+    return `"${value}${fragment}"`
+  })
+
+  // E2) Fix "Next" .js " rest" inside arrays/objects — merge all three into one string
+  sanitized = sanitized.replace(/"([^"]*)"\s+\.([a-zA-Z0-9]+)\s*"([^"]*)"/g, (_, prefix, mid, suffix) => {
+    return `"${prefix}.${mid} ${suffix}"`
+  })
+
   return sanitized
 }
 
@@ -66,8 +111,8 @@ function MDXContent({ mdxSource }) {
         return
       }
       
+      const sanitizedMDX = sanitizeMDXContent(mdxSource)
       try {
-        const sanitizedMDX = sanitizeMDXContent(mdxSource)
         const { default: CompiledContent } = await evaluate(sanitizedMDX, {
           ...runtime,
           development: false
@@ -75,6 +120,21 @@ function MDXContent({ mdxSource }) {
         setContent(() => CompiledContent)
       } catch (err) {
         console.error('MDX compilation error:', err)
+        if (err.message?.includes('Unexpected character') && err.message?.includes('attribute name')) {
+          const lineCol = err.message.match(/(\d+):(\d+)/)
+          if (lineCol) {
+            const [, line, col] = lineCol
+            const lines = sanitizedMDX.split(/\r?\n/)
+            const lineIdx = Math.max(0, parseInt(line, 10) - 1)
+            const colIdx = Math.max(0, parseInt(col, 10) - 1)
+            const targetLine = lines[lineIdx] || ''
+            const pos = lines.slice(0, lineIdx).join('\n').length + colIdx
+            const start = Math.max(0, pos - 80)
+            const snippet = sanitizedMDX.slice(start, pos + 80)
+            console.error('[ProposalView MDX] Error at L' + line + ':' + col + ' — snippet:', snippet)
+            console.error('[ProposalView MDX] Char at position:', JSON.stringify(targetLine[colIdx]))
+          }
+        }
         setError(err.message)
       } finally {
         setLoading(false)

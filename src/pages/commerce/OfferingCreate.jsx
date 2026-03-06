@@ -4,7 +4,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate, Link, useSearchParams } from 'react-router-dom'
-import { useCreateCommerceOffering, useCreateCommerceSchedule, useUploadCommerceImage, useCommerceSettings, commerceKeys } from '@/lib/hooks'
+import { useCreateCommerceOffering, useCreateCommerceSchedule, useUploadCommerceImage, useCreateCommerceVariant, useCommerceSettings, commerceKeys } from '@/lib/hooks'
 import { useForms, formsKeys } from '@/lib/hooks'
 import { useSeoPages } from '@/hooks/seo'
 import { useQueryClient } from '@tanstack/react-query'
@@ -43,6 +43,10 @@ import {
   Clock,
 } from 'lucide-react'
 
+// Preset clothing sizes
+const SIZE_PRESETS = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL']
+const SIZE_DISPLAY_NAMES = { XS: 'Extra Small', S: 'Small', M: 'Medium', L: 'Large', XL: 'Extra Large', '2XL': '2X Large', '3XL': '3X Large' }
+
 // Type configuration
 const typeConfig = {
   product: {
@@ -72,6 +76,7 @@ export default function OfferingCreate({ type: propType, embedded = false, onBac
   const [searchParams] = useSearchParams()
   const { currentProject } = useAuthStore()
   const createOfferingMutation = useCreateCommerceOffering()
+  const createVariantMutation = useCreateCommerceVariant()
   const { data: settings } = useCommerceSettings(currentProject?.id)
   const { data: forms = [], isLoading: formsLoading } = useForms(currentProject?.id ? { projectId: currentProject.id } : {}, { enabled: !!currentProject?.id })
   const uploadImageMutation = useUploadCommerceImage()
@@ -109,6 +114,8 @@ export default function OfferingCreate({ type: propType, embedded = false, onBac
         sku: '',
         track_inventory: false,
         inventory_count: '',
+        is_clothing: false,
+        sizeVariants: {}, // { 'S': 5, 'M': 10, ... }
         duration_minutes: '',
         requires_booking: true,
         capacity: '',
@@ -138,6 +145,8 @@ export default function OfferingCreate({ type: propType, embedded = false, onBac
       sku: '',
       track_inventory: false,
       inventory_count: '',
+      is_clothing: false,
+      sizeVariants: {},
       duration_minutes: '',
       requires_booking: true,
       capacity: '',
@@ -240,6 +249,11 @@ export default function OfferingCreate({ type: propType, embedded = false, onBac
       return
     }
 
+    if (formData.is_clothing && (!formData.sizeVariants || Object.keys(formData.sizeVariants).length === 0)) {
+      toast.error('Enable at least one size for clothing products')
+      return
+    }
+
     setSaving(true)
     
     try {
@@ -259,8 +273,14 @@ export default function OfferingCreate({ type: propType, embedded = false, onBac
         data.sku = formData.sku || null
       }
       if (currentConfig?.fields.includes('inventory')) {
-        data.track_inventory = formData.track_inventory
-        data.inventory_count = formData.inventory_count ? parseInt(formData.inventory_count) : null
+        if (formData.is_clothing) {
+          data.is_clothing = true
+          data.track_inventory = true
+          // Product-level inventory not used for clothing; variants hold inventory
+        } else {
+          data.track_inventory = formData.track_inventory
+          data.inventory_count = formData.inventory_count ? parseInt(formData.inventory_count) : null
+        }
       }
       if (currentConfig?.fields.includes('duration')) {
         data.duration_minutes = formData.duration_minutes ? parseInt(formData.duration_minutes) : null
@@ -293,6 +313,27 @@ export default function OfferingCreate({ type: propType, embedded = false, onBac
 
       // Create the offering first (without images)
       const offering = await createOfferingMutation.mutateAsync({ projectId: currentProject.id, data })
+
+      // For clothing products, create size variants
+      if (formData.is_clothing && formData.sizeVariants && Object.keys(formData.sizeVariants).length > 0) {
+        const basePrice = formData.price ? parseFloat(formData.price) : null
+        let sortOrder = 0
+        for (const [sizeCode, qty] of Object.entries(formData.sizeVariants)) {
+          const inventoryCount = typeof qty === 'number' ? qty : parseInt(String(qty), 10) || 0
+          await createVariantMutation.mutateAsync({
+            offeringId: offering.id,
+            data: {
+              name: SIZE_DISPLAY_NAMES[sizeCode] || sizeCode,
+              options: { Size: sizeCode },
+              price: basePrice,
+              inventory_count: inventoryCount,
+              track_inventory: true,
+              is_default: sortOrder === 0,
+              sort_order: sortOrder++,
+            },
+          })
+        }
+      }
       
       // Now upload images to the offering using the commerce API
       // This properly associates images with the offering and handles featured_image_id
@@ -608,6 +649,11 @@ export default function OfferingCreate({ type: propType, embedded = false, onBac
           <Card>
             <CardHeader>
               <CardTitle>Inventory</CardTitle>
+              <CardDescription>
+                {formData.is_clothing
+                  ? 'Add size variants with per-size stock levels'
+                  : 'Track stock for this product'}
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
@@ -622,29 +668,102 @@ export default function OfferingCreate({ type: propType, embedded = false, onBac
 
               <div className="flex items-center justify-between">
                 <div>
-                  <Label>Track Inventory</Label>
+                  <Label>Is this clothing?</Label>
                   <p className="text-sm text-muted-foreground">
-                    Keep track of stock levels
+                    Enable size variants (S, M, L, etc.) with per-size inventory
                   </p>
                 </div>
                 <Switch
-                  checked={formData.track_inventory}
-                  onCheckedChange={(checked) => handleChange('track_inventory', checked)}
+                  checked={formData.is_clothing}
+                  onCheckedChange={(checked) => handleChange('is_clothing', checked)}
                 />
               </div>
 
-              {formData.track_inventory && (
-                <div>
-                  <Label htmlFor="inventory_count">Stock Quantity</Label>
-                  <Input
-                    id="inventory_count"
-                    type="number"
-                    min="0"
-                    value={formData.inventory_count}
-                    onChange={(e) => handleChange('inventory_count', e.target.value)}
-                    placeholder="Available quantity"
-                  />
+              {formData.is_clothing ? (
+                <div className="space-y-4 pt-2 border-t">
+                  <Label>Size Variants</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Enable sizes and set stock quantity for each
+                  </p>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                    {SIZE_PRESETS.map((size) => {
+                      const isEnabled = formData.sizeVariants.hasOwnProperty(size)
+                      const qty = formData.sizeVariants[size] ?? 0
+                      return (
+                        <div
+                          key={size}
+                          className={`flex flex-col gap-2 p-3 rounded-lg border ${
+                            isEnabled ? 'border-primary bg-primary/5' : 'border-border'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="font-medium text-sm">{size}</span>
+                            <Switch
+                              checked={isEnabled}
+                              onCheckedChange={(checked) => {
+                                setFormData((prev) => {
+                                  const next = { ...prev.sizeVariants }
+                                  if (checked) next[size] = 0
+                                  else delete next[size]
+                                  return { ...prev, sizeVariants: next }
+                                })
+                              }}
+                            />
+                          </div>
+                          {isEnabled && (
+                            <Input
+                              type="number"
+                              min="0"
+                              placeholder="Qty"
+                              value={qty}
+                              onChange={(e) => {
+                                const v = parseInt(e.target.value, 10)
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  sizeVariants: { ...prev.sizeVariants, [size]: isNaN(v) ? 0 : v },
+                                }))
+                              }}
+                            />
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                  {Object.keys(formData.sizeVariants || {}).length === 0 && (
+                    <p className="text-sm text-amber-600">
+                      Enable at least one size to create this clothing product
+                    </p>
+                  )}
                 </div>
+              ) : (
+                <>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label>Track Inventory</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Keep track of stock levels
+                      </p>
+                    </div>
+                    <Switch
+                      checked={formData.track_inventory}
+                      onCheckedChange={(checked) => handleChange('track_inventory', checked)}
+                    />
+                  </div>
+
+                  {formData.track_inventory && (
+                    <div>
+                      <Label htmlFor="inventory_count">Stock Quantity</Label>
+                      <Input
+                        id="inventory_count"
+                        type="number"
+                        min="0"
+                        value={formData.inventory_count}
+                        onChange={(e) => handleChange('inventory_count', e.target.value)}
+                        placeholder="Available quantity"
+                      />
+                    </div>
+                  )}
+                </>
               )}
             </CardContent>
           </Card>

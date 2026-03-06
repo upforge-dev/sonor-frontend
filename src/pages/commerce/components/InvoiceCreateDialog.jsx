@@ -2,8 +2,8 @@
 // Dialog for creating invoices with service selection
 
 import { useState, useEffect } from 'react'
-import { supabase } from '@/lib/supabase'
 import useAuthStore from '@/lib/auth-store'
+import { portalApi, commerceApi, billingApi } from '@/lib/portal-api'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -25,7 +25,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
-import { Send, Loader2, Zap, Receipt, DollarSign } from 'lucide-react'
+import { Send, Loader2, Zap, Receipt, DollarSign, User, UserPlus } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 // Default due date: 14 days from now
@@ -34,6 +34,15 @@ function getDefaultDueDate() {
   date.setDate(date.getDate() + 14)
   return date.toISOString().split('T')[0]
 }
+
+const RECURRING_INTERVALS = [
+  { value: 'weekly', label: 'Weekly' },
+  { value: 'bi-weekly', label: 'Bi-weekly' },
+  { value: 'monthly', label: 'Monthly' },
+  { value: 'quarterly', label: 'Quarterly' },
+  { value: 'semi-annual', label: 'Semi-annual' },
+  { value: 'annual', label: 'Annual' },
+]
 
 export function InvoiceCreateDialog({ 
   open, 
@@ -47,6 +56,9 @@ export function InvoiceCreateDialog({
   // Services from Commerce offerings
   const [services, setServices] = useState([])
   const [isLoadingServices, setIsLoadingServices] = useState(true)
+  // Customers for client picker
+  const [customers, setCustomers] = useState([])
+  const [isLoadingCustomers, setIsLoadingCustomers] = useState(true)
   
   // Form state
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -55,6 +67,7 @@ export function InvoiceCreateDialog({
   
   // Invoice data
   const [formData, setFormData] = useState({
+    selectedCustomerId: '', // '' = one-off, id = existing client
     selectedServiceId: '',
     email: '',
     name: '',
@@ -66,12 +79,18 @@ export function InvoiceCreateDialog({
     payment_type: 'full', // 'full' or 'deposit'
     deposit_percentage: 50,
     deposit_amount: '',
+    isRecurring: false,
+    recurringInterval: 'monthly',
+    recurringDayOfMonth: 15,
+    recurringEndDate: '',
+    recurringCount: '',
   })
 
-  // Load services when dialog opens
+  // Load services and customers when dialog opens
   useEffect(() => {
     if (open && projectId) {
       loadServices()
+      loadCustomers()
     }
   }, [open, projectId])
 
@@ -79,6 +98,7 @@ export function InvoiceCreateDialog({
   useEffect(() => {
     if (!open) {
       setFormData({
+        selectedCustomerId: '',
         selectedServiceId: '',
         email: '',
         name: '',
@@ -90,6 +110,11 @@ export function InvoiceCreateDialog({
         payment_type: 'full',
         deposit_percentage: 50,
         deposit_amount: '',
+        isRecurring: false,
+        recurringInterval: 'monthly',
+        recurringDayOfMonth: 15,
+        recurringEndDate: '',
+        recurringCount: '',
       })
       setError(null)
       setSuccess(false)
@@ -99,16 +124,9 @@ export function InvoiceCreateDialog({
   const loadServices = async () => {
     setIsLoadingServices(true)
     try {
-      const { data, error: fetchError } = await supabase
-        .from('commerce_offerings')
-        .select('id, name, description, price_type, price, status')
-        .eq('project_id', projectId)
-        .eq('type', 'service')
-        .eq('status', 'active')
-        .order('name', { ascending: true })
-      
-      if (fetchError) throw fetchError
-      setServices(data || [])
+      const res = await commerceApi.getOfferings(projectId, { type: 'service', status: 'active' })
+      const data = res?.data ?? res ?? []
+      setServices(Array.isArray(data) ? data : [])
     } catch (err) {
       console.error('Error loading services:', err)
     } finally {
@@ -116,22 +134,54 @@ export function InvoiceCreateDialog({
     }
   }
 
+  const loadCustomers = async () => {
+    setIsLoadingCustomers(true)
+    try {
+      const res = await commerceApi.getCustomers(projectId, { limit: 100 })
+      const data = res?.data ?? res ?? []
+      setCustomers(Array.isArray(data) ? data : [])
+    } catch (err) {
+      console.error('Error loading customers:', err)
+      setCustomers([])
+    } finally {
+      setIsLoadingCustomers(false)
+    }
+  }
+
+  const handleCustomerSelect = (value) => {
+    if (value === '__new__' || !value) {
+      setFormData(prev => ({ ...prev, selectedCustomerId: '', email: '', name: '', company: '' }))
+      return
+    }
+    const customer = customers.find(c => c.id === value)
+    if (customer) {
+      setFormData(prev => ({
+        ...prev,
+        selectedCustomerId: value,
+        email: customer.email || '',
+        name: customer.name || '',
+        company: customer.company || '',
+      }))
+    }
+  }
+
   // When a service is selected, auto-populate fields
-  const handleServiceSelect = (serviceId) => {
-    const service = services.find(s => s.id === serviceId)
+  const handleServiceSelect = (value) => {
+    const service = services.find(s => s.id === value)
     if (service) {
       const price = service.price || 0
       setFormData(prev => ({
         ...prev,
-        selectedServiceId: serviceId,
+        selectedServiceId: value,
         amount: price.toString(),
         description: service.name + (service.description ? ` - ${service.description}` : ''),
         deposit_amount: (price * 0.5).toFixed(2), // 50% default deposit
       }))
     } else {
+      // value is '__custom__' (no service) or empty
       setFormData(prev => ({
         ...prev,
-        selectedServiceId: '',
+        selectedServiceId: value === '__custom__' ? '__custom__' : '',
       }))
     }
   }
@@ -157,46 +207,63 @@ export function InvoiceCreateDialog({
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    if (!formData.email?.trim()) {
+      setError('Email is required')
+      return
+    }
     setIsSubmitting(true)
     setError(null)
 
     try {
       const finalAmount = getFinalAmount()
-      
-      // Create invoice via API or directly
-      const { data: invoice, error: createError } = await supabase
-        .from('invoices')
-        .insert({
-          project_id: projectId,
-          amount: finalAmount,
-          description: formData.description + (formData.payment_type === 'deposit' ? ` (Deposit - ${formData.deposit_percentage}%)` : ''),
-          due_at: formData.due_date,
-          status: formData.send_now ? 'pending' : 'draft',
-          sent_to_email: formData.email.toLowerCase(),
-          sent_at: formData.send_now ? new Date().toISOString() : null,
-          // Link to service offering if selected
-          metadata: formData.selectedServiceId ? {
-            offering_id: formData.selectedServiceId,
-            payment_type: formData.payment_type,
-            total_amount: parseFloat(formData.amount),
-            deposit_percentage: formData.payment_type === 'deposit' ? formData.deposit_percentage : null,
-          } : {},
-        })
-        .select()
-        .single()
+      const email = formData.email.trim().toLowerCase()
 
-      if (createError) throw createError
+      // Use selected existing customer, or find/create for one-off
+      let contactId
+      if (formData.selectedCustomerId) {
+        contactId = formData.selectedCustomerId
+      } else {
+        try {
+          const customerRes = await commerceApi.findOrCreateCustomer(projectId, {
+            email,
+            name: formData.name?.trim() || undefined,
+            company: formData.company?.trim() || undefined,
+          })
+          const customer = customerRes?.data ?? customerRes
+          contactId = customer?.id
+        } catch (contactErr) {
+          console.error('Error finding/creating contact:', contactErr)
+          throw new Error(contactErr?.response?.data?.message || contactErr?.message || 'Failed to find or create contact')
+        }
+      }
+
+      if (!contactId) throw new Error('Could not resolve contact')
+
+      const description = formData.description + (formData.payment_type === 'deposit' ? ` (Deposit - ${formData.deposit_percentage}%)` : '')
+
+      await billingApi.createInvoice({
+        contactId,
+        projectId,
+        amount: finalAmount,
+        description,
+        dueDate: formData.due_date,
+        sendImmediately: formData.send_now,
+        isRecurring: formData.isRecurring || undefined,
+        recurringInterval: formData.isRecurring ? formData.recurringInterval : undefined,
+        recurringDayOfMonth: formData.isRecurring ? formData.recurringDayOfMonth : undefined,
+        recurringEndDate: formData.isRecurring && formData.recurringEndDate ? formData.recurringEndDate : undefined,
+        recurringCount: formData.isRecurring && formData.recurringCount ? parseInt(formData.recurringCount, 10) : undefined,
+      })
 
       setSuccess(true)
-      
-      // Call success callback after brief delay to show success message
+
       setTimeout(() => {
         onSuccess?.()
         onOpenChange(false)
       }, 1500)
     } catch (err) {
       console.error('Error creating invoice:', err)
-      setError(err.message)
+      setError(err?.response?.data?.message || err?.message || 'Failed to create invoice')
     } finally {
       setIsSubmitting(false)
     }
@@ -227,6 +294,36 @@ export function InvoiceCreateDialog({
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Client Selection: existing or one-off */}
+            <div className="space-y-2">
+              <Label className="text-[var(--text-primary)]">Bill to</Label>
+              <Select
+                value={formData.selectedCustomerId || '__new__'}
+                onValueChange={handleCustomerSelect}
+                disabled={isLoadingCustomers}
+              >
+                <SelectTrigger className="bg-[var(--glass-bg-inset)] border-[var(--glass-border)] text-[var(--text-primary)]">
+                  <SelectValue placeholder={isLoadingCustomers ? "Loading clients..." : "Select existing client or add new..."} />
+                </SelectTrigger>
+                <SelectContent className="bg-[var(--glass-bg)] border-[var(--glass-border)] max-h-[200px]">
+                  <SelectItem value="__new__" className="text-[var(--text-secondary)]">
+                    <span className="flex items-center gap-2">
+                      <UserPlus className="h-4 w-4" />
+                      New / One-off invoice
+                    </span>
+                  </SelectItem>
+                  {customers.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      <span className="flex items-center gap-2">
+                        <User className="h-4 w-4 text-[var(--text-tertiary)]" />
+                        {[c.name, c.company].filter(Boolean).join(' · ') || c.email || 'Unknown'}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             {/* Service Selection */}
             <div className="space-y-2">
               <Label className="text-[var(--text-primary)]">Select a Service (Optional)</Label>
@@ -239,7 +336,7 @@ export function InvoiceCreateDialog({
                   <SelectValue placeholder={isLoadingServices ? "Loading services..." : "Choose a service to invoice for..."} />
                 </SelectTrigger>
                 <SelectContent className="bg-[var(--glass-bg)] border-[var(--glass-border)]">
-                  <SelectItem value="" className="text-[var(--text-secondary)]">
+                  <SelectItem value="__custom__" className="text-[var(--text-secondary)]">
                     Custom Invoice (no service)
                   </SelectItem>
                   {services.map((service) => (
@@ -401,6 +498,76 @@ export function InvoiceCreateDialog({
                 rows={3}
                 className="bg-[var(--glass-bg-inset)] border-[var(--glass-border)] text-[var(--text-primary)]"
               />
+            </div>
+
+            {/* Recurring */}
+            <div className="space-y-4 p-4 rounded-lg border border-[var(--glass-border)]">
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="isRecurring"
+                  checked={formData.isRecurring}
+                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isRecurring: !!checked }))}
+                />
+                <Label htmlFor="isRecurring" className="cursor-pointer text-[var(--text-primary)]">
+                  Recurring invoice
+                </Label>
+              </div>
+              {formData.isRecurring && (
+                <div className="grid grid-cols-2 gap-4 pl-6">
+                  <div className="space-y-2">
+                    <Label className="text-[var(--text-primary)]">Interval</Label>
+                    <Select
+                      value={formData.recurringInterval}
+                      onValueChange={(v) => setFormData(prev => ({ ...prev, recurringInterval: v }))}
+                    >
+                      <SelectTrigger className="bg-[var(--glass-bg-inset)] border-[var(--glass-border)] text-[var(--text-primary)]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-[var(--glass-bg)] border-[var(--glass-border)]">
+                        {RECURRING_INTERVALS.map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[var(--text-primary)]">Day of month (1-31)</Label>
+                    <Input
+                      type="number"
+                      min="1"
+                      max="31"
+                      value={formData.recurringDayOfMonth}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        recurringDayOfMonth: parseInt(e.target.value, 10) || 1,
+                      }))}
+                      className="bg-[var(--glass-bg-inset)] border-[var(--glass-border)] text-[var(--text-primary)]"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[var(--text-primary)]">End date</Label>
+                    <Input
+                      type="date"
+                      value={formData.recurringEndDate}
+                      onChange={(e) => setFormData(prev => ({ ...prev, recurringEndDate: e.target.value }))}
+                      className="bg-[var(--glass-bg-inset)] border-[var(--glass-border)] text-[var(--text-primary)]"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[var(--text-primary)]">Number of occurrences</Label>
+                    <Input
+                      type="number"
+                      min="1"
+                      value={formData.recurringCount}
+                      onChange={(e) => setFormData(prev => ({ ...prev, recurringCount: e.target.value }))}
+                      placeholder="Leave empty for unlimited"
+                      className="bg-[var(--glass-bg-inset)] border-[var(--glass-border)] text-[var(--text-primary)]"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Send Now */}

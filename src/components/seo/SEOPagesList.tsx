@@ -32,6 +32,7 @@ import { useSeoPages, seoPageKeys } from '@/hooks/seo'
 import { seoApi } from '@/lib/portal-api'
 import SEOBulkEditModal from './SEOBulkEditModal'
 import { cn } from '@/lib/utils'
+import { toast } from 'sonner'
 
 // Types
 interface Site {
@@ -120,6 +121,7 @@ export default function SEOPagesList({ site, projectId }: SEOPagesListProps) {
   
   // Local UI state
   const [searchQuery, setSearchQuery] = useState<string>('')
+  const [pageStatusFilter, setPageStatusFilter] = useState<'active' | 'all'>('active')
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
   const [healthFilter, setHealthFilter] = useState<HealthFilter>('all')
   const [sortBy, setSortBy] = useState<SortBy>('clicks')
@@ -142,7 +144,8 @@ export default function SEOPagesList({ site, projectId }: SEOPagesListProps) {
     page,
     limit: 50,
     search: searchQuery || undefined,
-    status: statusFilter !== 'all' ? statusFilter : undefined,
+    status: pageStatusFilter,
+    indexingStatus: statusFilter !== 'all' ? (statusFilter === 'not-indexed' ? 'not_indexed' : statusFilter) : undefined,
     sortBy,
   })
 
@@ -162,9 +165,23 @@ export default function SEOPagesList({ site, projectId }: SEOPagesListProps) {
     if (!siteId) return
     setCrawlingSitemap(true)
     try {
-      await seoApi.crawlSitemap(siteId)
-      // Invalidate pages cache to refetch fresh data
+      const res = await seoApi.crawlSitemap(siteId)
+      const data = (res as any)?.data ?? res
+      if (data?.success === false && data?.error) {
+        toast.error(data.error)
+      } else {
+        const { created = 0, updated = 0, removed = 0 } = data ?? {}
+        const parts = []
+        if (created) parts.push(`${created} new`)
+        if (updated) parts.push(`${updated} updated`)
+        if (removed) parts.push(`${removed} removed`)
+        toast.success(parts.length ? `Pages synced: ${parts.join(', ')}` : 'Pages synced from sitemap')
+      }
       queryClient.invalidateQueries({ queryKey: seoPageKeys.list(siteId) })
+    } catch (err) {
+      console.error('Crawl sitemap failed:', err)
+      const msg = (err as any)?.response?.data?.message || (err as any)?.message || 'Sync failed'
+      toast.error(msg === 'Authentication required' ? 'Session expired. Please log in again.' : msg)
     } finally {
       setCrawlingSitemap(false)
     }
@@ -442,6 +459,15 @@ export default function SEOPagesList({ site, projectId }: SEOPagesListProps) {
         </div>
 
         <div className="flex items-center gap-2">
+          <Select value={pageStatusFilter} onValueChange={(v: 'active' | 'all') => setPageStatusFilter(v)}>
+            <SelectTrigger className="w-[120px]">
+              <SelectValue placeholder="Pages" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="all">All (incl. removed)</SelectItem>
+            </SelectContent>
+          </Select>
           <Select value={statusFilter} onValueChange={(value: StatusFilter) => setStatusFilter(value)}>
             <SelectTrigger className="w-[140px]">
               <SelectValue placeholder="Index Status" />

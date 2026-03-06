@@ -460,6 +460,21 @@ export default function SalesPage() {
                                 Print label
                               </a>
                             )}
+                            {sale.shipping_billing_status === 'failed' && (
+                              <Link
+                                to={`/c/${currentProject?.slug}/commerce`}
+                                className="inline-flex items-center"
+                              >
+                                <Badge variant="destructive" className="text-[10px] mt-0.5">
+                                  Billing failed
+                                </Badge>
+                              </Link>
+                            )}
+                            {sale.shipping_billing_status === 'succeeded' && (
+                              <Badge variant="outline" className="text-[10px] text-green-600 border-green-500/30 mt-0.5">
+                                Charged
+                              </Badge>
+                            )}
                           </div>
                         ) : sale.shipping_address ? (
                           <Badge variant="outline" className="text-amber-600 border-amber-500/30">Unshipped</Badge>

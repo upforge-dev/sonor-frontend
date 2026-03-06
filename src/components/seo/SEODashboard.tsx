@@ -267,8 +267,17 @@ export default function SEODashboard({ onNavigate }: SEODashboardProps) {
   const handleSyncGsc = useCallback(async () => {
     if (!projectId) return
     setSyncing(true)
-    try { await seoApi.syncGsc(projectId); queryClient.invalidateQueries({ queryKey: ['seo', 'gsc'] }) }
-    finally { setSyncing(false) }
+    try {
+      await seoApi.syncGsc(projectId)
+      toast.success('GSC data synced')
+      queryClient.invalidateQueries({ queryKey: ['seo', 'gsc'] })
+    } catch (err) {
+      console.error('Sync GSC failed:', err)
+      const msg = (err as any)?.response?.data?.message || (err as any)?.message || 'Sync failed'
+      toast.error(msg === 'Authentication required' ? 'Session expired. Please log in again.' : msg)
+    } finally {
+      setSyncing(false)
+    }
   }, [projectId, queryClient])
 
   const handleConnectGsc = useCallback(() => {

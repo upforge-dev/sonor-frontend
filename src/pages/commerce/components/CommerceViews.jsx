@@ -299,7 +299,7 @@ export function HighlightsView({ stats, products, services = [], events = [], tr
 }
 
 // Products View Component - Product grid with filters
-export function ProductsView({ products, isLoading, error, currentFilter, statusCounts, brandColors, isShopifyMode, hasPaymentProcessor, viewMode, loadProducts, onStartCreating, onOpenOffering }) {
+export function ProductsView({ products, isLoading, error, currentFilter, statusCounts, brandColors, isShopifyMode, hasPaymentProcessor, viewMode, loadProducts, onStartCreating, onOpenOffering, onSyncShopify }) {
   if (isLoading) {
     return (
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
@@ -333,6 +333,7 @@ export function ProductsView({ products, isLoading, error, currentFilter, status
         isShopifyMode={isShopifyMode}
         hasPaymentProcessor={hasPaymentProcessor}
         onStartCreating={onStartCreating}
+        onSyncShopify={onSyncShopify}
       />
     )
   }

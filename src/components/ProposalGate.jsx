@@ -1,6 +1,6 @@
 import { useParams } from 'react-router-dom'
 import { useEffect, useState, useRef } from 'react'
-import { proposalsApi } from '@/lib/portal-api'
+import { proposalsApi, getPortalApiUrl } from '@/lib/portal-api'
 import UptradeLoading from './UptradeLoading'
 import ProposalTemplate from './proposals/ProposalTemplate'
 
@@ -10,13 +10,46 @@ export default function ProposalGate() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(null)
   const fetchAttempted = useRef(false)
+  const viewIdRef = useRef(null)
+  const viewStartedAtRef = useRef(null)
 
   useEffect(() => {
-    // Proposals are publicly accessible by slug - no auth required
     fetchProposal()
   }, [slug])
 
-  // Fetch proposal by slug (public access)
+  const sendViewTimeBeacon = () => {
+    const viewId = viewIdRef.current
+    const startedAt = viewStartedAtRef.current
+    if (!viewId || !startedAt) return
+    const timeOnPage = Math.round((Date.now() - startedAt) / 1000)
+    if (timeOnPage < 1) return
+    viewIdRef.current = null
+    try {
+      fetch(`${getPortalApiUrl()}/proposals/views/${viewId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ timeOnPage }),
+        keepalive: true,
+      }).catch(() => {})
+    } catch {
+      // Ignore
+    }
+  }
+
+  useEffect(() => {
+    const handleExit = () => sendViewTimeBeacon()
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') handleExit()
+    }
+    window.addEventListener('visibilitychange', onVisibilityChange)
+    window.addEventListener('pagehide', handleExit)
+    return () => {
+      window.removeEventListener('visibilitychange', onVisibilityChange)
+      window.removeEventListener('pagehide', handleExit)
+      handleExit()
+    }
+  }, [])
+
   const fetchProposal = async () => {
     if (fetchAttempted.current) return
     fetchAttempted.current = true
@@ -24,18 +57,15 @@ export default function ProposalGate() {
     try {
       setIsLoading(true)
       setError(null)
-      
-      console.log('[ProposalGate] Fetching proposal by slug:', slug)
-      
+
       const response = await proposalsApi.getBySlug(slug)
-      
-      if (response.data?.proposal || response.data) {
-        const proposalData = response.data.proposal || response.data
+
+      const data = response.data
+      const proposalData = data?.proposal ?? data
+      if (proposalData?.id) {
         setProposal(proposalData)
-        console.log('[ProposalGate] Proposal loaded:', proposalData.title)
-        
-        // Track view (fire and forget)
-        trackProposalView(proposalData.id)
+        viewIdRef.current = data?.viewId ?? null
+        viewStartedAtRef.current = Date.now()
       } else {
         setError('Proposal not found')
       }
@@ -50,18 +80,6 @@ export default function ProposalGate() {
       setError(message)
     } finally {
       setIsLoading(false)
-    }
-  }
-
-  // Track proposal view for analytics (fire and forget)
-  const trackProposalView = async (proposalId) => {
-    if (!proposalId) return
-    
-    try {
-      await proposalsApi.trackView(proposalId)
-    } catch (err) {
-      // Ignore tracking errors
-      console.warn('[ProposalGate] Failed to track view:', err)
     }
   }
 

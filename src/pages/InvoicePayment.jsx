@@ -13,7 +13,8 @@ import {
   Lock,
   Shield,
   CreditCard,
-  ArrowRight
+  ArrowRight,
+  Download
 } from 'lucide-react'
 import api from '@/lib/api'
 import { billingApi, configApi } from '@/lib/portal-api'
@@ -67,11 +68,14 @@ export default function InvoicePayment() {
   const [paymentError, setPaymentError] = useState(null)
   const [processing, setProcessing] = useState(false)
   const [paymentSuccess, setPaymentSuccess] = useState(false)
+  const [receiptUrl, setReceiptUrl] = useState(null)
   const [card, setCard] = useState(null)
   const [cardReady, setCardReady] = useState(false)
+  const [viewId, setViewId] = useState(null)
   
   const cardContainerRef = useRef(null)
   const cardInitializedRef = useRef(false)
+  const pageLoadTimeRef = useRef(Date.now())
 
   const brandName = invoice?.project?.title || 'Upforge'
   const logoUrl = invoice?.project?.logoUrl
@@ -85,6 +89,33 @@ export default function InvoicePayment() {
     }
     fetchInvoiceAndConfig()
   }, [token])
+
+  // Track time on page when leaving (visibilitychange / beforeunload)
+  useEffect(() => {
+    if (!viewId || !token) return
+
+    const sendTimeOnPage = () => {
+      const timeSpent = Math.round((Date.now() - pageLoadTimeRef.current) / 1000)
+      if (timeSpent > 0) {
+        billingApi.updateInvoiceViewTime(viewId, token, timeSpent).catch(() => {})
+      }
+    }
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') sendTimeOnPage()
+    }
+
+    const onBeforeUnload = () => {
+      sendTimeOnPage()
+    }
+
+    document.addEventListener('visibilitychange', onVisibilityChange)
+    window.addEventListener('beforeunload', onBeforeUnload)
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibilityChange)
+      window.removeEventListener('beforeunload', onBeforeUnload)
+    }
+  }, [viewId, token])
 
   // Initialize Square Web SDK - only once
   useEffect(() => {
@@ -109,8 +140,19 @@ export default function InvoicePayment() {
         configApi.getSquareConfigByInvoiceToken(token)
       ])
       
-      setInvoice(invoiceResponse.data?.invoice ?? invoiceResponse.data)
+      const inv = invoiceResponse.data?.invoice ?? invoiceResponse.data
+      setInvoice(inv)
       setSquareConfig(config)
+
+      // Track view for analytics (after successful fetch)
+      if (inv?.id) {
+        try {
+          const { data } = await billingApi.trackInvoiceView(inv.id, token)
+          if (data?.viewId) setViewId(data.viewId)
+        } catch (e) {
+          console.debug('[InvoicePayment] track view skipped:', e?.message)
+        }
+      }
     } catch (err) {
       console.error('Failed to fetch invoice:', err)
       if (err.response?.status === 410) {
@@ -248,6 +290,7 @@ export default function InvoicePayment() {
       if (data.success) {
         setPaymentSuccess(true)
         setInvoice(prev => ({ ...prev, status: 'paid' }))
+        if (data.receiptUrl) setReceiptUrl(data.receiptUrl)
       }
     } catch (err) {
       console.error('Payment failed:', err)
@@ -257,16 +300,24 @@ export default function InvoicePayment() {
     }
   }
 
-  // Loading state
+  // Loading state - skeleton for better perceived performance
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#fafafa] flex items-center justify-center p-4">
-        <div className="text-center">
-          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-teal-500 to-teal-600 flex items-center justify-center mx-auto mb-6 animate-pulse">
-            <CreditCard className="w-8 h-8 text-white" />
+      <div className="min-h-screen bg-[#fafafa] flex items-center justify-center p-4 sm:p-6">
+        <div className="w-full max-w-md space-y-6">
+          <div className="h-12 bg-gray-200 rounded-xl animate-pulse" />
+          <div className="bg-white rounded-3xl shadow-xl overflow-hidden">
+            <div className="h-32 bg-gray-100 animate-pulse" />
+            <div className="p-6 space-y-4">
+              <div className="h-4 bg-gray-200 rounded w-3/4 animate-pulse" />
+              <div className="h-4 bg-gray-200 rounded w-1/2 animate-pulse" />
+              <div className="h-12 bg-gray-200 rounded-xl animate-pulse mt-6" />
+            </div>
           </div>
-          <Loader2 className="w-6 h-6 animate-spin text-teal-500 mx-auto mb-3" />
-          <p className="text-gray-500 font-medium">Loading your invoice...</p>
+          <div className="flex items-center justify-center gap-2 text-gray-500 text-sm">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            <span>Loading your invoice...</span>
+          </div>
         </div>
       </div>
     )
@@ -335,10 +386,21 @@ export default function InvoicePayment() {
                 </div>
               </div>
               
-              <div className="bg-gray-50 rounded-2xl p-4 text-center">
+              <div className="bg-gray-50 rounded-2xl p-4 text-center space-y-2">
                 <p className="text-sm text-gray-500">
                   A receipt has been sent to your email.
                 </p>
+                {receiptUrl && (
+                  <a
+                    href={receiptUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 text-teal-600 hover:text-teal-700 font-medium text-sm"
+                  >
+                    <Download className="w-4 h-4" />
+                    View / Download Receipt
+                  </a>
+                )}
               </div>
             </div>
           </div>
@@ -435,13 +497,19 @@ export default function InvoicePayment() {
 
         {/* Payment Form Card */}
         <div className="bg-white rounded-3xl shadow-xl shadow-gray-200/50 overflow-hidden">
-          <div className="p-6 md:p-8">
+          <div className="p-4 sm:p-6 md:p-8">
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 rounded-full bg-teal-500/10 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-full bg-teal-500/10 flex items-center justify-center flex-shrink-0">
                 <CreditCard className="w-5 h-5 text-teal-500" />
               </div>
-              <div>
-                <h2 className="text-lg font-semibold text-gray-900">Payment Details</h2>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <h2 className="text-lg font-semibold text-gray-900">Payment Details</h2>
+                  <span className="inline-flex items-center gap-1 text-xs text-teal-600 bg-teal-50 px-2 py-0.5 rounded-full">
+                    <Lock className="w-3 h-3" />
+                    Secure payment
+                  </span>
+                </div>
                 <p className="text-sm text-gray-500">Enter your card information</p>
               </div>
             </div>
@@ -453,11 +521,11 @@ export default function InvoicePayment() {
               </Alert>
             )}
 
-            {/* Square Card Element Container */}
+            {/* Square Card Element Container - responsive for mobile */}
             <div 
               id="card-container" 
               ref={cardContainerRef}
-              className="mb-6 min-h-[100px]"
+              className="mb-6 min-h-[80px] sm:min-h-[100px]"
             />
 
             <Button 

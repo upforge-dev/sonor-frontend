@@ -21,7 +21,10 @@ export const seoPageKeys = {
 interface UseSeoPageOptions {
   page?: number
   limit?: number
+  /** Page status (active, removed) - defaults to 'active' to hide removed pages */
   status?: string
+  /** Indexing status (indexed, not_indexed, blocked) - from Index Status filter */
+  indexingStatus?: string
   search?: string
 }
 
@@ -49,12 +52,15 @@ function toPagesArray(val: any): any[] {
  * Fetch SEO pages for a project with pagination
  */
 export function useSeoPages(projectId: string, options: UseSeoPageOptions = {}) {
-  const { page = 1, limit = 50, status, search } = options
+  const { page = 1, limit = 50, status = 'active', indexingStatus, search } = options
 
   return useQuery({
-    queryKey: seoPageKeys.list(projectId, { page, limit, status, search }),
+    queryKey: seoPageKeys.list(projectId, { page, limit, status, indexingStatus, search }),
     queryFn: async () => {
-      const res = await seoApi.getPages(projectId, { page, limit, status, search })
+      const params: Record<string, unknown> = { page, limit, search }
+      if (status && status !== 'all') params.status = status
+      if (indexingStatus) params.indexingStatus = indexingStatus
+      const res = await seoApi.getPages(projectId, params)
       return normalizePagesResponse(res)
     },
     enabled: !!projectId,

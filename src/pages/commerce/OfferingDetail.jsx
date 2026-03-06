@@ -253,7 +253,7 @@ export default function OfferingDetail({ offeringId, onBack, onEdit }) {
           {currentOffering.type === 'product' && (
             <Button variant="outline" onClick={() => setShowVariantsDialog(true)}>
               <Layers className="h-4 w-4 mr-2" />
-              Variants ({currentOffering.variants?.length || 0})
+              {currentOffering.is_clothing ? 'Sizes' : 'Variants'} ({currentOffering.variants?.length || 0})
             </Button>
           )}
           {/* Manage Schedules button for events and classes */}
@@ -410,8 +410,8 @@ export default function OfferingDetail({ offeringId, onBack, onEdit }) {
       <Tabs defaultValue="details">
         <TabsList>
           <TabsTrigger value="details">Details</TabsTrigger>
-          {currentOffering.variants?.length > 0 && (
-            <TabsTrigger value="variants">Variants</TabsTrigger>
+          {(currentOffering.is_clothing || (currentOffering.variants?.length ?? 0) > 0) && (
+            <TabsTrigger value="variants">Size & Inventory</TabsTrigger>
           )}
           {(currentOffering.type === 'event' || currentOffering.type === 'class') && (
             <TabsTrigger value="schedules">Schedules ({currentOffering.schedules?.length ?? 0})</TabsTrigger>
@@ -494,24 +494,43 @@ export default function OfferingDetail({ offeringId, onBack, onEdit }) {
           )}
 
           {/* Product-specific: Inventory */}
-          {currentOffering.type === 'product' && currentOffering.track_inventory && (
+          {currentOffering.type === 'product' && (currentOffering.track_inventory || currentOffering.is_clothing || (currentOffering.variants?.length ?? 0) > 0) && (
             <Card className="mt-4">
               <CardHeader>
-                <CardTitle>Inventory</CardTitle>
+                <CardTitle>{currentOffering.is_clothing || (currentOffering.variants?.length ?? 0) > 0 ? 'Size & Inventory' : 'Inventory'}</CardTitle>
+                <CardDescription>
+                  {currentOffering.is_clothing || (currentOffering.variants?.length ?? 0) > 0
+                    ? 'Per-size stock levels. Use the Variants button to add or edit sizes.'
+                    : 'Product-level stock'}
+                </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="grid gap-4 md:grid-cols-3">
-                  {currentOffering.sku && (
-                    <div>
-                      <p className="text-sm text-muted-foreground">SKU</p>
-                      <p className="font-medium">{currentOffering.sku}</p>
-                    </div>
-                  )}
-                  <div>
-                    <p className="text-sm text-muted-foreground">Stock</p>
-                    <p className="font-medium">{currentOffering.inventory_count || 0}</p>
+                {(currentOffering.is_clothing || (currentOffering.variants?.length ?? 0) > 0) ? (
+                  <div className="space-y-3">
+                    {currentOffering.variants?.map((v) => (
+                      <div key={v.id} className="flex items-center justify-between py-2 border-b last:border-0">
+                        <span className="font-medium">{v.name}</span>
+                        <span className="text-muted-foreground">Stock: {v.inventory_count ?? 0}</span>
+                      </div>
+                    ))}
+                    {(!currentOffering.variants || currentOffering.variants.length === 0) && (
+                      <p className="text-sm text-muted-foreground">No size variants yet. Click Variants to add sizes.</p>
+                    )}
                   </div>
-                </div>
+                ) : (
+                  <div className="grid gap-4 md:grid-cols-3">
+                    {currentOffering.sku && (
+                      <div>
+                        <p className="text-sm text-muted-foreground">SKU</p>
+                        <p className="font-medium">{currentOffering.sku}</p>
+                      </div>
+                    )}
+                    <div>
+                      <p className="text-sm text-muted-foreground">Stock</p>
+                      <p className="font-medium">{currentOffering.inventory_count || 0}</p>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}
@@ -520,8 +539,10 @@ export default function OfferingDetail({ offeringId, onBack, onEdit }) {
         <TabsContent value="variants" className="mt-6">
           <Card>
             <CardHeader>
-              <CardTitle>Variants</CardTitle>
-              <CardDescription>Different options for this offering</CardDescription>
+              <CardTitle>Size & Inventory</CardTitle>
+              <CardDescription>
+                {currentOffering.is_clothing ? 'Size variants with per-size stock. Use the Sizes button above to add or edit.' : 'Different options for this offering'}
+              </CardDescription>
             </CardHeader>
             <CardContent>
               {currentOffering.variants?.length > 0 ? (

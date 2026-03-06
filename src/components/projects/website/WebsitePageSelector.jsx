@@ -39,23 +39,39 @@ function buildPageHierarchy(pages, openPaths = new Set()) {
     return pathA.localeCompare(pathB, undefined, { sensitivity: 'base' })
   })
 
+  // Deduplicate by path: keep one page per path (prefer first by sort order)
+  const seenPaths = new Set()
+  const dedupedPages = sortedPages.filter((p) => {
+    const path = p.path || (p.url ? new URL(p.url, 'https://x').pathname : '') || '/'
+    const norm = path === '' ? '/' : path.replace(/\/+$/, '') || '/'
+    if (seenPaths.has(norm)) return false
+    seenPaths.add(norm)
+    return true
+  })
+
   const hierarchy = []
   const pathMap = new Map()
 
-  for (const page of sortedPages) {
+  for (const page of dedupedPages) {
     const path = page.path || (page.url ? new URL(page.url, 'https://x').pathname : '') || '/'
     const segments = path.split('/').filter(Boolean)
 
     if (segments.length === 0) {
-      const homeNode = {
-        path: '/',
-        name: getAnalyticsStylePageName('/'),
-        children: [],
-        isOpen: openPaths.has('/'),
-        page,
+      // Deduplicate: only one Home node even if multiple pages have path /
+      let homeNode = pathMap.get('/')
+      if (!homeNode) {
+        homeNode = {
+          path: '/',
+          name: getAnalyticsStylePageName('/'),
+          children: [],
+          isOpen: openPaths.has('/'),
+          page,
+        }
+        hierarchy.push(homeNode)
+        pathMap.set('/', homeNode)
+      } else {
+        homeNode.page = page
       }
-      hierarchy.push(homeNode)
-      pathMap.set('/', homeNode)
       continue
     }
 

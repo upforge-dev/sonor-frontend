@@ -25,6 +25,10 @@ const usePageContextStore = create((set, get) => ({
   entityName: null,
   data: null,
 
+  /** When true, hide the floating MessagesWidget (e.g. on proposal edit page) */
+  hideMessengerWidget: false,
+  setHideMessengerWidget: (hide) => set({ hideMessengerWidget: !!hide }),
+
   /**
    * Set the current module (high-level navigation)
    * @param {string} module - Module name (e.g., 'email', 'seo', 'crm')

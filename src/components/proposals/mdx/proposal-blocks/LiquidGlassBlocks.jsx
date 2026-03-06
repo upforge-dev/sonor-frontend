@@ -751,6 +751,40 @@ export function GlassCTA({
   )
 }
 
+/**
+ * GlassLegal - Premium legal / ownership points section
+ */
+export function GlassLegal({
+  title = "Ownership & Editing Rights",
+  points = []
+}) {
+  return (
+    <div className={`${liquidGlassBase} p-8 md:p-10 my-10`}>
+      <div className="flex items-center gap-3 mb-6">
+        <div className="w-12 h-12 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center">
+          <Shield className="w-6 h-6 text-[#39bfb0]" />
+        </div>
+        <div>
+          <span className="text-sm uppercase tracking-widest text-[#39bfb0] block">Included</span>
+          <h2 className="text-2xl md:text-3xl font-bold text-[var(--text-primary)]">{title}</h2>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {points.map((point, i) => (
+          <div
+            key={i}
+            className="flex items-start gap-3 p-4 rounded-2xl bg-white/5 border border-white/10"
+          >
+            <CheckCircle className="w-5 h-5 text-[#39bfb0] flex-shrink-0 mt-0.5" />
+            <span className="text-sm leading-relaxed text-[var(--text-secondary)]">{point}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export default {
   GlassHero,
   PortalModulesGrid,
@@ -761,5 +795,6 @@ export default {
   SignalAIGlass,
   GlassPricing,
   GlassTimeline,
-  GlassCTA
+  GlassCTA,
+  GlassLegal
 }

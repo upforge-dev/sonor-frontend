@@ -160,7 +160,7 @@ export default function CommerceOfferings({ type: typeProp }) {
     setIsDeleting(true)
     
     try {
-      await commerceApi.deleteOffering(projectId, offeringToDelete.id)
+      await commerceApi.deleteOffering(offeringToDelete.id)
       setOfferings(prev => prev.filter(o => o.id !== offeringToDelete.id))
       setDeleteDialogOpen(false)
       setOfferingToDelete(null)

@@ -16,10 +16,13 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { CheckCircle, Loader2, AlertCircle, CreditCard, Zap, Percent, Save, Settings2, ArrowRight } from 'lucide-react'
+import { CheckCircle, Loader2, AlertCircle, CreditCard, Zap, Percent, Save, Settings2, ArrowRight, Package, Bell, DollarSign } from 'lucide-react'
 import { portalApi } from '@/lib/portal-api'
+import { commerceApi } from '@/lib/portal-api'
 import SquareSetupDialog from './SquareSetupDialog'
 import StripeSetupDialog from './StripeSetupDialog'
+import ShippingBillingCardDialog from './ShippingBillingCardDialog'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 
@@ -208,11 +211,36 @@ export default function CommerceSettings({ projectId, open, onOpenChange }) {
   const [taxName, setTaxName] = useState('Sales Tax')
   const [savingTax, setSavingTax] = useState(false)
 
+  // Shipping settings state
+  const [shippingEnabled, setShippingEnabled] = useState(false)
+  const [shippoApiKey, setShippoApiKey] = useState('')
+  const [shippingBillingMode, setShippingBillingMode] = useState('self')
+  const [savingShipping, setSavingShipping] = useState(false)
+  const [billingCardDialogOpen, setBillingCardDialogOpen] = useState(false)
+  const [billingStatus, setBillingStatus] = useState(null)
+  const [depositAmount, setDepositAmount] = useState('')
+  const [depositing, setDepositing] = useState(false)
+
+  // Low stock alerts state
+  const [lowStockAlertsEnabled, setLowStockAlertsEnabled] = useState(true)
+  const [savingLowStock, setSavingLowStock] = useState(false)
+
   useEffect(() => {
     if (projectId) {
       loadSettings()
     }
   }, [projectId])
+
+  const loadBillingStatus = async () => {
+    if (!projectId) return
+    try {
+      const { data } = await commerceApi.getShippingBillingStatus(projectId)
+      setBillingStatus(data)
+    } catch (err) {
+      console.error('Failed to load shipping billing status:', err)
+      setBillingStatus(null)
+    }
+  }
 
   const loadSettings = async () => {
     try {
@@ -222,6 +250,15 @@ export default function CommerceSettings({ projectId, open, onOpenChange }) {
       setTaxEnabled(response.data?.tax_enabled || false)
       setTaxRate(response.data?.tax_rate?.toString() || '')
       setTaxName(response.data?.tax_name || 'Sales Tax')
+      setShippingEnabled(response.data?.shipping_enabled || false)
+      setShippoApiKey('') // Never echo API key; user enters to update
+      setShippingBillingMode(response.data?.shipping_billing_mode || 'self')
+      setLowStockAlertsEnabled(response.data?.low_stock_alerts_enabled !== false)
+      if (response.data?.shipping_enabled && (response.data?.shipping_billing_mode || 'self') === 'platform') {
+        loadBillingStatus()
+      } else {
+        setBillingStatus(null)
+      }
     } catch (error) {
       console.error('Failed to load commerce settings:', error)
       toast.error('Failed to load payment settings')
@@ -244,6 +281,60 @@ export default function CommerceSettings({ projectId, open, onOpenChange }) {
       toast.error('Failed to save tax settings')
     } finally {
       setSavingTax(false)
+    }
+  }
+
+  const handleSaveShippingSettings = async () => {
+    try {
+      setSavingShipping(true)
+      const payload = { shipping_enabled: shippingEnabled, shipping_billing_mode: shippingBillingMode }
+      if (shippoApiKey.trim()) payload.shippo_api_key = shippoApiKey.trim()
+      await portalApi.put(`/commerce/settings/${projectId}`, payload)
+      toast.success('Shipping settings saved')
+      setShippoApiKey('')
+      if (shippingBillingMode === 'platform') loadBillingStatus()
+      loadSettings()
+    } catch (error) {
+      console.error('Failed to save shipping settings:', error)
+      toast.error('Failed to save shipping settings')
+    } finally {
+      setSavingShipping(false)
+    }
+  }
+
+  const handleDeposit = async () => {
+    const cents = Math.round(parseFloat(depositAmount) * 100)
+    if (!cents || cents <= 0) {
+      toast.error('Enter a valid amount')
+      return
+    }
+    try {
+      setDepositing(true)
+      await commerceApi.depositShippingBalance(projectId, cents)
+      toast.success('Funds added to shipping balance')
+      setDepositAmount('')
+      loadBillingStatus()
+      loadSettings()
+    } catch (err) {
+      console.error('Deposit failed:', err)
+      toast.error(err.response?.data?.message || 'Failed to add funds')
+    } finally {
+      setDepositing(false)
+    }
+  }
+
+  const handleSaveLowStockSettings = async () => {
+    try {
+      setSavingLowStock(true)
+      await portalApi.put(`/commerce/settings/${projectId}`, {
+        low_stock_alerts_enabled: lowStockAlertsEnabled,
+      })
+      toast.success('Low stock alerts updated')
+    } catch (error) {
+      console.error('Failed to save low stock settings:', error)
+      toast.error('Failed to save low stock settings')
+    } finally {
+      setSavingLowStock(false)
     }
   }
 
@@ -431,6 +522,211 @@ export default function CommerceSettings({ projectId, open, onOpenChange }) {
               </Button>
             </CardContent>
           </Card>
+
+          {/* Shipping Settings (USPS via Shippo) */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-500/10 rounded-lg">
+                  <Package className="w-5 h-5 text-blue-600" />
+                </div>
+                <div>
+                  <CardTitle className="text-base">Shipping</CardTitle>
+                  <CardDescription>
+                    USPS, UPS, FedEx labels via Shippo
+                  </CardDescription>
+                </div>
+              </div>
+              {settings?.shippo_api_key && (
+                <Badge className="bg-green-500/10 text-green-600 border-green-500/20">
+                  <CheckCircle className="w-3 h-3 mr-1" />
+                  Configured
+                </Badge>
+              )}
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label htmlFor="shipping-enabled">Enable Shipping</Label>
+                  <p className="text-xs text-muted-foreground">Collect address and generate labels at checkout</p>
+                </div>
+                <Switch
+                  id="shipping-enabled"
+                  checked={shippingEnabled}
+                  onCheckedChange={setShippingEnabled}
+                />
+              </div>
+              {shippingEnabled && (
+                <div className="space-y-3 pt-2 border-t">
+                  <Label>Shipping billing</Label>
+                  <RadioGroup
+                    value={shippingBillingMode}
+                    onValueChange={(v) => {
+                      setShippingBillingMode(v)
+                      if (v === 'platform') loadBillingStatus()
+                      else setBillingStatus(null)
+                    }}
+                    className="flex flex-col gap-2"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="self" id="shipping-self" />
+                      <Label htmlFor="shipping-self" className="font-normal cursor-pointer">
+                        Use my own Shippo key
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="platform" id="shipping-platform" />
+                      <Label htmlFor="shipping-platform" className="font-normal cursor-pointer">
+                        Use platform shipping (charged per label)
+                      </Label>
+                    </div>
+                  </RadioGroup>
+                  {shippingBillingMode === 'platform' && (
+                    <div className="space-y-3 pt-2 pl-6 border-l-2 border-muted">
+                      <p className="text-xs text-muted-foreground">
+                        Add a billing method to pay for shipping labels when you ship orders.
+                      </p>
+                      {billingStatus?.hasBillingMethod ? (
+                        <div className="flex items-center gap-2 text-sm text-green-600">
+                          <CheckCircle className="w-4 h-4" />
+                          {billingStatus.cardLast4 ? (
+                            <span>Card ending in {billingStatus.cardLast4}</span>
+                          ) : (
+                            <span>Billing method on file</span>
+                          )}
+                          {billingStatus.balanceCents > 0 && (
+                            <span className="text-muted-foreground">
+                              • Balance: ${(billingStatus.balanceCents / 100).toFixed(2)}
+                            </span>
+                          )}
+                        </div>
+                      ) : null}
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setBillingCardDialogOpen(true)}
+                        >
+                          <CreditCard className="w-4 h-4 mr-2" />
+                          {billingStatus?.hasBillingMethod ? 'Update billing card' : 'Add billing card'}
+                        </Button>
+                        <div className="flex items-center gap-2">
+                          <Input
+                            type="number"
+                            min="1"
+                            step="1"
+                            placeholder="Add funds ($)"
+                            value={depositAmount}
+                            onChange={(e) => setDepositAmount(e.target.value)}
+                            className="w-24 h-8 text-sm"
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={handleDeposit}
+                            disabled={depositing || !depositAmount}
+                          >
+                            {depositing ? <Loader2 className="w-4 h-4 animate-spin" /> : <DollarSign className="w-4 h-4" />}
+                          </Button>
+                        </div>
+                      </div>
+                      {!billingStatus?.hasBillingMethod && (billingStatus?.balanceCents ?? 0) <= 0 && (
+                        <Alert>
+                          <AlertCircle className="h-4 w-4" />
+                          <AlertDescription className="text-sm">
+                            Add a card or pre-funded balance to ship orders with platform shipping.
+                          </AlertDescription>
+                        </Alert>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+              <div className="space-y-2">
+                <Label htmlFor="shippo-api-key">Shippo API Key</Label>
+                <Input
+                  id="shippo-api-key"
+                  type="password"
+                  value={shippoApiKey}
+                  onChange={(e) => setShippoApiKey(e.target.value)}
+                  placeholder={settings?.shippo_api_key || shippingBillingMode === 'platform' ? '•••••••• (not needed for platform)' : 'shippo_live_...'}
+                  className="font-mono text-sm"
+                  disabled={shippingBillingMode === 'platform'}
+                />
+                <p className="text-xs text-muted-foreground">
+                  {shippingBillingMode === 'platform'
+                    ? 'Platform provides Shippo. Add a billing method above to pay for labels.'
+                    : <>Get from <a href="https://goshippo.com" target="_blank" rel="noopener noreferrer" className="underline">goshippo.com</a>. Free tier: 30 labels/month.</>}
+                </p>
+              </div>
+              <Button
+                onClick={handleSaveShippingSettings}
+                disabled={savingShipping}
+                className="w-full"
+              >
+                {savingShipping ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4 mr-2" />
+                    Save Shipping Settings
+                  </>
+                )}
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Low Stock Alerts */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-amber-500/10 rounded-lg">
+                  <Bell className="w-5 h-5 text-amber-600" />
+                </div>
+                <div>
+                  <CardTitle className="text-base">Low Stock Alerts</CardTitle>
+                  <CardDescription>
+                    Email when inventory falls below threshold
+                  </CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label htmlFor="low-stock-alerts">Enable Low Stock Alerts</Label>
+                  <p className="text-xs text-muted-foreground">Notify team when products hit low stock threshold</p>
+                </div>
+                <Switch
+                  id="low-stock-alerts"
+                  checked={lowStockAlertsEnabled}
+                  onCheckedChange={setLowStockAlertsEnabled}
+                />
+              </div>
+              <Button
+                onClick={handleSaveLowStockSettings}
+                disabled={savingLowStock}
+                className="w-full"
+              >
+                {savingLowStock ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4 mr-2" />
+                    Save
+                  </>
+                )}
+              </Button>
+            </CardContent>
+          </Card>
         </div>
       </DialogContent>
 
@@ -441,6 +737,17 @@ export default function CommerceSettings({ projectId, open, onOpenChange }) {
         settings={settings}
         projectId={projectId}
         onProcessorConnected={loadSettings}
+      />
+
+      {/* Shipping Billing Card Dialog */}
+      <ShippingBillingCardDialog
+        open={billingCardDialogOpen}
+        onOpenChange={setBillingCardDialogOpen}
+        projectId={projectId}
+        onSuccess={() => {
+          loadBillingStatus()
+          loadSettings()
+        }}
       />
     </Dialog>
   )

@@ -53,7 +53,7 @@ function ProposalRow({ proposal, onView, onEdit, onDelete, onDuplicate, showSign
       case 'sent':
         return <Badge variant="outline" className="border-blue-200 text-blue-600">Sent</Badge>
       case 'viewed':
-        return <Badge variant="outline" className="border-purple-200 text-purple-600">Viewed</Badge>
+        return <Badge variant="outline" className="border-[var(--brand-primary)]/30 text-[var(--brand-primary)]">Viewed</Badge>
       case 'draft':
         return <Badge variant="outline">Draft</Badge>
       case 'declined':
@@ -313,7 +313,7 @@ function ClientProposalRow({
           {isMyContract ? 'Sent' : 'Ready to Review'}
         </Badge>
       case 'viewed':
-        return <Badge variant="outline" className="border-purple-200 text-purple-600">Viewed</Badge>
+        return <Badge variant="outline" className="border-[var(--brand-primary)]/30 text-[var(--brand-primary)]">Viewed</Badge>
       case 'draft':
         return <Badge variant="outline">Draft</Badge>
       case 'declined':
@@ -346,7 +346,7 @@ function ClientProposalRow({
             </Badge>
           )}
           {isMyContract && (
-            <Badge variant="outline" className="text-[10px] py-0 h-4 border-purple-200 text-purple-600">
+            <Badge variant="outline" className="text-[10px] py-0 h-4 border-[var(--brand-primary)]/30 text-[var(--brand-primary)]">
               <FileSignature className="w-2.5 h-2.5 mr-1" />
               Your Contract
             </Badge>

@@ -864,6 +864,9 @@ function FieldPalette({ onAddField, onAddFieldGroup, onAISuggest, isCollapsed, o
 // AI SUGGEST PANEL - Signal-powered form design conversation
 // =============================================================================
 
+// Valid form types for Signal API
+const VALID_FORM_TYPES = ['prospect', 'contact', 'support', 'feedback', 'newsletter', 'custom']
+
 function AISuggestPanel({ 
   isOpen, 
   onClose, 
@@ -878,6 +881,9 @@ function AISuggestPanel({
   const [suggestion, setSuggestion] = useState(null)
   const messagesEndRef = useRef(null)
   
+  // Normalize formType - API requires one of the valid types
+  const safeFormType = formType && VALID_FORM_TYPES.includes(formType) ? formType : 'contact'
+  
   // Scroll to bottom on new messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -887,8 +893,8 @@ function AISuggestPanel({
   useEffect(() => {
     if (isOpen && conversation.length === 0) {
       const initialPrompt = currentFields.length > 0
-        ? `I have a ${formType} form with ${currentFields.length} fields. How can I improve it?`
-        : `Help me design a ${formType} form for: ${form?.name || 'my business'}`
+        ? `I have a ${safeFormType} form with ${currentFields.length} fields. How can I improve it?`
+        : `Help me design a ${safeFormType} form for: ${form?.name || 'my business'}`
       
       handleSend(initialPrompt, true)
     }
@@ -910,9 +916,9 @@ function AISuggestPanel({
       
       if (conversation.length === 0 || isInitial) {
         // First message - get full field suggestions
-        const result = await formsAiApi.suggestFields({
+        const raw = await formsAiApi.suggestFields({
           formPurpose: userMessage,
-          formType: formType,
+          formType: safeFormType,
           existingFields: currentFields.map(f => ({
             type: f.field_type,
             label: f.label,
@@ -922,19 +928,20 @@ function AISuggestPanel({
           })),
           conversationHistory: [],
         })
+        const result = raw?.data ?? raw
         
         setSuggestion(result)
         setConversation(prev => [
           ...prev,
           { 
             role: 'assistant', 
-            content: result.reasoning,
+            content: result?.reasoning ?? 'Here are suggested fields for your form.',
             suggestion: result,
           }
         ])
       } else {
         // Continuing conversation
-        const result = await formsAiApi.continueDesign({
+        const raw = await formsAiApi.continueDesign({
           message: userMessage,
           conversationHistory: conversation.map(m => ({
             role: m.role,
@@ -947,10 +954,11 @@ function AISuggestPanel({
             isRequired: f.is_required,
             width: f.width,
           })),
-          formType: formType,
+          formType: safeFormType,
         })
+        const result = raw?.data ?? raw
         
-        if (result.fieldUpdates) {
+        if (result?.fieldUpdates) {
           setSuggestion(prev => ({
             ...prev,
             fields: result.action === 'replace' 
@@ -972,12 +980,28 @@ function AISuggestPanel({
         ])
       }
     } catch (error) {
-      console.error('AI Suggest error:', error)
+      console.error('[Signal Optimize] Error:', error)
+      const data = error?.response?.data
+      const errMsg = (typeof data === 'string' ? data : null)
+        || data?.message 
+        || data?.error 
+        || error?.message 
+        || 'Unknown error'
+      const isNetwork = error?.code === 'ERR_NETWORK' || error?.message?.includes('Network Error')
+      const isAuth = error?.response?.status === 401
+      let userMessage = 'Sorry, I encountered an error. Please try again.'
+      if (isNetwork) {
+        userMessage = 'Signal API is unreachable. Ensure the Signal API is running (e.g. localhost:3001 in dev) and CORS allows this origin.'
+      } else if (isAuth) {
+        userMessage = 'Authentication expired. Please refresh the page and try again.'
+      } else if (errMsg && errMsg !== 'Unknown error') {
+        userMessage = `Error: ${errMsg}`
+      }
       setConversation(prev => [
         ...prev,
         { 
           role: 'assistant', 
-          content: 'Sorry, I encountered an error. Please try again.',
+          content: userMessage,
           isError: true,
         }
       ])

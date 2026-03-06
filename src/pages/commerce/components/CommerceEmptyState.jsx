@@ -14,7 +14,7 @@ import {
 } from 'lucide-react'
 
 // Empty State - Mode-aware, Glass style (supports products, services, and events)
-export function EmptyState({ filter, type = 'product', brandColors, isShopifyMode, hasPaymentProcessor, onOpenSignalDialog, onStartCreating }) {
+export function EmptyState({ filter, type = 'product', brandColors, isShopifyMode, hasPaymentProcessor, onOpenSignalDialog, onStartCreating, onSyncShopify }) {
   const isFiltered = filter !== 'all'
   const isService = type === 'service'
   const isEvent = type === 'event'
@@ -129,7 +129,7 @@ export function EmptyState({ filter, type = 'product', brandColors, isShopifyMod
               {isShopifyMode && (
                 <Button 
                   style={{ backgroundColor: brandColors?.primary || '#4bbf39' }}
-                  onClick={() => {/* TODO: Trigger Shopify sync */}}
+                  onClick={() => onSyncShopify?.()}
                 >
                   <RefreshCw className="h-4 w-4 mr-2" />
                   Sync from Shopify

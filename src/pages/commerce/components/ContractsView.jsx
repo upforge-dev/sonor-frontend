@@ -2,10 +2,11 @@
 // Contracts view within Commerce -> Sales for client-to-customer contracts
 // Adapted from Proposals.jsx for per-project contract management
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useImperativeHandle, forwardRef, useCallback } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import ProposalTemplate from '@/components/proposals/ProposalTemplate'
 import ProposalViewWithAnalytics from '@/components/proposals/ProposalViewWithAnalytics'
+import ProposalEditorMain from '@/components/proposals/ProposalEditorMain'
 import ContractEditorWithAI from '@/components/ContractEditorWithAI'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -99,12 +100,11 @@ function ContractRow({ contract, onView, onEdit, onDelete, onDuplicate, showSign
     setLoadingAnalytics(true)
     try {
       if (contract._isProposal) {
-        // Proposals have analytics via proposalsApi
         const response = await proposalsApi.getAnalytics(contract.id)
         setAnalytics(response.data?.analytics || response.data)
       } else {
-        // TODO: Add analytics endpoint for contracts when available
-        setAnalytics(null)
+        const response = await commerceApi.getContractAnalytics(contract.id)
+        setAnalytics(response.data?.analytics ?? response?.analytics ?? null)
       }
     } catch (err) {
       console.error('Failed to fetch analytics:', err)
@@ -301,16 +301,24 @@ function ContractRow({ contract, onView, onEdit, onDelete, onDuplicate, showSign
   )
 }
 
-// Main Contracts View Component
-export function ContractsView({ 
+// Main Contracts View Component - supports ref for updateContract (used when saving from sidebar)
+export const ContractsView = forwardRef(function ContractsView({ 
   brandColors, 
   onNavigate,
   hasSignal = false,  // Whether this project has Signal AI enabled
   projectId,
   isCreatingContract = false,  // Whether in new contract creation mode
   onNewContract,  // Callback to start creating
-  onCancelContract  // Callback to cancel creating
-}) {
+  onCancelContract,  // Callback to cancel creating
+  aiEditingContract,  // Lifted from CommerceDashboard when using ModuleLayout sidebar
+  setAiEditingContract,
+  hasUnsavedChanges = false,
+  onSaveContract,
+  isSavingContract = false,
+  onHasUnsavedChanges,
+  showAnalytics = false,
+  onToggleAnalytics,
+}, ref) {
   const { user, currentOrg, currentProject, isSuperAdmin } = useAuthStore()
   const isAdmin = user?.role === 'admin'
   
@@ -337,9 +345,21 @@ export function ContractsView({
   const [viewingContract, setViewingContract] = useState(null)
   const [loadingContractView, setLoadingContractView] = useState(false)
   const [editingContract, setEditingContract] = useState(null)  // For EditProposalDialog
-  const [aiEditingContract, setAiEditingContract] = useState(null)  // For AI Editor with chat
+  const [internalAiEditing, setInternalAiEditing] = useState(null)
+  const aiContract = aiEditingContract ?? internalAiEditing
+  const setAiContract = setAiEditingContract ?? setInternalAiEditing
   const [deleteContractDialog, setDeleteContractDialog] = useState({ open: false, id: null, title: '', isSigned: false })
   const [showAIContractDialog, setShowAIContractDialog] = useState(false)
+
+  const updateContractInList = useCallback((updatedContract) => {
+    setContracts(prev => prev.map(c =>
+      c.id === updatedContract.id
+        ? { ...updatedContract, _isProposal: c._isProposal }
+        : c
+    ))
+  }, [])
+
+  useImperativeHandle(ref, () => ({ updateContractInList }), [updateContractInList])
 
   // Fetch data only once on mount - but re-fetch if org detection changes
   useEffect(() => {
@@ -478,7 +498,7 @@ export function ContractsView({
       
       // Check if project has Signal AI enabled - use AI editor if available
       if (hasSignal || isUptradeMediaOrg) {
-        setAiEditingContract(fullContract)
+        setAiContract(fullContract)
       } else {
         // Fall back to simple form dialog
         setEditingContract(fullContract)
@@ -558,22 +578,21 @@ export function ContractsView({
     )
   }
 
-  // If editing with AI editor (full screen)
-  if (aiEditingContract) {
+  // If editing with AI editor - render ProposalEditorMain (AI panel goes in ModuleLayout rightSidebar)
+  if (aiContract) {
+    const hasBeenViewed = aiContract?.status !== 'draft' && (
+      aiContract?.viewed_at || aiContract?.viewedAt
+    )
     return (
-      <ContractEditorWithAI
-        contract={aiEditingContract}
-        projectId={projectId}
-        isProposal={aiEditingContract._isProposal || isUptradeMediaOrg}
-        onBack={() => setAiEditingContract(null)}
-        onSave={(updatedContract) => {
-          // Update the contract in the list
-          setContracts(contracts.map(c => 
-            c.id === updatedContract.id 
-              ? { ...updatedContract, _isProposal: c._isProposal } 
-              : c
-          ))
-        }}
+      <ProposalEditorMain
+        contract={aiContract}
+        hasUnsavedChanges={hasUnsavedChanges}
+        hasBeenViewed={!!hasBeenViewed}
+        showAnalytics={showAnalytics}
+        onToggleAnalytics={onToggleAnalytics}
+        onBack={() => setAiContract(null)}
+        onSave={onSaveContract}
+        isSaving={isSavingContract}
       />
     )
   }
@@ -853,6 +872,6 @@ export function ContractsView({
       />
     </div>
   )
-}
+})
 
 export default ContractsView

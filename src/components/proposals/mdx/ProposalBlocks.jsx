@@ -46,7 +46,8 @@ export {
   SignalAIGlass,
   GlassPricing,
   GlassTimeline,
-  GlassCTA
+  GlassCTA,
+  GlassLegal
 } from './proposal-blocks/LiquidGlassBlocks'
 
 // Import for mdxComponents object
@@ -86,7 +87,8 @@ import {
   SignalAIGlass,
   GlassPricing,
   GlassTimeline,
-  GlassCTA
+  GlassCTA,
+  GlassLegal
 } from './proposal-blocks/LiquidGlassBlocks'
 
 // Lucide icons for MDX usage
@@ -172,6 +174,7 @@ export const mdxComponents = {
   GlassPricing,
   GlassTimeline,
   GlassCTA,
+  GlassLegal,
   
   // Lucide icons for use in MDX
   CheckCircle,

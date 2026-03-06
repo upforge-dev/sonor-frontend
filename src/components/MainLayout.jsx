@@ -83,6 +83,7 @@ const MainLayout = () => {
   const [sidebarMode, setSidebarMode] = useState('hover')
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
   const { user, isLoading } = useAuthStore()
+  const hideMessengerWidget = usePageContextStore((s) => s.hideMessengerWidget)
 
   // Sync activeSection with URL path for sidebar highlighting
   useEffect(() => {
@@ -325,9 +326,9 @@ const MainLayout = () => {
         </main>
       </div>
 
-      {/* Floating Chat Bubble */}
+      {/* Floating Chat Bubble - hidden on messages page and proposal edit page */}
       <Suspense fallback={null}>
-        <MessagesWidget hidden={activeSection === 'messages'} />
+        <MessagesWidget hidden={activeSection === 'messages' || hideMessengerWidget} />
       </Suspense>
 
       {/* Global Command Palette */}
