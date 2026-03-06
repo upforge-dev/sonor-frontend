@@ -43,6 +43,7 @@ import {
   Plus,
   Users
 } from 'lucide-react'
+import { toast } from 'sonner'
 import { proposalsApi } from '@/lib/portal-api'
 import { cn } from '@/lib/utils'
 
@@ -136,18 +137,27 @@ export default function SendProposalDialog({
     setIsSending(true)
     try {
       const response = await proposalsApi.send(proposal.id, {
-        recipients: recipients,
+        recipients,
         subject: emailData.subject,
-        personalMessage: emailData.personalMessage
+        message: emailData.personalMessage
       })
 
       if (response.data.success) {
+        const sentTo = Array.isArray(response.data.sentTo) && response.data.sentTo.length > 0
+          ? response.data.sentTo
+          : recipients
+
+        toast.success(
+          sentTo.length === 1
+            ? `Proposal sent to ${sentTo[0]}`
+            : `Proposal sent to ${sentTo.length} recipients: ${sentTo.join(', ')}`
+        )
         onSuccess?.(response.data)
         onClose?.()
       }
     } catch (error) {
       console.error('Failed to send proposal:', error)
-      alert('Failed to send: ' + (error.response?.data?.error || error.message))
+      toast.error(error.response?.data?.error || error.message || 'Failed to send proposal')
     } finally {
       setIsSending(false)
     }
