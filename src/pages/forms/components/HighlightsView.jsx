@@ -115,7 +115,7 @@ export default function HighlightsView({
           value={stats?.submissionsThisWeek || 0}
           description="submissions"
           icon={Inbox}
-          trend={12}
+          trend={stats?.submissionsWeekOverWeekChange}
           trendLabel="vs last week"
           isLoading={isLoading}
         />

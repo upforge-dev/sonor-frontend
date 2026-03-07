@@ -198,7 +198,9 @@ export default function EngageChatSettings({ projectId, onClose }) {
       toast.success('Chat settings saved!')
     } catch (error) {
       console.error('Failed to save chat config:', error)
-      toast.error(error.response?.data?.error || 'Failed to save settings')
+      const data = error.response?.data
+      const errMsg = typeof data?.error === 'string' ? data.error : (data?.error?.message ?? data?.message ?? 'Failed to save settings')
+      toast.error(errMsg)
     } finally {
       setSaving(false)
     }

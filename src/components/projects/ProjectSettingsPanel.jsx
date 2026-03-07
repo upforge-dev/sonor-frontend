@@ -266,7 +266,7 @@ export default function ProjectSettingsPanel({ project, isAdmin, onProjectUpdate
   
   // Load commerce settings when commerce is enabled
   useEffect(() => {
-    const isCommerceEnabled = formData.features.includes('commerce') || formData.features.includes('ecommerce')
+    const isCommerceEnabled = formData.features?.includes('commerce') || formData.features?.includes('ecommerce')
     if (project?.id && isCommerceEnabled) {
       loadCommerceSettings()
     }
@@ -403,7 +403,7 @@ export default function ProjectSettingsPanel({ project, isAdmin, onProjectUpdate
   }
   
   // Check if Signal is enabled via org or project
-  const isSignalEnabled = hasOrgSignal || formData.signal_enabled || formData.features.includes('signal')
+  const isSignalEnabled = hasOrgSignal || formData.signal_enabled || formData.features?.includes('signal')
   
   // Save settings
   const handleSave = async () => {
@@ -451,11 +451,12 @@ export default function ProjectSettingsPanel({ project, isAdmin, onProjectUpdate
       })
       
       console.log('Project update response:', response.data)
-      
-      if (response.data) {
+
+      const data = response?.data
+      if (data) {
         // Sync commerce_types to commerce_settings.enabled_types
         // The Commerce module uses commerce_settings.enabled_types, not project.settings.commerce_types
-        if (formData.features.includes('commerce') || formData.features.includes('ecommerce')) {
+        if (formData.features?.includes('commerce') || formData.features?.includes('ecommerce')) {
           try {
             await portalApi.put(`/commerce/settings/${project.id}`, {
               enabled_types: formData.commerce_types,
@@ -470,10 +471,10 @@ export default function ProjectSettingsPanel({ project, isAdmin, onProjectUpdate
         // Create completely new project object to ensure Zustand triggers update
         const updatedProject = {
           ...project,
-          ...response.data,
+          ...data,
           settings: {
             ...(project?.settings || {}),
-            ...(response.data.settings || {}),
+            ...(data.settings || {}),
           }
         }
         
@@ -505,6 +506,8 @@ export default function ProjectSettingsPanel({ project, isAdmin, onProjectUpdate
           commerce_types: Array.isArray(updatedProject.settings?.commerce_types) ? updatedProject.settings.commerce_types : [],
           payment_processor: updatedProject.settings?.payment_processor || null,
           shopify_connected: updatedProject.settings?.shopify_connected || false,
+          signal_enabled: updatedProject.signal_enabled ?? false,
+          signal_enabled_at: updatedProject.signal_enabled_at || null,
           // Business Profile fields
           city: updatedProject.city || '',
           state_code: updatedProject.state_code || '',

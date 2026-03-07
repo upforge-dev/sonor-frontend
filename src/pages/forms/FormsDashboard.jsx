@@ -271,13 +271,27 @@ export default function FormsDashboard() {
         .select('id, is_active')
         .eq('project_id', projectId)
       
-      // Get submission stats (last 7 days)
-      const weekAgo = subDays(new Date(), 7).toISOString()
+      // Get submission stats (this week = last 7 days, last week = 7–14 days ago)
+      const now = new Date()
+      const weekAgo = subDays(now, 7).toISOString()
+      const twoWeeksAgo = subDays(now, 14).toISOString()
       const { data: submissionsData } = await supabase
         .from('form_submissions')
         .select('id, status, quality_tier, created_at')
         .eq('project_id', projectId)
         .gte('created_at', weekAgo)
+      const { data: lastWeekData } = await supabase
+        .from('form_submissions')
+        .select('id')
+        .eq('project_id', projectId)
+        .gte('created_at', twoWeeksAgo)
+        .lt('created_at', weekAgo)
+      
+      const thisWeek = submissionsData?.length || 0
+      const lastWeek = lastWeekData?.length || 0
+      const weekOverWeekChange = lastWeek > 0
+        ? Math.round(((thisWeek - lastWeek) / lastWeek) * 100)
+        : (thisWeek === 0 && lastWeek === 0 ? 0 : undefined)
       
       // Get today's submissions
       const todayStart = new Date()
@@ -291,7 +305,9 @@ export default function FormsDashboard() {
       setStats({
         totalForms: formsData?.length || 0,
         activeForms: formsData?.filter(f => f.is_active).length || 0,
-        submissionsThisWeek: submissionsData?.length || 0,
+        submissionsThisWeek: thisWeek,
+        submissionsLastWeek: lastWeek,
+        submissionsWeekOverWeekChange: weekOverWeekChange,
         submissionsToday: todayData?.length || 0,
         newSubmissions: submissionsData?.filter(s => s.status === 'new').length || 0,
         highIntentLeads: submissionsData?.filter(s => s.quality_tier === 'high').length || 0,
