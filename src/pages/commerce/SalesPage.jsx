@@ -400,6 +400,8 @@ export default function SalesPage() {
                           >
                             {sale.customer.name || sale.customer.email}
                           </Link>
+                        ) : (sale.customer_name || sale.customer_email) ? (
+                          <span>{sale.customer_name || sale.customer_email}</span>
                         ) : (
                           <span className="text-muted-foreground">Anonymous</span>
                         )}
@@ -417,6 +419,11 @@ export default function SalesPage() {
                         )}
                         {sale.quantity > 1 && (
                           <span className="text-muted-foreground"> × {sale.quantity}</span>
+                        )}
+                        {sale.offering?.type === 'event' && sale.schedule?.starts_at && (
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {new Date(sale.schedule.starts_at).toLocaleDateString()}
+                          </p>
                         )}
                       </TableCell>
                       <TableCell>

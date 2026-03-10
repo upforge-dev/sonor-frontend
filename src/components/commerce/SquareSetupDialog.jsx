@@ -105,6 +105,7 @@ export default function SquareSetupDialog({ open, onOpenChange, projectId, onSuc
               <p className="text-sm font-medium">What you'll authorize:</p>
               <ul className="text-sm text-muted-foreground space-y-1 ml-4 list-disc">
                 <li>Process payments</li>
+                <li>Read and create orders for checkout</li>
                 <li>Read merchant profile</li>
                 <li>Read and create items/products</li>
               </ul>
