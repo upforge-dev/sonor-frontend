@@ -68,15 +68,16 @@ export default function VariantsManagement({
   trackInventory,
   onVariantChange,
 }) {
-  const [variants, setVariants] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-  
+  const { data: variantsData, isLoading: loading, error: variantsError, refetch } = useCommerceVariants(offeringId, {
+    enabled: open && !!offeringId,
+  })
+  const variants = variantsData ?? []
+
   // Edit/Create dialog state
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [editingVariant, setEditingVariant] = useState(null)
   const [saving, setSaving] = useState(false)
-  
+
   // Delete confirmation
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [variantToDelete, setVariantToDelete] = useState(null)
@@ -92,25 +93,8 @@ export default function VariantsManagement({
     is_default: false,
   })
 
-  useEffect(() => {
-    if (open && offeringId) {
-      loadVariants()
-    }
-  }, [open, offeringId])
-
-  const loadVariants = async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      const data = await getVariants(offeringId)
-      setVariants(data || [])
-    } catch (err) {
-      console.error('Failed to load variants:', err)
-      setError('Failed to load variants')
-    } finally {
-      setLoading(false)
-    }
-  }
+  const error = variantsError ? (variantsError.message || 'Failed to load variants') : null
+  const loadVariants = () => refetch()
 
   const resetForm = () => {
     setForm({

@@ -651,12 +651,10 @@ export default function CommerceDashboard({ onNavigate }) {
   }
 
   function closeOffering() {
-    const nextView = returnView || 'events'
-    if (nextView !== 'highlights') {
-      setCurrentView(nextView)
-    } else {
-      setCurrentView('highlights')
-    }
+    // Go back to the list that matches this offering type (product → products, etc.)
+    const type = currentOffering?.type
+    const listView = type === 'product' ? 'products' : type === 'service' ? 'services' : (type === 'event' || type === 'class') ? 'events' : null
+    setCurrentView(listView || returnView || 'highlights')
     setOfferingId(null)
     setReturnView('events')
     setOfferingMode('view')

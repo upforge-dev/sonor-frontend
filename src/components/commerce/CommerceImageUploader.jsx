@@ -1,12 +1,15 @@
 /**
  * CommerceImageUploader
- * 
+ *
  * Drag-and-drop image uploader for commerce offerings.
- * Supports featured image and gallery images.
+ * Supports featured image and gallery images; gallery images can be reordered via drag-and-drop.
  * Images are stored in Files module under Commerce/{type}s/{slug}/
  * MIGRATED TO REACT QUERY HOOKS - Jan 29, 2026
  */
 import { useState, useRef, useCallback } from 'react'
+import { DndContext, closestCenter, useDroppable } from '@dnd-kit/core'
+import { SortableContext, rectSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import { useUploadCommerceImage, useDeleteCommerceImage, useUpdateCommerceOffering, commerceKeys } from '@/lib/hooks'
 import { useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
@@ -18,12 +21,87 @@ import {
   Loader2,
   AlertCircle,
   Upload,
+  GripVertical,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 // Maximum file size: 5MB
 const MAX_FILE_SIZE = 5 * 1024 * 1024
 const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+
+function SortableGalleryItem({ image, disabled, deletingId, onSetFeatured, onDelete }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: image.id })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  }
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={cn(
+        'relative aspect-square rounded-lg overflow-hidden bg-muted border group',
+        isDragging && 'opacity-60 shadow-lg z-10 ring-2 ring-primary'
+      )}
+    >
+      <img
+        src={image.url}
+        alt={image.filename || 'Gallery image'}
+        className="w-full h-full object-cover pointer-events-none"
+        draggable={false}
+      />
+      <div
+        className={cn(
+          'absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-between p-1',
+          isDragging && 'opacity-100'
+        )}
+      >
+        <button
+          {...attributes}
+          {...listeners}
+          className={cn(
+            'p-1.5 rounded-lg bg-white/20 hover:bg-white/30 text-white touch-none',
+            disabled && 'cursor-not-allowed opacity-50'
+          )}
+          title="Drag to reorder"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <GripVertical className="h-4 w-4" />
+        </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => onSetFeatured(image.id)}
+            className="p-1.5 rounded-lg bg-white/20 hover:bg-white/30 text-white"
+            title="Set as featured"
+          >
+            <Star className="h-4 w-4" />
+          </button>
+          <button
+            onClick={() => onDelete(image.id)}
+            disabled={deletingId === image.id}
+            className="p-1.5 rounded-lg bg-red-500/80 hover:bg-red-600 text-white"
+            title="Delete"
+          >
+            {deletingId === image.id ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <X className="h-4 w-4" />
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 export function CommerceImageUploader({
   offeringId,
@@ -167,8 +245,53 @@ export function CommerceImageUploader({
     }
   }
 
+  const FEATURED_DROP_ID = 'featured-image-drop'
   const featuredImage = images.find(img => img.is_featured || img.id === featuredImageId)
   const galleryImages = images.filter(img => !img.is_featured && img.id !== featuredImageId)
+
+  const { setNodeRef: setFeaturedDropRef, isOver: isOverFeatured } = useDroppable({
+    id: FEATURED_DROP_ID,
+  })
+
+  const handleGalleryReorder = useCallback(
+    (reorderedGallery) => {
+      const newImages = featuredImage
+        ? [featuredImage, ...reorderedGallery]
+        : [...reorderedGallery]
+      onImagesChange?.(newImages)
+    },
+    [featuredImage, onImagesChange]
+  )
+
+  const handleDropOnFeatured = useCallback(
+    (droppedImage) => {
+      const restGallery = galleryImages.filter((img) => img.id !== droppedImage.id)
+      const newFeatured = { ...droppedImage, is_featured: true }
+      const oldFeaturedAsGallery = featuredImage ? { ...featuredImage, is_featured: false } : null
+      const newImages = [newFeatured, ...(oldFeaturedAsGallery ? [oldFeaturedAsGallery, ...restGallery] : restGallery)]
+      onImagesChange?.(newImages)
+    },
+    [featuredImage, galleryImages, onImagesChange]
+  )
+
+  const handleDragEnd = useCallback(
+    (event) => {
+      const { active, over } = event
+      if (!over) return
+      if (over.id === FEATURED_DROP_ID) {
+        const dropped = galleryImages.find((img) => img.id === active.id)
+        if (dropped) handleDropOnFeatured(dropped)
+        return
+      }
+      if (active.id === over.id) return
+      const oldIndex = galleryImages.findIndex((img) => img.id === active.id)
+      const newIndex = galleryImages.findIndex((img) => img.id === over.id)
+      if (oldIndex === -1 || newIndex === -1) return
+      const reordered = arrayMove(galleryImages, oldIndex, newIndex)
+      handleGalleryReorder(reordered)
+    },
+    [galleryImages, handleGalleryReorder, handleDropOnFeatured]
+  )
 
   return (
     <div className={cn("space-y-4", className)}>
@@ -186,13 +309,25 @@ export function CommerceImageUploader({
         </div>
       )}
 
-      {/* Featured Image */}
+      <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+      {/* Featured Image (droppable: drag a gallery image here to set as featured) */}
       <div>
         <label className="text-sm font-medium text-foreground mb-2 block">
           Featured Image
         </label>
         {featuredImage ? (
-          <div className="relative aspect-[16/9] rounded-xl overflow-hidden bg-muted border group">
+          <div
+            ref={setFeaturedDropRef}
+            className={cn(
+              'relative aspect-[16/9] rounded-xl overflow-hidden bg-muted border group transition-all',
+              isOverFeatured && 'ring-2 ring-primary ring-offset-2'
+            )}
+          >
+            {isOverFeatured && (
+              <div className="absolute inset-0 z-10 flex items-center justify-center bg-primary/20 text-primary font-medium">
+                Drop to set as featured
+              </div>
+            )}
             <img
               src={featuredImage.url}
               alt="Featured"
@@ -221,6 +356,7 @@ export function CommerceImageUploader({
           </div>
         ) : (
           <div
+            ref={setFeaturedDropRef}
             onClick={() => !disabled && !uploading && offeringId && featuredInputRef.current?.click()}
             onDrop={handleDrop}
             onDragOver={handleDragOver}
@@ -230,6 +366,7 @@ export function CommerceImageUploader({
               isDragActive 
                 ? "border-primary bg-primary/10" 
                 : "border-muted-foreground/25 bg-muted hover:border-primary/50",
+              isOverFeatured && "border-primary bg-primary/10 ring-2 ring-primary ring-offset-2",
               (disabled || !offeringId) && "opacity-50 cursor-not-allowed"
             )}
           >
@@ -277,46 +414,27 @@ export function CommerceImageUploader({
           </label>
           <span className="text-xs text-muted-foreground">
             {images.length} / {maxImages}
+            {galleryImages.length > 0 && (
+              <span className="ml-2 text-muted-foreground/80">· Drag to reorder; drop on Featured to set as main image. Save to apply.</span>
+            )}
           </span>
         </div>
-        
-        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
-          {galleryImages.map((image) => (
-            <div
-              key={image.id}
-              className="relative aspect-square rounded-lg overflow-hidden bg-muted border group"
-            >
-              <img
-                src={image.url}
-                alt={image.filename || 'Gallery image'}
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
-                <button
-                  onClick={() => handleSetFeatured(image.id)}
-                  className="p-1.5 rounded-lg bg-white/20 hover:bg-white/30 text-white"
-                  title="Set as featured"
-                >
-                  <Star className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={() => handleDelete(image.id)}
-                  disabled={deletingId === image.id}
-                  className="p-1.5 rounded-lg bg-red-500/80 hover:bg-red-600 text-white"
-                  title="Delete"
-                >
-                  {deletingId === image.id ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <X className="h-4 w-4" />
-                  )}
-                </button>
-              </div>
-            </div>
-          ))}
-          
-          {/* Add more button */}
-          {images.length < maxImages && (
+
+        <SortableContext items={galleryImages.map((img) => img.id)} strategy={rectSortingStrategy}>
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
+              {galleryImages.map((image) => (
+                <SortableGalleryItem
+                  key={image.id}
+                  image={image}
+                  disabled={disabled}
+                  deletingId={deletingId}
+                  onSetFeatured={handleSetFeatured}
+                  onDelete={handleDelete}
+                />
+              ))}
+
+              {/* Add more button */}
+              {images.length < maxImages && (
             <div
               onClick={() => !disabled && !uploading && offeringId && galleryInputRef.current?.click()}
               onDrop={handleDrop}
@@ -353,8 +471,10 @@ export function CommerceImageUploader({
               )}
             </div>
           )}
-        </div>
+            </div>
+          </SortableContext>
       </div>
+      </DndContext>
     </div>
   )
 }

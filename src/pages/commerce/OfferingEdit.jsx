@@ -4,7 +4,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { useCommerceOffering, useUpdateCommerceOffering, commerceKeys } from '@/lib/hooks'
+import { useCommerceOffering, useUpdateCommerceOffering, useCommerceVariants, commerceKeys } from '@/lib/hooks'
 import { useForms, formsKeys } from '@/lib/hooks'
 import { useSeoPages } from '@/hooks/seo'
 import { useQueryClient } from '@tanstack/react-query'
@@ -45,6 +45,8 @@ import {
   Image as ImageIcon,
 } from 'lucide-react'
 import CommerceImageUploader from '@/components/commerce/CommerceImageUploader'
+import ClothingSizesModal from '@/components/commerce/ClothingSizesModal'
+import VariantsManagement from '@/components/commerce/VariantsManagement'
 import ScheduleManagement from '@/components/commerce/ScheduleManagement'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { format } from 'date-fns'
@@ -95,6 +97,13 @@ export default function OfferingEdit({ offeringId, onBack }) {
   const error = offeringError?.message || null
   const [formData, setFormData] = useState(null)
   const [images, setImages] = useState([])
+  const [clothingSizesModalOpen, setClothingSizesModalOpen] = useState(false)
+  const [variantsModalOpen, setVariantsModalOpen] = useState(false)
+
+  const { data: variantsData } = useCommerceVariants(id, {
+    enabled: !!id && currentOffering?.type === 'product',
+  })
+  const variants = variantsData ?? []
 
   // Populate form when offering loads
   useEffect(() => {
@@ -108,6 +117,7 @@ export default function OfferingEdit({ offeringId, onBack }) {
         status: currentOffering.status || 'draft',
         // Product fields
         sku: currentOffering.sku || '',
+        is_clothing: currentOffering.is_clothing ?? false,
         track_inventory: currentOffering.track_inventory || false,
         inventory_count: currentOffering.inventory_count?.toString() || '',
         // Service/Class fields
@@ -187,6 +197,9 @@ export default function OfferingEdit({ offeringId, onBack }) {
       if (currentConfig?.fields.includes('sku')) {
         data.sku = formData.sku || null
       }
+      if (currentOffering.type === 'product') {
+        data.is_clothing = formData.is_clothing ?? false
+      }
       if (currentConfig?.fields.includes('inventory')) {
         data.track_inventory = formData.track_inventory
         data.inventory_count = formData.inventory_count ? parseInt(formData.inventory_count) : null
@@ -212,6 +225,12 @@ export default function OfferingEdit({ offeringId, onBack }) {
       // Page association for analytics
       data.seo_page_id = formData.seo_page_id || null
       data.page_path = formData.page_path || null
+
+      // Image order and featured (from drag/reorder on edit — only persist on Save)
+      const featured = images.find((i) => i.is_featured)
+      if (featured) data.featured_image_id = featured.id
+      const galleryIds = images.filter((i) => !i.is_featured).map((i) => i.id)
+      if (galleryIds.length) data.gallery_image_ids = galleryIds
 
       await updateOfferingMutation.mutateAsync({ offeringId: id, data })
       
@@ -279,6 +298,29 @@ export default function OfferingEdit({ offeringId, onBack }) {
 
   return (
     <div className="p-6 max-w-3xl mx-auto space-y-6">
+      {/* Modals at top level so they portal correctly and aren't clipped by form/layout */}
+      {currentOffering?.type === 'product' && (
+        <>
+          <ClothingSizesModal
+            open={clothingSizesModalOpen}
+            onOpenChange={setClothingSizesModalOpen}
+            offeringId={id}
+            offeringName={formData?.name || currentOffering?.name}
+            trackInventory={formData?.track_inventory}
+            onVariantChange={() => queryClient.invalidateQueries({ queryKey: commerceKeys.offeringDetail(id) })}
+          />
+          <VariantsManagement
+            open={variantsModalOpen}
+            onOpenChange={setVariantsModalOpen}
+            offeringId={id}
+            offeringName={formData?.name || currentOffering?.name}
+            basePrice={currentOffering?.price}
+            trackInventory={formData?.track_inventory}
+            onVariantChange={() => queryClient.invalidateQueries({ queryKey: commerceKeys.offeringDetail(id) })}
+          />
+        </>
+      )}
+
       {/* Header */}
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" onClick={() => (onBack ? onBack(id) : navigate(-1))}>
@@ -490,9 +532,65 @@ export default function OfferingEdit({ offeringId, onBack }) {
 
               <div className="flex items-center justify-between">
                 <div>
+                  <Label>Is this clothing?</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Enables a simple size list (S, M, L, etc.) and per-size stock. Use Manage sizes below to add sizes.
+                  </p>
+                </div>
+                <Switch
+                  checked={formData.is_clothing}
+                  onCheckedChange={(checked) => handleChange('is_clothing', checked)}
+                />
+              </div>
+
+              {formData.is_clothing && (
+                <div className="rounded-lg border bg-muted/30 p-4 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium">Sizes</p>
+                      <p className="text-xs text-muted-foreground">
+                        {variants.length === 0
+                          ? 'No sizes yet. Add S, M, L, etc.'
+                          : `${variants.length} size${variants.length === 1 ? '' : 's'} (${variants.map((v) => v.options?.Size ?? v.name).join(', ')})`}
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        setClothingSizesModalOpen(true)
+                      }}
+                    >
+                      Manage sizes
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {!formData.is_clothing && (
+                <div className="rounded-lg border bg-muted/30 p-4 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium">Variants</p>
+                      <p className="text-xs text-muted-foreground">
+                        For options like rim size (18″, 20″), color, or other variations.
+                      </p>
+                    </div>
+                    <Button type="button" variant="secondary" size="sm" onClick={() => setVariantsModalOpen(true)}>
+                      Manage variants
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex items-center justify-between">
+                <div>
                   <Label>Track Inventory</Label>
                   <p className="text-sm text-muted-foreground">
-                    Keep track of stock levels
+                    {formData.is_clothing ? 'Per-size stock is set in Manage sizes.' : 'Keep track of stock levels'}
                   </p>
                 </div>
                 <Switch
@@ -501,7 +599,7 @@ export default function OfferingEdit({ offeringId, onBack }) {
                 />
               </div>
 
-              {formData.track_inventory && (
+              {formData.track_inventory && !formData.is_clothing && (
                 <div>
                   <Label htmlFor="inventory_count">Stock Quantity</Label>
                   <Input

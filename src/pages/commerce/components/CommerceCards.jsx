@@ -18,8 +18,8 @@ import { STATUS_CONFIG, PRICE_TYPE_CONFIG } from './CommerceConstants'
 
 // Product Card Component - Liquid Glass style
 export function ProductCard({ product, brandColors, onOpen }) {
-  const hasImage = product.images?.length > 0 || product.image_url
-  const imageUrl = product.images?.[0]?.url || product.image_url
+  const hasImage = product.images?.length > 0 || product.image_url || product.featured_image
+  const imageUrl = product.images?.[0]?.url || product.image_url || product.featured_image
   const lowStock = product.track_inventory && product.inventory_quantity <= 5 && product.inventory_quantity > 0
   const outOfStock = product.track_inventory && product.inventory_quantity === 0
   const isFromShopify = product._source === 'shopify_fallback' || product.shopify_product_id
