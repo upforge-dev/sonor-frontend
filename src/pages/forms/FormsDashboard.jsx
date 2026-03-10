@@ -172,6 +172,7 @@ export default function FormsDashboard() {
   const [currentView, setCurrentView] = useState('highlights')
   const [currentFilter, setCurrentFilter] = useState('all')
   const [submissionsTab, setSubmissionsTab] = useState('all')
+  const [formIdFilter, setFormIdFilter] = useState(null)
   const [deliveryTab, setDeliveryTab] = useState('rules')
   const [searchQuery, setSearchQuery] = useState('')
   const [viewMode, setViewMode] = useState('list')
@@ -216,7 +217,7 @@ export default function FormsDashboard() {
     if (projectId && (currentView === 'submissions' || currentView === 'highlights')) {
       loadSubmissions()
     }
-  }, [projectId, currentView, submissionsTab])
+  }, [projectId, currentView, submissionsTab, formIdFilter])
 
   useEffect(() => {
     if (projectId && currentView === 'delivery') {
@@ -246,6 +247,9 @@ export default function FormsDashboard() {
     
     try {
       const filters = { project_id: projectId }
+      if (formIdFilter) {
+        filters.form_id = formIdFilter
+      }
       if (submissionsTab !== 'all') {
         const section = SIDEBAR_SECTIONS.submissions.items.find(i => i.id === submissionsTab)
         if (section?.filter) {
@@ -403,6 +407,14 @@ export default function FormsDashboard() {
   function setSubmissionFilter(filter) {
     setCurrentView('submissions')
     setSubmissionsTab(filter)
+    setFormIdFilter(null)
+    setSubmissionsOpen(true)
+  }
+
+  function handleViewFormSubmissions(formId) {
+    setCurrentView('submissions')
+    setSubmissionsTab('all')
+    setFormIdFilter(formId)
     setSubmissionsOpen(true)
   }
 
@@ -939,6 +951,7 @@ export default function FormsDashboard() {
                 filter={currentFilter}
                 onEdit={handleOpenEditForm}
                 onView={(id) => navigate(`/forms/${id}`)}
+                onViewSubmissions={handleViewFormSubmissions}
                 onDuplicate={handleDuplicateForm}
                 onArchive={handleArchiveForm}
                 onDelete={handleDeleteForm}
@@ -963,19 +976,39 @@ export default function FormsDashboard() {
             )}
             
             {currentView === 'submissions' && (
-              <SubmissionsView
-                submissions={submissions}
-                isLoading={isSubmissionsLoading}
-                viewMode={viewMode}
-                filter={submissionsTab}
-                hasSignal={hasSignal}
-                onView={(submission) => setSelectedSubmission(submission)}
-                onUpdateStatus={handleUpdateSubmissionStatus}
-                onDelete={handleDeleteSubmission}
-                onBulkDelete={handleBulkDeleteSubmissions}
-                onBulkUpdateStatus={handleBulkUpdateSubmissionStatus}
-                selectedSubmissionId={selectedSubmission?.id}
-              />
+              <>
+                {formIdFilter && (
+                  <div className="flex items-center gap-2 mb-4">
+                    <span className="text-sm text-[var(--text-secondary)]">
+                      Showing submissions for
+                    </span>
+                    <Badge variant="secondary" className="gap-1">
+                      {forms.find(f => f.id === formIdFilter)?.name || 'Form'}
+                      <button
+                        type="button"
+                        onClick={() => setFormIdFilter(null)}
+                        className="ml-1 rounded hover:bg-[var(--glass-bg-hover)] p-0.5"
+                        aria-label="Clear form filter"
+                      >
+                        <XCircle className="h-3.5 w-3.5" />
+                      </button>
+                    </Badge>
+                  </div>
+                )}
+                <SubmissionsView
+                  submissions={submissions}
+                  isLoading={isSubmissionsLoading}
+                  viewMode={viewMode}
+                  filter={submissionsTab}
+                  hasSignal={hasSignal}
+                  onView={(submission) => setSelectedSubmission(submission)}
+                  onUpdateStatus={handleUpdateSubmissionStatus}
+                  onDelete={handleDeleteSubmission}
+                  onBulkDelete={handleBulkDeleteSubmissions}
+                  onBulkUpdateStatus={handleBulkUpdateSubmissionStatus}
+                  selectedSubmissionId={selectedSubmission?.id}
+                />
+              </>
             )}
             
             {currentView === 'analytics' && (

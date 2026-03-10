@@ -48,14 +48,17 @@ const FORM_TYPE_COLORS = {
   custom: 'bg-gray-500/10 text-gray-600 dark:text-gray-400',
 }
 
-function FormCard({ form, onEdit, onView, onDuplicate, onArchive, onDelete }) {
+function FormCard({ form, onEdit, onView, onViewSubmissions, onDuplicate, onArchive, onDelete }) {
   const createdAt = form.createdAt ? new Date(form.createdAt) : null
   const updatedAt = form.updatedAt ? new Date(form.updatedAt) : null
   
   return (
-    <Card className="bg-[var(--glass-bg)] border-[var(--glass-border)] hover:border-[var(--brand-primary)]/50 transition-colors group">
+    <Card 
+      className="bg-[var(--glass-bg)] border-[var(--glass-border)] hover:border-[var(--brand-primary)]/50 transition-colors group cursor-pointer"
+      onClick={() => onViewSubmissions?.(form.id)}
+    >
       <CardContent className="p-4">
-        <div className="flex items-start justify-between">
+        <div className="flex items-start justify-between" onClick={(e) => e.stopPropagation()}>
           <div className="flex items-start gap-3">
             <div 
               className="p-2 rounded-lg mt-0.5"
@@ -145,7 +148,7 @@ function FormCard({ form, onEdit, onView, onDuplicate, onArchive, onDelete }) {
           )}
         </div>
         
-        <div className="mt-3 pt-3 border-t border-[var(--glass-border)] flex items-center justify-between text-xs text-[var(--text-tertiary)]">
+        <div className="mt-3 pt-3 border-t border-[var(--glass-border)] flex items-center justify-between text-xs text-[var(--text-tertiary)]" onClick={(e) => e.stopPropagation()}>
           <span>
             Updated {updatedAt && isValid(updatedAt) 
               ? formatDistanceToNow(updatedAt, { addSuffix: true })
@@ -161,12 +164,15 @@ function FormCard({ form, onEdit, onView, onDuplicate, onArchive, onDelete }) {
   )
 }
 
-function FormRow({ form, onEdit, onView, onDuplicate, onArchive, onDelete }) {
+function FormRow({ form, onEdit, onView, onViewSubmissions, onDuplicate, onArchive, onDelete }) {
   const createdAt = form.createdAt ? new Date(form.createdAt) : null
   const updatedAt = form.updatedAt ? new Date(form.updatedAt) : null
   
   return (
-    <TableRow className="group">
+    <TableRow 
+      className="group cursor-pointer hover:bg-[var(--glass-bg-hover)]"
+      onClick={() => onViewSubmissions?.(form.id)}
+    >
       <TableCell>
         <div className="flex items-center gap-3">
           <div 
@@ -204,7 +210,7 @@ function FormRow({ form, onEdit, onView, onDuplicate, onArchive, onDelete }) {
           : '-'
         }
       </TableCell>
-      <TableCell>
+      <TableCell onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEdit?.(form.id)}>
             <Pencil className="h-4 w-4" />
@@ -257,6 +263,7 @@ export default function FormsListView({
   filter = 'all',
   onEdit,
   onView,
+  onViewSubmissions,
   onDuplicate,
   onArchive,
   onDelete,
@@ -338,6 +345,7 @@ export default function FormsListView({
             form={form}
             onEdit={onEdit}
             onView={onView}
+            onViewSubmissions={onViewSubmissions}
             onDuplicate={onDuplicate}
             onArchive={onArchive}
             onDelete={onDelete}
@@ -367,6 +375,7 @@ export default function FormsListView({
               form={form}
               onEdit={onEdit}
               onView={onView}
+              onViewSubmissions={onViewSubmissions}
               onDuplicate={onDuplicate}
               onArchive={onArchive}
               onDelete={onDelete}
