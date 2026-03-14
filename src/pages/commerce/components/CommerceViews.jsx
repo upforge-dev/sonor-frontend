@@ -426,7 +426,7 @@ export function ServicesView({ services, isLoading, error, currentFilter, servic
 }
 
 // Events View Component - Supports grid and list layouts
-export function EventsView({ events, isLoading, error, currentFilter, eventCounts, brandColors, hasPaymentProcessor, loadEvents, viewMode = 'list', onStartCreating, onOpenOffering }) {
+export function EventsView({ events, isLoading, error, currentFilter, eventCounts, brandColors, hasPaymentProcessor, loadEvents, viewMode = 'list', onStartCreating, onOpenOffering, onDuplicate }) {
   if (isLoading) {
     return viewMode === 'grid' ? (
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
@@ -479,6 +479,7 @@ export function EventsView({ events, isLoading, error, currentFilter, eventCount
           brandColors={brandColors}
           viewMode="grid"
           onOpen={onOpenOffering}
+          onDuplicate={onDuplicate}
         />
       ))}
     </div>
@@ -491,6 +492,7 @@ export function EventsView({ events, isLoading, error, currentFilter, eventCount
           brandColors={brandColors}
           viewMode="list"
           onOpen={onOpenOffering}
+          onDuplicate={onDuplicate}
         />
       ))}
     </div>

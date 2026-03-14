@@ -562,8 +562,12 @@ export default function UnifiedTasksPanel({ projectId, projectIds, className, on
 
   const handleBatchComplete = async () => {
     if (selectedTaskIds.size === 0) return
-    toast.success(`Marked ${selectedTaskIds.size} tasks as complete`)
-    // TODO: Call batch API
+    try {
+      await syncApi.batchUpdateTaskStatus({ taskIds: [...selectedTaskIds], status: 'completed' })
+      toast.success(`Marked ${selectedTaskIds.size} tasks as complete`)
+    } catch (err) {
+      toast.error(err?.response?.data?.message ?? 'Failed to update tasks')
+    }
     clearSelection()
     loadData()
   }
@@ -574,8 +578,13 @@ export default function UnifiedTasksPanel({ projectId, projectIds, className, on
   }
 
   const handleComplete = async (task) => {
-    toast.success(`Marked "${task.title}" as complete`)
-    // TODO: Call appropriate API based on task.source_table
+    const taskId = task.id ?? task.task_id
+    try {
+      await syncApi.updateTaskStatus(taskId, { status: 'completed' })
+      toast.success(`Marked "${task.title}" as complete`)
+    } catch (err) {
+      toast.error(err?.response?.data?.message ?? 'Failed to update task')
+    }
     loadData()
   }
 

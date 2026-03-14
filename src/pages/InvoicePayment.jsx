@@ -2,7 +2,7 @@
 // World-class public invoice payment page - no login required
 // Accessible via /pay/:invoiceId?token=xxx
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { useParams } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -32,8 +32,7 @@ function formatDate(dateString) {
   })
 }
 
-// Brand Logo Component - uses project logo_url and brand name (default: Upforge)
-const BrandLogo = ({ logoUrl, brandName = 'Upforge', className = "h-10", showText = true }) => (
+const BrandLogo = ({ logoUrl, brandName = 'Business', className = "h-10", showText = true }) => (
   <div className="flex items-center gap-3">
     <img 
       src={logoUrl || '/logo.svg'} 
@@ -55,8 +54,6 @@ const BrandLogo = ({ logoUrl, brandName = 'Upforge', className = "h-10", showTex
 export default function InvoicePayment() {
   const { token: urlToken } = useParams()
   
-  // Get token from query string OR URL path
-  // Supports both /pay/:token and /pay/:id?token=xxx formats
   const searchParams = new URLSearchParams(window.location.search)
   const queryToken = searchParams.get('token')
   const token = queryToken || urlToken
@@ -77,10 +74,21 @@ export default function InvoicePayment() {
   const cardInitializedRef = useRef(false)
   const pageLoadTimeRef = useRef(Date.now())
 
-  const brandName = invoice?.project?.title || 'Upforge'
+  const brandName = invoice?.project?.title || 'Business'
   const logoUrl = invoice?.project?.logoUrl
+  const brandPrimary = invoice?.project?.brandPrimary || '#0d9488'
 
-  // Fetch invoice and Square config on mount
+  const brandStyles = useMemo(() => {
+    const color = brandPrimary
+    return {
+      gradient: `linear-gradient(135deg, ${color}, ${color}dd)`,
+      bg10: `${color}1a`,
+      bg20: `${color}33`,
+      shadow25: `${color}40`,
+      shadow30: `${color}4d`,
+    }
+  }, [brandPrimary])
+
   useEffect(() => {
     if (!token) {
       setError('Invalid payment link')
@@ -90,7 +98,6 @@ export default function InvoicePayment() {
     fetchInvoiceAndConfig()
   }, [token])
 
-  // Track time on page when leaving (visibilitychange / beforeunload)
   useEffect(() => {
     if (!viewId || !token) return
 
@@ -117,7 +124,6 @@ export default function InvoicePayment() {
     }
   }, [viewId, token])
 
-  // Initialize Square Web SDK - only once
   useEffect(() => {
     if (!invoice || invoice.status === 'paid' || !squareConfig || cardInitializedRef.current) return
     
@@ -125,7 +131,6 @@ export default function InvoicePayment() {
     initializeSquare()
     
     return () => {
-      // Cleanup card instance
       if (card) {
         card.destroy?.()
       }
@@ -134,7 +139,6 @@ export default function InvoicePayment() {
 
   const fetchInvoiceAndConfig = async () => {
     try {
-      // Fetch invoice and Square config in parallel
       const [invoiceResponse, config] = await Promise.all([
         billingApi.getPublicInvoice(token),
         configApi.getSquareConfigByInvoiceToken(token)
@@ -144,7 +148,6 @@ export default function InvoicePayment() {
       setInvoice(inv)
       setSquareConfig(config)
 
-      // Track view for analytics (after successful fetch)
       if (inv?.id) {
         try {
           const { data } = await billingApi.trackInvoiceView(inv.id, token)
@@ -174,12 +177,10 @@ export default function InvoicePayment() {
       console.log('[Square Init] Location ID:', squareConfig?.locationId ? 'Present' : 'Missing')
       console.log('[Square Init] Environment:', squareConfig?.environment)
       
-      // Check if Square config is present
       if (!squareConfig?.applicationId || !squareConfig?.locationId) {
         throw new Error('Square payment configuration is missing. Please contact support.')
       }
       
-      // Load Square Web SDK with timeout
       if (!window.Square) {
         console.log('[Square Init] Loading Square SDK...')
         await Promise.race([
@@ -216,7 +217,7 @@ export default function InvoicePayment() {
               borderRadius: '8px',
             },
             '.input-container.is-focus': {
-              borderColor: '#4bbf39',
+              borderColor: brandPrimary,
             },
             '.input-container.is-error': {
               borderColor: '#ef4444',
@@ -300,7 +301,7 @@ export default function InvoicePayment() {
     }
   }
 
-  // Loading state - skeleton for better perceived performance
+  // Loading state
   if (loading) {
     return (
       <div className="min-h-screen bg-[#fafafa] flex items-center justify-center p-4 sm:p-6">
@@ -334,13 +335,13 @@ export default function InvoicePayment() {
             </div>
             <h2 className="text-2xl font-bold text-gray-900 mb-3">Unable to Load Invoice</h2>
             <p className="text-gray-500 mb-8 leading-relaxed">{error}</p>
-            <a 
-              href="mailto:hello@upforge.com"
+            <button 
+              onClick={() => window.location.reload()}
               className="inline-flex items-center gap-2 bg-gray-900 text-white px-6 py-3 rounded-full font-medium hover:bg-gray-800 transition-colors"
             >
-              Contact Support
+              Try Again
               <ArrowRight className="w-4 h-4" />
-            </a>
+            </button>
           </div>
         </div>
       </div>
@@ -350,15 +351,15 @@ export default function InvoicePayment() {
   // Payment success state
   if (paymentSuccess || invoice?.status === 'paid') {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-[#f0fdf4] to-white flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white flex items-center justify-center p-4">
         <div className="max-w-md w-full">
           <div className="text-center mb-8">
             <BrandLogo logoUrl={logoUrl} brandName={brandName} className="h-10 mx-auto" />
           </div>
           
-          <div className="bg-white rounded-3xl shadow-xl shadow-green-100/50 overflow-hidden">
+          <div className="bg-white rounded-3xl shadow-xl overflow-hidden">
             {/* Success Header */}
-            <div className="bg-gradient-to-br from-teal-500 to-teal-600 p-8 text-center relative overflow-hidden">
+            <div className="p-8 text-center relative overflow-hidden" style={{ background: brandStyles.gradient }}>
               <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
               <div className="relative">
                 <div className="w-20 h-20 rounded-full bg-white/20 backdrop-blur flex items-center justify-center mx-auto mb-4">
@@ -382,7 +383,7 @@ export default function InvoicePayment() {
                 </div>
                 <div className="flex justify-between items-center py-3">
                   <span className="text-gray-500">Amount Paid</span>
-                  <span className="text-2xl font-bold text-teal-600">{formatCurrency(invoice?.totalAmount)}</span>
+                  <span className="text-2xl font-bold" style={{ color: brandPrimary }}>{formatCurrency(invoice?.totalAmount)}</span>
                 </div>
               </div>
               
@@ -395,7 +396,8 @@ export default function InvoicePayment() {
                     href={receiptUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 text-teal-600 hover:text-teal-700 font-medium text-sm"
+                    className="inline-flex items-center gap-2 font-medium text-sm hover:underline"
+                    style={{ color: brandPrimary }}
                   >
                     <Download className="w-4 h-4" />
                     View / Download Receipt
@@ -406,7 +408,7 @@ export default function InvoicePayment() {
           </div>
           
           <p className="text-center text-sm text-gray-400 mt-8">
-            Questions? <a href="mailto:hello@upforge.com" className="text-teal-600 hover:underline">Contact us</a>
+            © {new Date().getFullYear()} {brandName}. All rights reserved.
           </p>
         </div>
       </div>
@@ -421,7 +423,7 @@ export default function InvoicePayment() {
         <div className="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between">
           <BrandLogo logoUrl={logoUrl} brandName={brandName} className="h-8 md:h-10" />
           <div className="flex items-center gap-2 text-sm text-gray-500">
-            <Lock className="w-4 h-4 text-teal-500" />
+            <Lock className="w-4 h-4" style={{ color: brandPrimary }} />
             <span className="hidden sm:inline">Secure Checkout</span>
           </div>
         </div>
@@ -489,7 +491,7 @@ export default function InvoicePayment() {
               </div>
               <div className="flex justify-between items-center pt-4 border-t border-gray-200">
                 <span className="text-lg font-semibold text-gray-900">Total Due</span>
-                <span className="text-3xl font-bold text-teal-600">{formatCurrency(invoice?.totalAmount)}</span>
+                <span className="text-3xl font-bold" style={{ color: brandPrimary }}>{formatCurrency(invoice?.totalAmount)}</span>
               </div>
             </div>
           </div>
@@ -499,13 +501,13 @@ export default function InvoicePayment() {
         <div className="bg-white rounded-3xl shadow-xl shadow-gray-200/50 overflow-hidden">
           <div className="p-4 sm:p-6 md:p-8">
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 rounded-full bg-teal-500/10 flex items-center justify-center flex-shrink-0">
-                <CreditCard className="w-5 h-5 text-teal-500" />
+              <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: brandStyles.bg10 }}>
+                <CreditCard className="w-5 h-5" style={{ color: brandPrimary }} />
               </div>
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
                   <h2 className="text-lg font-semibold text-gray-900">Payment Details</h2>
-                  <span className="inline-flex items-center gap-1 text-xs text-teal-600 bg-teal-50 px-2 py-0.5 rounded-full">
+                  <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full" style={{ color: brandPrimary, backgroundColor: brandStyles.bg10 }}>
                     <Lock className="w-3 h-3" />
                     Secure payment
                   </span>
@@ -521,7 +523,7 @@ export default function InvoicePayment() {
               </Alert>
             )}
 
-            {/* Square Card Element Container - responsive for mobile */}
+            {/* Square Card Element Container */}
             <div 
               id="card-container" 
               ref={cardContainerRef}
@@ -531,7 +533,11 @@ export default function InvoicePayment() {
             <Button 
               onClick={handlePayment}
               disabled={processing || !cardReady}
-              className="w-full bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white py-6 text-lg rounded-2xl font-semibold shadow-lg shadow-teal-500/25 transition-all duration-200 hover:shadow-xl hover:shadow-teal-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full text-white py-6 text-lg rounded-2xl font-semibold shadow-lg transition-all duration-200 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ 
+                background: brandStyles.gradient,
+                boxShadow: `0 10px 25px -5px ${brandStyles.shadow25}`,
+              }}
             >
               {processing ? (
                 <>
@@ -570,9 +576,7 @@ export default function InvoicePayment() {
         <footer className="text-center mt-8 space-y-2">
           <p className="text-sm text-gray-500">
             Questions about this invoice?{' '}
-            <a href="mailto:hello@upforge.com" className="text-teal-600 hover:underline font-medium">
-              Contact us
-            </a>
+            <span className="font-medium">Contact {brandName}</span>
           </p>
           <p className="text-xs text-gray-400">
             © {new Date().getFullYear()} {brandName}. All rights reserved.

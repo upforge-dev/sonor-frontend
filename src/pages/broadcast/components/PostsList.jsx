@@ -39,6 +39,9 @@ import {
   useDeleteBroadcastPost,
   usePublishBroadcastPost,
   useCreateBroadcastPost,
+  useApproveBroadcastPost,
+  useRejectBroadcastPost,
+  useRetryBroadcastPost,
 } from '@/lib/hooks';
 import useAuthStore from '@/lib/auth-store';
 import { PlatformIcon } from './PlatformIcon';
@@ -97,12 +100,16 @@ function PostCard({ post, onEdit }) {
   const deletePostMutation = useDeleteBroadcastPost();
   const publishPostMutation = usePublishBroadcastPost();
   const duplicatePostMutation = useCreateBroadcastPost();
+  const approvePostMutation = useApproveBroadcastPost();
+  const rejectPostMutation = useRejectBroadcastPost();
+  const retryPostMutation = useRetryBroadcastPost();
 
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
   
-  const isLoading = deletePostMutation.isPending || publishPostMutation.isPending || duplicatePostMutation.isPending;
+  const isLoading = deletePostMutation.isPending || publishPostMutation.isPending || duplicatePostMutation.isPending ||
+    approvePostMutation.isPending || rejectPostMutation.isPending || retryPostMutation.isPending;
 
   const statusConfig = STATUS_CONFIG[post.status] || STATUS_CONFIG.draft;
   const StatusIcon = statusConfig.icon;
@@ -119,8 +126,7 @@ function PostCard({ post, onEdit }) {
   const handleAction = async (action) => {
     switch (action) {
       case 'approve':
-        // TODO: Add approve mutation when available
-        console.log('Approve post:', post.id);
+        approvePostMutation.mutate({ postId: post.id });
         break;
       case 'publish':
         publishPostMutation.mutate({ id: post.id, projectId });
@@ -142,14 +148,13 @@ function PostCard({ post, onEdit }) {
         });
         break;
       case 'reject':
-        // TODO: Add reject mutation when available
-        console.log('Reject post:', post.id, rejectReason);
-        setShowRejectDialog(false);
-        setRejectReason('');
+        rejectPostMutation.mutate(
+          { postId: post.id, reason: rejectReason },
+          { onSettled: () => { setShowRejectDialog(false); setRejectReason(''); } }
+        );
         break;
       case 'retry':
-        // TODO: Add retry mutation when available
-        console.log('Retry post:', post.id);
+        retryPostMutation.mutate({ postId: post.id });
         break;
     }
   };

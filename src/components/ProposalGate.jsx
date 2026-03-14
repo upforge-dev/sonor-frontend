@@ -17,27 +17,34 @@ export default function ProposalGate() {
     fetchProposal()
   }, [slug])
 
-  const sendViewTimeBeacon = () => {
+  const sendViewTimeBeacon = (clearRefs = false) => {
     const viewId = viewIdRef.current
     const startedAt = viewStartedAtRef.current
     if (!viewId || !startedAt) return
     const timeOnPage = Math.round((Date.now() - startedAt) / 1000)
-    if (timeOnPage < 1) return
-    viewIdRef.current = null
+    if (clearRefs) viewIdRef.current = null
     try {
       fetch(`${getPortalApiUrl()}/proposals/views/${viewId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ timeOnPage }),
         keepalive: true,
-      }).catch(() => {})
-    } catch {
-      // Ignore
+        credentials: 'include',
+      }).catch((err) => {
+        if (import.meta.env?.DEV) {
+          console.warn('[ProposalGate] View time update failed', err)
+        }
+      })
+    } catch (err) {
+      if (import.meta.env?.DEV) {
+        console.warn('[ProposalGate] View time beacon error', err)
+      }
     }
   }
 
+  // On exit (visibility hidden / pagehide): send time and clear refs so we don't double-send
   useEffect(() => {
-    const handleExit = () => sendViewTimeBeacon()
+    const handleExit = () => sendViewTimeBeacon(true)
     const onVisibilityChange = () => {
       if (document.visibilityState === 'hidden') handleExit()
     }
@@ -49,6 +56,17 @@ export default function ProposalGate() {
       handleExit()
     }
   }, [])
+
+  // Heartbeat: send time on page every 20s so we record duration even if user never triggers exit
+  useEffect(() => {
+    const viewId = viewIdRef.current
+    const startedAt = viewStartedAtRef.current
+    if (!viewId || !startedAt) return
+    const interval = setInterval(() => {
+      sendViewTimeBeacon(false)
+    }, 20_000)
+    return () => clearInterval(interval)
+  }, [proposal?.id])
 
   const fetchProposal = async () => {
     if (fetchAttempted.current) return

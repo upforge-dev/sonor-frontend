@@ -112,7 +112,11 @@ export function useAnalytics({ path = null } = {}) {
   // Extract and memoize transformed data
   const summary = overview?.summary || {}
   const dailyTrend = getDailyTrend(overview, pageViewsByDay)
-  const topReferrers = overview?.topReferrers || []
+  // API returns { source, count }; ReferrersTable expects { referrer, count } for parseReferrer()
+  const topReferrers = (overview?.topReferrers || []).map((r) => ({
+    referrer: r.referrer ?? r.source ?? 'Direct',
+    count: r.count ?? 0
+  }))
   const topEvents = overview?.topEvents || []
 
   // Memoized transformed data

@@ -11,6 +11,7 @@ import {
   Zap,
   Calendar,
   Clock,
+  Copy,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { format } from 'date-fns'
@@ -320,7 +321,7 @@ export function ServiceSkeleton({ viewMode = 'list' }) {
 }
 
 // Event Card Component - Supports both grid and list modes with images
-export function EventCard({ event, brandColors, viewMode = 'list', onOpen }) {
+export function EventCard({ event, brandColors, viewMode = 'list', onOpen, onDuplicate }) {
   const isFree = event.price_type === 'free' || !event.price || event.price === 0
   const priceDisplay = isFree ? 'Free' : `$${Number(event.price || 0).toFixed(2)}`
   
@@ -436,6 +437,16 @@ export function EventCard({ event, brandColors, viewMode = 'list', onOpen }) {
                 {format(eventDate, 'MMM d, yyyy')} at {format(eventDate, 'h:mm a')}
                 {event.location && <span> • {event.location}</span>}
               </p>
+            )}
+            {isPast && onDuplicate && (
+              <button
+                onClick={(e) => { e.stopPropagation(); onDuplicate(event) }}
+                className="mt-2 flex items-center gap-1 text-xs text-[var(--text-tertiary)] hover:text-[var(--brand-primary)] transition-colors"
+                title="Duplicate as Draft"
+              >
+                <Copy className="h-3 w-3" />
+                Duplicate as Draft
+              </button>
             )}
           </div>
         </div>
@@ -583,8 +594,17 @@ export function EventCard({ event, brandColors, viewMode = 'list', onOpen }) {
             </div>
           </div>
           
-          {/* Arrow */}
-          <div className="flex items-center px-3">
+          {/* Actions */}
+          <div className="flex items-center gap-1 px-3">
+            {isPast && onDuplicate && (
+              <button
+                onClick={(e) => { e.stopPropagation(); onDuplicate(event) }}
+                className="p-1.5 rounded-lg text-[var(--text-tertiary)] hover:text-[var(--brand-primary)] hover:bg-[var(--glass-bg-hover)] transition-colors"
+                title="Duplicate as Draft"
+              >
+                <Copy className="h-4 w-4" />
+              </button>
+            )}
             <ChevronRight className="h-5 w-5 text-[var(--text-tertiary)] group-hover:text-[var(--brand-primary)] transition-colors" />
           </div>
         </div>

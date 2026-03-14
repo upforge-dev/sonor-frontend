@@ -296,11 +296,21 @@ export default function PlanDayDialog({
       }
       
       setSuggestions(allSuggestions)
-      
-      // TODO: Load calendar events from sync when calendar-items endpoint exists
-      // For now, use briefing meetings if available
-      if (briefingResult.status === 'fulfilled' && briefingResult.value?.data?.calendar) {
-        setCalendarEvents(briefingResult.value.data.calendar || [])
+
+      // Load calendar events from sync (calendar-items endpoint)
+      const dayStart = format(selectedDate, 'yyyy-MM-dd')
+      const dayEnd = format(addDays(selectedDate, 1), 'yyyy-MM-dd')
+      try {
+        const calRes = await syncApi.getCalendarItems(dayStart, dayEnd, projectId)
+        const items = calRes?.data?.items ?? []
+        setCalendarEvents(Array.isArray(items) ? items : [])
+      } catch {
+        // Fallback: use briefing meetings if sync calendar fails
+        if (briefingResult.status === 'fulfilled' && briefingResult.value?.data?.calendar) {
+          setCalendarEvents(briefingResult.value.data.calendar || [])
+        } else {
+          setCalendarEvents([])
+        }
       }
       
     } catch (err) {
@@ -353,21 +363,20 @@ export default function PlanDayDialog({
 
   // Toggle task completion
   const handleToggleTask = async (task) => {
-    // Optimistic update
+    const taskId = task.id ?? task.task_id
+    const newStatus = (task.status === 'completed' || task.status === 'done') ? 'pending' : 'completed'
     setTasks(prev => prev.map(t => 
-      t.id === task.id 
-        ? { ...t, status: t.status === 'completed' ? 'pending' : 'completed' }
+      (t.id === task.id || t.task_id === task.task_id)
+        ? { ...t, status: newStatus }
         : t
     ))
-    
     try {
-      // TODO: Call API to update task status when endpoint exists
-      // For now just the optimistic update
+      await syncApi.updateTaskStatus(taskId, { status: newStatus })
     } catch (err) {
-      // Revert on error
       setTasks(prev => prev.map(t => 
-        t.id === task.id ? task : t
+        (t.id === task.id || t.task_id === task.task_id) ? task : t
       ))
+      toast.error('Failed to update task')
     }
   }
 

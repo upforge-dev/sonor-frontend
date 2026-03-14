@@ -195,13 +195,16 @@ export function useScrollDepth(projectId, days = 30, options = {}) {
  * Fetch heatmap data for a page
  */
 export function useHeatmap(projectId, page, options = {}) {
+  const days = options?.days ?? 30
   return useQuery({
     queryKey: siteAnalyticsKeys.heatmap(projectId, page),
     queryFn: async () => {
-      const response = await analyticsApi.getHeatmap({ projectId, page })
+      const params = { projectId, days }
+      if (page) params.path = page
+      const response = await analyticsApi.getHeatmap(params)
       return response.data || response
     },
-    enabled: !!projectId && !!page,
+    enabled: !!projectId,
     staleTime: 1000 * 60 * 15, // 15 minutes
     ...options,
   })

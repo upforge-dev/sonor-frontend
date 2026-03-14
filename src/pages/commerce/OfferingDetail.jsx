@@ -1256,20 +1256,27 @@ function EventDetailView({
     }
   }
   
-  // Get the next upcoming schedule
   const scheduleStartsAt = (s) => s.starts_at || s.start_time
-  const upcomingSchedules = (offering.schedules || [])
+  const allSchedules = (offering.schedules || [])
     .filter((s) => {
       const at = scheduleStartsAt(s)
       if (!at) return false
       const status = (s.status || '').toLowerCase()
-      return (status === 'active' || status === 'scheduled') && isFuture(new Date(at))
+      return status === 'active' || status === 'scheduled' || status === 'completed'
     })
     .sort((a, b) => new Date(scheduleStartsAt(a)) - new Date(scheduleStartsAt(b)))
 
+  const upcomingSchedules = allSchedules.filter((s) => isFuture(new Date(scheduleStartsAt(s))))
+  const pastSchedules = allSchedules.filter((s) => isPast(new Date(scheduleStartsAt(s))))
+
   const nextSchedule = upcomingSchedules[0]
-  const totalCapacity = upcomingSchedules.reduce((sum, s) => sum + (s.capacity ?? s.max_capacity ?? 0), 0)
-  const totalEnrolled = upcomingSchedules.reduce((sum, s) => {
+  const mostRecentPastSchedule = pastSchedules.length > 0 ? pastSchedules[pastSchedules.length - 1] : null
+  const displaySchedule = nextSchedule || mostRecentPastSchedule
+  const isEventPast = !nextSchedule && pastSchedules.length > 0
+
+  const capacitySource = upcomingSchedules.length > 0 ? upcomingSchedules : pastSchedules
+  const totalCapacity = capacitySource.reduce((sum, s) => sum + (s.capacity ?? s.max_capacity ?? 0), 0)
+  const totalEnrolled = capacitySource.reduce((sum, s) => {
     const cap = s.capacity ?? s.max_capacity
     const enrolled = s.current_enrollment ?? (cap != null && s.spots_remaining != null ? cap - s.spots_remaining : 0)
     return sum + enrolled
@@ -1388,40 +1395,52 @@ function EventDetailView({
                 </div>
 
                 {/* Date & Time - Prominent Display */}
-                {nextSchedule && (
-                  <div className="mt-6 p-4 rounded-lg bg-muted/50 border">
-                    <div className="flex items-start gap-4">
-                      <div className="flex-shrink-0 w-16 text-center">
-                        <div className="bg-primary text-primary-foreground rounded-t-lg px-2 py-1 text-xs font-medium uppercase">
-                          {format(new Date(nextSchedule.starts_at || nextSchedule.start_time), 'MMM')}
+                {displaySchedule && (() => {
+                  const schedStart = new Date(displaySchedule.starts_at || displaySchedule.start_time)
+                  const schedEnd = displaySchedule.ends_at || displaySchedule.end_time
+                    ? new Date(displaySchedule.ends_at || displaySchedule.end_time)
+                    : null
+                  return (
+                    <div className={`mt-6 p-4 rounded-lg border ${isEventPast ? 'bg-muted/30 border-muted' : 'bg-muted/50'}`}>
+                      <div className="flex items-start gap-4">
+                        <div className="flex-shrink-0 w-16 text-center">
+                          <div className={`rounded-t-lg px-2 py-1 text-xs font-medium uppercase ${isEventPast ? 'bg-muted-foreground/60 text-white' : 'bg-primary text-primary-foreground'}`}>
+                            {format(schedStart, 'MMM')}
+                          </div>
+                          <div className="bg-background border border-t-0 rounded-b-lg px-2 py-2">
+                            <span className="text-2xl font-bold">
+                              {format(schedStart, 'd')}
+                            </span>
+                          </div>
                         </div>
-                        <div className="bg-background border border-t-0 rounded-b-lg px-2 py-2">
-                          <span className="text-2xl font-bold">
-                            {format(new Date(nextSchedule.starts_at || nextSchedule.start_time), 'd')}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-semibold text-lg">
-                          {format(new Date(nextSchedule.starts_at || nextSchedule.start_time), 'EEEE, MMMM d, yyyy')}
-                        </p>
-                        <p className="text-muted-foreground flex items-center gap-2 mt-1">
-                          <Clock className="h-4 w-4" />
-                          {format(new Date(nextSchedule.starts_at || nextSchedule.start_time), 'h:mm a')}
-                          {(nextSchedule.ends_at || nextSchedule.end_time) && (
-                            <> – {format(new Date(nextSchedule.ends_at || nextSchedule.end_time), 'h:mm a')}</>
-                          )}
-                        </p>
-                        {upcomingSchedules.length > 1 && (
-                          <p className="text-sm text-primary mt-2 cursor-pointer hover:underline"
-                            onClick={() => setShowScheduleDialog(true)}>
-                            + {upcomingSchedules.length - 1} more date{upcomingSchedules.length > 2 ? 's' : ''} available
+                        <div className="flex-1">
+                          <p className="font-semibold text-lg">
+                            {isEventPast && <span className="text-muted-foreground">(Past) </span>}
+                            {format(schedStart, 'EEEE, MMMM d, yyyy')}
                           </p>
-                        )}
+                          <p className="text-muted-foreground flex items-center gap-2 mt-1">
+                            <Clock className="h-4 w-4" />
+                            {format(schedStart, 'h:mm a')}
+                            {schedEnd && (
+                              <> – {format(schedEnd, 'h:mm a')}</>
+                            )}
+                          </p>
+                          {!isEventPast && upcomingSchedules.length > 1 && (
+                            <p className="text-sm text-primary mt-2 cursor-pointer hover:underline"
+                              onClick={() => setShowScheduleDialog(true)}>
+                              + {upcomingSchedules.length - 1} more date{upcomingSchedules.length > 2 ? 's' : ''} available
+                            </p>
+                          )}
+                          {isEventPast && pastSchedules.length > 1 && (
+                            <p className="text-sm text-muted-foreground mt-2">
+                              {pastSchedules.length} dates completed
+                            </p>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )}
+                  )
+                })()}
 
                 {/* Location */}
                 <div className="mt-4 flex items-start gap-3">

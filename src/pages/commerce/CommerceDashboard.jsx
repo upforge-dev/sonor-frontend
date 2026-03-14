@@ -3,7 +3,7 @@
 // Dark theme compatible, renders as rounded tile inside MainLayout
 // MIGRATED TO REACT QUERY HOOKS - Jan 29, 2026
 
-import { useState, useEffect, useMemo, useRef } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { Link, useSearchParams, useNavigate } from 'react-router-dom'
 import useAuthStore from '@/lib/auth-store'
 import { supabase } from '@/lib/supabase'
@@ -440,8 +440,10 @@ export default function CommerceDashboard({ onNavigate }) {
     
     try {
       const filters = { type: 'event' }
-      if (currentView === 'events' && currentFilter !== 'all') {
-        filters.status = currentFilter
+      // For events, only send status filter for 'draft' — 'active'/'archived' are handled
+      // client-side via date-aware logic so past events with status='active' still show under "Past"
+      if (currentView === 'events' && currentFilter === 'draft') {
+        filters.status = 'draft'
       }
       if (selectedCategoryId) {
         filters.category_id = selectedCategoryId
@@ -576,16 +578,53 @@ export default function CommerceDashboard({ onNavigate }) {
     return counts
   }, [services])
 
-  // Count events by status
+  // Determine if an event is "past" based on its latest schedule date
+  const isEventPast = useCallback((event) => {
+    const startsAt = event.next_schedule?.starts_at ?? event.schedules?.[0]?.starts_at ?? event.starts_at
+    if (!startsAt) return false
+    return new Date(startsAt) < new Date()
+  }, [])
+
+  // Count events by date-aware categories
   const eventCounts = useMemo(() => {
     const counts = { all: events.length, active: 0, draft: 0, archived: 0 }
     events.forEach(e => {
-      if (counts[e.status] !== undefined) {
-        counts[e.status]++
+      if (e.status === 'draft') {
+        counts.draft++
+      } else if (isEventPast(e)) {
+        counts.archived++ // "Past" events count
+      } else {
+        counts.active++ // "Upcoming" events count
       }
     })
     return counts
-  }, [events])
+  }, [events, isEventPast])
+
+  // Get the event's schedule date for sorting
+  const getEventDate = useCallback((event) => {
+    const startsAt = event.next_schedule?.starts_at ?? event.schedules?.[0]?.starts_at ?? event.starts_at
+    return startsAt ? new Date(startsAt) : new Date(0)
+  }, [])
+
+  // Date-aware filtered events for the current sidebar selection
+  const filteredEvents = useMemo(() => {
+    if (currentView !== 'events') return events
+    switch (currentFilter) {
+      case 'active': // "Upcoming" — soonest first
+        return events
+          .filter(e => e.status !== 'draft' && !isEventPast(e))
+          .sort((a, b) => getEventDate(a) - getEventDate(b))
+      case 'archived': { // "Past" — most recent first
+        return events
+          .filter(e => e.status !== 'draft' && isEventPast(e))
+          .sort((a, b) => getEventDate(b) - getEventDate(a))
+      }
+      case 'draft':
+        return events.filter(e => e.status === 'draft')
+      default: // 'all'
+        return events
+    }
+  }, [events, currentView, currentFilter, isEventPast, getEventDate])
 
   // Count invoices by status (Billing API uses due_at, status: sent/viewed = unpaid)
   const invoiceCounts = useMemo(() => {
@@ -658,6 +697,39 @@ export default function CommerceDashboard({ onNavigate }) {
     setOfferingId(null)
     setReturnView('events')
     setOfferingMode('view')
+  }
+
+  async function handleDuplicateEvent(event) {
+    if (!projectId || !event) return
+    try {
+      const duplicateData = {
+        type: event.type || 'event',
+        name: `${event.name || event.title} (Copy)`,
+        slug: `${event.slug || 'event'}-copy-${Date.now()}`,
+        description: event.description,
+        short_description: event.short_description,
+        price: event.price,
+        price_type: event.price_type,
+        compare_at_price: event.compare_at_price,
+        currency: event.currency,
+        duration_minutes: event.duration_minutes,
+        capacity: event.capacity,
+        category_id: event.category_id,
+        tags: event.tags,
+        features: event.features,
+        deposit_settings: event.deposit_settings,
+        location: event.location,
+        is_virtual: event.is_virtual,
+        status: 'draft',
+      }
+      const response = await portalApi.post(`/commerce/offerings/${projectId}`, duplicateData)
+      toast.success('Event duplicated as draft')
+      loadEvents()
+      openOffering(response.data?.id || response.id)
+    } catch (err) {
+      console.error('Failed to duplicate event:', err)
+      toast.error('Failed to duplicate event')
+    }
   }
 
   // Set create mode for a specific offering type (uses local state, not URL)
@@ -1604,7 +1676,7 @@ export default function CommerceDashboard({ onNavigate }) {
 
               {/* Events List */}
               <EventsView 
-                events={events}
+                events={filteredEvents}
                 isLoading={isEventsLoading}
                 error={eventsError}
                 currentFilter={currentFilter}
@@ -1615,6 +1687,7 @@ export default function CommerceDashboard({ onNavigate }) {
                 viewMode={viewMode}
                 onStartCreating={startCreating}
                 onOpenOffering={openOffering}
+                onDuplicate={handleDuplicateEvent}
               />
             </>
             )

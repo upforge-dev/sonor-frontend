@@ -271,8 +271,8 @@ export function InvoiceCreateDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px] bg-[var(--glass-bg)] border-[var(--glass-border)]">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] flex flex-col overflow-hidden bg-[var(--glass-bg)] border-[var(--glass-border)]">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle className="text-[var(--text-primary)] flex items-center gap-2">
             <Receipt className="h-5 w-5" />
             Create Invoice
@@ -293,7 +293,7 @@ export function InvoiceCreateDialog({
             </p>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4 overflow-y-auto flex-1 min-h-0 pr-1">
             {/* Client Selection: existing or one-off */}
             <div className="space-y-2">
               <Label className="text-[var(--text-primary)]">Bill to</Label>

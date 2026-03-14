@@ -45,14 +45,17 @@ export function transformDeviceData(deviceBreakdown = []) {
 export function transformPagesData(topPages = []) {
   const pages = Array.isArray(topPages) ? topPages : []
   
-  return pages.map(page => ({
+  return pages.map(page => {
+    const viewCount = page.views ?? page.pageViews ?? page.count ?? 0
+    return {
     path: page.path || page.title || '/',
     title: page.title || page.path || 'Unknown',
-    views: page.views || page.pageViews || 0,
-    uniqueViews: page.uniqueViews || page.sessions || Math.floor((page.views || 0) * 0.75),
+    views: viewCount,
+    uniqueViews: page.uniqueViews || page.sessions || Math.floor(viewCount * 0.75),
     avgDuration: page.avgDuration || page.avgTimeOnPage || 0,
     bounceRate: page.bounceRate || 45
-  }))
+  }
+  })
 }
 
 /**

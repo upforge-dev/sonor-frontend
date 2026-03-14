@@ -21,9 +21,10 @@ try {
   }
 } catch (_) {}
 
+// DEV ONLY: Do not import this file from the Vite app. Use service role only; never use anon key here.
 const supabase = createClient(
-  process.env.VITE_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY
+  process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
 )
 
 // Copy sanitizeMDXContent from ProposalView - with step tracing

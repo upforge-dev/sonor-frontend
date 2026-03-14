@@ -96,7 +96,14 @@ export const broadcastApi = {
   requestApproval: (postId) => {
     return portalApi.post(`${BASE_PATH}/posts/${postId}/request-approval`)
   },
-  
+
+  /**
+   * Retry failed platforms for a post
+   */
+  retryPost: (postId) => {
+    return portalApi.post(`${BASE_PATH}/posts/${postId}/retry`)
+  },
+
   // ===== PLATFORM CONNECTIONS =====
   
   /**

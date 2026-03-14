@@ -8,6 +8,8 @@ import ProposalTemplate from '@/components/proposals/ProposalTemplate'
 import ProposalViewWithAnalytics from '@/components/proposals/ProposalViewWithAnalytics'
 import ProposalEditorMain from '@/components/proposals/ProposalEditorMain'
 import ContractEditorWithAI from '@/components/ContractEditorWithAI'
+import ContractView from '@/components/contracts/ContractView'
+import ContractIntakeForm from '@/components/contracts/ContractIntakeForm'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { toast } from '@/lib/toast'
@@ -34,7 +36,9 @@ import {
   Plus,
   FileText,
   User,
-  UserPlus
+  UserPlus,
+  LayoutTemplate,
+  ArrowLeft
 } from 'lucide-react'
 import useAuthStore from '@/lib/auth-store'
 import { portalApi, commerceApi, proposalsApi, adminApi, crmApi } from '@/lib/portal-api'
@@ -350,6 +354,12 @@ export const ContractsView = forwardRef(function ContractsView({
   const setAiContract = setAiEditingContract ?? setInternalAiEditing
   const [deleteContractDialog, setDeleteContractDialog] = useState({ open: false, id: null, title: '', isSigned: false })
   const [showAIContractDialog, setShowAIContractDialog] = useState(false)
+  
+  // Template-based contract creation flow
+  const [templates, setTemplates] = useState([])
+  const [showTemplatePicker, setShowTemplatePicker] = useState(false)
+  const [selectedTemplate, setSelectedTemplate] = useState(null)
+  const [isCreatingFromTemplate, setIsCreatingFromTemplate] = useState(false)
 
   const updateContractInList = useCallback((updatedContract) => {
     setContracts(prev => prev.map(c =>
@@ -456,6 +466,41 @@ export const ContractsView = forwardRef(function ContractsView({
       }
     } catch (err) {
       console.error('Failed to fetch customers:', err)
+    }
+  }
+
+  // Fetch available contract templates
+  const fetchTemplates = async () => {
+    if (isUptradeMediaOrg) return
+    try {
+      const response = await commerceApi.getContractTemplates(projectId)
+      setTemplates(response.data?.templates || response.data || [])
+    } catch (err) {
+      console.error('Failed to fetch templates:', err)
+    }
+  }
+
+  useEffect(() => {
+    if (projectId && !isUptradeMediaOrg) fetchTemplates()
+  }, [projectId, isUptradeMediaOrg])
+
+  const handleCreateFromTemplate = async (intakeData) => {
+    setIsCreatingFromTemplate(true)
+    try {
+      const response = await commerceApi.createContractFromTemplate(projectId, {
+        template_id: selectedTemplate.id,
+        intake_data: intakeData,
+      })
+      const newContract = response.data?.contract || response.data
+      setContracts([newContract, ...contracts])
+      toast.success(`Contract "${newContract.title}" created!`)
+      setSelectedTemplate(null)
+      setShowTemplatePicker(false)
+    } catch (err) {
+      console.error('Failed to create contract from template:', err)
+      toast.error('Failed to create contract')
+    } finally {
+      setIsCreatingFromTemplate(false)
     }
   }
 
@@ -597,8 +642,26 @@ export const ContractsView = forwardRef(function ContractsView({
     )
   }
 
-  // If viewing a contract, show with analytics panel
+  // If viewing a contract, use JSON renderer for sections_json contracts, else analytics panel
   if (viewingContract) {
+    if (viewingContract.sections_json) {
+      return (
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" onClick={() => setViewingContract(null)}>
+              <ArrowLeft className="w-4 h-4 mr-1" /> Back
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => {
+              setViewingContract(null)
+              handleEditContract(viewingContract)
+            }}>
+              <Edit className="w-4 h-4 mr-1" /> Edit
+            </Button>
+          </div>
+          <ContractView contract={viewingContract} />
+        </div>
+      )
+    }
     return (
       <ProposalViewWithAnalytics
         proposal={viewingContract}
@@ -608,6 +671,34 @@ export const ContractsView = forwardRef(function ContractsView({
           handleEditContract(viewingContract)
         }}
       />
+    )
+  }
+
+  // Template intake form flow
+  if (selectedTemplate) {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" onClick={() => setSelectedTemplate(null)}>
+            <ArrowLeft className="w-4 h-4 mr-1" /> Back
+          </Button>
+        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>{selectedTemplate.name}</CardTitle>
+            {selectedTemplate.description && (
+              <CardDescription>{selectedTemplate.description}</CardDescription>
+            )}
+          </CardHeader>
+          <CardContent>
+            <ContractIntakeForm
+              template={selectedTemplate}
+              onSubmit={handleCreateFromTemplate}
+              isSubmitting={isCreatingFromTemplate}
+            />
+          </CardContent>
+        </Card>
+      </div>
     )
   }
 
@@ -647,32 +738,71 @@ export const ContractsView = forwardRef(function ContractsView({
                 }}
               />
             </>
-          ) : hasSignal ? (
-            // AI-powered contract creation for Signal-enabled projects
-            <>
-              <Button onClick={() => setShowAIContractDialog(true)}>
-                <Plus className="w-4 h-4 mr-2" />
-                New Contract
-              </Button>
-              <ContractAIDialog 
-                projectId={projectId}
-                open={showAIContractDialog}
-                onOpenChange={setShowAIContractDialog}
-                onSuccess={(contract) => {
-                  setContracts([contract, ...contracts])
-                  toast.success(`Contract "${contract.title}" created and sent!`)
-                }}
-              />
-            </>
           ) : (
-            // Manual contract creation for non-Signal projects
-            <Button onClick={onNewContract}>
-              <Plus className="w-4 h-4 mr-2" />
-              New Contract
-            </Button>
+            // Non-Uptrade orgs: template picker + AI/manual fallback
+            <div className="flex items-center gap-2">
+              {templates.length > 0 && (
+                <Button variant="outline" onClick={() => setShowTemplatePicker(!showTemplatePicker)}>
+                  <LayoutTemplate className="w-4 h-4 mr-2" />
+                  From Template
+                </Button>
+              )}
+              {hasSignal ? (
+                <>
+                  <Button onClick={() => setShowAIContractDialog(true)}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    New Contract
+                  </Button>
+                  <ContractAIDialog 
+                    projectId={projectId}
+                    open={showAIContractDialog}
+                    onOpenChange={setShowAIContractDialog}
+                    onSuccess={(contract) => {
+                      setContracts([contract, ...contracts])
+                      toast.success(`Contract "${contract.title}" created and sent!`)
+                    }}
+                  />
+                </>
+              ) : (
+                <Button onClick={onNewContract}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  New Contract
+                </Button>
+              )}
+            </div>
           )}
         </div>
       </div>
+
+      {/* Template picker grid */}
+      {showTemplatePicker && templates.length > 0 && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {templates.map(template => (
+            <Card
+              key={template.id}
+              className="cursor-pointer hover:border-[var(--brand-primary)] hover:shadow-md transition-all"
+              onClick={() => {
+                setSelectedTemplate(template)
+                setShowTemplatePicker(false)
+              }}
+            >
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">{template.name}</CardTitle>
+                {template.business_type && (
+                  <Badge variant="outline" className="w-fit text-xs">
+                    {template.business_type.replace(/_/g, ' ')}
+                  </Badge>
+                )}
+              </CardHeader>
+              {template.description && (
+                <CardContent className="pt-0">
+                  <p className="text-sm text-muted-foreground line-clamp-2">{template.description}</p>
+                </CardContent>
+              )}
+            </Card>
+          ))}
+        </div>
+      )}
 
       {/* Show inline contract editor when creating */}
       {isCreatingContract && (

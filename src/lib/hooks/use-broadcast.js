@@ -159,6 +159,54 @@ export function usePublishBroadcastPost() {
   })
 }
 
+/**
+ * Approve post (approval workflow)
+ */
+export function useApproveBroadcastPost() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ postId, notes }) => {
+      const response = await portalApi.post(`/broadcast/posts/${postId}/approve`, { notes })
+      return response.data?.post ?? response.data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: broadcastKeys.posts() })
+    },
+  })
+}
+
+/**
+ * Reject post (approval workflow)
+ */
+export function useRejectBroadcastPost() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ postId, reason }) => {
+      const response = await portalApi.post(`/broadcast/posts/${postId}/reject`, { reason })
+      return response.data?.post ?? response.data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: broadcastKeys.posts() })
+    },
+  })
+}
+
+/**
+ * Retry failed platforms for a post
+ */
+export function useRetryBroadcastPost() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ postId }) => {
+      const response = await portalApi.post(`/broadcast/posts/${postId}/retry`)
+      return response.data?.post ?? response.data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: broadcastKeys.posts() })
+    },
+  })
+}
+
 // ═══════════════════════════════════════════════════════════════════════════
 // CALENDAR
 // ═══════════════════════════════════════════════════════════════════════════

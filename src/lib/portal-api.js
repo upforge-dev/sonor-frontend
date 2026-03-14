@@ -761,7 +761,7 @@ export const billingApi = {
     portalApi.post(`/billing/invoices/${id}/send`, data),
   
   markPaid: (id, data = {}) => 
-    portalApi.post(`/billing/invoices/${id}/paid`, data),
+    portalApi.post(`/billing/invoices/${id}/mark-paid`, data),
   
   downloadPdf: (id) => 
     portalApi.get(`/billing/invoices/${id}/pdf`, { responseType: 'blob' }),
@@ -944,7 +944,7 @@ export const seoApi = {
   // Projects ARE SEO sites - use projectId as projectId
   createProject: async (data) => {
     console.warn('seoApi.createSite is deprecated. Projects are created via projectsApi.')
-    // Return stub that mirrors project structure
+    // Deprecated: returns a placeholder object; use projectsApi for real project CRUD
     const projectId = data.project_id || data.projectId || data.org_id
     return { 
       data: { 
@@ -2832,7 +2832,7 @@ export const driveApi = {
   searchFiles: (query) => 
     portalApi.get('/integrations/workspace/google/drive/files', { params: { query } }),
   
-  // Upload file (TODO: implement multipart upload via workspace integration)
+  // Upload file via POST /files/drive/upload (multipart for large files may use workspace integration)
   uploadFile: (data) => 
     portalApi.post('/files/drive/upload', data),
   
@@ -2950,7 +2950,14 @@ export const analyticsApi = {
   // Realtime
   getRealtime: (params = {}) =>
     portalApi.get('/analytics/realtime', { params }),
-  
+
+  /**
+   * Generate analytics insights for a project from overview and top-pages data.
+   * Returns: { insights: Array<{ type, title, description, metric?, change? }> }
+   */
+  generateInsights: (params = {}) =>
+    portalApi.post('/analytics/insights/generate', params),
+
   // ==================== ORG-LEVEL ANALYTICS ====================
   
   /**
@@ -3301,6 +3308,32 @@ export const commerceApi = {
   /** Sign contract (public) */
   signContract: (token, signatureData) =>
     portalApi.post(`/commerce/contracts/sign/${token}`, signatureData),
+
+  // ==================== CONTRACT TEMPLATES ====================
+
+  /** List contract templates for a project */
+  getContractTemplates: (projectId) =>
+    portalApi.get(`/commerce/contracts/${projectId}/templates`),
+
+  /** Get a single contract template */
+  getContractTemplate: (projectId, templateId) =>
+    portalApi.get(`/commerce/contracts/${projectId}/templates/${templateId}`),
+
+  /** Create a contract template */
+  createContractTemplate: (projectId, data) =>
+    portalApi.post(`/commerce/contracts/${projectId}/templates`, data),
+
+  /** Update a contract template */
+  updateContractTemplate: (projectId, templateId, data) =>
+    portalApi.put(`/commerce/contracts/${projectId}/templates/${templateId}`, data),
+
+  /** Delete a contract template */
+  deleteContractTemplate: (projectId, templateId) =>
+    portalApi.delete(`/commerce/contracts/${projectId}/templates/${templateId}`),
+
+  /** Create a contract from a template + intake data */
+  createContractFromTemplate: (projectId, data) =>
+    portalApi.post(`/commerce/contracts/${projectId}/from-template`, data),
   
   // ==================== SERVICES (for contracts) ====================
   
@@ -3525,6 +3558,18 @@ export const syncApi = {
    */
   createUnifiedTask: (data) =>
     portalApi.post('/sync/admin/tasks', data),
+
+  /**
+   * Update a unified task's status (taskId from unified_tasks: task_id).
+   */
+  updateTaskStatus: (taskId, body) =>
+    portalApi.patch(`/sync/admin/tasks/${taskId}`, body),
+
+  /**
+   * Batch update status for multiple unified tasks.
+   */
+  batchUpdateTaskStatus: (body) =>
+    portalApi.post('/sync/admin/tasks/batch', body),
 
   // ==================== TEAM VIEW - Manager & Admin Features ====================
   
