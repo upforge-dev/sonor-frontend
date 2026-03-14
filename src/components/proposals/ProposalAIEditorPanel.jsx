@@ -71,6 +71,8 @@ export default function ProposalAIEditorPanel({
           ...contract,
           mdx_content: proposalData.mdx_content,
           mdxContent: proposalData.mdx_content,
+          sections_json: proposalData.sections_json,
+          sectionsJson: proposalData.sections_json,
           total_amount: proposalData.total_amount,
           totalAmount: proposalData.total_amount,
           payment_terms: proposalData.payment_terms,

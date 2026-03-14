@@ -7,13 +7,19 @@ import Section from './Section'
  * Pricing/Solution Block
  * Theme-compatible: Uses CSS custom properties
  */
-export function PricingSection({ children }) {
+export function PricingSection({ children, tiers, title = 'Proposed Solution & Investment' }) {
   return (
     <Section bg="transparent">
       <h2 className="text-2xl sm:text-3xl font-bold text-[var(--text-primary)] mb-6 sm:mb-8">
-        Proposed Solution & Investment
+        {title}
       </h2>
-      {children}
+      {tiers
+        ? <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {tiers.map((tier, i) => (
+              <PricingTier key={i} {...tier} />
+            ))}
+          </div>
+        : children}
     </Section>
   )
 }

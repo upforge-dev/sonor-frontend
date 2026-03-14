@@ -7,11 +7,11 @@ import Section from './Section'
  * New Website Build Block (for clients with no existing site)
  * Theme-compatible: Uses CSS custom properties
  */
-export function NewWebsiteBuild({ children }) {
+export function NewWebsiteBuild({ children, features, title = 'New Website Build' }) {
   return (
     <Section bg="transparent">
       <h2 className="text-2xl sm:text-3xl font-bold text-[var(--text-primary)] mb-6 sm:mb-8">
-        New Website Build
+        {title}
       </h2>
       <Alert className="mb-6 border-[var(--brand-primary)] bg-[var(--brand-primary)]/10">
         <TrendingUp className="h-4 w-4 text-[var(--brand-primary)]" />
@@ -19,7 +19,13 @@ export function NewWebsiteBuild({ children }) {
           <strong>Starting Fresh:</strong> We'll build your digital presence from the ground up with modern technology and best practices.
         </AlertDescription>
       </Alert>
-      {children}
+      {features
+        ? <div className="grid gap-4 sm:grid-cols-2">
+            {features.map((feature, i) => (
+              <WebsiteFeature key={i} {...feature} />
+            ))}
+          </div>
+        : children}
     </Section>
   )
 }

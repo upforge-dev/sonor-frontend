@@ -2,10 +2,14 @@
  * Stats Card Grid
  * Theme-compatible: Uses CSS custom properties
  */
-export function StatsGrid({ children }) {
+export function StatsGrid({ children, stats }) {
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 my-8">
-      {children}
+      {stats
+        ? stats.map((stat, i) => (
+            <StatCard key={i} {...stat} />
+          ))
+        : children}
     </div>
   )
 }

@@ -5,7 +5,7 @@ import Section from './Section'
  * Critical Issues Block
  * Theme-compatible: Dark bg works in both themes
  */
-export function CriticalIssues({ children, title = 'CRITICAL DIGITAL GAPS' }) {
+export function CriticalIssues({ children, issues, title = 'CRITICAL DIGITAL GAPS' }) {
   return (
     <Section bg="transparent">
       <div className="bg-gray-900 dark:bg-black rounded-xl p-4 sm:p-8 border-l-4 border-[var(--accent-orange)]">
@@ -16,7 +16,11 @@ export function CriticalIssues({ children, title = 'CRITICAL DIGITAL GAPS' }) {
           </div>
         </h3>
         <div className="space-y-4">
-          {children}
+          {issues
+            ? issues.map((issue, i) => (
+                <IssueCard key={i} title={issue.title} description={issue.description} severity={issue.severity} />
+              ))
+            : children}
         </div>
       </div>
     </Section>

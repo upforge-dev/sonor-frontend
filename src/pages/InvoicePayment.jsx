@@ -295,7 +295,8 @@ export default function InvoicePayment() {
       }
     } catch (err) {
       console.error('Payment failed:', err)
-      setPaymentError(err.response?.data?.details || err.response?.data?.error || err.message || 'Payment failed')
+      const raw = err.response?.data?.details || err.response?.data?.error || err.response?.data?.message || err.message || 'Payment failed'
+      setPaymentError(typeof raw === 'string' ? raw : raw?.message || JSON.stringify(raw))
     } finally {
       setProcessing(false)
     }

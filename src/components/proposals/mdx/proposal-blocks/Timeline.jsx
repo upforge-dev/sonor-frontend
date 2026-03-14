@@ -6,14 +6,18 @@ import Section from './Section'
  * Timeline Block
  * Theme-compatible: Uses CSS custom properties
  */
-export function Timeline({ children }) {
+export function Timeline({ children, phases, title = 'Project Timeline' }) {
   return (
     <Section bg="transparent">
       <h2 className="text-2xl sm:text-3xl font-bold text-[var(--text-primary)] mb-6 sm:mb-8">
-        Project Timeline
+        {title}
       </h2>
       <div className="space-y-6">
-        {children}
+        {phases
+          ? phases.map((phase, i) => (
+              <Phase key={i} number={phase.number ?? i + 1} {...phase} />
+            ))
+          : children}
       </div>
     </Section>
   )

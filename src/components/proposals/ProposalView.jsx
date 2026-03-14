@@ -9,6 +9,7 @@ import { useState, useEffect, useRef } from 'react'
 import { evaluate } from '@mdx-js/mdx'
 import * as runtime from 'react/jsx-runtime'
 import { mdxComponents, ProposalHero } from './mdx/ProposalBlocks'
+import { ProposalSection } from './ProposalBlockRegistry'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -172,6 +173,27 @@ function MDXContent({ mdxSource }) {
   )
 }
 
+// JSON sections renderer — renders sections_json via ProposalBlockRegistry
+function ProposalJSONContent({ sectionsJson, proposal }) {
+  const sections = Array.isArray(sectionsJson) ? sectionsJson : []
+
+  if (sections.length === 0) {
+    return <p className="text-[var(--text-secondary)]">No content available</p>
+  }
+
+  return (
+    <div className="proposal-json-content text-[var(--text-primary)]">
+      {sections.map((section, index) => (
+        <ProposalSection
+          key={`${section.type}-${index}`}
+          section={section}
+          proposal={proposal}
+        />
+      ))}
+    </div>
+  )
+}
+
 export default function ProposalView({ 
   proposal, 
   isPublicView = false,
@@ -191,6 +213,7 @@ export default function ProposalView({
   const totalAmount = proposal.totalAmount || (proposal.total_amount ? parseFloat(proposal.total_amount) : null)
   const validUntil = proposal.validUntil || proposal.valid_until
   const mdxContent = proposal.mdxContent || proposal.mdx_content
+  const sectionsJson = proposal.sectionsJson || proposal.sections_json
   const heroImageUrl = proposal.heroImageUrl || proposal.hero_image_url
   const brandName = proposal.brandName || proposal.brand_name || proposal.contact?.company
   const rawTimeline = proposal.timeline || '6-weeks'
@@ -238,9 +261,11 @@ export default function ProposalView({
   const timeline = formatTimeline(rawTimeline)
   const paymentTerms = formatPaymentTerms(rawPaymentTerms)
 
-  const hasContent = mdxContent && 
+  const hasJsonContent = Array.isArray(sectionsJson) && sectionsJson.length > 0
+  const hasMdxContent = mdxContent && 
     !mdxContent.startsWith('# Generating') && 
     mdxContent.length > 100
+  const hasContent = hasJsonContent || hasMdxContent
 
   const isGenerating = !hasContent && proposal.status === 'draft'
 
@@ -309,9 +334,11 @@ export default function ProposalView({
         ]}
       />
 
-      {/* MDX Content - No card wrapper, components have their own styling */}
+      {/* Content — JSON sections preferred, MDX fallback */}
       <div className="mb-8">
-        <MDXContent mdxSource={mdxContent} />
+        {hasJsonContent
+          ? <ProposalJSONContent sectionsJson={sectionsJson} proposal={proposal} />
+          : <MDXContent mdxSource={mdxContent} />}
       </div>
 
       {/* Signature Section - for public client view */}
