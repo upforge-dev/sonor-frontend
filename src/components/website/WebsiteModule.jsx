@@ -6,11 +6,11 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import useAuthStore from '@/lib/auth-store'
-import { useSeoPages, useProject, useSiteImages, useSiteLinks, useSiteScripts, useSiteSchema, useSiteFaqs } from '@/lib/hooks'
+import { useSeoPages, useProject, useSiteImages, useSiteLinks, useSiteScripts, useSiteSchema, useSiteFaqs, useCmsPages, useCmsStatus } from '@/lib/hooks'
 import { ModuleLayout } from '@/components/ModuleLayout'
 import { MODULE_ICONS } from '@/lib/module-icons'
 import { Button } from '@/components/ui/button'
-import { Globe2, FileText } from 'lucide-react'
+import { Globe2, FileText, Database } from 'lucide-react'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import WebsiteSidebar from '@/components/projects/website/WebsiteSidebar'
 import WebsiteModuleView from '@/components/projects/website/WebsiteModuleView'
@@ -21,6 +21,7 @@ import SiteSchemaPanel from '@/components/projects/site/SiteSchemaPanel'
 import SiteLinksPanel from '@/components/projects/site/SiteLinksPanel'
 import SiteScriptsPanel from '@/components/projects/site/SiteScriptsPanel'
 import { WEBSITE_SECTIONS } from '@/components/projects/website/WebsiteSidebar'
+import WebsiteCmsSettings from '@/components/projects/website/panels/WebsiteCmsSettings'
 
 export default function WebsiteModule() {
   const navigate = useNavigate()
@@ -38,6 +39,8 @@ export default function WebsiteModule() {
   const { data: siteScripts = [] } = useSiteScripts(projectId, { enabled: !!projectId })
   const { data: siteSchema = [] } = useSiteSchema(projectId, { enabled: !!projectId })
   const { data: siteFaqs = [] } = useSiteFaqs(projectId, { enabled: !!projectId })
+  const { data: cmsStatus } = useCmsStatus(projectId, { enabled: !!projectId })
+  const { data: cmsPagesData } = useCmsPages(projectId, {}, { enabled: !!projectId && !!cmsStatus?.connected })
   // Normalize: hook may return { pages: [...] } or { pages: { pages: [...] } } when API wraps in .data
   const rawPages = Array.isArray(websitePagesData?.pages)
     ? websitePagesData.pages
@@ -46,8 +49,31 @@ export default function WebsiteModule() {
       : Array.isArray(websitePagesData)
         ? websitePagesData
         : []
+
+  // Build CMS page lookup by path
+  const cmsPagesList = Array.isArray(cmsPagesData?.pages) ? cmsPagesData.pages : Array.isArray(cmsPagesData) ? cmsPagesData : []
+  const cmsPagesByPath = new Map()
+  for (const cp of cmsPagesList) {
+    if (cp.path) cmsPagesByPath.set(cp.path.replace(/\/+$/, '') || '/', cp)
+  }
+
+  // Merge: annotate SEO pages that have CMS backing, add CMS-only pages
+  const mergedPages = rawPages.map((p) => {
+    const path = (p.path || (p.url ? new URL(p.url, 'https://x').pathname : '') || '/').replace(/\/+$/, '') || '/'
+    const cmsPage = cmsPagesByPath.get(path)
+    if (cmsPage) {
+      cmsPagesByPath.delete(path) // consumed
+      return { ...p, _cmsPage: cmsPage }
+    }
+    return p
+  })
+  // Add CMS pages that don't match any existing SEO page
+  for (const [, cp] of cmsPagesByPath) {
+    mergedPages.push({ path: cp.path, title: cp.title, _cmsPage: cp })
+  }
+
   // Sort by path to match Analytics module "Site Pages" order (path-sorted hierarchy)
-  const websitePages = [...rawPages].sort((a, b) => {
+  const websitePages = [...mergedPages].sort((a, b) => {
     const pathA = a.path || (a.url ? new URL(a.url, 'https://x').pathname : '') || ''
     const pathB = b.path || (b.url ? new URL(b.url, 'https://x').pathname : '') || ''
     return pathA.localeCompare(pathB, undefined, { sensitivity: 'base' })
@@ -79,6 +105,7 @@ export default function WebsiteModule() {
             onSelectPage={setSelectedPage}
             onSelectSection={setActiveSection}
             isLoading={websitePagesLoading}
+            cmsConnected={!!cmsStatus?.connected}
           />
         ) : (
           <div className="p-4 text-sm text-muted-foreground">
@@ -138,6 +165,9 @@ export default function WebsiteModule() {
               {activeSection === WEBSITE_SECTIONS.SCRIPTS && (
                 <SiteScriptsPanel project={displayProject} scripts={Array.isArray(siteScripts) ? siteScripts : (siteScripts?.scripts ?? [])} />
               )}
+              {activeSection === WEBSITE_SECTIONS.CMS && (
+                <WebsiteCmsSettings projectId={projectId} project={displayProject} cmsStatus={cmsStatus} />
+              )}
             </div>
           </ScrollArea>
         ) : selectedPage ? (
@@ -147,6 +177,7 @@ export default function WebsiteModule() {
             selectedPage={selectedPage}
             activeTab={activeTab}
             onTabChange={setActiveTab}
+            cmsConnected={!!cmsStatus?.connected}
           />
         ) : (
           <div className="h-full flex items-center justify-center text-muted-foreground">

@@ -76,7 +76,7 @@ async function fixInvoiceTokens() {
       console.error(`  ❌ Failed to fix ${invoice.invoice_number}:`, updateError.message)
     } else {
       fixed++
-      const paymentUrl = `https://portal.uptrademedia.com/pay/${paymentToken}`
+      const paymentUrl = `https://app.sonor.io/pay/${paymentToken}`
       console.log(`  ✅ ${invoice.invoice_number}`)
       console.log(`     New payment link: ${paymentUrl}`)
       console.log(`     Expires: ${tokenExpires.toLocaleDateString()}\n`)

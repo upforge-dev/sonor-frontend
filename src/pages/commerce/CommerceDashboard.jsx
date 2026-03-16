@@ -116,11 +116,11 @@ export default function CommerceDashboard({ onNavigate }) {
   const projectId = currentProject?.id
   const { data: settings, refetch: fetchSettings } = useCommerceSettings(projectId)
   
-  // Detect if this is Uptrade Media agency org
-  // Uptrade Media uses Billing API for invoices + system emails
+  // Detect if this is Sonor agency org
+  // Sonor uses Billing API for invoices + system emails
   // Other orgs use Commerce invoices API + Outreach emails  
   const isUptradeMediaOrg = currentOrg?.slug === 'uptrade-media' || 
-                            currentOrg?.domain === 'uptrademedia.com' || 
+                            currentOrg?.domain === 'sonor.io' || 
                             currentOrg?.org_type === 'agency'
   
   // Get enabled offering types from commerce settings
@@ -478,7 +478,7 @@ export default function CommerceDashboard({ onNavigate }) {
     
     try {
       if (isUptradeMediaOrg) {
-        // Uptrade Media: Use Billing API (org-level invoices)
+        // Sonor: Use Billing API (org-level invoices)
         const { data } = await portalApi.get('/billing/invoices', {
           params: { project_id: projectId, limit: 10 }
         })

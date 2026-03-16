@@ -585,11 +585,31 @@ function PlatformToolsPanel({
               </div>
             </div>
             <div className="space-y-2">
-              <Button variant="outline" size="sm" className="w-full justify-start text-xs" onClick={() => toast.info('AI caption coming soon!')}>
+              <Button variant="outline" size="sm" className="w-full justify-start text-xs" onClick={async () => {
+                try {
+                  toast.info('Generating caption...')
+                  const { default: signalApi } = await import('@/lib/signal-api')
+                  const { data } = await signalApi.post('/echo/send', {
+                    message: `Write a short, engaging ${activePlatform} caption for a video reel. ${caption ? `Current caption for context: "${caption}"` : 'No context yet.'}. Keep it under 200 characters, punchy and platform-appropriate.`,
+                    skill: 'content',
+                  })
+                  if (data?.content) setCaption(data.content.trim())
+                } catch { toast.error('Failed to generate caption') }
+              }}>
                 <Sparkles className="mr-2 h-3.5 w-3.5 text-[var(--brand-primary)]" />
                 Generate {activePlatform} Caption
               </Button>
-              <Button variant="outline" size="sm" className="w-full justify-start text-xs" onClick={() => toast.info('AI script coming soon!')}>
+              <Button variant="outline" size="sm" className="w-full justify-start text-xs" onClick={async () => {
+                try {
+                  toast.info('Writing script...')
+                  const { default: signalApi } = await import('@/lib/signal-api')
+                  const { data } = await signalApi.post('/echo/send', {
+                    message: `Write a short video script for a ${activePlatform} reel. ${caption ? `Topic: "${caption}"` : 'Create something engaging.'}. Format: Hook → Body → CTA. Keep it under 60 seconds.`,
+                    skill: 'content',
+                  })
+                  if (data?.content) setCaption(data.content.trim())
+                } catch { toast.error('Failed to generate script') }
+              }}>
                 <Type className="mr-2 h-3.5 w-3.5 text-[var(--brand-primary)]" />
                 Write Video Script
               </Button>
@@ -1164,7 +1184,20 @@ export function ReelComposer({
                     <Hash className="h-3.5 w-3.5" />
                     Hashtags
                   </Label>
-                  <Button variant="ghost" size="sm" onClick={() => toast.info('AI hashtags coming soon!')}>
+                  <Button variant="ghost" size="sm" onClick={async () => {
+                    try {
+                      toast.info('Generating hashtags...')
+                      const { default: signalApi } = await import('@/lib/signal-api')
+                      const { data } = await signalApi.post('/echo/send', {
+                        message: `Suggest 8-12 trending ${activePlatform} hashtags for a video reel. ${caption ? `Context: "${caption}"` : ''}. Return ONLY the hashtags as a comma-separated list without the # symbol.`,
+                        skill: 'content',
+                      })
+                      if (data?.content) {
+                        const tags = data.content.split(',').map(t => t.trim().replace(/^#/, '')).filter(Boolean)
+                        if (tags.length) setHashtags(tags)
+                      }
+                    } catch { toast.error('Failed to generate hashtags') }
+                  }}>
                     <Sparkles className="mr-1 h-3 w-3" />
                     AI Suggest
                   </Button>

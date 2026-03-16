@@ -18,6 +18,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { cn } from '@/lib/utils'
 import type { ChatKitThread } from '@/components/chat/types'
 import { messagesApi, chatkitApi } from '@/lib/portal-api'
+import { echoApi } from '@/lib/signal-api'
 import { useBrandColors } from '@/hooks/useBrandColors'
 
 interface Contact {
@@ -35,6 +36,13 @@ interface MessageSearchResult {
   content: string
   sender_name?: string
   created_at: string
+}
+
+interface EchoSearchResult {
+  conversationId: string
+  title: string
+  snippet: string
+  matchedAt?: string
 }
 
 interface QuickSwitcherProps {
@@ -58,13 +66,16 @@ export function QuickSwitcher({
   const [contacts, setContacts] = useState<Contact[]>([])
   const [loadingContacts, setLoadingContacts] = useState(false)
   const [messageResults, setMessageResults] = useState<MessageSearchResult[]>([])
+  const [echoResults, setEchoResults] = useState<EchoSearchResult[]>([])
   const [searchingMessages, setSearchingMessages] = useState(false)
+  const [searchingEcho, setSearchingEcho] = useState(false)
   const brandColors = useBrandColors()
 
   useEffect(() => {
     if (!open) {
       setQuery('')
       setMessageResults([])
+      setEchoResults([])
       return
     }
     if (activeTab === 'user' && onSelectContact) {
@@ -82,7 +93,7 @@ export function QuickSwitcher({
     }
   }, [open, activeTab, onSelectContact])
 
-  // Phase 3.3.2: Search messages when query changes (debounced)
+  // Phase 3.3.2: Search messages when query changes (debounced) - user tab
   useEffect(() => {
     if (!open || !query.trim() || activeTab !== 'user') {
       setMessageResults([])
@@ -98,6 +109,24 @@ export function QuickSwitcher({
         })
         .catch(() => setMessageResults([]))
         .finally(() => setSearchingMessages(false))
+    }, 300)
+
+    return () => clearTimeout(timer)
+  }, [query, open, activeTab])
+
+  // Echo conversation search when Echo tab
+  useEffect(() => {
+    if (!open || !query.trim() || activeTab !== 'echo') {
+      setEchoResults([])
+      return
+    }
+
+    const timer = setTimeout(() => {
+      setSearchingEcho(true)
+      echoApi.searchConversations(query.trim(), 10)
+        .then((rows) => setEchoResults(Array.isArray(rows) ? rows : []))
+        .catch(() => setEchoResults([]))
+        .finally(() => setSearchingEcho(false))
     }, 300)
 
     return () => clearTimeout(timer)
@@ -133,13 +162,31 @@ export function QuickSwitcher({
   }, [onSelectContact, onOpenChange])
 
   const handleSelectMessage = useCallback((result: MessageSearchResult) => {
-    // Find the thread by thread_id and open it
     const thread = threads.find((t) => t.thread_id === result.thread_id)
     if (thread) {
       onSelectThread(thread)
       onOpenChange(false)
     }
   }, [threads, onSelectThread, onOpenChange])
+
+  const handleSelectEchoResult = useCallback((result: EchoSearchResult) => {
+    const syntheticThread: ChatKitThread = {
+      thread_id: result.conversationId,
+      title: result.title || 'Conversation',
+      thread_type: 'echo',
+      user_id: '',
+      org_id: '',
+      project_id: null,
+      last_message_at: null,
+      unread_count: 0,
+      status: 'active',
+      skill_key: null,
+      created_at: '',
+      updated_at: '',
+    }
+    onSelectThread(syntheticThread)
+    onOpenChange(false)
+  }, [onSelectThread, onOpenChange])
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -164,6 +211,49 @@ export function QuickSwitcher({
           />
         </div>
         <ScrollArea className="max-h-[400px] px-2 pb-4">
+          {/* Echo conversation search results */}
+          {activeTab === 'echo' && query.trim() && (searchingEcho || echoResults.length > 0) && (
+            <>
+              <div className="px-2 py-1.5 text-xs font-semibold uppercase tracking-wide text-[var(--text-tertiary)]">
+                Echo conversations
+              </div>
+              {searchingEcho ? (
+                <div className="py-4 text-center text-sm text-[var(--text-tertiary)]">Searching...</div>
+              ) : echoResults.length > 0 ? (
+                <div className="space-y-0.5 mb-3">
+                  {echoResults.map((result) => (
+                    <button
+                      key={result.conversationId}
+                      type="button"
+                      onClick={() => handleSelectEchoResult(result)}
+                      className={cn(
+                        'w-full flex items-start gap-3 rounded-lg px-3 py-2 text-left transition-colors',
+                        'hover:bg-[var(--surface-secondary)]'
+                      )}
+                    >
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--surface-secondary)]">
+                        <MessageCircle className="h-4 w-4 text-[var(--text-tertiary)]" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-[var(--text-primary)] truncate mb-0.5">
+                          {result.title || 'Conversation'}
+                        </p>
+                        {result.snippet && (
+                          <p className="text-xs text-[var(--text-tertiary)] line-clamp-2">{result.snippet}</p>
+                        )}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="py-4 text-center text-sm text-[var(--text-tertiary)]">No Echo conversations match</div>
+              )}
+              <div className="px-2 py-1.5 mt-2 text-xs font-semibold uppercase tracking-wide text-[var(--text-tertiary)]">
+                Recent threads
+              </div>
+            </>
+          )}
+
           {/* Phase 3.3.2: Message search results */}
           {activeTab === 'user' && query.trim() && messageResults.length > 0 && (
             <>

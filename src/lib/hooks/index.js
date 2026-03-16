@@ -110,6 +110,40 @@ export {
 } from './use-broadcast'
 
 // ═══════════════════════════════════════════════════════════════════════════
+// CMS (Sanity Content Lake)
+// ═══════════════════════════════════════════════════════════════════════════
+export {
+  cmsKeys,
+  useCmsStatus,
+  useEnableCms,
+  useLinkCms,
+  useCmsPages,
+  useCmsPage,
+  useCreateCmsPage,
+  useUpdateCmsPage,
+  useDeleteCmsPage,
+  usePublishCmsPage,
+  useUnpublishCmsPage,
+  useAddCmsSection,
+  useUpdateCmsSection,
+  useDeleteCmsSection,
+  useReorderCmsSections,
+  useUploadCmsAsset,
+  useCmsTemplates,
+  useCmsTemplate,
+  useSaveAsTemplate,
+  useDeleteTemplate,
+  useCmsPageRevisions,
+  useRestoreRevision,
+  useImportFromUrl,
+  useRegisterCmsSchemas,
+} from './use-cms'
+
+export {
+  useCmsPresence,
+} from './use-cms-presence'
+
+// ═══════════════════════════════════════════════════════════════════════════
 // COMMERCE
 // ═══════════════════════════════════════════════════════════════════════════
 export {
@@ -333,7 +367,7 @@ export {
 } from './use-projects'
 
 // ═══════════════════════════════════════════════════════════════════════════
-// PROJECTS V2 (Uptrade Tasks, User Tasks, Deliverables)
+// PROJECTS V2 (Sonor Tasks, User Tasks, Deliverables)
 // ═══════════════════════════════════════════════════════════════════════════
 export {
   UPTRADE_TASK_STATUS_CONFIG,

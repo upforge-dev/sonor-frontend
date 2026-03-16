@@ -229,7 +229,7 @@ export default function FormDetail() {
   async function copyEmbedCode() {
     if (!form) return
     
-    const embedCode = `<script src="https://forms.uptrademedia.com/embed.js" data-form="${form.slug}"></script>`
+    const embedCode = `<script src="https://forms.sonor.io/embed.js" data-form="${form.slug}"></script>`
     await navigator.clipboard.writeText(embedCode)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)

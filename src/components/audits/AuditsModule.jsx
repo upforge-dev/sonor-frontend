@@ -1667,7 +1667,7 @@ export default function Audits() {
                 />
                 {isAdmin && (
                   <p className="text-xs text-[var(--text-tertiary)] mt-1">
-                    You can enter just the domain (e.g., "uptrademedia.com") - https:// will be added automatically
+                    You can enter just the domain (e.g., "sonor.io") - https:// will be added automatically
                   </p>
                 )}
               </div>

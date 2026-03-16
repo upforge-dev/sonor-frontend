@@ -47,7 +47,7 @@ export function openOAuthPopup(url, name = 'oauth') {
       // Verify origin matches our API
       const allowedOrigins = [
         'http://localhost:3002',
-        'https://api.uptrademedia.com',
+        'https://api.sonor.io',
         window.location.origin,
       ]
       

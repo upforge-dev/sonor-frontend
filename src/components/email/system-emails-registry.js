@@ -99,7 +99,7 @@ export const SYSTEM_EMAILS = [
       { name: '{{setup_link}}', description: 'One-time setup link' },
       { name: '{{company}}', description: 'Client company name' }
     ],
-    defaultSubject: 'Set up your Uptrade Media portal account',
+    defaultSubject: 'Set up your Sonor portal account',
     editable: true
   },
   {
@@ -177,7 +177,7 @@ export const SYSTEM_EMAILS = [
       { name: '{{payment_link}}', description: 'Link to pay invoice' },
       { name: '{{line_items}}', description: 'Invoice line items (HTML table)' }
     ],
-    defaultSubject: 'Invoice #{{invoice_number}} from Uptrade Media',
+    defaultSubject: 'Invoice #{{invoice_number}} from Sonor',
     editable: true
   },
   {
@@ -233,7 +233,7 @@ export const SYSTEM_EMAILS = [
       { name: '{{view_link}}', description: 'Link to view proposal' },
       { name: '{{expires_at}}', description: 'Proposal expiration date' }
     ],
-    defaultSubject: 'New proposal from Uptrade Media: {{proposal_title}}',
+    defaultSubject: 'New proposal from Sonor: {{proposal_title}}',
     editable: true
   },
   {

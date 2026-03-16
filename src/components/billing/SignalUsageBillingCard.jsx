@@ -3,7 +3,7 @@
  * 
  * Displays current month's Signal AI usage and projected bill.
  * Shows real-time billing info including:
- * - Current usage (tokens + Copilot requests)
+ * - Current token usage
  * - Projected bill
  * - Days remaining in billing period
  * - Progress bar for the month
@@ -19,7 +19,6 @@ import {
   TrendingUp, 
   Calendar, 
   DollarSign, 
-  Cpu,
   HelpCircle,
   Loader2,
   AlertCircle
@@ -66,7 +65,6 @@ export default function SignalUsageBillingCard() {
           current_bill: 0,
           projected_month_end: 0,
           token_usage: { total_tokens: 0, total_calls: 0, cost: 0, billed: 0 },
-          copilot_usage: { requests: 0, cost: 0, billed: 0 },
           period_info: {
             billing_period: new Date().toISOString().slice(0, 7),
             period_start: new Date().toISOString().slice(0, 10),
@@ -127,7 +125,6 @@ export default function SignalUsageBillingCard() {
 
   const periodInfo = billing.period_info || {}
   const tokenUsage = billing.token_usage || {}
-  const copilotUsage = billing.copilot_usage || {}
   
   const daysElapsed = periodInfo.days_elapsed || 1
   const daysInMonth = periodInfo.days_in_month || 30
@@ -203,34 +200,17 @@ export default function SignalUsageBillingCard() {
         </div>
 
         {/* Usage Breakdown */}
-        <div className="grid grid-cols-2 gap-3">
-          {/* Token Usage */}
-          <div className="p-3 rounded-lg bg-[var(--bg-secondary)] space-y-1">
-            <div className="flex items-center gap-1.5">
-              <Zap className="h-3.5 w-3.5 text-[var(--brand-primary)]" />
-              <span className="text-xs font-medium text-[var(--text-secondary)]">AI Tokens</span>
-            </div>
-            <p className="text-lg font-semibold text-[var(--text-primary)]">
-              {formatNumber(tokenUsage.total_tokens)}
-            </p>
-            <p className="text-xs text-[var(--text-tertiary)]">
-              {tokenUsage.total_calls || 0} calls
-            </p>
+        <div className="p-3 rounded-lg bg-[var(--bg-secondary)] space-y-1">
+          <div className="flex items-center gap-1.5">
+            <Zap className="h-3.5 w-3.5 text-[var(--brand-primary)]" />
+            <span className="text-xs font-medium text-[var(--text-secondary)]">AI Tokens</span>
           </div>
-
-          {/* Copilot Requests */}
-          <div className="p-3 rounded-lg bg-[var(--bg-secondary)] space-y-1">
-            <div className="flex items-center gap-1.5">
-              <Cpu className="h-3.5 w-3.5 text-[var(--brand-primary)]" />
-              <span className="text-xs font-medium text-[var(--text-secondary)]">Copilot</span>
-            </div>
-            <p className="text-lg font-semibold text-[var(--text-primary)]">
-              {copilotUsage.requests || 0}
-            </p>
-            <p className="text-xs text-[var(--text-tertiary)]">
-              premium requests
-            </p>
-          </div>
+          <p className="text-lg font-semibold text-[var(--text-primary)]">
+            {formatNumber(tokenUsage.total_tokens)}
+          </p>
+          <p className="text-xs text-[var(--text-tertiary)]">
+            {tokenUsage.total_calls || 0} calls
+          </p>
         </div>
 
         {/* Due Date */}

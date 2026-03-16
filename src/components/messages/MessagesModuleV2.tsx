@@ -45,6 +45,7 @@ import type { ChatKitThread, ChatKitItem } from '@/components/chat/types'
 
 // Hooks
 import { useEchoChat } from '@/hooks/useEchoChat'
+import { useEchoUnread } from '@/hooks/useEchoUnread'
 import { usePortalChat } from '@/hooks/usePortalChat'
 import { useEngageLiveChat } from '@/hooks/useEngageLiveChat'
 
@@ -54,6 +55,7 @@ import EchoLogo from '@/components/EchoLogo.jsx'
 import useAuthStore from '@/lib/auth-store'
 import { useBrandColors } from '@/hooks/useBrandColors'
 import { messagesApi, chatkitApi, engageApi, portalApi } from '@/lib/portal-api'
+import { echoApi } from '@/lib/signal-api'
 import { toast } from '@/lib/toast'
 import { usePendingHandoffs } from '@/lib/MessagesProvider'
 import { QuickSwitcher } from './QuickSwitcher'
@@ -459,6 +461,7 @@ export function MessagesModuleV2({
   }, [searchParams, threadType, threadId])
 
   // Search messages/threads (Phase 3.3.1) - debounced
+  // Echo tab → Signal API; user/visitor → Portal ChatKit API
   useEffect(() => {
     if (!searchQuery.trim()) {
       setSearchResults(null)
@@ -466,13 +469,25 @@ export function MessagesModuleV2({
     }
     setIsSearching(true)
     const timer = setTimeout(() => {
-      chatkitApi.search(searchQuery.trim())
-        .then(res => setSearchResults(res?.data ?? res ?? null))
-        .catch(() => setSearchResults(null))
-        .finally(() => setIsSearching(false))
+      if (activeTab === 'echo') {
+        echoApi.searchConversations(searchQuery.trim())
+          .then((rows: Array<{ conversationId: string; title: string; snippet: string }>) => {
+            setSearchResults({
+              threads: rows.map(r => ({ thread_id: r.conversationId, title: r.title || r.snippet })),
+              messages: [],
+            })
+          })
+          .catch(() => setSearchResults(null))
+          .finally(() => setIsSearching(false))
+      } else {
+        chatkitApi.search(searchQuery.trim())
+          .then(res => setSearchResults(res?.data ?? res ?? null))
+          .catch(() => setSearchResults(null))
+          .finally(() => setIsSearching(false))
+      }
     }, 300)
     return () => clearTimeout(timer)
-  }, [searchQuery])
+  }, [searchQuery, activeTab])
   
   // Thread lists
   const [echoThreads, setEchoThreads] = useState<ChatKitThread[]>([])
@@ -510,6 +525,8 @@ export function MessagesModuleV2({
     isLoading: echoLoading,
     isStreaming,
     streamingContent,
+    activeToolCall,
+    suggestionChips: echoSuggestionChips,
     error: echoError,
     sendMessage: sendEchoMessage,
     loadThread: loadEchoThread,
@@ -525,6 +542,42 @@ export function MessagesModuleV2({
     enabled: activeTab === 'echo',
   })
   
+  // Unread badge polling for proactive messages
+  const { unreadCount: echoUnread } = useEchoUnread({
+    isEchoActive: activeTab === 'echo',
+    enabled: true,
+  })
+
+  // Dynamic welcome context (latest insight, goals, new leads)
+  const [echoWelcomeContext, setEchoWelcomeContext] = useState(null)
+  useEffect(() => {
+    if (activeTab !== 'echo') return
+    let cancelled = false
+    echoApi.getWelcomeContext().then((ctx) => {
+      if (!cancelled) setEchoWelcomeContext(ctx)
+    }).catch(() => {})
+    return () => { cancelled = true }
+  }, [activeTab])
+
+  // Pinned message IDs (Echo only)
+  const [pinnedMessageIds, setPinnedMessageIds] = useState<Set<string>>(new Set())
+
+  const handlePinMessage = useCallback(async (messageId: string) => {
+    try {
+      const result = await echoApi.togglePin(messageId)
+      setPinnedMessageIds(prev => {
+        const next = new Set(prev)
+        if (result.is_pinned) next.add(messageId)
+        else next.delete(messageId)
+        return next
+      })
+      return result
+    } catch (err) {
+      console.error('Failed to toggle pin:', err)
+      return { is_pinned: false }
+    }
+  }, [])
+
   // Surface Echo errors in UI (toast + inline in ChatArea)
   useEffect(() => {
     if (activeTab === 'echo' && echoError) {
@@ -985,7 +1038,7 @@ export function MessagesModuleV2({
   
   const handleSendMessage = useCallback(async (content: string, files?: File[]) => {
     if (activeTab === 'echo') {
-      await sendEchoMessage(content)
+      await sendEchoMessage(content, files)
       const threads = await loadEchoThreads()
       setEchoThreads(threads)
     } else if (activeTab === 'visitor') {
@@ -1065,12 +1118,15 @@ export function MessagesModuleV2({
   
   // Pin thread handler
   const handlePinThread = useCallback(async (threadId: string, pinned: boolean) => {
+    const upd = (t: ChatKitThread) => (threadListId(t) === threadId ? { ...t, is_pinned: pinned } : t)
+    if (activeTab === 'echo') {
+      // Echo has no conversation-level pin API; use local-only (lost on refresh)
+      setEchoThreads(prev => prev.map(upd))
+      return
+    }
     try {
       await chatkitApi.pinThread(threadId, pinned)
-      const upd = (t: ChatKitThread) => (threadListId(t) === threadId ? { ...t, is_pinned: pinned } : t)
-      if (activeTab === 'echo') {
-        setEchoThreads(prev => prev.map(upd))
-      } else if (activeTab === 'user') {
+      if (activeTab === 'user') {
         const inCh = channelThreads.some(t => threadListId(t) === threadId)
         if (inCh) setChannelThreads(prev => prev.map(upd))
         else setPortalThreads(prev => prev.map(upd))
@@ -1085,16 +1141,19 @@ export function MessagesModuleV2({
 
   // Mute thread handler (Phase 3.4.1)
   const handleMuteThread = useCallback(async (threadId: string, muted: boolean) => {
+    const upd = (t: ChatKitThread) => (threadListId(t) === threadId ? { ...t, is_muted: muted } as ChatKitThread : t)
+    if (activeTab === 'echo') {
+      // Echo has no mute API; use local-only (lost on refresh)
+      setEchoThreads(prev => prev.map(upd))
+      return
+    }
     try {
       if (muted) {
         await chatkitApi.muteThread(threadId)
       } else {
         await chatkitApi.unmuteThread(threadId)
       }
-      const upd = (t: ChatKitThread) => (threadListId(t) === threadId ? { ...t, is_muted: muted } as ChatKitThread : t)
-      if (activeTab === 'echo') {
-        setEchoThreads(prev => prev.map(upd))
-      } else if (activeTab === 'user') {
+      if (activeTab === 'user') {
         const inCh = channelThreads.some(t => threadListId(t) === threadId)
         if (inCh) setChannelThreads(prev => prev.map(upd))
         else setPortalThreads(prev => prev.map(upd))
@@ -1109,12 +1168,20 @@ export function MessagesModuleV2({
   
   // Delete thread handler
   const handleDeleteThread = useCallback(async (threadId: string) => {
-    try {
-      await chatkitApi.deleteThread(threadId)
-      if (activeTab === 'echo') {
+    if (activeTab === 'echo') {
+      try {
+        await echoApi.closeConversation(threadId)
         setEchoThreads(prev => prev.filter(t => threadListId(t) !== threadId))
         if (selectedEchoThreadId === threadId) setSelectedEchoThreadId(null)
-      } else if (activeTab === 'user') {
+      } catch (err) {
+        console.error('Failed to close Echo conversation:', err)
+        throw err
+      }
+      return
+    }
+    try {
+      await chatkitApi.deleteThread(threadId)
+      if (activeTab === 'user') {
         const inCh = channelThreads.some(t => threadListId(t) === threadId)
         if (inCh) {
           setChannelThreads(prev => prev.filter(t => threadListId(t) !== threadId))
@@ -1187,8 +1254,13 @@ export function MessagesModuleV2({
     if (activeTab === 'echo') {
       return {
         greeting: "Hi! I'm Echo, your AI assistant.",
-        description: "I can help with SEO, content, proposals, and more.",
-        prompts: [],
+        description: "Ask me anything about your business — analytics, leads, SEO, content, and more.",
+        prompts: [
+          { label: "Today's schedule", prompt: "What's on my schedule today?", icon: 'calendar' },
+          { label: 'Which leads need attention?', prompt: 'Show me my high-priority leads that need follow-up', icon: 'users' },
+          { label: 'How did this week go?', prompt: 'How did our landing pages perform this week?', icon: 'chart' },
+          { label: 'Any new leads?', prompt: 'Show me any new leads from the last 24 hours', icon: 'trending' },
+        ],
       }
     }
     if (activeTab === 'user') {
@@ -1246,9 +1318,14 @@ export function MessagesModuleV2({
               className="w-full"
             >
               <TabsList className="w-full bg-[var(--surface-secondary)]">
-                <TabsTrigger value="echo" className="flex-1 gap-1.5 text-xs">
+                <TabsTrigger value="echo" className="flex-1 gap-1.5 text-xs relative">
                   <SignalIcon className="h-3.5 w-3.5" />
                   Echo
+                  {echoUnread > 0 && activeTab !== 'echo' && (
+                    <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-[var(--brand-primary)] text-white text-[10px] font-bold px-1">
+                      {echoUnread > 99 ? '99+' : echoUnread}
+                    </span>
+                  )}
                 </TabsTrigger>
                 <TabsTrigger value="user" className="flex-1 gap-1.5 text-xs">
                   <Users className="h-3.5 w-3.5" />
@@ -1327,7 +1404,12 @@ export function MessagesModuleV2({
                           key={t.thread_id}
                           type="button"
                           onClick={() => {
-                            setSelectedPortalThreadId(t.thread_id)
+                            if (activeTab === 'echo') {
+                              setSelectedEchoThreadId(t.thread_id)
+                              setActiveTab('echo')
+                            } else {
+                              setSelectedPortalThreadId(t.thread_id)
+                            }
                             setSearchQuery('')
                           }}
                           className="w-full text-left px-2 py-1.5 rounded-lg hover:bg-[var(--surface-secondary)] text-sm text-[var(--text-primary)] truncate"
@@ -1347,7 +1429,12 @@ export function MessagesModuleV2({
                           key={m.item_id}
                           type="button"
                           onClick={() => {
-                            setSelectedPortalThreadId(m.thread_id)
+                            if (activeTab === 'echo') {
+                              setSelectedEchoThreadId(m.thread_id)
+                              setActiveTab('echo')
+                            } else {
+                              setSelectedPortalThreadId(m.thread_id)
+                            }
                             setSearchQuery('')
                           }}
                           className="w-full text-left px-2 py-1.5 rounded-lg hover:bg-[var(--surface-secondary)]"
@@ -1455,6 +1542,8 @@ export function MessagesModuleV2({
             onDeleteThread={handleDeleteThread}
             onMuteThread={handleMuteThread}
             presenceFor={activeTab === 'user' ? presenceFor : undefined}
+            onSearch={activeTab === 'echo' ? (q) => echoApi.searchConversations(q) : undefined}
+            onSearchResultClick={activeTab === 'echo' ? (convId) => { setSelectedEchoThreadId(convId); loadEchoThread(convId) } : undefined}
           />
         </div>
         )}
@@ -1503,6 +1592,9 @@ export function MessagesModuleV2({
           threadType={activeTab}
           isStreaming={activeTab === 'echo' ? isStreaming : false}
           streamingContent={activeTab === 'echo' ? streamingContent : ''}
+          toolCallLabel={activeTab === 'echo' ? activeToolCall?.label ?? null : null}
+          suggestionChips={activeTab === 'echo' ? echoSuggestionChips : []}
+          echoWelcomeContext={activeTab === 'echo' ? echoWelcomeContext : undefined}
           typingUsers={activeTab !== 'echo' ? typingUsers : []}
           onSendMessage={handleSendMessage}
           onPromptClick={handlePromptClick}
@@ -1537,6 +1629,8 @@ export function MessagesModuleV2({
           allowEdit={activeTab === 'user'}
           allowDelete={activeTab === 'user'}
           error={activeTab === 'echo' ? echoError : portalOrEngageError}
+          onPinMessage={activeTab === 'echo' ? handlePinMessage : undefined}
+          pinnedMessageIds={activeTab === 'echo' ? pinnedMessageIds : undefined}
         />
       </div>
       

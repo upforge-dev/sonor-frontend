@@ -1985,9 +1985,9 @@ export default function EmailPlatform({
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
   const { createTemplate, updateTemplate, fetchTemplates, createAutomation, fetchAutomations, createCampaign, fetchCampaigns } = useEmailPlatformStore()
 
-  // Only Uptrade Media can see System Emails
+  // Only Sonor can see System Emails
   const isUptradeMedia = currentOrg?.slug === 'uptrade-media' || 
-                         currentOrg?.domain === 'uptrademedia.com' || 
+                         currentOrg?.domain === 'sonor.io' || 
                          currentOrg?.org_type === 'agency'
 
   // Check for incoming offering from Commerce module

@@ -388,7 +388,7 @@ export function BroadcastSettings({ open, onOpenChange }) {
                       <p className="font-medium text-[var(--text-primary)]">Simple One-Click Connection</p>
                       <p className="text-sm text-[var(--text-tertiary)]">
                         Click "Connect" and authorize access to your social accounts. 
-                        No developer setup required - Uptrade handles all the technical details.
+                        No developer setup required - Sonor handles all the technical details.
                       </p>
                     </div>
                   </CardContent>

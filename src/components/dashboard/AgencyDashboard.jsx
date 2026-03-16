@@ -1,5 +1,5 @@
 /**
- * AgencyDashboard - First-view dashboard for agency users (Uptrade Media org)
+ * AgencyDashboard - First-view dashboard for agency users (Sonor org)
  *
  * Plan-aligned: hero, "Needs your attention" / "All caught up", KPI row, revenue AreaChart,
  * project status + proposals + audits + activity + invoices Tremor charts, quick actions,

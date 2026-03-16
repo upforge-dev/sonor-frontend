@@ -24,11 +24,11 @@ api.interceptors.request.use(
     // Get auth state for organization/project context headers
     const state = useAuthStore.getState()
     
-    // Check if this is an agency org (Uptrade Media) - agency orgs should NOT filter by org
+    // Check if this is an agency org (Sonor) - agency orgs should NOT filter by org
     const isAgencyOrg = state.currentOrg?.org_type === 'agency'
     
     // X-Organization-Id: The business entity (GWA LLC) - for org-level services (billing, proposals)
-    // Only send for CLIENT orgs, not agency org (Uptrade Media sees all data)
+    // Only send for CLIENT orgs, not agency org (Sonor sees all data)
     if (state.currentOrg?.id && !isAgencyOrg) {
       config.headers['X-Organization-Id'] = state.currentOrg.id
     }

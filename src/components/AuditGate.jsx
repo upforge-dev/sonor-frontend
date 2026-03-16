@@ -245,7 +245,7 @@ export default function AuditGate() {
           </h1>
           <p className="text-[var(--text-secondary)] mb-6">{errorInfo.message}</p>
           <a 
-            href="https://uptrademedia.com/free-audit/"
+            href="https://sonor.io/free-audit/"
             className="inline-flex items-center justify-center px-6 py-3 bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-primary)] text-white font-semibold rounded-xl hover:shadow-lg transition-all"
           >
             <RefreshCw className="w-4 h-4 mr-2" />

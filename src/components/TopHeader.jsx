@@ -398,7 +398,7 @@ function BugReportDialog({ open, onOpenChange }) {
         description,
       ].filter(Boolean).join('\n')
 
-      const mailtoUrl = `mailto:ramsey@uptrademedia.com?subject=${encodeURIComponent(subject || `Bug Report: ${currentPage}`)}&body=${encodeURIComponent(body)}`
+      const mailtoUrl = `mailto:hello@sonor.io?subject=${encodeURIComponent(subject || `Bug Report: ${currentPage}`)}&body=${encodeURIComponent(body)}`
       window.open(mailtoUrl, '_blank')
       setSent(true)
     } finally {
@@ -524,7 +524,7 @@ export default function TopHeader({ onNavigate, onOpenSearch }) {
       <header className="h-12 flex items-center justify-between border-b border-border/50 bg-card backdrop-blur-sm" role="banner" aria-label="Top navigation">
         {/* Left section: Logo + Org + Project */}
         <div className="flex items-center">
-          {/* Uptrade Logo - aligned with sidebar icons (56px = w-14) */}
+          {/* Sonor Logo - aligned with sidebar icons (56px = w-14) */}
           <a href="/" className="w-14 flex items-center justify-center hover:bg-muted/50 transition-colors h-12">
             <LogoSvg className="w-7 h-7 text-black dark:text-white" fill="currentColor" />
           </a>
@@ -579,7 +579,7 @@ export default function TopHeader({ onNavigate, onOpenSearch }) {
                 <Bug className="h-4 w-4 mr-2" />
                 Report a Bug
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => window.open('mailto:ramsey@uptrademedia.com?subject=Portal Support Request', '_blank')}>
+              <DropdownMenuItem onClick={() => window.open('mailto:hello@sonor.io?subject=Portal Support Request', '_blank')}>
                 <MessageSquare className="h-4 w-4 mr-2" />
                 Contact Support
               </DropdownMenuItem>

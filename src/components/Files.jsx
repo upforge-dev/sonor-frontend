@@ -84,10 +84,10 @@ const Files = ({
   const { data: projectsData } = useProjects()
   const projects = projectsData?.projects ?? projectsData ?? []
   
-  // Check if this is Uptrade Media (agency) - should see ALL projects
+  // Check if this is Sonor (agency) - should see ALL projects
   const isAgencyOrg = isSuperAdmin || 
                       currentOrg?.slug === 'uptrade-media' || 
-                      currentOrg?.domain === 'uptrademedia.com' || 
+                      currentOrg?.domain === 'sonor.io' || 
                       currentOrg?.org_type === 'agency'
   
   const queryClient = useQueryClient()

@@ -325,7 +325,6 @@ export default function AIInsightsPanel({ path, onClose, fullPage = false }) {
           size="sm"
           className="w-full justify-between group"
           onClick={() => {
-            // TODO: Open Echo chat with analytics context
             window.dispatchEvent(new CustomEvent('open-echo', { 
               detail: { 
                 context: 'analytics',

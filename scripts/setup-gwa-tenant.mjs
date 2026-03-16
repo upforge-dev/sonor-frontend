@@ -25,7 +25,7 @@ const supabase = createClient(supabaseUrl, supabaseKey)
 const GWA_CONFIG = {
   name: "God's Workout Apparel",
   slug: 'gwa',
-  domain: 'gwa.uptrademedia.com', // or godworkoutapparel.com when live
+  domain: 'gwa.sonor.io', // or godworkoutapparel.com when live
   plan: 'pro',
   status: 'active',
   features: {
@@ -48,8 +48,8 @@ const GWA_CONFIG = {
     primaryColor: '#d9b338',      // GWA Gold
     secondaryColor: '#c0c0c0',    // GWA Silver
     backgroundColor: '#0a0a0f',   // Dark background
-    logoUrl: 'https://gwa.uptrademedia.com/logo.svg',
-    faviconUrl: 'https://gwa.uptrademedia.com/favicon.ico',
+    logoUrl: 'https://gwa.sonor.io/logo.svg',
+    faviconUrl: 'https://gwa.sonor.io/favicon.ico',
   },
   crm_fields: [],
   // Shopify config (stored in organization_secrets)
@@ -350,8 +350,8 @@ async function setupGWATenant() {
     }
 
     // 11. Generate tracking script
-    const baseUrl = 'https://portal.uptrademedia.com'
-    const trackingScript = `<!-- Uptrade Portal Analytics -->
+    const baseUrl = 'https://app.sonor.io'
+    const trackingScript = `<!-- Sonor Portal Analytics -->
 <script>
   window.UPTRADE_CONFIG = {
     orgId: '${organization.id}',
@@ -360,7 +360,7 @@ async function setupGWATenant() {
   };
 </script>
 <script src="${baseUrl}/tracking.js" defer></script>
-<!-- End Uptrade Portal Analytics -->`
+<!-- End Sonor Portal Analytics -->`
 
     console.log('\n' + '='.repeat(60))
     console.log('✅ GWA TENANT SETUP COMPLETE!')

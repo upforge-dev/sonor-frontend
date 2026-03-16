@@ -222,7 +222,7 @@ export default function ProposalAIDialog({
     heroImage: null,
     heroImagePreview: '',
     validDays: '30',
-    includePortalFeatures: true // Sonor/Uptrade Portal features (CRM, Commerce, Signal AI, etc.) — optional for projects with own backend
+    includePortalFeatures: true // Sonor Portal features (CRM, Commerce, Signal AI, etc.) — optional for projects with own backend
   })
 
   // Get proposal types list
@@ -1483,7 +1483,7 @@ export default function ProposalAIDialog({
                 </div>
               )}
 
-              {/* Sonor / Uptrade Portal features — optional for site rebuilds when client has own backend */}
+              {/* Sonor Portal features — optional for site rebuilds when client has own backend */}
               {['website_rebuild', 'brand_website'].includes(selectedType) && (
                 <div className="p-4 rounded-2xl bg-[var(--surface-secondary)] border border-[var(--glass-border)] space-y-3">
                   <div className="flex items-start gap-3">
@@ -1496,7 +1496,7 @@ export default function ProposalAIDialog({
                     />
                     <div>
                       <Label htmlFor="includePortalFeatures" className="font-medium text-[var(--text-primary)] cursor-pointer">
-                        Include Sonor / Uptrade Portal features
+                        Include Sonor Portal features
                       </Label>
                       <p className="text-sm text-[var(--text-tertiary)] mt-0.5">
                         CRM, Commerce, Forms, Analytics, SEO tracking, Signal AI, and other Portal modules. Uncheck if this project will use its own backend.

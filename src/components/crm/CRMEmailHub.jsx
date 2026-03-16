@@ -6,7 +6,7 @@
  * - Intelligent email classification (client, prospect, team, customer, spam, solicitation)
  * - "Needs Response" prioritization
  * - Contact/customer matching
- * - Signal AI draft generation (coming soon)
+ * - Signal AI draft generation
  * - Compose new emails
  */
 import { useState, useEffect, useCallback } from 'react'

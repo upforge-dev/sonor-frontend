@@ -802,7 +802,7 @@ function EmbedCodeModal({ form, open, onOpenChange }) {
 />`
 
   const htmlCode = `<div id="uptrade-form-${form.slug}"></div>
-<script src="https://cdn.uptrademedia.com/forms.js"></script>
+<script src="https://cdn.sonor.io/forms.js"></script>
 <script>
   UptradeFormsm.render({
     formId: '${form.slug}',

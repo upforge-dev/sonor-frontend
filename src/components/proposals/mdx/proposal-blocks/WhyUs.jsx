@@ -5,7 +5,7 @@ import { CheckCircle, Award, Users, Shield, Zap, Target } from 'lucide-react'
  * 
  * Usage:
  * <WhyUs 
- *   title="Why Choose Uptrade Media?"
+ *   title="Why Choose Sonor?"
  *   reasons={[
  *     { title: "Proven Results", description: "500+ successful projects" },
  *     { title: "Expert Team", description: "10+ years combined experience" }

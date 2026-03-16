@@ -180,8 +180,8 @@ export default function NewsletterComposer() {
                       <SelectValue placeholder="Select mailbox" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="default">Default (portal@send.uptrademedia.com)</SelectItem>
-                      <SelectItem value="newsletter">Newsletter (newsletter@uptrademedia.com)</SelectItem>
+                      <SelectItem value="default">Default (portal@send.sonor.io)</SelectItem>
+                      <SelectItem value="newsletter">Newsletter (newsletter@sonor.io)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

@@ -8,11 +8,18 @@
  * - Pin/delete support via context menu
  */
 
-import { useMemo } from 'react'
-import { MessageCircle } from 'lucide-react'
+import { useMemo, useState, useCallback, useRef, useEffect } from 'react'
+import { MessageCircle, Search, X, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ThreadListItem } from './ThreadListItem'
 import type { ChatKitThread } from './types'
+
+interface SearchResult {
+  conversationId: string
+  title: string
+  snippet: string
+  matchedAt: string
+}
 
 interface ThreadListProps {
   threads: ChatKitThread[]
@@ -27,6 +34,10 @@ interface ThreadListProps {
   isLoading?: boolean
   /** Presence (Phase 2.10). (userId) => status. */
   presenceFor?: (userId: string) => string
+  /** Search handler for Echo conversations */
+  onSearch?: (query: string) => Promise<SearchResult[]>
+  /** Called when a search result is clicked */
+  onSearchResultClick?: (conversationId: string) => void
   className?: string
 }
 
@@ -41,8 +52,49 @@ export function ThreadList({
   threadType,
   isLoading = false,
   presenceFor,
+  onSearch,
+  onSearchResultClick,
   className,
 }: ThreadListProps) {
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([])
+  const [isSearching, setIsSearching] = useState(false)
+  const [showSearch, setShowSearch] = useState(false)
+  const searchTimerRef = useRef<ReturnType<typeof setTimeout>>()
+  const searchInputRef = useRef<HTMLInputElement>(null)
+
+  const handleSearchChange = useCallback((value: string) => {
+    setSearchQuery(value)
+    if (searchTimerRef.current) clearTimeout(searchTimerRef.current)
+    if (!value.trim() || value.trim().length < 2) {
+      setSearchResults([])
+      setIsSearching(false)
+      return
+    }
+    setIsSearching(true)
+    searchTimerRef.current = setTimeout(async () => {
+      if (onSearch) {
+        try {
+          const results = await onSearch(value.trim())
+          setSearchResults(results)
+        } catch {
+          setSearchResults([])
+        }
+      }
+      setIsSearching(false)
+    }, 350)
+  }, [onSearch])
+
+  const clearSearch = useCallback(() => {
+    setSearchQuery('')
+    setSearchResults([])
+    setShowSearch(false)
+  }, [])
+
+  useEffect(() => {
+    if (showSearch) searchInputRef.current?.focus()
+  }, [showSearch])
+
   // Sort: pinned first, then unread at top, then by last_message_at
   const { unreadThreads, readThreads } = useMemo(() => {
     const sorted = [...threads].sort((a, b) => {
@@ -63,6 +115,67 @@ export function ThreadList({
   
   return (
     <div className={cn('flex flex-col h-full', className)}>
+      {/* Search bar (Echo only) */}
+      {threadType === 'echo' && onSearch && (
+        <div className="shrink-0 px-2 pt-2">
+          {showSearch ? (
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[var(--text-tertiary)]" />
+              <input
+                ref={searchInputRef}
+                type="text"
+                value={searchQuery}
+                onChange={(e) => handleSearchChange(e.target.value)}
+                placeholder="Search conversations..."
+                className="w-full pl-8 pr-8 py-1.5 text-sm rounded-md bg-[var(--surface-secondary)] border border-[var(--glass-border)]/30 text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] outline-none focus:border-[var(--brand-primary)]/50"
+              />
+              <button type="button" onClick={clearSearch} className="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)] hover:text-[var(--text-primary)]">
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setShowSearch(true)}
+              className="flex items-center gap-1.5 px-2 py-1 text-xs text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] transition-colors"
+            >
+              <Search className="h-3 w-3" />
+              Search
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Search results overlay */}
+      {showSearch && searchQuery.trim().length >= 2 && (
+        <div className="shrink-0 max-h-48 overflow-y-auto border-b border-[var(--glass-border)]/30">
+          {isSearching ? (
+            <div className="flex items-center justify-center py-4">
+              <Loader2 className="h-4 w-4 animate-spin text-[var(--text-tertiary)]" />
+            </div>
+          ) : searchResults.length === 0 ? (
+            <p className="text-xs text-[var(--text-tertiary)] text-center py-3">No results</p>
+          ) : (
+            <div className="p-1 space-y-0.5">
+              {searchResults.map((r) => (
+                <button
+                  key={r.conversationId}
+                  type="button"
+                  onClick={() => {
+                    onSearchResultClick?.(r.conversationId)
+                    clearSearch()
+                  }}
+                  className="w-full text-left px-2.5 py-2 rounded-md hover:bg-[var(--surface-secondary)] transition-colors"
+                >
+                  <p className="text-sm font-medium text-[var(--text-primary)] truncate">{r.title}</p>
+                  <p className="text-xs text-[var(--text-tertiary)] truncate mt-0.5">{r.snippet}</p>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Thread List */}
       <div className="flex-1 overflow-y-auto p-2">
         {isLoading ? (

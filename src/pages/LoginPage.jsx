@@ -418,7 +418,7 @@ export default function LoginPage() {
             <span className="text-[var(--glass-border-strong)]" aria-hidden="true">•</span>
 
             <a
-              href="mailto:ramsey@uptrademedia.com?subject=Support%20request"
+              href="mailto:hello@sonor.io?subject=Support%20request"
               className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
             >
               Email support
@@ -467,7 +467,7 @@ export default function LoginPage() {
       <div className="absolute bottom-6 left-0 right-0 text-center z-20">
         <div className="flex items-center justify-center gap-3 mb-2">
           <a 
-            href="https://uptrademedia.com/terms" 
+            href="https://sonor.io/terms" 
             target="_blank" 
             rel="noopener noreferrer"
             className="text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] text-xs transition-colors"
@@ -476,7 +476,7 @@ export default function LoginPage() {
           </a>
           <span className="text-[var(--text-tertiary)] text-xs">•</span>
           <a 
-            href="https://uptrademedia.com/privacy" 
+            href="https://sonor.io/privacy" 
             target="_blank" 
             rel="noopener noreferrer"
             className="text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] text-xs transition-colors"
@@ -484,7 +484,7 @@ export default function LoginPage() {
             Privacy Policy
           </a>
         </div>
-        <p className="text-[var(--text-tertiary)] text-xs">© {new Date().getFullYear()} Uptrade Media</p>
+        <p className="text-[var(--text-tertiary)] text-xs">© {new Date().getFullYear()} Sonor</p>
       </div>
     </div>
   )

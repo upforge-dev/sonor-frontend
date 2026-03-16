@@ -5,10 +5,10 @@ import AgencyDashboard from '@/components/dashboard/AgencyDashboard'
 const Dashboard = ({ onNavigate }) => {
   const { currentOrg, currentProject } = useAuthStore()
 
-  // Agency org (Uptrade Media): no project/org context = agency home
+  // Agency org (Sonor): no project/org context = agency home
   const isUptradeMediaOrg =
     currentOrg?.slug === 'uptrade-media' ||
-    currentOrg?.domain === 'uptrademedia.com' ||
+    currentOrg?.domain === 'sonor.io' ||
     currentOrg?.org_type === 'agency'
   const isInTenantContext =
     (!!currentProject && !isUptradeMediaOrg) || (!!currentOrg && !isUptradeMediaOrg)

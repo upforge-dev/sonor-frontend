@@ -7,7 +7,7 @@
  * - Quick action prompts
  */
 
-import { Sparkles, MessageCircle, TrendingUp, FileText, Users } from 'lucide-react'
+import { Sparkles, MessageCircle, TrendingUp, FileText, Users, Target, UserPlus, AlertTriangle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import EchoLogo from '@/components/EchoLogo'
 
@@ -15,6 +15,12 @@ interface Prompt {
   label: string
   prompt: string
   icon?: string
+}
+
+export interface WelcomeContext {
+  latestInsight?: { type: string; message: string; created_at: string }
+  goals?: Array<{ title: string; current_value: number; target_value: number; unit: string; status: string }>
+  newLeadCount?: number
 }
 
 interface WelcomeScreenProps {
@@ -28,6 +34,8 @@ interface WelcomeScreenProps {
   onPromptClick?: (prompt: string) => void
   /** Type of chat for appropriate theming */
   chatType?: 'echo' | 'user' | 'visitor'
+  /** Dynamic context from backend */
+  dynamicContext?: WelcomeContext | null
   /** Additional className */
   className?: string
 }
@@ -50,9 +58,15 @@ export function WelcomeScreen({
   prompts = [],
   onPromptClick,
   chatType = 'echo',
+  dynamicContext,
   className,
 }: WelcomeScreenProps) {
   const isEcho = chatType === 'echo'
+  const hasDynamicContent = dynamicContext && (
+    dynamicContext.latestInsight ||
+    (dynamicContext.goals?.length ?? 0) > 0 ||
+    (dynamicContext.newLeadCount ?? 0) > 0
+  )
   
   return (
     <div className={cn('flex flex-col items-center justify-center h-full p-6 text-center', className)}>
@@ -79,6 +93,66 @@ export function WelcomeScreen({
         <p className="text-[var(--text-secondary)] max-w-md mb-6">
           {description}
         </p>
+      )}
+
+      {/* Dynamic context cards */}
+      {isEcho && hasDynamicContent && (
+        <div className="w-full max-w-lg space-y-2 mb-4">
+          {/* New leads badge */}
+          {(dynamicContext.newLeadCount ?? 0) > 0 && (
+            <button
+              type="button"
+              onClick={() => onPromptClick?.(`I have ${dynamicContext.newLeadCount} new lead${dynamicContext.newLeadCount! > 1 ? 's' : ''}. Tell me about them.`)}
+              className="flex items-center gap-2.5 w-full px-4 py-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-left hover:bg-emerald-500/15 transition-colors"
+            >
+              <UserPlus className="h-4 w-4 text-emerald-500 shrink-0" />
+              <span className="text-sm text-emerald-700 dark:text-emerald-400">
+                <strong>{dynamicContext.newLeadCount}</strong> new lead{dynamicContext.newLeadCount! > 1 ? 's' : ''} in the last 24 hours
+              </span>
+            </button>
+          )}
+
+          {/* Active goals */}
+          {dynamicContext.goals && dynamicContext.goals.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {dynamicContext.goals.map((g, i) => {
+                const pct = g.target_value > 0 ? Math.round((g.current_value / g.target_value) * 100) : 0
+                const isAtRisk = g.status === 'at_risk'
+                return (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => onPromptClick?.(`Check progress on my "${g.title}" goal`)}
+                    className={cn(
+                      'flex items-center gap-2 px-3 py-2 rounded-lg border text-left text-xs transition-colors',
+                      isAtRisk
+                        ? 'bg-amber-500/10 border-amber-500/20 hover:bg-amber-500/15'
+                        : 'bg-[var(--surface-secondary)] border-[var(--glass-border)]/30 hover:border-[var(--brand-primary)]/40'
+                    )}
+                  >
+                    {isAtRisk ? <AlertTriangle className="h-3.5 w-3.5 text-amber-500 shrink-0" /> : <Target className="h-3.5 w-3.5 shrink-0" style={{ color: 'var(--brand-primary)' }} />}
+                    <span className="text-[var(--text-primary)]">{g.title}</span>
+                    <span className={cn('font-semibold', isAtRisk ? 'text-amber-600 dark:text-amber-400' : 'text-[var(--text-secondary)]')}>{pct}%</span>
+                  </button>
+                )
+              })}
+            </div>
+          )}
+
+          {/* Latest insight */}
+          {dynamicContext.latestInsight && (
+            <button
+              type="button"
+              onClick={() => onPromptClick?.('Tell me more about this insight: ' + dynamicContext.latestInsight!.message.slice(0, 100))}
+              className="flex items-start gap-2.5 w-full px-4 py-2.5 rounded-lg bg-[var(--surface-secondary)] border border-[var(--glass-border)]/30 text-left hover:border-[var(--brand-primary)]/40 transition-colors"
+            >
+              <Sparkles className="h-4 w-4 shrink-0 mt-0.5" style={{ color: 'var(--brand-primary)' }} />
+              <span className="text-xs text-[var(--text-secondary)] line-clamp-2">
+                {dynamicContext.latestInsight.message.slice(0, 150)}{dynamicContext.latestInsight.message.length > 150 ? '...' : ''}
+              </span>
+            </button>
+          )}
+        </div>
       )}
       
       {/* Quick prompts */}

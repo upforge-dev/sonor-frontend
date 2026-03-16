@@ -904,7 +904,7 @@ export default function SEOEEATModule({ projectId }) {
                   id="company"
                   value={authorForm.company}
                   onChange={(e) => setAuthorForm(prev => ({ ...prev, company: e.target.value }))}
-                  placeholder="Uptrade Media"
+                  placeholder="Sonor"
                 />
               </div>
               <div className="space-y-2">

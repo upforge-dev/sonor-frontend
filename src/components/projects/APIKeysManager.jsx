@@ -131,6 +131,24 @@ export default function APIKeysManager({ projectId, isAdmin }) {
                 <Copy className="h-3 w-3" />
               </Button>
             </div>
+            <div className="mt-3 p-2 bg-gray-50 dark:bg-gray-900 rounded border">
+              <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Add to your .env.local:
+              </p>
+              <div className="flex items-center gap-2">
+                <code className="flex-1 font-mono text-xs text-gray-600 dark:text-gray-400">
+                  SONOR_API_KEY={newlyCreatedKey.key}
+                </code>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-6 w-6 p-0"
+                  onClick={() => copyToClipboard(`SONOR_API_KEY=${newlyCreatedKey.key}`)}
+                >
+                  <Copy className="h-3 w-3" />
+                </Button>
+              </div>
+            </div>
             <Button
               size="sm"
               variant="outline"
@@ -159,7 +177,7 @@ export default function APIKeysManager({ projectId, isAdmin }) {
           <div className="text-center py-8 text-muted-foreground text-sm">
             <Key className="h-8 w-8 mx-auto mb-2 opacity-50" />
             <p>No API keys yet</p>
-            <p className="text-xs mt-1">Create a key to integrate your site with Uptrade</p>
+            <p className="text-xs mt-1">Create a key to integrate your site with Sonor</p>
           </div>
         ) : (
           keys.map(key => (

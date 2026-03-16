@@ -326,13 +326,13 @@ export const ContractsView = forwardRef(function ContractsView({
   const { user, currentOrg, currentProject, isSuperAdmin } = useAuthStore()
   const isAdmin = user?.role === 'admin'
   
-  // Detect if this is Uptrade Media agency org
-  // Uptrade Media uses Proposals (org-level) + hardcoded system emails
+  // Detect if this is Sonor agency org
+  // Sonor uses Proposals (org-level) + hardcoded system emails
   // Other orgs use Contracts (project-level) + Outreach emails
   // Note: When agency admin is viewing, currentOrg may be null - treat as agency
   const isUptradeMediaOrg = !currentOrg || // No org selected = agency admin view
                             currentOrg?.slug === 'uptrade-media' || 
-                            currentOrg?.domain === 'uptrademedia.com' || 
+                            currentOrg?.domain === 'sonor.io' || 
                             currentOrg?.org_type === 'agency'
   
   console.log('[Contracts] Org detection:', { 
@@ -388,7 +388,7 @@ export const ContractsView = forwardRef(function ContractsView({
     setIsLoading(true)
     try {
       if (isUptradeMediaOrg) {
-        // Uptrade Media: Use proposals API (org-level proposals)
+        // Sonor: Use proposals API (org-level proposals)
         // Use proposalsApi.list() which is used consistently in Proposals.jsx
         const response = await proposalsApi.list({ limit: 100 })
         console.log('[Contracts] Proposals API raw response:', response)
@@ -429,7 +429,7 @@ export const ContractsView = forwardRef(function ContractsView({
   const fetchCustomers = async () => {
     try {
       if (isUptradeMediaOrg) {
-        // Uptrade Media: Fetch both clients (organizations) and prospects (CRM contacts)
+        // Sonor: Fetch both clients (organizations) and prospects (CRM contacts)
         const [clientsRes, prospectsRes] = await Promise.all([
           adminApi.listClients().catch(() => ({ data: { clients: [] } })),
           crmApi.listProspects({ limit: 200 }).catch(() => ({ data: { prospects: [] } }))
@@ -509,7 +509,7 @@ export const ContractsView = forwardRef(function ContractsView({
     setLoadingContractView(true)
     try {
       if (contract._isProposal || isUptradeMediaOrg) {
-        // Uptrade Media: Use proposals API
+        // Sonor: Use proposals API
         const response = await proposalsApi.get(contract.id)
         setViewingContract(response.data?.proposal || response.data)
       } else {
@@ -532,7 +532,7 @@ export const ContractsView = forwardRef(function ContractsView({
     try {
       let fullContract
       if (contract._isProposal || isUptradeMediaOrg) {
-        // Uptrade Media: Use proposals API
+        // Sonor: Use proposals API
         const response = await proposalsApi.get(contract.id)
         fullContract = { ...response.data?.proposal || response.data, _isProposal: true }
       } else {
@@ -561,7 +561,7 @@ export const ContractsView = forwardRef(function ContractsView({
     
     try {
       if (isUptradeMediaOrg) {
-        // Uptrade Media: Delete proposal
+        // Sonor: Delete proposal
         await portalApi.delete(`/proposals/${deleteContractDialog.id}`)
       } else {
         // Other orgs: Delete contract
@@ -580,7 +580,7 @@ export const ContractsView = forwardRef(function ContractsView({
   const handleDuplicateContract = async (contract) => {
     try {
       if (contract._isProposal || isUptradeMediaOrg) {
-        // Uptrade Media: Duplicate proposal using proposals API
+        // Sonor: Duplicate proposal using proposals API
         const response = await proposalsApi.duplicate(contract.id)
         const newProposal = response.data?.proposal || response.data
         setContracts([{ ...newProposal, _isProposal: true }, ...contracts])
@@ -723,7 +723,7 @@ export const ContractsView = forwardRef(function ContractsView({
         </div>
         <div className="flex items-center gap-2">
           {isUptradeMediaOrg ? (
-            // Uptrade Media: Use ProposalAIDialog for proposals
+            // Sonor: Use ProposalAIDialog for proposals
             <>
               <Button onClick={() => setShowAIContractDialog(true)}>
                 <Plus className="w-4 h-4 mr-2" />
@@ -739,7 +739,7 @@ export const ContractsView = forwardRef(function ContractsView({
               />
             </>
           ) : (
-            // Non-Uptrade orgs: template picker + AI/manual fallback
+            // Non-Sonor orgs: template picker + AI/manual fallback
             <div className="flex items-center gap-2">
               {templates.length > 0 && (
                 <Button variant="outline" onClick={() => setShowTemplatePicker(!showTemplatePicker)}>

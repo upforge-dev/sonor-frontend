@@ -438,7 +438,7 @@ export function NewProjectModal({
                     <div className="space-y-2">
                       <Label>URL Slug *</Label>
                       <div className="flex items-center gap-2">
-                        <span className="text-sm text-muted-foreground">portal.uptrademedia.com/</span>
+                        <span className="text-sm text-muted-foreground">app.sonor.io/</span>
                         <Input
                           placeholder="acme-corp"
                           value={formData.newOrgSlug}

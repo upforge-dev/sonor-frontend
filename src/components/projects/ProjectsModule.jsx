@@ -106,7 +106,7 @@ function getScreenshotApiUrl(domain, width = 280, height = 180) {
   // Clean domain
   const cleanDomain = domain.replace(/^https?:\/\//, '').replace(/\/$/, '')
   // Use Portal API screenshot endpoint
-  const apiUrl = import.meta.env.VITE_PORTAL_API_URL || 'https://api.uptrademedia.com'
+  const apiUrl = import.meta.env.VITE_PORTAL_API_URL || 'https://api.sonor.io'
   return `${apiUrl}/screenshots?domain=${encodeURIComponent(cleanDomain)}&width=${width}&height=${height}`
 }
 
@@ -125,7 +125,7 @@ function useScreenshotUrl(domain, width = 280, height = 180) {
 
     // Clean domain
     const cleanDomain = domain.replace(/^https?:\/\//, '').replace(/\/$/, '')
-    const apiUrl = import.meta.env.VITE_PORTAL_API_URL || 'https://api.uptrademedia.com'
+    const apiUrl = import.meta.env.VITE_PORTAL_API_URL || 'https://api.sonor.io'
     const fullUrl = `${apiUrl}/screenshots?domain=${encodeURIComponent(cleanDomain)}&width=${width}&height=${height}${force ? '&force=true' : ''}`
 
     setLoading(true)

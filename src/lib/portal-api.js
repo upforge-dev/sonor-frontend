@@ -14,7 +14,7 @@ import { supabase } from './supabase-auth'
 import useAuthStore from './auth-store'
 
 // Portal API URL - uses NestJS backend for real-time features
-const PORTAL_API_URL = import.meta.env.VITE_PORTAL_API_URL || 'https://api.uptrademedia.com'
+const PORTAL_API_URL = import.meta.env.VITE_PORTAL_API_URL || 'https://api.sonor.io'
 
 // Helper to get Portal API URL (used by WebSocket connections)
 export function getPortalApiUrl() {
@@ -1909,7 +1909,7 @@ export const crmApi = {
   deleteTargetCompany: (id) =>
     portalApi.delete(`/crm/target-companies/${id}`),
 
-  // ==================== CLIENT PROSPECTS (Non-Uptrade Orgs) ====================
+  // ==================== CLIENT PROSPECTS (Non-Sonor Orgs) ====================
   
   // Get form submission linked to prospect
   getProspectFormSubmission: (id) =>
@@ -4047,6 +4047,149 @@ export const trendsApi = {
    */
   triggerPurge: (data) =>
     portalApi.post('/trends/jobs/purge-stale', data).then(res => res.data),
+}
+
+// ============================================================================
+// CMS API
+// ============================================================================
+
+export const cmsApi = {
+  // ---------------------------------------------------------------------------
+  // Enablement & Status
+  // ---------------------------------------------------------------------------
+
+  /** Enable CMS for the current organization (provisions shared Sanity dataset) */
+  enable: () =>
+    portalApi.post('/cms/enable').then(r => r.data),
+
+  /** Link an external Sanity project */
+  link: (data) =>
+    portalApi.post('/cms/link', data).then(r => r.data),
+
+  /** Get CMS connection status */
+  getStatus: (projectId) =>
+    portalApi.get('/cms/status', { params: { projectId } }).then(r => r.data),
+
+  // ---------------------------------------------------------------------------
+  // Page CRUD
+  // ---------------------------------------------------------------------------
+
+  /** List CMS pages for a project */
+  listPages: (projectId, params = {}) =>
+    portalApi.get('/cms/pages', { params: { projectId, ...params } }).then(r => r.data),
+
+  /** Create a new CMS page */
+  createPage: (data) =>
+    portalApi.post('/cms/pages', data).then(r => r.data),
+
+  /** Get a CMS page with full Sanity content */
+  getPage: (id) =>
+    portalApi.get(`/cms/pages/${id}`).then(r => r.data),
+
+  /** Update a CMS page */
+  updatePage: (id, data) =>
+    portalApi.patch(`/cms/pages/${id}`, data).then(r => r.data),
+
+  /** Delete a CMS page and its sections */
+  deletePage: (id) =>
+    portalApi.delete(`/cms/pages/${id}`).then(r => r.data),
+
+  // ---------------------------------------------------------------------------
+  // Publish / Unpublish
+  // ---------------------------------------------------------------------------
+
+  /** Publish a CMS page */
+  publishPage: (id) =>
+    portalApi.post(`/cms/pages/${id}/publish`).then(r => r.data),
+
+  /** Unpublish a CMS page */
+  unpublishPage: (id) =>
+    portalApi.post(`/cms/pages/${id}/unpublish`).then(r => r.data),
+
+  // ---------------------------------------------------------------------------
+  // Section CRUD
+  // ---------------------------------------------------------------------------
+
+  /** Add a section to a CMS page */
+  addSection: (pageId, data) =>
+    portalApi.post(`/cms/pages/${pageId}/sections`, data).then(r => r.data),
+
+  /** Update a section */
+  updateSection: (pageId, sectionId, data) =>
+    portalApi.patch(`/cms/pages/${pageId}/sections/${sectionId}`, data).then(r => r.data),
+
+  /** Delete a section from a CMS page */
+  deleteSection: (pageId, sectionId) =>
+    portalApi.delete(`/cms/pages/${pageId}/sections/${sectionId}`).then(r => r.data),
+
+  /** Reorder sections on a CMS page */
+  reorderSections: (pageId, sectionIds) =>
+    portalApi.patch(`/cms/pages/${pageId}/sections/reorder`, { sectionIds }).then(r => r.data),
+
+  // ---------------------------------------------------------------------------
+  // Assets
+  // ---------------------------------------------------------------------------
+
+  /** Upload an asset to Sanity (multipart/form-data) */
+  uploadAsset: (file) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    return portalApi.post('/cms/assets/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }).then(r => r.data)
+  },
+
+  // ---------------------------------------------------------------------------
+  // Templates
+  // ---------------------------------------------------------------------------
+
+  /** List templates for a project */
+  listTemplates: (projectId) =>
+    portalApi.get('/cms/templates', { params: { projectId } }).then(r => r.data),
+
+  /** Get a template with resolved sections */
+  getTemplate: (templateId) =>
+    portalApi.get(`/cms/templates/${templateId}`).then(r => r.data),
+
+  /** Save a CMS page as a template */
+  saveAsTemplate: (pageId, name) =>
+    portalApi.post('/cms/templates', { pageId, name }).then(r => r.data),
+
+  /** Delete a template */
+  deleteTemplate: (templateId) =>
+    portalApi.delete(`/cms/templates/${templateId}`).then(r => r.data),
+
+  // ---------------------------------------------------------------------------
+  // Revision History
+  // ---------------------------------------------------------------------------
+
+  /** Get revision history for a CMS page */
+  getPageRevisions: (pageId) =>
+    portalApi.get(`/cms/pages/${pageId}/revisions`).then(r => r.data),
+
+  /** Get a page at a specific revision */
+  getPageAtRevision: (pageId, rev) =>
+    portalApi.get(`/cms/pages/${pageId}/revisions/${rev}`).then(r => r.data),
+
+  /** Restore a page to a previous revision */
+  restoreRevision: (pageId, rev) =>
+    portalApi.post(`/cms/pages/${pageId}/revisions/${rev}/restore`).then(r => r.data),
+
+  // ---------------------------------------------------------------------------
+  // Content Import
+  // ---------------------------------------------------------------------------
+
+  /** Import a page from a URL into CMS */
+  importFromUrl: (projectId, url) =>
+    portalApi.post('/cms/import', { projectId, url }).then(r => r.data),
+
+  // ---------------------------------------------------------------------------
+  // Schema Registration
+  // ---------------------------------------------------------------------------
+
+  /** Register Sanity schemas for Content Lake validation */
+  registerSchemas: () =>
+    portalApi.post('/cms/schemas/register').then(r => r.data),
 }
 
 // ============================================================================

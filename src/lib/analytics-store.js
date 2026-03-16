@@ -275,7 +275,7 @@ const useAnalyticsStore = create((set, get) => ({
     try {
       // Call Signal API for analytics insights
       const response = await fetch(
-        `${import.meta.env.VITE_SIGNAL_API_URL || 'https://signal.uptrademedia.com'}/analytics/insights?projectId=${projectId}${path ? `&path=${encodeURIComponent(path)}` : ''}`,
+        `${import.meta.env.VITE_SIGNAL_API_URL || 'https://signal.sonor.io'}/analytics/insights?projectId=${projectId}${path ? `&path=${encodeURIComponent(path)}` : ''}`,
         {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('sb-access-token')}`,

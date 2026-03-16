@@ -185,8 +185,8 @@ const Billing = () => {
   // Set default tab based on user type
   const { currentOrg, currentProject, isSuperAdmin } = useAuthStore()
   
-  // Uptrade Media org should show admin view, client orgs show tenant view
-  const isUptradeMediaOrg = currentOrg?.slug === 'uptrade-media' || currentOrg?.domain === 'uptrademedia.com' || currentOrg?.org_type === 'agency'
+  // Sonor org should show admin view, client orgs show tenant view
+  const isUptradeMediaOrg = currentOrg?.slug === 'uptrade-media' || currentOrg?.domain === 'sonor.io' || currentOrg?.org_type === 'agency'
   
   // Billing is ORG-LEVEL ONLY - not accessible to project-level users
   const isInProjectContext = !!currentProject && !isUptradeMediaOrg

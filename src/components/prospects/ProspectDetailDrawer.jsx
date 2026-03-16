@@ -215,7 +215,7 @@ function ScheduleMeetingModal({ open, onClose, prospect, brandColors }) {
   // Copy booking link for prospect
   const copyBookingLink = () => {
     if (!currentOrg?.slug || !selectedType?.slug) return
-    const url = `https://portal.uptrademedia.com/book/${currentOrg.slug}/${selectedType.slug}`
+    const url = `https://app.sonor.io/book/${currentOrg.slug}/${selectedType.slug}`
     navigator.clipboard.writeText(url)
     toast.success('Booking link copied!')
   }

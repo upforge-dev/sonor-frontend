@@ -8,7 +8,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible'
-import { ChevronDown, ChevronRight, FileText, Image, Braces, Link2, Code, HelpCircle } from 'lucide-react'
+import { ChevronDown, ChevronRight, FileText, Image, Braces, Link2, Code, HelpCircle, Database } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import WebsitePageSelector from './WebsitePageSelector'
@@ -20,6 +20,7 @@ export const WEBSITE_SECTIONS = {
   SCHEMA: 'schema',
   LINKS: 'links',
   SCRIPTS: 'scripts',
+  CMS: 'cms',
 }
 
 const SECTION_ITEMS = [
@@ -29,6 +30,7 @@ const SECTION_ITEMS = [
   { id: WEBSITE_SECTIONS.SCHEMA, label: 'Schema', icon: Braces, description: 'All managed schema' },
   { id: WEBSITE_SECTIONS.LINKS, label: 'Links', icon: Link2, description: 'All managed links' },
   { id: WEBSITE_SECTIONS.SCRIPTS, label: 'Scripts', icon: Code, description: 'All managed scripts' },
+  { id: WEBSITE_SECTIONS.CMS, label: 'CMS', icon: Database, description: 'Content Management System settings' },
 ]
 
 export default function WebsiteSidebar({
@@ -39,6 +41,7 @@ export default function WebsiteSidebar({
   onSelectPage,
   onSelectSection,
   isLoading = false,
+  cmsConnected = false,
 }) {
   const [pagesOpen, setPagesOpen] = useState(true)
 

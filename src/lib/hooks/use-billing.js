@@ -32,7 +32,7 @@ export function useInvoices(filters = {}, options = {}) {
   return useQuery({
     queryKey: billingKeys.invoicesList(filters),
     queryFn: async () => {
-      // For Billing module, only show invoices sent FROM Uptrade TO client
+      // For Billing module, only show invoices sent FROM Sonor TO client
       const params = {
         ...filters,
         recipientView: filters.recipientView !== false ? true : filters.recipientView,

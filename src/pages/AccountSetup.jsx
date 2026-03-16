@@ -176,7 +176,7 @@ export default function AccountSetup() {
           <CardContent className="pt-8 pb-8">
             <div className="flex flex-col items-center text-center space-y-4">
               <div className="flex justify-center mb-2">
-                <img src="/logo.svg" alt="Uptrade Media" className="h-14 w-14" />
+                <img src="/logo.svg" alt="Sonor" className="h-14 w-14" />
               </div>
               <div>
                 <h2 className="text-xl font-semibold text-[var(--text-primary)] mb-2">Validating your link...</h2>
@@ -192,7 +192,7 @@ export default function AccountSetup() {
             <CardHeader className="space-y-4 text-center pb-2">
               {/* Logo */}
               <div className="flex justify-center">
-                <img src="/logo.svg" alt="Uptrade Media" className="h-14 w-14" />
+                <img src="/logo.svg" alt="Sonor" className="h-14 w-14" />
               </div>
               
               <div className="space-y-2">
@@ -329,7 +329,7 @@ export default function AccountSetup() {
           <CardContent className="pt-8 pb-8">
             <div className="flex flex-col items-center text-center space-y-4">
               <div className="flex justify-center mb-2">
-                <img src="/logo.svg" alt="Uptrade Media" className="h-14 w-14" />
+                <img src="/logo.svg" alt="Sonor" className="h-14 w-14" />
               </div>
               <div>
                 <h2 className="text-xl font-semibold text-[var(--text-primary)] mb-2">Creating your account...</h2>
@@ -344,7 +344,7 @@ export default function AccountSetup() {
           <CardContent className="pt-8 pb-8">
             <div className="flex flex-col items-center text-center space-y-4">
               <div className="flex justify-center mb-2">
-                <img src="/logo.svg" alt="Uptrade Media" className="h-14 w-14" />
+                <img src="/logo.svg" alt="Sonor" className="h-14 w-14" />
               </div>
               <div className="h-12 w-12 rounded-full bg-[var(--accent-success)]/10 flex items-center justify-center">
                 <CheckCircle2 className="h-6 w-6 text-[var(--accent-success)]" />
@@ -361,7 +361,7 @@ export default function AccountSetup() {
           <CardContent className="pt-8 pb-8">
             <div className="flex flex-col items-center text-center space-y-4">
               <div className="flex justify-center mb-2">
-                <img src="/logo.svg" alt="Uptrade Media" className="h-14 w-14" />
+                <img src="/logo.svg" alt="Sonor" className="h-14 w-14" />
               </div>
               <div className="h-12 w-12 rounded-full bg-[var(--accent-red)]/10 flex items-center justify-center">
                 <XCircle className="h-6 w-6 text-[var(--accent-red)]" />

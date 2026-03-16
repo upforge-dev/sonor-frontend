@@ -116,6 +116,7 @@ import {
   ACTIVE_STAGES,
   mapApiStagesToConfig,
 } from './pipelineStages'
+import { EchoPanel } from '@/components/chat/EchoPanel'
 
 // Re-export for consumers that import from CRMModule
 export const PIPELINE_STAGES = DEFAULT_PIPELINE_STAGES
@@ -415,7 +416,7 @@ export default function CRMDashboard() {
   // Agency detection - agencies get extra features like calls, proposals, OpenPhone
   const isAgency = currentOrg?.org_type === 'agency' || 
                    currentOrg?.slug === 'uptrade-media' || 
-                   currentOrg?.domain === 'uptrademedia.com'
+                   currentOrg?.domain === 'sonor.io'
   
   // Sidebar states
   const [showLeftSidebar, setShowLeftSidebar] = useState(true)
@@ -711,6 +712,7 @@ export default function CRMDashboard() {
   )
 
   return (
+  <>
     <TooltipProvider>
       <ModuleLayout
         ariaLabel={isAgency ? 'CRM' : 'Prospects'}
@@ -1259,5 +1261,8 @@ export default function CRMDashboard() {
           }}
         />
     </TooltipProvider>
+
+    <EchoPanel module="crm" />
+  </>
   )
 }

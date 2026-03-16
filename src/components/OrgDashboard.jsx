@@ -571,27 +571,35 @@ export default function OrgDashboard({ onNavigate }) {
       isRefresh ? setIsRefreshing(true) : setIsLoading(true)
       setError(null)
       
-      // Map available projects with their brand colors
-      // availableProjects comes from auth store and includes brand_primary from backend
-      const projectStats = (availableProjects || []).map((project, index) => {
-        // Log to debug brand_primary
-        console.log('[OrgDashboard] Project:', project.title, 'brand_primary:', project.brand_primary)
-        
-        return {
-          id: project.id,
-          name: project.name || project.title,
-          domain: project.domain,
-          brand_primary: project.brand_primary || PROJECT_COLORS[index % PROJECT_COLORS.length],
-          pageViews: Math.floor(Math.random() * 10000) + 500, // Placeholder - TODO: fetch real data
-          previousPageViews: Math.floor(Math.random() * 8000) + 400,
-          sessions: Math.floor(Math.random() * 5000) + 200,
-          bounceRate: Math.random() * 50 + 20,
-          conversionRate: Math.random() * 8 + 0.5,
-          revenue: Math.floor(Math.random() * 50000) + 1000,
-          leads: Math.floor(Math.random() * 100) + 5,
-          health: ['healthy', 'healthy', 'warning', 'healthy', 'inactive'][index % 5],
-        }
-      })
+      const { portalApi } = await import('@/lib/portal-api')
+      
+      const projectStats = await Promise.all(
+        (availableProjects || []).map(async (project, index) => {
+          let stats = {}
+          try {
+            const { data } = await portalApi.get(`/analytics/projects/${project.id}/summary`, {
+              params: { period: '30d' },
+            })
+            stats = data || {}
+          } catch {
+            // Analytics may not be available for all projects
+          }
+          return {
+            id: project.id,
+            name: project.name || project.title,
+            domain: project.domain,
+            brand_primary: project.brand_primary || PROJECT_COLORS[index % PROJECT_COLORS.length],
+            pageViews: stats.pageViews || 0,
+            previousPageViews: stats.previousPageViews || 0,
+            sessions: stats.sessions || 0,
+            bounceRate: stats.bounceRate || 0,
+            conversionRate: stats.conversionRate || 0,
+            revenue: stats.revenue || 0,
+            leads: stats.leads || 0,
+            health: stats.health || 'healthy',
+          }
+        })
+      )
       
       // Calculate aggregates
       const aggregates = projectStats.reduce((acc, p) => ({
@@ -622,7 +630,7 @@ export default function OrgDashboard({ onNavigate }) {
       const pendingItems = [
         { type: 'proposal', title: 'Website Redesign Proposal', subtitle: 'Awaiting your review', badge: 'New' },
         { type: 'invoice', title: 'Invoice #1234', subtitle: '$2,500 due Jan 25', badge: 'Due Soon' },
-        { type: 'message', title: 'New message from Uptrade', subtitle: '2 hours ago', badge: '1' },
+        { type: 'message', title: 'New message from Sonor', subtitle: '2 hours ago', badge: '1' },
       ]
       
       setDashboardData({
@@ -922,12 +930,12 @@ export default function OrgDashboard({ onNavigate }) {
             </CardContent>
           </Card>
           
-          {/* From Uptrade Media */}
+          {/* From Sonor */}
           <Card className="bg-gradient-to-br from-[var(--brand-primary)]/5 to-[var(--brand-primary)]/5 border-[var(--brand-primary)]/20">
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-base">
-                <img src="/favicon.svg" alt="Uptrade" className="w-5 h-5" />
-                Uptrade Media
+                <img src="/favicon.svg" alt="Sonor" className="w-5 h-5" />
+                Sonor
               </CardTitle>
               <CardDescription>Your marketing partner</CardDescription>
             </CardHeader>

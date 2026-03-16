@@ -51,15 +51,15 @@ const ProjectDetailPanel = ({ open, onOpenChange, project, onEdit }) => {
   const statusConfig = PROJECT_STATUS_CONFIG[project.status] || PROJECT_STATUS_CONFIG.planning
   const enabledModules = project.tenant_features || []
 
-  // Handle Uptrade client toggle
+  // Handle Sonor client toggle
   const handleUptradeClientToggle = async (checked) => {
     setSavingUptradeClient(true)
     try {
       await projectsApi.updateProject(project.id, { isUptradeClient: checked })
       setIsUptradeClient(checked)
       toast.success(checked 
-        ? 'Uptrade Media services enabled' 
-        : 'Uptrade Media services hidden (Sonor mode)'
+        ? 'Sonor services enabled' 
+        : 'Sonor services hidden (Sonor mode)'
       )
     } catch (error) {
       console.error('Failed to update is_uptrade_client:', error)
@@ -248,7 +248,7 @@ const ProjectDetailPanel = ({ open, onOpenChange, project, onEdit }) => {
             </>
           )}
 
-          {/* Uptrade Media Client Setting (Sonor SaaS) */}
+          {/* Sonor Client Setting (Sonor SaaS) */}
           <>
             <Separator />
             <div className="space-y-3">
@@ -256,10 +256,10 @@ const ProjectDetailPanel = ({ open, onOpenChange, project, onEdit }) => {
                   <div className="space-y-1">
                     <h4 className="font-medium flex items-center gap-2">
                       <Landmark className="w-4 h-4" />
-                      Uptrade Media Client
+                      Sonor Client
                     </h4>
                     <p className="text-sm text-[var(--text-secondary)]">
-                      Show Uptrade Media services (Proposals, Billing) to this client
+                      Show Sonor services (Proposals, Billing) to this client
                     </p>
                   </div>
                   <Switch
@@ -270,7 +270,7 @@ const ProjectDetailPanel = ({ open, onOpenChange, project, onEdit }) => {
                   />
                 </div>
                 <p className="text-xs text-[var(--text-tertiary)]">
-                  Disable for white-label Sonor mode where client shouldn't see Uptrade branding
+                  Disable for white-label Sonor mode where client shouldn't see Sonor branding
                 </p>
               </div>
             </>

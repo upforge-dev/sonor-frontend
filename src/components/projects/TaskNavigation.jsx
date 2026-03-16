@@ -2,7 +2,7 @@
  * TaskNavigation - Left sidebar for task views
  * 
  * Shows different navigation based on user role:
- * - Uptrade Admin: Task views, filters, module breakdown, quick stats
+ * - Sonor Admin: Task views, filters, module breakdown, quick stats
  * - Org-Level/Standard: Personal task views, categories
  */
 import { useMemo } from 'react'

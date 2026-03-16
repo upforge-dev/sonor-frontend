@@ -1,5 +1,5 @@
 /**
- * OrgNavigator - Right sidebar for Uptrade admins to navigate orgs and projects
+ * OrgNavigator - Right sidebar for Sonor admins to navigate orgs and projects
  * 
  * Features:
  * - Search across all orgs and projects

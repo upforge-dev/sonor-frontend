@@ -93,6 +93,30 @@ const MainLayout = () => {
     }
   }, [location.pathname])
 
+  // Echo deep-link navigation: listen for portal:navigate custom events
+  useEffect(() => {
+    const handler = (e) => {
+      const path = e.detail?.path
+      if (path && typeof path === 'string') navigate(path)
+    }
+    window.addEventListener('portal:navigate', handler)
+    return () => window.removeEventListener('portal:navigate', handler)
+  }, [navigate])
+
+  // Global open-echo event: navigates to Echo chat with optional context
+  useEffect(() => {
+    const handler = (e) => {
+      const context = e.detail?.context || ''
+      const path = e.detail?.path || ''
+      const params = new URLSearchParams({ tab: 'echo' })
+      if (context) params.set('context', context)
+      if (path) params.set('page', path)
+      navigate(`/messages?${params.toString()}`)
+    }
+    window.addEventListener('open-echo', handler)
+    return () => window.removeEventListener('open-echo', handler)
+  }, [navigate])
+
   // Handle sidebar section change - navigates to the route
   const handleSectionChange = (section) => {
     setActiveSection(section)

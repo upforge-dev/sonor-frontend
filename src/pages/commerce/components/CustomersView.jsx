@@ -31,9 +31,9 @@ export function CustomersView({ customersTab, brandColors, enabledTypes = ['prod
   
   const projectId = currentProject?.id
   
-  // Detect if this is Uptrade Media org - use contacts table instead
+  // Detect if this is Sonor org - use contacts table instead
   const isUptradeMediaOrg = !currentOrg || currentOrg?.slug === 'uptrade-media' || 
-                            currentOrg?.domain === 'uptrademedia.com' || 
+                            currentOrg?.domain === 'sonor.io' || 
                             currentOrg?.org_type === 'agency'
   
   // Open email dialog for a customer

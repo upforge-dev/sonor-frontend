@@ -2,7 +2,7 @@
  * Projects V2 Query Hooks
  *
  * TanStack Query hooks for Projects Module V2:
- * - Uptrade Tasks (internal team tasks)
+ * - Sonor Tasks (internal team tasks)
  * - User Tasks (personal tasks)
  * - Deliverables (creative deliverables with approval workflow)
  *

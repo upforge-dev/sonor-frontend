@@ -3,7 +3,7 @@
  * Fetches site content and filters by path; create/update/delete.
  */
 import { useState, useMemo } from 'react'
-import { FileEdit, Plus, Loader2, MoreVertical, Edit, Trash2 } from 'lucide-react'
+import { FileEdit, Plus, Loader2, MoreVertical, Edit, Trash2, Database, ArrowRight } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -14,6 +14,7 @@ import {
   useCreateSiteContent,
   useUpdateSiteContent,
   useDeleteSiteContent,
+  useCreateCmsPage,
 } from '@/lib/hooks'
 import {
   Dialog,
@@ -49,7 +50,7 @@ function getPagePath(selectedPage) {
   return selectedPage.path ?? (selectedPage.url ? new URL(selectedPage.url, 'https://x').pathname : '') ?? ''
 }
 
-export default function WebsitePageContent({ projectId, selectedPage }) {
+export default function WebsitePageContent({ projectId, selectedPage, cmsConnected = false }) {
   const pagePath = getPagePath(selectedPage)
   const { data: allContent = [], isLoading, refetch } = useSiteContent(projectId, { enabled: !!projectId })
   const contentList = useMemo(() => {
@@ -64,6 +65,7 @@ export default function WebsitePageContent({ projectId, selectedPage }) {
   const createMutation = useCreateSiteContent()
   const updateMutation = useUpdateSiteContent()
   const deleteMutation = useDeleteSiteContent()
+  const createCmsPage = useCreateCmsPage()
 
   const [editingItem, setEditingItem] = useState(null)
   const [isCreateOpen, setIsCreateOpen] = useState(false)
@@ -160,8 +162,49 @@ export default function WebsitePageContent({ projectId, selectedPage }) {
     })
   }
 
+  const handleConvertToCms = async () => {
+    try {
+      await createCmsPage.mutateAsync({
+        projectId,
+        title: selectedPage?.title || pagePath,
+        path: pagePath,
+        seoPageId: selectedPage?.id || null,
+      })
+      toast.success('Page converted to CMS — reload to see the CMS editor')
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Failed to convert page')
+    }
+  }
+
   return (
     <div className="space-y-4">
+      {/* Convert to CMS banner */}
+      {cmsConnected && (
+        <div className="flex items-center gap-3 p-3 rounded-lg border border-violet-500/20 bg-violet-500/5">
+          <Database className="h-5 w-5 text-violet-500 shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium">Upgrade to CMS Page</p>
+            <p className="text-xs text-muted-foreground">
+              Compose this page with rich, reusable sections instead of simple content blocks.
+            </p>
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleConvertToCms}
+            disabled={createCmsPage.isPending}
+            className="shrink-0"
+          >
+            {createCmsPage.isPending ? (
+              <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+            ) : (
+              <ArrowRight className="h-3.5 w-3.5 mr-1.5" />
+            )}
+            Convert
+          </Button>
+        </div>
+      )}
+
       <div className="flex items-center justify-between">
         <span className="text-sm text-muted-foreground">{contentList.length} content block(s)</span>
         <Button size="sm" onClick={() => setIsCreateOpen(true)}>

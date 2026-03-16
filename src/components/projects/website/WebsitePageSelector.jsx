@@ -4,7 +4,7 @@
  * Pages come from sitemap; users select an existing page (no "Add page").
  */
 import { useState, useMemo, useEffect } from 'react'
-import { FileText, Search, Loader2, ChevronRight, ChevronDown } from 'lucide-react'
+import { FileText, Search, Loader2, ChevronRight, ChevronDown, Database } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -108,6 +108,7 @@ function buildPageHierarchy(pages, openPaths = new Set()) {
 
 function PageTreeNode({ node, depth = 0, selectedPage, onSelectPage, onToggle }) {
   const hasChildren = node.children && node.children.length > 0
+  const isCmsPage = !!node.page?._cmsPage
   const isSelected =
     selectedPage &&
     (selectedPage.path === node.path ||
@@ -155,12 +156,21 @@ function PageTreeNode({ node, depth = 0, selectedPage, onSelectPage, onToggle })
             isSelected ? 'text-primary' : 'text-foreground'
           )}
         >
-          <FileText
-            className={cn(
-              'h-3.5 w-3.5 shrink-0',
-              isSelected ? 'text-primary' : 'text-muted-foreground'
-            )}
-          />
+          {isCmsPage ? (
+            <Database
+              className={cn(
+                'h-3.5 w-3.5 shrink-0',
+                isSelected ? 'text-primary' : 'text-violet-500'
+              )}
+            />
+          ) : (
+            <FileText
+              className={cn(
+                'h-3.5 w-3.5 shrink-0',
+                isSelected ? 'text-primary' : 'text-muted-foreground'
+              )}
+            />
+          )}
           <span className="truncate capitalize">{node.name}</span>
         </button>
       </div>

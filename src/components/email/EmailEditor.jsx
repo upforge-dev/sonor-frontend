@@ -653,12 +653,12 @@ export function EmailEditor({
   const imageFileInputRef = useRef(null)
   const { currentProject, currentOrg } = useAuthStore()
   
-  // Get brand color from project (with fallback to Uptrade default)
+  // Get brand color from project (with fallback to Sonor default)
   const brandPrimary = currentProject?.brand_primary || '#4bbf39'
   
-  // Schedule Consultation block is Uptrade Media only
+  // Schedule Consultation block is Sonor only
   const isUptradeMedia = currentOrg?.slug === 'uptrade-media' || 
-                         currentOrg?.domain === 'uptrademedia.com' || 
+                         currentOrg?.domain === 'sonor.io' || 
                          currentOrg?.org_type === 'agency'
   const projectId = currentProject?.id
   const { data: filesData, isLoading: filesLoading } = useFiles(projectId, { category: 'email' })
@@ -1797,7 +1797,7 @@ export function EmailEditor({
       }
     })
     
-    // Schedule Consultation CTA block - Uptrade Media only
+    // Schedule Consultation CTA block - Sonor only
     if (isUptradeMedia) {
       bm.add('schedule-consultation', {
         label: `<div class="gjs-block-label">📅 Schedule Call</div>`,

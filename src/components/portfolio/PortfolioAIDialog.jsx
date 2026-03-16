@@ -883,7 +883,7 @@ export default function PortfolioAIDialog({ open, onOpenChange, onSuccess }) {
                     <span className="text-xs font-normal text-[var(--text-tertiary)]">(optional)</span>
                   </h3>
                   <Textarea
-                    placeholder='"Working with Uptrade was incredible. They transformed our online presence..."'
+                    placeholder='"Working with Sonor was incredible. They transformed our online presence..."'
                     value={formData.clientTestimonial}
                     onChange={(e) => setFormData({ ...formData, clientTestimonial: e.target.value })}
                     className="min-h-[80px] bg-[var(--glass-bg)] border-[var(--glass-border)]"

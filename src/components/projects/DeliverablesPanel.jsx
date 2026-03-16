@@ -1,7 +1,7 @@
 /**
  * DeliverablesPanel - Creative deliverables management panel
  * 
- * For Uptrade Admins:
+ * For Sonor Admins:
  * - Create and manage deliverables
  * - Submit for review
  * - View approval status
@@ -360,7 +360,7 @@ function ApprovalCard({ deliverable, onView, onApprove, onRequestChanges }) {
               {deliverable.description || 'No description'}
             </p>
             <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
-              <span>Submitted by Uptrade Media</span>
+              <span>Submitted by Sonor</span>
               {deliverable.submitted_at && (
                 <>
                   <span>·</span>

@@ -57,7 +57,7 @@ export function ThemeProvider({ children }) {
 
   // Apply brand colors as CSS vars (project > org > defaults)
   useEffect(() => {
-    // Exclusions: keep these areas on Uptrade defaults.
+    // Exclusions: keep these areas on Sonor defaults.
     // - Proposals (/p/*)
     // - Audit pages (/audit*, /audits*)
     const pathname = typeof window !== 'undefined' ? window.location.pathname : ''
@@ -73,7 +73,7 @@ export function ThemeProvider({ children }) {
     // 1. Project columns: project.brand_primary (highest priority)
     // 2. Org columns: org.brand_primary
     // 3. Legacy theme object: org.theme.brandColor1, etc.
-    // 4. Uptrade defaults
+    // 4. Sonor defaults
     const orgTheme = currentOrg?.theme || {}
 
     const primary = normalizeHexColor(

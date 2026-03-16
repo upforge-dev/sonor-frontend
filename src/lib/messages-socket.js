@@ -12,7 +12,7 @@
  */
 import { io } from 'socket.io-client'
 
-const PORTAL_API_URL = import.meta.env.VITE_PORTAL_API_URL || 'https://api.uptrademedia.com'
+const PORTAL_API_URL = import.meta.env.VITE_PORTAL_API_URL || 'https://api.sonor.io'
 
 let socket = null
 let reconnectAttempts = 0

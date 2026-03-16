@@ -1,5 +1,5 @@
 // src/components/SchedulerModal.jsx
-// Universal scheduler for booking consultations with Uptrade Media
+// Universal scheduler for booking consultations with Sonor
 // Calls Portal API for availability (synced with internal calendar)
 import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -22,7 +22,7 @@ import {
 } from 'lucide-react'
 
 // Portal API base URL for availability and booking
-const API_BASE = import.meta.env.VITE_PORTAL_API_URL || 'https://api.uptrademedia.com'
+const API_BASE = import.meta.env.VITE_PORTAL_API_URL || 'https://api.sonor.io'
 
 // Time slots available for booking (Eastern Time)
 const TIME_SLOTS = [

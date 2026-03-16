@@ -6,7 +6,7 @@ const supabase = createClient(
 );
 
 const gwaOrgId = '9a05474b-7a6e-432b-a41a-1ba2a6b11600';
-const userEmail = 'ramsey@uptrademedia.com';
+const userEmail = 'ramsey@sonor.io';
 
 // Check current user_organizations
 const { data: existing } = await supabase

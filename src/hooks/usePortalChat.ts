@@ -11,7 +11,7 @@ import { useChatSocket } from './useChatSocket'
 import { chatkitApi } from '@/lib/portal-api'
 import type { ChatKitThread, ChatKitItem, TypingUser, PresenceStatus, MessageContent } from '@/components/chat/types'
 
-const PORTAL_API_URL = import.meta.env.VITE_PORTAL_API_URL || 'https://api.uptrademedia.com'
+const PORTAL_API_URL = import.meta.env.VITE_PORTAL_API_URL || 'https://api.sonor.io'
 const SEND_QUEUE_KEY = 'messages-send-queue'
 
 function genClientMessageId(): string {

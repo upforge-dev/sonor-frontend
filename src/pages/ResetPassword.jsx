@@ -181,7 +181,7 @@ export default function ResetPassword() {
       <Card className="relative w-full max-w-md bg-[var(--glass-bg)] backdrop-blur-xl border-[var(--glass-border)] shadow-[var(--shadow-lg)]">
         <CardHeader className="text-center pb-6">
           <div className="flex justify-center mb-4">
-            <img src="/logo.svg" alt="Uptrade Media" className="h-12 w-12" />
+            <img src="/logo.svg" alt="Sonor" className="h-12 w-12" />
           </div>
           <CardTitle className="text-2xl font-semibold text-[var(--text-primary)]">Reset Your Password</CardTitle>
           <CardDescription className="text-[var(--text-secondary)]">

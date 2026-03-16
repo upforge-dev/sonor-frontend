@@ -19,15 +19,15 @@ export default function SettingsPanel() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="from-name">From Name</Label>
-                <Input id="from-name" placeholder="Uptrade Media" />
+                <Input id="from-name" placeholder="Sonor" />
               </div>
               <div>
                 <Label htmlFor="from-email">From Email</Label>
-                <Input id="from-email" placeholder="portal@send.uptrademedia.com" type="email" />
+                <Input id="from-email" placeholder="portal@send.sonor.io" type="email" />
               </div>
               <div className="col-span-2">
                 <Label htmlFor="reply-to">Reply-To Email</Label>
-                <Input id="reply-to" placeholder="support@uptrademedia.com" type="email" />
+                <Input id="reply-to" placeholder="support@sonor.io" type="email" />
               </div>
             </div>
           </div>
@@ -71,11 +71,11 @@ export default function SettingsPanel() {
         <CardContent className="space-y-4">
           <div>
             <Label htmlFor="tracking-domain">Tracking Domain</Label>
-            <Input id="tracking-domain" placeholder="track.uptrademedia.com" />
+            <Input id="tracking-domain" placeholder="track.sonor.io" />
           </div>
           <div>
             <Label htmlFor="unsub-domain">Unsubscribe Domain</Label>
-            <Input id="unsub-domain" placeholder="unsub.uptrademedia.com" />
+            <Input id="unsub-domain" placeholder="unsub.sonor.io" />
           </div>
           <div>
             <Label htmlFor="business-address">Business Address</Label>

@@ -61,7 +61,7 @@ import { INDUSTRY_CATEGORIES } from '@/lib/constants/industries'
 import { US_STATES } from '@/lib/constants/us-states'
 import { PROJECT_STATUS_CONFIG } from '@/lib/hooks'
 
-// Default brand colors (Uptrade)
+// Default brand colors (Sonor)
 const DEFAULT_BRAND_PRIMARY = '#4bbf39'
 const DEFAULT_BRAND_SECONDARY = '#39bfb0'
 
@@ -1450,9 +1450,15 @@ export default function ProjectSettingsPanel({ project, isAdmin, onProjectUpdate
                         type="button"
                         variant="outline"
                         size="sm"
-                        onClick={() => {
-                          // TODO: Implement disconnect
-                          handleChange('shopify_connected', false)
+                        onClick={async () => {
+                          try {
+                            const { portalApi } = await import('@/lib/portal-api')
+                            await portalApi.post(`/integrations/shopify/disconnect`, { projectId: project.id })
+                            handleChange('shopify_connected', false)
+                            toast.success('Shopify disconnected')
+                          } catch (err) {
+                            toast.error('Failed to disconnect Shopify')
+                          }
                         }}
                         disabled={!isAdmin}
                       >
@@ -1463,9 +1469,16 @@ export default function ProjectSettingsPanel({ project, isAdmin, onProjectUpdate
                     <Button
                       type="button"
                       variant="outline"
-                      onClick={() => {
-                        // TODO: Implement Shopify OAuth flow
-                        toast.info('Shopify integration coming soon')
+                      onClick={async () => {
+                        try {
+                          const { portalApi } = await import('@/lib/portal-api')
+                          const { data } = await portalApi.post('/integrations/shopify/connect', { projectId: project.id })
+                          if (data.authUrl) {
+                            window.location.href = data.authUrl
+                          }
+                        } catch (err) {
+                          toast.error('Failed to start Shopify connection')
+                        }
                       }}
                       disabled={!isAdmin}
                       className="w-full"

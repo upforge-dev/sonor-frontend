@@ -338,7 +338,7 @@ export default function SalesModule({ title = 'Sales', fetchParams }) {
                       No prospects yet
                     </h3>
                     <p className="text-sm text-[var(--text-muted)] max-w-md mx-auto">
-                      Install the Uptrade Sales Extension and start analyzing websites to see AI-scored prospects here.
+                      Install the Sonor Sales Extension and start analyzing websites to see AI-scored prospects here.
                     </p>
                   </>
                 )}

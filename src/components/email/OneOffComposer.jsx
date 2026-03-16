@@ -244,8 +244,8 @@ export default function OneOffComposer() {
                       <SelectValue placeholder="Select mailbox" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="default">Default (portal@send.uptrademedia.com)</SelectItem>
-                      <SelectItem value="outreach">Outreach (outreach@uptrademedia.com)</SelectItem>
+                      <SelectItem value="default">Default (portal@send.sonor.io)</SelectItem>
+                      <SelectItem value="outreach">Outreach (outreach@sonor.io)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -257,7 +257,7 @@ export default function OneOffComposer() {
                     id="subject"
                     value={subject}
                     onChange={(e) => setSubject(e.target.value)}
-                    placeholder="Welcome to Uptrade Media..."
+                    placeholder="Welcome to Sonor..."
                   />
                 </div>
 

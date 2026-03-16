@@ -126,10 +126,10 @@ export class ErrorBoundary extends React.Component {
               <p className="text-center text-sm text-muted-foreground">
                 Need help? Contact us at{' '}
                 <a 
-                  href="mailto:admin@uptrademedia.com" 
+                  href="mailto:hello@sonor.io" 
                   className="text-[#39bfb0] hover:underline font-medium"
                 >
-                  admin@uptrademedia.com
+                  hello@sonor.io
                 </a>
               </p>
             </CardContent>

@@ -181,7 +181,7 @@ function TaskRow({ task }) {
   const getSourceBadge = (source) => {
     const configs = {
       project_task: { label: 'Project', color: 'bg-teal-100 text-teal-700 dark:bg-teal-500/20 dark:text-teal-300' },
-      uptrade_task: { label: 'Uptrade', color: 'bg-violet-100 text-violet-700 dark:bg-violet-500/20 dark:text-violet-300' },
+      uptrade_task: { label: 'Sonor', color: 'bg-violet-100 text-violet-700 dark:bg-violet-500/20 dark:text-violet-300' },
       crm_reminder: { label: 'CRM', color: 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300' },
       unanswered_email: { label: 'Email', color: 'bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-300' },
     }

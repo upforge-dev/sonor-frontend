@@ -12,7 +12,7 @@
  */
 
 import { useState, useRef, useCallback, useMemo, useEffect, KeyboardEvent, ChangeEvent, useId } from 'react'
-import { Send, MessageSquarePlus, Bold, Italic, Code2, Strikethrough, List } from 'lucide-react'
+import { Send, MessageSquarePlus, Bold, Italic, Code2, Strikethrough, List, Mic, MicOff } from 'lucide-react'
 import { UptradeSpinner } from '@/components/UptradeLoading'
 import { cn } from '@/lib/utils'
 import {
@@ -29,6 +29,7 @@ import {
   type PendingAttachment 
 } from './Attachments'
 import EchoLogo from '@/components/EchoLogo'
+import { useVoiceInput } from '@/hooks/useVoiceInput'
 
 interface MessageInputProps {
   /** Called when user sends a message with optional files */
@@ -375,6 +376,14 @@ export function MessageInput({
     [adjustHeight, onInsertCannedResponse, onTyping]
   )
 
+  // Voice input (Echo/AI chat only)
+  const voice = useVoiceInput({
+    onTranscript: isAIChat ? (text) => {
+      setValue(text)
+      adjustHeight()
+    } : undefined,
+  })
+
   const canSend = (value.trim().length > 0 || pendingFiles.length > 0) && !disabled && !isSending
   const hasPendingFiles = pendingFiles.length > 0
   const showCanned = cannedResponses && cannedResponses.length > 0 && !isAIChat
@@ -490,6 +499,17 @@ export function MessageInput({
           </div>
         )}
 
+        {/* Attach button for AI chat (simplified layout) */}
+        {isAIChat && (
+          <AttachmentUploadButton
+            onSelect={handleFilesSelected}
+            disabled={disabled || isSending}
+            accept={acceptedTypes}
+            multiple
+            className="shrink-0 p-2.5 rounded-xl text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-secondary)] transition-colors [&_svg]:h-4 [&_svg]:w-4"
+          />
+        )}
+
         {/* Input container */}
         <div className="flex-1 relative min-w-0">
           <textarea
@@ -562,6 +582,25 @@ export function MessageInput({
             </span>
           )}
         </div>
+
+        {/* Voice input button (Echo/AI chat only) */}
+        {isAIChat && voice.isSupported && (
+          <button
+            type="button"
+            onClick={voice.toggleListening}
+            disabled={disabled || isSending}
+            aria-label={voice.isListening ? 'Stop recording' : 'Voice input'}
+            className={cn(
+              'shrink-0 p-2.5 rounded-xl transition-all duration-200',
+              voice.isListening
+                ? 'text-white bg-red-500 animate-pulse shadow-lg shadow-red-500/30'
+                : 'text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-secondary)]',
+              (disabled || isSending) && 'opacity-50 cursor-not-allowed',
+            )}
+          >
+            {voice.isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+          </button>
+        )}
 
         {/* Send button - vertically centered with row */}
         <button

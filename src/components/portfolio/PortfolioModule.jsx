@@ -143,7 +143,7 @@ function PortfolioCard({ item, onPublish, onView, onEdit, onDelete }) {
               <DropdownMenuItem onClick={() => onView(item)}>
                 <Eye className="w-4 h-4 mr-2" /> View Live
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => window.open(`https://uptrademedia.com/portfolio/${item.slug}/trifolio/`, '_blank')}>
+              <DropdownMenuItem onClick={() => window.open(`https://sonor.io/portfolio/${item.slug}/trifolio/`, '_blank')}>
                 <ExternalLink className="w-4 h-4 mr-2" /> View Trifolio
               </DropdownMenuItem>
               {item.status === 'draft' && (
@@ -336,7 +336,7 @@ export default function PortfolioManagement() {
   }
 
   const handleView = (item) => {
-    window.open(`https://uptrademedia.com/portfolio/${item.slug}/`, '_blank')
+    window.open(`https://sonor.io/portfolio/${item.slug}/`, '_blank')
   }
 
   return (

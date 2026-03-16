@@ -8,6 +8,7 @@ import useAnalyticsStore from '@/lib/analytics-store'
 import { useSiteTopPages } from '@/lib/hooks/use-site-analytics'
 import { seoApi } from '@/lib/portal-api'
 import AnalyticsDashboard from '@/pages/analytics/AnalyticsDashboard'
+import { EchoPanel } from '@/components/chat/EchoPanel'
 
 export default function AnalyticsModuleWrapper({ onNavigate }) {
   const { currentProject } = useAuthStore()
@@ -65,5 +66,10 @@ export default function AnalyticsModuleWrapper({ onNavigate }) {
     }
   }, [currentProject?.id, buildHierarchy, reset, setHierarchyLoading, topPages])
 
-  return <AnalyticsDashboard onNavigate={onNavigate} />
+  return (
+    <>
+      <AnalyticsDashboard onNavigate={onNavigate} />
+      <EchoPanel module="analytics" />
+    </>
+  )
 }

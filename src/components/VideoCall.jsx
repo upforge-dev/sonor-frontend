@@ -25,7 +25,7 @@ import { X, Mic, MicOff, Video as VideoIcon, VideoOff, PhoneOff, Monitor, Monito
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
-const DAILY_DOMAIN = 'uptrademedia' // Your Daily.co subdomain - UPDATE THIS!
+const DAILY_DOMAIN = 'sonor' // Your Daily.co subdomain
 
 export default function VideoCall({ 
   contactName, 

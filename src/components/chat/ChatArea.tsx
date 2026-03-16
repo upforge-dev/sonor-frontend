@@ -9,14 +9,15 @@
  * - Input composer
  */
 
-import { useRef, useEffect, useCallback, useMemo } from 'react'
-import { ArrowDown, Loader2, Download } from 'lucide-react'
+import { useRef, useEffect, useCallback, useMemo, useState } from 'react'
+import { ArrowDown, Loader2, Download, Copy, Check } from 'lucide-react'
 import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
 import { MessageBubble } from './MessageBubble'
 import { MessageInput } from './MessageInput'
 import { TypingIndicator } from './TypingIndicator'
 import { WelcomeScreen } from './WelcomeScreen'
+import { SuggestionChips, type SuggestionChip } from './SuggestionChips'
 import { VisitorContextPanel, type VisitorContextData } from './VisitorContextPanel'
 import type { ChatKitThread, ChatKitItem, TypingUser, PresenceStatus } from './types'
 
@@ -94,6 +95,16 @@ interface ChatAreaProps {
   canReplyInThread?: boolean
   /** Presence (Phase 2.10). (userId) => status. */
   presenceFor?: (userId: string) => PresenceStatus
+  /** Active tool call label to show during skill execution (Echo only) */
+  toolCallLabel?: string | null
+  /** Suggestion chips to show after last assistant message (Echo only) */
+  suggestionChips?: SuggestionChip[]
+  /** Dynamic welcome context from backend (Echo only) */
+  echoWelcomeContext?: any
+  /** Pin/unpin handler (Echo only) — returns new is_pinned state */
+  onPinMessage?: (messageId: string) => Promise<{ is_pinned: boolean }>
+  /** IDs of currently pinned messages (Echo only) */
+  pinnedMessageIds?: Set<string>
   className?: string
 }
 
@@ -134,6 +145,11 @@ export function ChatArea({
   onReplyInThread,
   canReplyInThread = false,
   presenceFor,
+  toolCallLabel,
+  suggestionChips = [],
+  echoWelcomeContext,
+  onPinMessage,
+  pinnedMessageIds,
   className,
 }: ChatAreaProps) {
   const otherUserId = useMemo(() => {
@@ -196,32 +212,56 @@ export function ChatArea({
     return `${typingUsers.length} people`
   }, [typingUsers])
 
-  // Phase 3.7.3: Export transcript as JSON
-  const handleExportTranscript = useCallback(() => {
-    if (!thread || messages.length === 0) return
-    const transcript = {
-      thread_id: thread.thread_id || thread.id,
-      title: thread.title || 'Conversation',
-      exported_at: new Date().toISOString(),
-      messages: messages.map((m) => ({
-        id: m.id,
-        type: m.type,
-        sender: m.sender?.full_name ?? m.sender?.name ?? m.sender_id ?? 'Unknown',
-        content: typeof m.content === 'string' ? m.content : Array.isArray(m.content) ? m.content.map((c: { text?: string }) => c.text ?? '').join('') : '',
-        created_at: m.created_at,
-        read_at: m.read_at,
-      })),
+  const [copied, setCopied] = useState(false)
+
+  const getTranscriptMarkdown = useCallback(() => {
+    if (!thread || messages.length === 0) return ''
+    const title = thread.title || 'Conversation'
+    const lines = [`# ${title}`, `Exported: ${format(new Date(), 'PPpp')}`, '']
+    for (const m of messages) {
+      const sender = m.type === 'user_message' ? '**You**' : '**Echo**'
+      const text = typeof m.content === 'string' ? m.content : Array.isArray(m.content) ? (m.content as Array<{ text?: string }>).map(c => c.text ?? '').join('') : ''
+      const time = m.created_at ? format(new Date(m.created_at), 'p') : ''
+      lines.push(`${sender} ${time ? `*(${time})*` : ''}`)
+      lines.push(text)
+      lines.push('')
     }
-    const blob = new Blob([JSON.stringify(transcript, null, 2)], { type: 'application/json' })
+    return lines.join('\n')
+  }, [thread, messages])
+
+  const handleExportMarkdown = useCallback(() => {
+    const md = getTranscriptMarkdown()
+    if (!md) return
+    const blob = new Blob([md], { type: 'text/markdown' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `chat-${thread.thread_id || thread.id}-${format(new Date(), 'yyyy-MM-dd')}.json`
+    a.download = `echo-${(thread?.title || 'chat').replace(/\s+/g, '-').toLowerCase()}-${format(new Date(), 'yyyy-MM-dd')}.md`
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
-  }, [thread, messages])
+  }, [getTranscriptMarkdown, thread])
+
+  const handleCopyTranscript = useCallback(async () => {
+    const md = getTranscriptMarkdown()
+    if (!md) return
+    try {
+      await navigator.clipboard.writeText(md)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      // Fallback
+      const ta = document.createElement('textarea')
+      ta.value = md
+      document.body.appendChild(ta)
+      ta.select()
+      document.execCommand('copy')
+      document.body.removeChild(ta)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    }
+  }, [getTranscriptMarkdown])
   
   // Show welcome screen if no thread or no messages
   const showWelcome = !thread || (messages.length === 0 && !isLoading)
@@ -257,15 +297,24 @@ export function ChatArea({
           </span>
         </div>
       )}
-      {/* Thread actions (Phase 3.7.3: Export) */}
+      {/* Thread actions: Export & Copy */}
       {thread && messages.length > 0 && (
-        <div className="shrink-0 flex items-center justify-end px-4 py-1 border-b border-[var(--glass-border)]/30">
+        <div className="shrink-0 flex items-center justify-end gap-0.5 px-4 py-1 border-b border-[var(--glass-border)]/30">
           <button
             type="button"
-            onClick={handleExportTranscript}
+            onClick={handleCopyTranscript}
             className="p-1.5 rounded text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-secondary)] transition-colors"
-            title="Export transcript as JSON"
-            aria-label="Export transcript"
+            title="Copy transcript"
+            aria-label="Copy transcript"
+          >
+            {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+          </button>
+          <button
+            type="button"
+            onClick={handleExportMarkdown}
+            className="p-1.5 rounded text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-secondary)] transition-colors"
+            title="Download as Markdown"
+            aria-label="Download as Markdown"
           >
             <Download className="h-4 w-4" />
           </button>
@@ -284,6 +333,7 @@ export function ChatArea({
             prompts={welcomeConfig?.prompts}
             onPromptClick={handlePromptClick}
             chatType={threadType}
+            dynamicContext={echoWelcomeContext}
           />
         ) : (
           <div className="p-4 space-y-4">
@@ -335,12 +385,23 @@ export function ChatArea({
                   onRetry={onRetry && (message as { sendFailed?: boolean }).sendFailed ? () => onRetry(message.id) : undefined}
                   onEdit={onEdit}
                   onDelete={onDelete}
+                  onPin={threadType === 'echo' && onPinMessage ? (id) => { onPinMessage(id) } : undefined}
+                  isPinned={pinnedMessageIds?.has(message.id) ?? false}
                 />
               )
             })}
             
+            {/* Tool call indicator — shown when Echo is executing a skill */}
+            {toolCallLabel && isStreaming && !streamingContent && (
+              <div className="flex items-center gap-2 px-4 py-2 ml-12">
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[color-mix(in_srgb,var(--brand-primary)_10%,transparent)] border border-[color-mix(in_srgb,var(--brand-primary)_20%,transparent)]">
+                  <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: 'var(--brand-primary)' }} />
+                  <span className="text-xs font-medium" style={{ color: 'var(--brand-primary)' }}>{toolCallLabel}</span>
+                </div>
+              </div>
+            )}
             {/* Echo/Assistant typing (three dots) when streaming but no content yet */}
-            {isStreaming && !streamingContent && (
+            {isStreaming && !streamingContent && !toolCallLabel && (
               <TypingIndicator name={threadType === 'echo' ? 'Echo' : 'Assistant'} />
             )}
             {/* Streaming placeholder (new message) */}
@@ -364,6 +425,11 @@ export function ChatArea({
             {/* Typing indicator */}
             {typingNames && (
               <TypingIndicator name={typingNames} />
+            )}
+
+            {/* Suggestion chips (Echo only, after response) */}
+            {threadType === 'echo' && !isStreaming && suggestionChips.length > 0 && (
+              <SuggestionChips chips={suggestionChips} onChipClick={handlePromptClick} />
             )}
             
             {/* Scroll anchor */}
@@ -401,11 +467,13 @@ export function ChatArea({
           onTyping={onAgentTyping}
           placeholder={placeholder || (threadType === 'echo' ? 'Message Echo...' : 'Type a message...')}
           disabled={inputDisabled || isStreaming}
-          showAttachments={threadType === 'visitor' || threadType === 'user'}
+          showAttachments={threadType !== 'echo'}
+          isAIChat={threadType === 'echo'}
           cannedResponses={cannedResponses}
           onInsertCannedResponse={onInsertCannedResponse}
           mentionContacts={mentionContacts}
           draftKey={thread?.thread_id ? `${threadType}-${thread.thread_id}` : null}
+          acceptedTypes={threadType === 'echo' ? 'image/*,.pdf,.doc,.docx,.txt,.csv' : undefined}
         />
       </div>
     </div>

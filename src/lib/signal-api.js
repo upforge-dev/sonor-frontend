@@ -23,7 +23,7 @@ import { supabase } from './supabase-auth'
 import useAuthStore from './auth-store'
 
 // Signal API URL - AI brain for Echo, skills, knowledge
-const SIGNAL_API_URL = import.meta.env.VITE_SIGNAL_API_URL || 'https://signal.uptrademedia.com'
+const SIGNAL_API_URL = import.meta.env.VITE_SIGNAL_API_URL || 'https://signal.sonor.io'
 
 // Signal API Key for service-to-service auth (local dev)
 const SIGNAL_API_KEY = import.meta.env.VITE_SIGNAL_API_KEY || ''
@@ -195,16 +195,29 @@ export const echoApi = {
    */
   streamChat: async (params, { onToken, onComplete, onError, onToolCall }) => {
     const headers = await getAuthHeaders()
+    const controller = new AbortController()
+    const STREAM_TIMEOUT_MS = 120_000 // 2 minutes max for entire stream
+    const CHUNK_TIMEOUT_MS = 45_000  // 45s max silence between chunks
+
+    const streamTimer = setTimeout(() => controller.abort(), STREAM_TIMEOUT_MS)
+    let chunkTimer = null
+
+    const resetChunkTimer = () => {
+      if (chunkTimer) clearTimeout(chunkTimer)
+      chunkTimer = setTimeout(() => controller.abort(), CHUNK_TIMEOUT_MS)
+    }
     
     try {
       const response = await fetch(`${SIGNAL_API_URL}/echo/stream`, {
         method: 'POST',
         headers,
+        signal: controller.signal,
         body: JSON.stringify({
           message: params.message,
           conversationId: params.conversationId,
           skill: params.skill,
-          pageContext: params.pageContext, // Pass page context for Echo awareness
+          pageContext: params.pageContext,
+          attachments: params.attachments,
         }),
       })
       
@@ -218,6 +231,8 @@ export const echoApi = {
       let buffer = ''
       let fullContent = ''
       let conversationId = params.conversationId
+
+      resetChunkTimer()
       
       while (true) {
         const { done, value } = await reader.read()
@@ -225,6 +240,8 @@ export const echoApi = {
         if (done) {
           break
         }
+
+        resetChunkTimer()
         
         buffer += decoder.decode(value, { stream: true })
         
@@ -284,8 +301,16 @@ export const echoApi = {
       onComplete?.({ response: fullContent, conversationId })
       
     } catch (error) {
-      console.error('[Echo Stream Error]', error)
-      onError?.(error.message)
+      if (error.name === 'AbortError') {
+        console.warn('[Echo Stream] Timed out or aborted')
+        onError?.('Response timed out. Please try again.')
+      } else {
+        console.error('[Echo Stream Error]', error)
+        onError?.(error.message)
+      }
+    } finally {
+      clearTimeout(streamTimer)
+      if (chunkTimer) clearTimeout(chunkTimer)
     }
   },
   
@@ -321,6 +346,50 @@ export const echoApi = {
     return response.data.data
   },
   
+  /**
+   * Share an Echo conversation with team members or make org-visible
+   */
+  shareConversation: async (conversationId, visibility, sharedWith = []) => {
+    const response = await signalApi.post(`/echo/conversation/${conversationId}/share`, {
+      visibility,
+      sharedWith,
+    })
+    return response.data
+  },
+
+  /**
+   * Toggle pin on a message
+   */
+  togglePin: async (messageId) => {
+    const response = await signalApi.post(`/echo/message/${messageId}/pin`)
+    return response.data?.data ?? response.data
+  },
+
+  /**
+   * Get pinned messages in a conversation
+   */
+  getPinnedMessages: async (conversationId) => {
+    const response = await signalApi.get(`/echo/conversation/${conversationId}/pins`)
+    return response.data?.data ?? []
+  },
+
+  /**
+   * Get notification preferences
+   */
+  getNotificationPreferences: async (projectId) => {
+    const params = projectId ? { project_id: projectId } : {}
+    const response = await signalApi.get('/echo/notification-preferences', { params })
+    return response.data?.data ?? {}
+  },
+
+  /**
+   * Update notification preferences
+   */
+  updateNotificationPreferences: async (prefs) => {
+    const response = await signalApi.put('/echo/notification-preferences', prefs)
+    return response.data?.data ?? {}
+  },
+
   /**
    * Get a specific conversation with messages
    */
@@ -372,6 +441,37 @@ export const echoApi = {
       tenantId: params.tenantId,
     })
     return response.data.data
+  },
+
+  /**
+   * Search across Echo conversations and messages
+   * @param {string} query - Search query
+   * @param {number} limit - Max results
+   * @returns {Promise<Array<{conversationId: string, title: string, snippet: string, matchedAt: string}>>}
+   */
+  searchConversations: async (query, limit = 20) => {
+    const response = await signalApi.get('/echo/search', { params: { q: query, limit } })
+    return response.data?.data ?? []
+  },
+
+  /**
+   * Get dynamic welcome context (latest insight + goal progress)
+   * @returns {Promise<{insight?: string, goals?: Array}>}
+   */
+  getWelcomeContext: async () => {
+    const response = await signalApi.get('/echo/welcome-context')
+    return response.data?.data ?? {}
+  },
+
+  /**
+   * Get unread Echo message count (for badge polling)
+   * @param {string} since - ISO timestamp to count messages after
+   * @returns {Promise<number>}
+   */
+  getUnreadCount: async (since) => {
+    const params = since ? `?since=${encodeURIComponent(since)}` : ''
+    const response = await signalApi.get(`/echo/unread${params}`)
+    return response.data?.data?.count ?? 0
   },
 }
 

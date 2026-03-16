@@ -2,7 +2,7 @@
  * EmailConfigWarning - Shows warning when email sending is not configured
  * 
  * Displays when project has neither:
- * - Resend domain configured (premium, Uptrade manages)
+ * - Resend domain configured (premium, Sonor manages)
  * - Gmail OAuth connected (self-service)
  */
 import { useState, useEffect } from 'react'
@@ -68,7 +68,7 @@ export default function EmailConfigWarning({ className = '' }) {
           <li className="flex items-start gap-2">
             <ExternalLink className="h-4 w-4 mt-0.5 text-amber-600 dark:text-amber-400" />
             <span>
-              <strong>Request a custom domain</strong> — Contact Uptrade Media to set up a branded email domain (e.g., mail.yourdomain.com)
+              <strong>Request a custom domain</strong> — Contact Sonor to set up a branded email domain (e.g., mail.yourdomain.com)
             </span>
           </li>
         </ul>
@@ -91,10 +91,10 @@ export default function EmailConfigWarning({ className = '' }) {
             className="text-amber-700 hover:text-amber-800 hover:bg-amber-100 dark:text-amber-300 dark:hover:text-amber-200 dark:hover:bg-amber-900/50"
             onClick={() => {
               // Open contact form or email
-              window.open('mailto:support@uptrademedia.com?subject=Custom Email Domain Request', '_blank')
+              window.open('mailto:support@sonor.io?subject=Custom Email Domain Request', '_blank')
             }}
           >
-            Contact Uptrade
+            Contact Sonor
           </Button>
         </div>
       </AlertDescription>

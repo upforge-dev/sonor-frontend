@@ -102,7 +102,7 @@ export default function UserGoogleIntegrationPanel({
     const handleMessage = (event) => {
       const allowedOrigins = [
         'http://localhost:3002',
-        'https://api.uptrademedia.com',
+        'https://api.sonor.io',
         window.location.origin,
       ]
       if (!allowedOrigins.includes(event.origin)) return

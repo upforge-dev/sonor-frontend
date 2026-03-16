@@ -85,7 +85,7 @@ export function TopPagesTable({
                             {page.path || '/'}
                           </p>
                           <a 
-                            href={`https://uptrademedia.com${page.path || '/'}`}
+                            href={`https://sonor.io${page.path || '/'}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="opacity-0 group-hover:opacity-100 transition-opacity"

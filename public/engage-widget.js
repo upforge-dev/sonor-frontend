@@ -1,6 +1,6 @@
 // public/engage-widget.js
 // Embeddable Echo chat widget for tenant websites
-// Include via: <script src="https://portal.uptrademedia.com/engage-widget.js" data-api-key="UPTRADE_API_KEY" async></script>
+// Include via: <script src="https://app.sonor.io/engage-widget.js" data-api-key="UPTRADE_API_KEY" async></script>
 // Optional: data-signal-url, data-portal-url (for custom Signal/Portal implementations)
 //
 // One env var: UPTRADE_API_KEY. Project is resolved from the key.
@@ -10,9 +10,9 @@
   'use strict';
 
   // Configuration (overridable via script data attributes: data-portal-url, data-portal-api-url, data-signal-url)
-  let PORTAL_URL = 'https://portal.uptrademedia.com';
-  let PORTAL_API_URL = 'https://api.uptrademedia.com';
-  let SIGNAL_URL = 'https://signal.uptrademedia.com';
+  let PORTAL_URL = 'https://app.sonor.io';
+  let PORTAL_API_URL = 'https://api.sonor.io';
+  let SIGNAL_URL = 'https://signal.sonor.io';
   
   // ═══════════════════════════════════════════════════════════════════════════════
   // ANIMATED ECHO LOGO SVG
@@ -244,8 +244,8 @@
   if (scriptTag.getAttribute('data-signal-url')) SIGNAL_URL = scriptTag.getAttribute('data-signal-url');
   if (scriptTag.getAttribute('data-portal-url')) PORTAL_URL = scriptTag.getAttribute('data-portal-url');
   if (scriptTag.getAttribute('data-portal-api-url')) PORTAL_API_URL = scriptTag.getAttribute('data-portal-api-url');
-  // Never use .netlify/functions — use Portal API (api.uptrademedia.com) only
-  if (PORTAL_API_URL && PORTAL_API_URL.indexOf('.netlify/functions') !== -1) PORTAL_API_URL = 'https://api.uptrademedia.com';
+  // Never use .netlify/functions — use Portal API (api.sonor.io) only
+  if (PORTAL_API_URL && PORTAL_API_URL.indexOf('.netlify/functions') !== -1) PORTAL_API_URL = 'https://api.sonor.io';
 
   const WIDGET_ORIGIN = scriptTag.src ? new URL(scriptTag.src).origin : PORTAL_URL;
 
@@ -1464,7 +1464,7 @@
           Signal AI
         </span>
         <span>•</span>
-        <a href="https://uptrademedia.com" target="_blank" rel="noopener">Uptrade Media</a>
+        <a href="https://sonor.io" target="_blank" rel="noopener">Sonor</a>
       </div>
     `;
     

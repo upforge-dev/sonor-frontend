@@ -420,7 +420,7 @@ export default function EngageChatSettings({ projectId, onClose }) {
 
                     <div className="flex items-center justify-between">
                       <div className="space-y-0.5">
-                        <Label>Show "Powered by Uptrade"</Label>
+                        <Label>Show "Powered by Sonor"</Label>
                         <p className="text-xs text-muted-foreground">
                           Display branding on the widget
                         </p>
@@ -800,14 +800,14 @@ export default function EngageChatSettings({ projectId, onClose }) {
                       <SelectContent>
                         <SelectItem value="project">Project Team</SelectItem>
                         <SelectItem value="org">Organization Admins</SelectItem>
-                        <SelectItem value="uptrade">Uptrade Media Team</SelectItem>
+                        <SelectItem value="uptrade">Sonor Team</SelectItem>
                         <SelectItem value="custom">Custom Assignment</SelectItem>
                       </SelectContent>
                     </Select>
                     <p className="text-xs text-muted-foreground">
                       {config.routing_type === 'project' && 'Members assigned to this project will receive chats'}
                       {config.routing_type === 'org' && 'Organization administrators will receive chats'}
-                      {config.routing_type === 'uptrade' && 'Uptrade Media team will handle all chats'}
+                      {config.routing_type === 'uptrade' && 'Sonor team will handle all chats'}
                       {config.routing_type === 'custom' && 'Select specific team members below'}
                     </p>
                   </div>
@@ -1056,7 +1056,7 @@ export default function EngageChatSettings({ projectId, onClose }) {
                 Installation
               </CardTitle>
               <CardDescription>
-                The chat widget is automatically included when you use @uptrademedia/site-kit
+                The chat widget is automatically included when you use @uptrade/site-kit
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -1073,7 +1073,7 @@ export default function EngageChatSettings({ projectId, onClose }) {
                   <Label className="text-xs text-muted-foreground mb-2 block">Site-Kit Package</Label>
                   <div className="relative">
                     <pre className="p-3 bg-muted rounded-lg text-xs overflow-x-auto">
-                      <code>@uptrademedia/site-kit</code>
+                      <code>@uptrade/site-kit</code>
                     </pre>
                   </div>
                 </div>
@@ -1082,7 +1082,7 @@ export default function EngageChatSettings({ projectId, onClose }) {
                   <Label className="text-xs text-muted-foreground mb-2 block">Usage Example</Label>
                   <div className="relative">
                     <pre className="p-3 bg-muted rounded-lg text-xs overflow-x-auto font-mono">
-                      <code>{`import { ChatWidget } from '@uptrademedia/site-kit/engage'
+                      <code>{`import { ChatWidget } from '@uptrade/site-kit/engage'
 
 <ChatWidget projectId="${projectId}" />`}</code>
                     </pre>

@@ -165,7 +165,7 @@ export default function SendProposalDialog({
 
   // Email preview HTML
   const emailPreviewHtml = useMemo(() => {
-    const proposalUrl = `https://portal.uptrademedia.com/p/${proposal?.slug}`
+    const proposalUrl = `https://app.sonor.io/p/${proposal?.slug}`
     const validUntilFormatted = proposal?.validUntil 
       ? new Date(proposal.validUntil).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
       : null

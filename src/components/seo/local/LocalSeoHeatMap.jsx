@@ -94,7 +94,7 @@ export default function LocalSeoHeatMap({ projectId }) {
         }
 
         // Fetch API key from backend (more secure than env var)
-        const apiUrl = import.meta.env.VITE_PORTAL_API_URL || 'https://api.uptrademedia.com'
+        const apiUrl = import.meta.env.VITE_PORTAL_API_URL || 'https://api.sonor.io'
         const response = await fetch(`${apiUrl}/seo/config/maps-api-key`, {
           headers: {
             'Authorization': `Bearer ${session.access_token}`

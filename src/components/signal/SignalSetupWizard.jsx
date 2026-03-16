@@ -939,10 +939,10 @@ export default function SignalSetupWizard({ projectId, domain: propDomain, onCom
             setDomain(domainToUse)
             console.log('[SignalSetupWizard] Got domain from project:', domainToUse)
           } else if (project?.title?.toLowerCase().includes('uptrade')) {
-            // Default domain for Uptrade Media project
-            domainToUse = 'uptrademedia.com'
+            // Default domain for Sonor project
+            domainToUse = 'sonor.io'
             setDomain(domainToUse)
-            console.log('[SignalSetupWizard] Using default Uptrade Media domain:', domainToUse)
+            console.log('[SignalSetupWizard] Using default Sonor domain:', domainToUse)
           }
         } catch (err) {
           console.error('[SignalSetupWizard] Error fetching project:', err)
@@ -2417,7 +2417,7 @@ export default function SignalSetupWizard({ projectId, domain: propDomain, onCom
               </Button>
             </div>
             <p className="text-xs text-[var(--text-tertiary)] text-center">
-              Enter the full domain (e.g., www.uptrademedia.com)
+              Enter the full domain (e.g., www.sonor.io)
             </p>
           </div>
           

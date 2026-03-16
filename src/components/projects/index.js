@@ -2,7 +2,7 @@
  * Projects V2 Module Components
  * 
  * Three-view project management system:
- * - Uptrade Admin: Full org/project management
+ * - Sonor Admin: Full org/project management
  * - Org-Level: Project connections and personal tasks  
  * - Standard User: Personal tasks and deliverable viewing
  */

@@ -11,7 +11,7 @@ const gwaOrgId = '9a05474b-7a6e-432b-a41a-1ba2a6b11600';
 const { data: contact } = await supabase
   .from('contacts')
   .select('id, name, email')
-  .eq('email', 'ramsey@uptrademedia.com')
+  .eq('email', 'ramsey@sonor.io')
   .single();
 
 if (!contact) {

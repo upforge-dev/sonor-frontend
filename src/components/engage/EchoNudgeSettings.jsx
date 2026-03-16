@@ -834,7 +834,7 @@ function NudgeCard({ nudge, pageLabel, onEdit, onToggle, onDelete }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Nudge Preview (matches Uptrade screenshot style)
+// Nudge Preview (matches Sonor screenshot style)
 // ─────────────────────────────────────────────────────────────────────────────
 
 function NudgePreview({ nudge }) {

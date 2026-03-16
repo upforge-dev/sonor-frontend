@@ -67,7 +67,7 @@ export default function ContractEditorWithAI({
   projectId,
   onBack, 
   onSave,
-  isProposal = false  // Flag for Uptrade Media proposals vs client contracts
+  isProposal = false  // Flag for Sonor proposals vs client contracts
 }) {
   const { currentProject } = useAuthStore()
   const effectiveProjectId = projectId || currentProject?.id
@@ -131,7 +131,7 @@ export default function ContractEditorWithAI({
       let response
       
       if (isProposal) {
-        // Use proposals API for Uptrade Media proposals
+        // Use proposals API for Sonor proposals
         response = await proposalsApi.updateAI(currentContract.id, userMessage)
       } else {
         // Use commerce contracts API for client contracts

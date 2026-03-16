@@ -248,7 +248,7 @@ export default function SignalModule({ projectId: propProjectId, onNavigate }) {
                 <span className="text-[var(--text-primary)]">Signal</span>
                 <span className="px-1.5 rounded bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-lg font-semibold">AI</span>
               </h1>
-              <p className="text-sm text-[var(--text-muted)]">Powered by <span className="font-semibold text-[var(--text-secondary)]">Uptrade</span></p>
+              <p className="text-sm text-[var(--text-muted)]">Powered by <span className="font-semibold text-[var(--text-secondary)]">Sonor</span></p>
             </div>
           </div>
           

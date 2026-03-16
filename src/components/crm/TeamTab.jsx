@@ -281,7 +281,7 @@ function AddTeamMemberDialog({ open, onOpenChange, onSubmit, isLoading }) {
             <Input
               id="email"
               type="email"
-              placeholder="john@uptrademedia.com"
+              placeholder="john@sonor.io"
               value={formData.email}
               onChange={(e) => handleChange('email', e.target.value)}
               required

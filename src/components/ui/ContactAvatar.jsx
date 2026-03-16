@@ -1,7 +1,7 @@
 /**
  * ContactAvatar - Unified avatar component for all contact types
  * Handles visual differentiation between:
- * - Uptrade team (brand green→teal gradient, Uptrade logo)
+ * - Sonor team (brand green→teal gradient, Sonor logo)
  * - Client team members (org brand color, org logo)
  * - Live chat visitors (amber gradient, pulsing when active)
  * - Echo AI (echo logo with green gradient)
@@ -13,7 +13,7 @@ import { User, MessageCircle } from 'lucide-react'
 const CONTACT_TYPES = {
   uptrade: {
     gradient: 'from-[#4bbf39] to-[#238b95]', // Brand green to teal
-    label: 'Uptrade',
+    label: 'Sonor',
     ringColor: 'ring-emerald-500',
     badgeColor: 'bg-gradient-to-r from-[#4bbf39] to-[#238b95] text-white'
   },
@@ -73,7 +73,7 @@ export function getContactType(contact, currentUserOrgType) {
     return 'livechat'
   }
   
-  // Uptrade team member (agency org_type or explicit uptrade_team role)
+  // Sonor team member (agency org_type or explicit uptrade_team role)
   if (
     contact.org_type === 'agency' ||
     contact.role === 'uptrade_assigned' ||
@@ -98,7 +98,7 @@ export function getContactType(contact, currentUserOrgType) {
 }
 
 /**
- * Uptrade logo SVG component (white, for use on gradient backgrounds)
+ * Sonor logo SVG component (white, for use on gradient backgrounds)
  */
 function UptradeLogo({ className }) {
   return (
@@ -107,7 +107,7 @@ function UptradeLogo({ className }) {
       className={className}
       fill="currentColor"
     >
-      {/* Simplified Uptrade "U" mark */}
+      {/* Simplified Sonor "U" mark */}
       <path d="M50 10C27.9 10 10 27.9 10 50s17.9 40 40 40 40-17.9 40-40S72.1 10 50 10zm0 65c-13.8 0-25-11.2-25-25s11.2-25 25-25 25 11.2 25 25-11.2 25-25 25z"/>
       <path d="M50 30c-11 0-20 9-20 20v15c0 2.8 2.2 5 5 5s5-2.2 5-5V50c0-5.5 4.5-10 10-10s10 4.5 10 10v15c0 2.8 2.2 5 5 5s5-2.2 5-5V50c0-11-9-20-20-20z"/>
     </svg>
@@ -115,7 +115,7 @@ function UptradeLogo({ className }) {
 }
 
 /**
- * Small badge logo for overlay on avatars with photos (Uptrade version)
+ * Small badge logo for overlay on avatars with photos (Sonor version)
  */
 function UptradeLogoBadge({ size = 'md' }) {
   const badgeSizes = {
@@ -323,7 +323,7 @@ export default function ContactAvatar({
             className="w-full h-full rounded-full object-cover"
           />
         ) : type === 'uptrade' ? (
-          // Uptrade logo instead of initials
+          // Sonor logo instead of initials
           <UptradeLogo className={cn(sizeClass.logo, "text-white")} />
         ) : orgTheme?.logo && type === 'team' ? (
           // Org logo for team members
@@ -341,7 +341,7 @@ export default function ContactAvatar({
       {/* Type-specific badges */}
       {showBadge && (
         <>
-          {/* Uptrade badge on avatar photos */}
+          {/* Sonor badge on avatar photos */}
           {type === 'uptrade' && avatarSrc && (
             <UptradeLogoBadge size={size} />
           )}

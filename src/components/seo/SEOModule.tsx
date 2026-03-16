@@ -20,6 +20,7 @@ import { MODULE_ICONS } from '@/lib/module-icons'
 import { Settings, Rocket } from 'lucide-react'
 import { UptradeSpinner } from '@/components/UptradeLoading'
 import { useSignalAccess } from '@/lib/signal-access'
+import { EchoPanel } from '@/components/chat/EchoPanel'
 
 // Import SEO Sidebar content (nav sections)
 import SEOSidebar from '@/components/seo/SEOSidebar'
@@ -97,6 +98,7 @@ export default function SEOModule() {
     : 'Optimization & monitoring'
 
   return (
+  <>
     <TooltipProvider>
       <ModuleLayout
         leftSidebar={
@@ -206,5 +208,8 @@ export default function SEOModule() {
         }}
       />
     </TooltipProvider>
+
+    <EchoPanel module="seo" />
+  </>
   )
 }

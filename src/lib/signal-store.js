@@ -22,7 +22,7 @@ import useAuthStore from './auth-store'
 // Signal API Direct Access
 // ─────────────────────────────────────────────────────────────────────────────
 // Signal API runs on NestJS - all requests go directly there
-const SIGNAL_API_URL = import.meta.env.VITE_SIGNAL_API_URL || 'https://signal.uptrademedia.com'
+const SIGNAL_API_URL = import.meta.env.VITE_SIGNAL_API_URL || 'https://signal.sonor.io'
 
 // Create Signal API axios instance
 const signalApi = axios.create({

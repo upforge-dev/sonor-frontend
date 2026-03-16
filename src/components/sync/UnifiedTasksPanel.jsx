@@ -87,7 +87,7 @@ function TaskCard({
       case 'project_task':
         return { icon: ClipboardList, label: 'Project', color: 'teal' }
       case 'uptrade_task':
-        return { icon: Briefcase, label: 'Uptrade', color: 'violet' }
+        return { icon: Briefcase, label: 'Sonor', color: 'violet' }
       case 'crm_reminder':
         return { icon: Users, label: 'CRM', color: 'amber' }
       case 'signal_action':

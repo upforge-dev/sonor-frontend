@@ -9,7 +9,7 @@
 
 import { useMemo, useState } from 'react'
 import { formatDistanceToNow } from 'date-fns'
-import { MessageCircle, User, Bot, MoreVertical, Pin, Trash2, PinOff, BellOff, Bell } from 'lucide-react'
+import { MessageCircle, User, Bot, MoreVertical, Pin, Trash2, PinOff, BellOff, Bell, Users, Globe } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { ChatKitThread } from './types'
 import EchoLogo from '@/components/EchoLogo'
@@ -287,6 +287,18 @@ export function ThreadListItem({
           {isEcho && thread.skill_key && thread.skill_key !== 'router' && (
             <span className="text-xs text-[var(--text-tertiary)] bg-[var(--surface-tertiary)] px-2 py-0.5 rounded-full">
               {thread.skill_key}
+            </span>
+          )}
+
+          {/* Shared/team visibility indicator */}
+          {isEcho && (thread as any).visibility === 'team' && (
+            <span className="text-xs text-blue-600 dark:text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-full inline-flex items-center gap-1">
+              <Users className="h-3 w-3" /> Shared
+            </span>
+          )}
+          {isEcho && (thread as any).visibility === 'org' && (
+            <span className="text-xs text-purple-600 dark:text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded-full inline-flex items-center gap-1">
+              <Globe className="h-3 w-3" /> Org
             </span>
           )}
           

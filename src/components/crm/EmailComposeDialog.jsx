@@ -52,8 +52,8 @@ import useAuthStore from '@/lib/auth-store'
 // Available "from" mailboxes - Gmail/Google Workspace accounts
 // All composed emails go through Gmail API for proper threading & replies
 const MAILBOXES = [
-  { id: 'ramsey', email: 'ramsey@uptrademedia.com', name: 'Ramsey Deal' },
-  { id: 'hello', email: 'hello@uptrademedia.com', name: 'Uptrade Media' },
+  { id: 'ramsey', email: 'hello@sonor.io', name: 'Ramsey Deal' },
+  { id: 'hello', email: 'hello@sonor.io', name: 'Sonor' },
 ]
 
 // Quick templates for common emails
@@ -146,9 +146,9 @@ export default function EmailComposeDialog({
   // Use passed projectId or fall back to current project
   const effectiveProjectId = projectId || currentProject?.id
   
-  // Schedule Consultation is Uptrade Media only feature
+  // Schedule Consultation is Sonor only feature
   const isUptradeMedia = currentOrg?.slug === 'uptrade-media' || 
-                         currentOrg?.domain === 'uptrademedia.com' || 
+                         currentOrg?.domain === 'sonor.io' || 
                          currentOrg?.org_type === 'agency'
   
   // Filter templates based on org
@@ -676,7 +676,7 @@ Ramsey`
                     {includeSchedulingLink && (
                       <p className="text-xs text-[#6366f1] flex items-center gap-1">
                         <CalendarDays className="h-3 w-3" />
-                        Booking link to portal.uptrademedia.com/schedule
+                        Booking link to app.sonor.io/schedule
                       </p>
                     )}
                   </>

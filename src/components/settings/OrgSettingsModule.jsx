@@ -29,7 +29,11 @@ import {
   Info,
   PauseCircle,
   Shield,
-  ArrowLeft
+  ArrowLeft,
+  Pencil,
+  Save,
+  Loader2,
+  X
 } from 'lucide-react'
 import SignalIcon from '@/components/ui/SignalIcon'
 import SignalUsageBillingCard from '@/components/billing/SignalUsageBillingCard'
@@ -49,6 +53,11 @@ export default function OrgSettings() {
   const [activeTab, setActiveTab] = useState('billing')
   const [orgDetails, setOrgDetails] = useState(null)
   const [isLoadingOrg, setIsLoadingOrg] = useState(true)
+  
+  // Org rename state
+  const [editingName, setEditingName] = useState(false)
+  const [orgNameDraft, setOrgNameDraft] = useState('')
+  const [isSavingName, setIsSavingName] = useState(false)
   
   // Billing suspension modal state
   const [suspendModalOpen, setSuspendModalOpen] = useState(false)
@@ -76,6 +85,29 @@ export default function OrgSettings() {
       toast.error('Failed to load organization details')
     } finally {
       setIsLoadingOrg(false)
+    }
+  }
+
+  const handleSaveOrgName = async () => {
+    const trimmed = orgNameDraft.trim()
+    if (!trimmed) {
+      toast.error('Organization name cannot be empty')
+      return
+    }
+    setIsSavingName(true)
+    try {
+      await adminApi.updateOrgSettings(currentOrg.id, { name: trimmed })
+      setOrgDetails(prev => ({ ...prev, name: trimmed }))
+      const updatedOrg = { ...currentOrg, name: trimmed }
+      useAuthStore.getState().setOrganization(updatedOrg)
+      localStorage.setItem('currentOrganization', JSON.stringify(updatedOrg))
+      setEditingName(false)
+      toast.success('Organization name updated')
+    } catch (err) {
+      console.error('Failed to update org name:', err)
+      toast.error('Failed to update organization name')
+    } finally {
+      setIsSavingName(false)
     }
   }
 
@@ -240,7 +272,7 @@ export default function OrgSettings() {
 
           {/* General Settings Tab */}
           <TabsContent value="settings" className="space-y-6">
-            {/* Billing Suspension - Uptrade Agency Only (clients cannot suspend their own billing) */}
+            {/* Billing Suspension - Sonor Agency Only (clients cannot suspend their own billing) */}
             {isSuperAdmin && (
               <Card className="border-amber-500/30 bg-amber-500/5 dark:bg-amber-900/10">
                 <CardHeader>
@@ -528,11 +560,57 @@ export default function OrgSettings() {
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div className="space-y-2">
                         <Label>Organization Name</Label>
-                        <Input 
-                          value={orgDetails?.name || ''} 
-                          disabled
-                          className="bg-[var(--surface-secondary)]"
-                        />
+                        {editingName ? (
+                          <div className="flex items-center gap-2">
+                            <Input
+                              value={orgNameDraft}
+                              onChange={(e) => setOrgNameDraft(e.target.value)}
+                              autoFocus
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') handleSaveOrgName()
+                                if (e.key === 'Escape') setEditingName(false)
+                              }}
+                            />
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={handleSaveOrgName}
+                              disabled={isSavingName}
+                            >
+                              {isSavingName ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Save className="h-4 w-4" />
+                              )}
+                            </Button>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => setEditingName(false)}
+                              disabled={isSavingName}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <Input 
+                              value={orgDetails?.name || ''} 
+                              disabled
+                              className="bg-[var(--surface-secondary)]"
+                            />
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => {
+                                setOrgNameDraft(orgDetails?.name || '')
+                                setEditingName(true)
+                              }}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        )}
                       </div>
                       <div className="space-y-2">
                         <Label>Domain</Label>
@@ -572,12 +650,6 @@ export default function OrgSettings() {
                         </div>
                       </div>
                     )}
-
-                    <div className="pt-4 border-t border-[var(--border-primary)]">
-                      <p className="text-sm text-[var(--text-secondary)]">
-                        To update organization settings, please contact your account manager.
-                      </p>
-                    </div>
                   </>
                 )}
               </CardContent>

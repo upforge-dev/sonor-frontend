@@ -134,7 +134,7 @@ export default function SEOSerpPreview({
         baseHost = null
       }
     }
-    const base = baseHost ? `https://${baseHost.replace(/^(https?:\/\/)?(www\.)?/, '')}` : 'https://uptrademedia.com'
+    const base = baseHost ? `https://${baseHost.replace(/^(https?:\/\/)?(www\.)?/, '')}` : 'https://sonor.io'
     const urlStr = isAbsolute ? page.url : `${base}${pathNorm}`
     let urlObj
     try {

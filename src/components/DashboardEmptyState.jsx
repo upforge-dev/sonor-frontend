@@ -101,7 +101,7 @@ export function MessagesEmptyState({ onAction }) {
     <DashboardEmptyState
       type="messages"
       title="No messages yet"
-      description="Message threads from your Uptrade Media team will appear here. Check back soon!"
+      description="Message threads from your Sonor team will appear here. Check back soon!"
       actionLabel="View All Messages"
       onAction={onAction}
       suggestions={[

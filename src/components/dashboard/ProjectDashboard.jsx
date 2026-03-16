@@ -68,6 +68,7 @@ import { seoApi, syncApi } from '@/lib/portal-api'
 import { cn } from '@/lib/utils'
 import { format, subDays, formatDistanceToNow } from 'date-fns'
 import { EmptyState } from '@/components/EmptyState'
+import { DashboardEchoWidget } from './DashboardEchoWidget'
 
 // ==================== Widget Components ====================
 
@@ -1091,13 +1092,18 @@ export default function ProjectDashboard({ onNavigate }) {
         </div>
       )}
 
-      {/* Uptrade Services */}
+      {/* Echo AI Widget */}
+      <div className="mt-6">
+        <DashboardEchoWidget onNavigate={onNavigate} />
+      </div>
+
+      {/* Sonor Services */}
       <div className="mt-6">
         <div className="flex items-center gap-2 mb-4">
           <div className="w-6 h-6 rounded flex items-center justify-center" style={{ backgroundColor: `${brandColors.primary}20` }}>
             <Zap className="w-4 h-4" style={{ color: brandColors.primary }} />
           </div>
-          <h2 className="text-lg font-semibold text-[var(--text-primary)]">Uptrade Media</h2>
+          <h2 className="text-lg font-semibold text-[var(--text-primary)]">Sonor</h2>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {[

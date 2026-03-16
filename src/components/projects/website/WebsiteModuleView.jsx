@@ -26,6 +26,7 @@ import WebsitePageImages from './panels/WebsitePageImages'
 import WebsitePageFaq from './panels/WebsitePageFaq'
 import WebsitePageSchema from './panels/WebsitePageSchema'
 import WebsitePageContent from './panels/WebsitePageContent'
+import WebsitePageCmsContent from './panels/WebsitePageCmsContent'
 import WebsitePageForms from './panels/WebsitePageForms'
 import WebsitePageLinks from './panels/WebsitePageLinks'
 import WebsitePageScripts from './panels/WebsitePageScripts'
@@ -60,6 +61,7 @@ export default function WebsiteModuleView({
   selectedPage,
   activeTab: controlledTab,
   onTabChange,
+  cmsConnected = false,
 }) {
   const [internalTab, setInternalTab] = useState('analytics')
   const activeTab = controlledTab ?? internalTab
@@ -147,7 +149,20 @@ export default function WebsiteModuleView({
               <WebsitePageSchema projectId={projectId} selectedPage={selectedPage} />
             </TabsContent>
             <TabsContent value="content" className="m-0">
-              <WebsitePageContent projectId={projectId} selectedPage={selectedPage} />
+              {selectedPage?._cmsPage ? (
+                <WebsitePageCmsContent
+                  projectId={projectId}
+                  project={project}
+                  selectedPage={selectedPage}
+                  cmsPage={selectedPage._cmsPage}
+                />
+              ) : (
+                <WebsitePageContent
+                  projectId={projectId}
+                  selectedPage={selectedPage}
+                  cmsConnected={cmsConnected}
+                />
+              )}
             </TabsContent>
             <TabsContent value="forms" className="m-0">
               <WebsitePageForms projectId={projectId} selectedPage={selectedPage} />

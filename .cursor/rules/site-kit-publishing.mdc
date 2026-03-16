@@ -1,12 +1,12 @@
 ---
-description: Rules for publishing @uptrademedia/site-kit to npm
+description: Rules for publishing @sonordev/site-kit to npm
 globs:
   - packages/site-kit/**
 ---
 
 # Site-Kit Publishing
 
-When publishing `@uptrademedia/site-kit` to npm:
+When publishing `@sonordev/site-kit` to npm:
 
 1. Build first: `cd packages/site-kit && pnpm build`
 2. Publish with: `pnpm publish --no-git-checks --access public`

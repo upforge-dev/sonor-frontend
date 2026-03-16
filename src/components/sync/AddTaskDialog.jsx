@@ -52,9 +52,9 @@ const TASK_TYPES = [
   },
   { 
     value: 'uptrade_task', 
-    label: 'Uptrade Task', 
+    label: 'Sonor Task', 
     icon: Briefcase,
-    description: 'Internal Uptrade team task'
+    description: 'Internal Sonor team task'
   },
   { 
     value: 'crm_reminder', 

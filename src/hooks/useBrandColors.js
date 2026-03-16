@@ -82,7 +82,7 @@ function hexToRgba(hex, alpha = 1) {
  * 1. Project columns: project.brand_primary
  * 2. Organization columns: org.brand_primary, org.brand_accent
  * 3. Legacy theme object: org.theme.brandColor1, org.theme.primaryColor, etc.
- * 4. Uptrade defaults
+ * 4. Sonor defaults
  *
  * @returns {Object} Brand colors with variants
  *

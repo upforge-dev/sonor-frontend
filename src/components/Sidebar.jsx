@@ -145,9 +145,9 @@ const Sidebar = ({
   // ORG TYPE DETECTION (Agency vs Client)
   // ============================================================================
   
-  // Is this the agency org (Uptrade Media)? Show admin view
+  // Is this the agency org (Sonor)? Show admin view
   const isAgencyOrg = currentOrg?.slug === 'uptrade-media' || 
-                      currentOrg?.domain === 'uptrademedia.com' || 
+                      currentOrg?.domain === 'sonor.io' || 
                       currentOrg?.org_type === 'agency'
   
   // Is this a client org? Show client view with their project features
@@ -182,7 +182,7 @@ const Sidebar = ({
     p.status === 'sent' || p.status === 'viewed'
   ).length
   
-  // Total Uptrade notifications (proposals + invoices requiring attention)
+  // Total Sonor notifications (proposals + invoices requiring attention)
   const uptradeNotificationCount = pendingProposalsCount + unpaidInvoicesCount
 
   // ============================================================================
@@ -190,7 +190,7 @@ const Sidebar = ({
   // ============================================================================
   
   // ARCHITECTURE:
-  // - Agency org (Uptrade Media) = Admin view with all tools
+  // - Agency org (Sonor) = Admin view with all tools
   // - Client orgs = Client view with their project features
   // - Org-level users auto-step into first project on login
   // - Project modules are scoped to currentProject.id
@@ -220,7 +220,7 @@ const Sidebar = ({
       { id: 'crm', label: 'CRM', icon: Users, badge: newLeadsCount > 0 ? newLeadsCount.toString() : null },
     ]
   }
-  // --- AGENCY ADMIN VIEW (Uptrade Media org = admin portal) ---
+  // --- AGENCY ADMIN VIEW (Sonor org = admin portal) ---
   else if (isAgencyOrg) {
     // Core admin portal items - Proposals and Billing are now managed within Commerce
     allNavigationItems = [
@@ -236,7 +236,7 @@ const Sidebar = ({
     // Feature-gated admin tools (show unless explicitly disabled)
     if (hasFeature('seo')) allNavigationItems.push({ id: 'seo', label: 'SEO', icon: Search })
     if (hasFeature('seo')) allNavigationItems.push({ id: 'website', label: 'Website', icon: Globe2 })
-    // Commerce is an admin tool - contains Proposals (Contracts) and Invoices for Uptrade
+    // Commerce is an admin tool - contains Proposals (Contracts) and Invoices for Sonor
     allNavigationItems.push({ id: 'commerce', label: 'Commerce', icon: Box })
     if (hasFeature('engage')) allNavigationItems.push({ id: 'engage', label: 'Engage', icon: Zap })
     // Always show reputation for admins (it's an admin-only feature)
@@ -256,7 +256,7 @@ const Sidebar = ({
   }
   // --- CLIENT ORG VIEW (viewing a client organization/project) ---
   else if (isClientOrg) {
-    // Check if this project org should see Uptrade Media services
+    // Check if this project org should see Sonor services
     const isUptradeClient = currentProject?.is_uptrade_client !== false
     
     // Check if we have a project selected
@@ -271,11 +271,11 @@ const Sidebar = ({
         { id: 'messages', label: 'Messages', icon: MessageSquare, badge: unreadMessages > 0 ? unreadMessages.toString() : null },
       ]
       
-      // Uptrade Media services - collapsible dropdown for Uptrade clients
+      // Sonor services - collapsible dropdown for Sonor clients
       if (hasOrgLevelAccess) {
         allNavigationItems.push({ 
           id: 'uptrade-collapsible', 
-          label: 'Uptrade Media', 
+          label: 'Sonor', 
           isCollapsibleSection: true,
           icon: Building2,
           badge: uptradeNotificationCount > 0 ? uptradeNotificationCount.toString() : null,
@@ -318,12 +318,12 @@ const Sidebar = ({
       allNavigationItems.push({ id: 'sync', label: 'Sync', icon: Calendar })
       allNavigationItems.push({ id: 'files', label: 'Files', icon: FolderOpen })
       
-      // Uptrade Media services - collapsible dropdown for Uptrade clients (not Sonor white-label)
+      // Sonor services - collapsible dropdown for Sonor clients (not Sonor white-label)
       // Uses a special marker that will be rendered as a collapsible section
       if (isUptradeClient && hasOrgLevelAccess) {
         allNavigationItems.push({ 
           id: 'uptrade-collapsible', 
-          label: 'Uptrade Media', 
+          label: 'Sonor', 
           isCollapsibleSection: true,
           icon: Building2,
           badge: uptradeNotificationCount > 0 ? uptradeNotificationCount.toString() : null,
@@ -360,7 +360,7 @@ const Sidebar = ({
                 <LogoSvg className="w-8 h-8 text-black dark:text-white" fill="currentColor" />
                 <div>
                   <h2 className="font-semibold text-sm text-foreground">
-                    {currentOrg?.name || 'Uptrade Media'}
+                    {currentOrg?.name || 'Sonor'}
                   </h2>
                   <p className="text-xs text-muted-foreground">Client Portal</p>
                 </div>
@@ -448,7 +448,7 @@ const Sidebar = ({
               )
             }
           
-            // Handle collapsible sections (Uptrade Media dropdown)
+            // Handle collapsible sections (Sonor dropdown)
             if (item.isCollapsibleSection) {
             const SectionIcon = item.icon
             const hasActiveChild = item.items?.some(child => activeSection === child.id)

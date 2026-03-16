@@ -15,12 +15,16 @@ import { useState, useMemo, useRef, useEffect } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { formatDistanceToNow, format } from 'date-fns'
-import { Check, CheckCheck, RefreshCw, User, MoreHorizontal, Pencil, Trash2, X, SmilePlus, CornerDownRight } from 'lucide-react'
+import { Check, CheckCheck, RefreshCw, User, MoreHorizontal, Pencil, Trash2, X, SmilePlus, CornerDownRight, Pin } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { CodeBlock } from './CodeBlock'
 import { FeedbackButtons } from './FeedbackButtons'
 import { AttachmentPreview, type Attachment } from './Attachments'
 import { LinkPreviewCard, extractFirstUrl } from './LinkPreviewCard'
+import { EchoChart, extractCharts } from './EchoChart'
+import { ContactCard, extractContacts } from './ContactCard'
+import { EchoDataTable, extractTables } from './EchoDataTable'
+import { EchoStatCards, extractStats } from './EchoStatCards'
 import type { ChatKitItem, MessageContent, ItemReaction } from './types'
 import EchoLogo from '@/components/EchoLogo'
 import {
@@ -167,6 +171,10 @@ interface MessageBubbleProps {
   onReplyInThread?: (messageId: string) => void
   /** Show "Reply in thread" action (Team tab). */
   canReplyInThread?: boolean
+  /** Pin/unpin message callback (Echo AI messages) */
+  onPin?: (messageId: string) => void
+  /** Whether the message is currently pinned */
+  isPinned?: boolean
   className?: string
 }
 
@@ -191,6 +199,8 @@ export function MessageBubble({
   onRemoveReaction,
   onReplyInThread,
   canReplyInThread = false,
+  onPin,
+  isPinned = false,
   className,
 }: MessageBubbleProps) {
   const isEchoSender = message.sender?.name === 'Echo' || message.sender?.full_name === 'Echo'
@@ -304,11 +314,45 @@ export function MessageBubble({
     return ''
   }, [message.content, isStreaming, streamingContent])
 
+  // Extract inline charts from message (```chart ... ```)
+  const { displayText: chartCleanText, charts: inlineCharts } = useMemo(() => {
+    if (!messageText || isAssistant === false) return { displayText: messageText, charts: [] }
+    const { cleanText, charts } = extractCharts(messageText)
+    return { displayText: charts.length > 0 ? cleanText : messageText, charts }
+  }, [messageText])
+
+  // Extract contact cards from message (```contact ... ```)
+  const { displayText: contactCleanText, contacts: inlineContacts } = useMemo(() => {
+    const src = inlineCharts.length > 0 ? chartCleanText : messageText
+    if (!src || isAssistant === false) return { displayText: src, contacts: [] }
+    const { cleanText, contacts } = extractContacts(src)
+    return { displayText: contacts.length > 0 ? cleanText : src, contacts }
+  }, [chartCleanText, messageText, inlineCharts.length])
+
+  // Extract data tables from message (```table ... ```)
+  const { cleanText: tableCleanText, tables: inlineTables } = useMemo(() => {
+    const src = inlineContacts.length > 0 ? contactCleanText : (inlineCharts.length > 0 ? chartCleanText : messageText)
+    if (!src || isAssistant === false) return { cleanText: src, tables: [] }
+    return extractTables(src)
+  }, [contactCleanText, chartCleanText, messageText, inlineCharts.length, inlineContacts.length])
+
+  // Extract stat cards from message (```stats ... ```)
+  const { cleanText: statsCleanText, statsGroups: inlineStats } = useMemo(() => {
+    const src = inlineTables.length > 0 ? tableCleanText : (inlineContacts.length > 0 ? contactCleanText : (inlineCharts.length > 0 ? chartCleanText : messageText))
+    if (!src || isAssistant === false) return { cleanText: src, statsGroups: [] }
+    return extractStats(src)
+  }, [tableCleanText, contactCleanText, chartCleanText, messageText, inlineCharts.length, inlineContacts.length, inlineTables.length])
+
   // Highlight @mentions for display (wrap in ** so they render bold)
   const messageTextWithMentions = useMemo(() => {
-    if (!messageText) return ''
-    return messageText.replace(/@[\w.-]+/g, '**$&**')
-  }, [messageText])
+    const text = inlineStats.length > 0 ? statsCleanText
+      : inlineTables.length > 0 ? tableCleanText
+      : inlineContacts.length > 0 ? contactCleanText
+      : inlineCharts.length > 0 ? chartCleanText
+      : messageText
+    if (!text) return ''
+    return text.replace(/@[\w.-]+/g, '**$&**')
+  }, [messageText, chartCleanText, contactCleanText, tableCleanText, statsCleanText, inlineCharts.length, inlineContacts.length, inlineTables.length, inlineStats.length])
 
   const firstUrl = useMemo(() => extractFirstUrl(messageText), [messageText])
   
@@ -489,8 +533,23 @@ export function MessageBubble({
                         </code>
                       )
                     },
-                    // Links open in new tab
                     a({ href, children }) {
+                      const isPortalLink = href?.startsWith('/') || href?.startsWith('#portal:')
+                      if (isPortalLink) {
+                        const portalPath = href.startsWith('#portal:') ? href.replace('#portal:', '/') : href
+                        return (
+                          <a
+                            href={portalPath}
+                            onClick={(e) => {
+                              e.preventDefault()
+                              window.dispatchEvent(new CustomEvent('portal:navigate', { detail: { path: portalPath } }))
+                            }}
+                            className="text-[var(--brand-primary)] hover:underline cursor-pointer font-medium"
+                          >
+                            {children}
+                          </a>
+                        )
+                      }
                       return (
                         <a
                           href={href}
@@ -518,6 +577,26 @@ export function MessageBubble({
                   {messageTextWithMentions}
                 </ReactMarkdown>
               </div>
+
+              {/* Inline charts */}
+              {inlineCharts.length > 0 && inlineCharts.map((chart, i) => (
+                <EchoChart key={i} definition={chart} />
+              ))}
+
+              {/* Contact cards */}
+              {inlineContacts.length > 0 && inlineContacts.map((contact, i) => (
+                <ContactCard key={contact.id || i} contact={contact} />
+              ))}
+
+              {/* Data tables */}
+              {inlineTables.length > 0 && inlineTables.map((table, i) => (
+                <EchoDataTable key={i} definition={table} />
+              ))}
+
+              {/* Stat cards */}
+              {inlineStats.length > 0 && inlineStats.map((group, i) => (
+                <EchoStatCards key={i} definition={group} />
+              ))}
               
               {/* Attachments */}
               {message.attachments && message.attachments.length > 0 && (
@@ -592,6 +671,23 @@ export function MessageBubble({
             </button>
           )}
           
+          {/* Pin button (AI messages only) */}
+          {onPin && isAssistant && !isStreaming && !isDeleted && (
+            <button
+              onClick={() => onPin(message.id)}
+              className={cn(
+                'transition-all',
+                isPinned
+                  ? 'text-[var(--brand-primary)]'
+                  : 'text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] opacity-0 group-hover:opacity-100'
+              )}
+              title={isPinned ? 'Unpin message' : 'Pin message'}
+              aria-label={isPinned ? 'Unpin message' : 'Pin message'}
+            >
+              <Pin className="h-3.5 w-3.5" />
+            </button>
+          )}
+
           {/* Feedback buttons (AI messages only) */}
           {showFeedback && isAssistant && !isStreaming && !isDeleted && (
             <FeedbackButtons

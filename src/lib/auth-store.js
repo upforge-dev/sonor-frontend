@@ -278,18 +278,18 @@ const useAuthStore = create(
             accessLevel: accessLevel || 'organization' // Default to org-level for backwards compatibility
           })
           
-          // If admin/superAdmin has no org context, automatically set them to Uptrade Media org
+          // If admin/superAdmin has no org context, automatically set them to Sonor org
           if (!organization && (isSuperAdmin || get().user?.role === 'admin')) {
-            console.log('[AuthStore] Admin with no org - fetching Uptrade Media org')
+            console.log('[AuthStore] Admin with no org - fetching Sonor org')
             const allOrgs = await get().fetchAllOrganizations()
             const uptradeOrg = allOrgs?.find(org => 
               org.slug === 'uptrade-media' || 
-              org.domain === 'uptrademedia.com' || 
+              org.domain === 'sonor.io' || 
               org.org_type === 'agency'
             )
             
             if (uptradeOrg) {
-              console.log('[AuthStore] Auto-setting admin to Uptrade Media org')
+              console.log('[AuthStore] Auto-setting admin to Sonor org')
               set({ currentOrg: uptradeOrg })
               localStorage.setItem('currentOrganization', JSON.stringify(uptradeOrg))
               return // Early return, no need to process further

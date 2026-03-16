@@ -59,6 +59,7 @@ export interface ChatKitItem {
   edited_at?: string | null
   deleted_at?: string | null
   reactions?: ItemReaction[]
+  sendFailed?: boolean
 
   // For display (computed)
   sender?: {
