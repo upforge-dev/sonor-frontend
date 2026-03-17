@@ -22,7 +22,7 @@ import { useEchoChat, type EchoPageContext } from '@/hooks/useEchoChat'
 import { ChatArea } from './ChatArea'
 import EchoLogo from '@/components/EchoLogo'
 import { openOAuthPopup } from '@/lib/oauth-popup'
-import { useAuthStore } from '@/lib/auth-store'
+import useAuthStore from '@/lib/auth-store'
 
 interface EchoPanelProps {
   /** Module name (seo, crm, analytics, engage, etc.) */
