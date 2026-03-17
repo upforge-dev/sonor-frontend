@@ -61,9 +61,8 @@ import { INDUSTRY_CATEGORIES } from '@/lib/constants/industries'
 import { US_STATES } from '@/lib/constants/us-states'
 import { PROJECT_STATUS_CONFIG } from '@/lib/hooks'
 
-// Default brand colors (Sonor)
+// Default brand color (Sonor)
 const DEFAULT_BRAND_PRIMARY = '#4bbf39'
-const DEFAULT_BRAND_SECONDARY = '#39bfb0'
 
 // Normalize hex color to 6-digit format (required for <input type="color">)
 function normalizeHex(hex) {
@@ -179,7 +178,7 @@ function FeatureToggle({ feature, enabled, onChange, description, isAdmin }) {
 
 export default function ProjectSettingsPanel({ project, isAdmin, onProjectUpdate }) {
   const { currentOrg, setProject } = useAuthStore()
-  const { hasOrgSignal, hasCurrentProjectSignal, isAdmin: isSignalAdmin, orgActuallyHasSignal } = useSignalAccess()
+  const { hasCurrentProjectSignal, isAdmin: isSignalAdmin, currentPlan } = useSignalAccess()
   
   // Form state
   const [formData, setFormData] = useState({
@@ -187,13 +186,11 @@ export default function ProjectSettingsPanel({ project, isAdmin, onProjectUpdate
     status: project?.status || 'planning',
     logo_url: project?.logo_url || null,
     brand_primary: project?.brand_primary || '',
-    brand_primary: project?.brand_primary || '',
     domain: project?.domain || '',
     resend_domain: project?.settings?.resend_domain || '',
     resend_from_name: project?.settings?.resend_from_name || '',
     notification_recipients: project?.settings?.notification_recipients || [],
     features: project?.features || [],
-    signal_enabled: project?.signal_enabled || false,
     commerce_types: project?.settings?.commerce_types || ['product', 'service'],
     payment_processor: project?.settings?.payment_processor || 'stripe', // 'stripe' or 'square'
     shopify_connected: project?.settings?.shopify_connected || false,
@@ -238,13 +235,11 @@ export default function ProjectSettingsPanel({ project, isAdmin, onProjectUpdate
         status: project.status || 'planning',
         logo_url: project.logo_url || null,
         brand_primary: project.brand_primary || '',
-        brand_primary: project.brand_primary || '',
         domain: project.domain || '',
         resend_domain: project.settings?.resend_domain || '',
         resend_from_name: project.settings?.resend_from_name || '',
         notification_recipients: project.settings?.notification_recipients || [],
         features: Array.isArray(project.features) ? project.features : [],
-        signal_enabled: project.signal_enabled || false,
         // Don't use defaults - use saved values or empty arrays
         commerce_types: Array.isArray(project.settings?.commerce_types) ? project.settings.commerce_types : [],
         payment_processor: project.settings?.payment_processor || null,
@@ -402,8 +397,8 @@ export default function ProjectSettingsPanel({ project, isAdmin, onProjectUpdate
     setHasChanges(true)
   }
   
-  // Check if Signal is enabled via org or project
-  const isSignalEnabled = hasOrgSignal || formData.signal_enabled || formData.features?.includes('signal')
+  // Check if Signal is enabled via project plan
+  const isSignalEnabled = hasCurrentProjectSignal || formData.features?.includes('signal')
   
   // Save settings
   const handleSave = async () => {
@@ -432,11 +427,8 @@ export default function ProjectSettingsPanel({ project, isAdmin, onProjectUpdate
         status: formData.status,
         logo_url: formData.logo_url,
         brand_primary: formData.brand_primary || null,
-        brand_primary: formData.brand_primary || null,
         domain: formData.domain || null,
         features: formData.features,
-        signal_enabled: formData.signal_enabled,
-        signal_enabled_at: formData.signal_enabled ? (project.signal_enabled_at || new Date().toISOString()) : null,
         settings: updatedSettings,
         // Business Profile fields - Universal source of truth
         city: formData.city || null,
@@ -497,7 +489,6 @@ export default function ProjectSettingsPanel({ project, isAdmin, onProjectUpdate
           status: updatedProject.status || 'planning',
           logo_url: updatedProject.logo_url || null,
           brand_primary: updatedProject.brand_primary || '',
-          brand_primary: updatedProject.brand_primary || '',
           domain: updatedProject.domain || '',
           resend_domain: updatedProject.settings?.resend_domain || '',
           resend_from_name: updatedProject.settings?.resend_from_name || '',
@@ -506,8 +497,6 @@ export default function ProjectSettingsPanel({ project, isAdmin, onProjectUpdate
           commerce_types: Array.isArray(updatedProject.settings?.commerce_types) ? updatedProject.settings.commerce_types : [],
           payment_processor: updatedProject.settings?.payment_processor || null,
           shopify_connected: updatedProject.settings?.shopify_connected || false,
-          signal_enabled: updatedProject.signal_enabled ?? false,
-          signal_enabled_at: updatedProject.signal_enabled_at || null,
           // Business Profile fields
           city: updatedProject.city || '',
           state_code: updatedProject.state_code || '',
@@ -644,7 +633,6 @@ export default function ProjectSettingsPanel({ project, isAdmin, onProjectUpdate
         title: project.title || '',
         status: project.status || 'planning',
         logo_url: project.logo_url || null,
-        brand_primary: project.brand_primary || '',
         brand_primary: project.brand_primary || '',
         domain: project.domain || '',
         features: Array.isArray(project.features) ? project.features : [],
@@ -871,54 +859,33 @@ export default function ProjectSettingsPanel({ project, isAdmin, onProjectUpdate
               <CardTitle className="flex items-center gap-2 text-base">
                 <Zap className="h-4 w-4" />
                 Signal AI
-                {orgActuallyHasSignal && (
+                {hasCurrentProjectSignal && (
                   <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 ml-auto text-xs">
-                    Org-Wide
-                  </Badge>
-                )}
-                {!orgActuallyHasSignal && formData.signal_enabled && (
-                  <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200 ml-auto text-xs">
-                    Project
+                    {currentPlan === 'full_signal' ? 'Full Signal' : 'Limited AI'}
                   </Badge>
                 )}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {orgActuallyHasSignal ? (
+              {hasCurrentProjectSignal ? (
                 <>
-                  {/* Org-wide Signal is ON — project inherits automatically */}
                   <div className="flex items-center gap-2 p-2 rounded-lg bg-green-50 dark:bg-green-950/20 text-green-700 dark:text-green-400 text-sm">
                     <CheckCircle className="h-4 w-4 shrink-0" />
-                    <span>Signal enabled organization-wide</span>
+                    <span>Signal AI active ({currentPlan === 'full_signal' ? 'Full Signal' : 'Limited AI'} plan)</span>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    AI chat, Echo, and all Signal features are active for every project in this organization.
+                    AI chat, Echo, and AI-powered features are enabled for this project.
                   </p>
                 </>
               ) : (
                 <>
-                  {/* Per-project toggle — org doesn't have Signal */}
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label className="text-sm font-medium">Enable Signal for this project</Label>
-                      <p className="text-xs text-muted-foreground">
-                        AI chat, Echo, and AI-powered features
-                      </p>
-                    </div>
-                    <Switch
-                      checked={formData.signal_enabled}
-                      onCheckedChange={(checked) => {
-                        setFormData(prev => ({ ...prev, signal_enabled: checked }))
-                        setHasChanges(true)
-                      }}
-                      disabled={!isAdmin && !isSignalAdmin}
-                    />
+                  <div className="flex items-center gap-2 p-2 rounded-lg bg-muted text-muted-foreground text-sm">
+                    <AlertCircle className="h-4 w-4 shrink-0" />
+                    <span>Signal AI requires Limited AI or Full Signal plan</span>
                   </div>
-                  {!isAdmin && !isSignalAdmin && (
-                    <p className="text-xs text-muted-foreground italic">
-                      Only admins can enable Signal.
-                    </p>
-                  )}
+                  <p className="text-xs text-muted-foreground">
+                    Upgrade this project's plan to enable AI chat, Echo, and AI-powered features.
+                  </p>
                 </>
               )}
             </CardContent>
@@ -946,13 +913,6 @@ export default function ProjectSettingsPanel({ project, isAdmin, onProjectUpdate
                 onChange={(v) => handleChange('brand_primary', v)}
                 defaultValue={DEFAULT_BRAND_PRIMARY}
               />
-              <ColorPicker
-                label="Secondary Color"
-                description="Secondary brand color for highlights and gradients"
-                value={formData.brand_primary}
-                onChange={(v) => handleChange('brand_primary', v)}
-                defaultValue={DEFAULT_BRAND_SECONDARY}
-              />
             
             {/* Color preview */}
             <div className="pt-4 border-t">
@@ -961,10 +921,6 @@ export default function ProjectSettingsPanel({ project, isAdmin, onProjectUpdate
                 <div 
                   className="w-12 h-12 rounded-lg border shadow-sm"
                   style={{ backgroundColor: formData.brand_primary || DEFAULT_BRAND_PRIMARY }}
-                />
-                <div 
-                  className="w-12 h-12 rounded-lg border shadow-sm"
-                  style={{ backgroundColor: formData.brand_primary || DEFAULT_BRAND_SECONDARY }}
                 />
                 <Button
                   size="sm"

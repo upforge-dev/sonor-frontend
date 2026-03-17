@@ -19,6 +19,8 @@ export const billingKeys = {
   summary: (orgId) => [...billingKeys.all, 'summary', orgId],
   overdue: (orgId) => [...billingKeys.all, 'overdue', orgId],
   paymentMethods: (orgId) => [...billingKeys.all, 'paymentMethods', orgId],
+  subscription: (orgId) => [...billingKeys.all, 'subscription', orgId],
+  seats: (orgId) => [...billingKeys.all, 'seats', orgId],
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -307,7 +309,7 @@ export function useAddPaymentMethod() {
  */
 export function useRemovePaymentMethod() {
   const queryClient = useQueryClient()
-  
+
   return useMutation({
     mutationFn: async ({ orgId, paymentMethodId }) => {
       await billingApi.removePaymentMethod(orgId, paymentMethodId)
@@ -315,6 +317,151 @@ export function useRemovePaymentMethod() {
     },
     onSuccess: ({ orgId }) => {
       queryClient.invalidateQueries({ queryKey: billingKeys.paymentMethods(orgId) })
+    },
+  })
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SUBSCRIPTION (Sonor → Org billing)
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Fetch subscription details (plan, projects, seats, billing status)
+ */
+export function useSubscription(orgId, options = {}) {
+  return useQuery({
+    queryKey: billingKeys.subscription(orgId),
+    queryFn: async () => {
+      const { data } = await billingApi.getSubscription()
+      return data
+    },
+    enabled: !!orgId,
+    staleTime: 30_000, // 30s — subscription data doesn't change frequently
+    ...options,
+  })
+}
+
+/**
+ * Fetch lightweight seat info (current vs included, overage price)
+ */
+export function useSeatInfo(orgId, options = {}) {
+  return useQuery({
+    queryKey: billingKeys.seats(orgId),
+    queryFn: () => billingApi.getSeatInfo(),
+    enabled: !!orgId,
+    staleTime: 30_000,
+    ...options,
+  })
+}
+
+/**
+ * Activate a project (generate API key, start billing)
+ */
+export function useActivateProject() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ projectId, plan }) => {
+      const { data } = await billingApi.activateProject(projectId, { plan })
+      return data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: billingKeys.all })
+    },
+  })
+}
+
+/**
+ * Change a project's plan tier
+ */
+export function useChangeProjectPlan() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ projectId, newPlan }) => {
+      const { data } = await billingApi.changeProjectPlan(projectId, { newPlan })
+      return data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: billingKeys.all })
+    },
+  })
+}
+
+/**
+ * Deactivate a project (revoke keys, remove billing)
+ */
+export function useDeactivateProject() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ projectId }) => {
+      const { data } = await billingApi.deactivateProject(projectId)
+      return data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: billingKeys.all })
+    },
+  })
+}
+
+/**
+ * Create Stripe Checkout session for new subscription
+ */
+export function useCreateCheckout() {
+  return useMutation({
+    mutationFn: async ({ plan, successUrl, cancelUrl }) => {
+      const { data } = await billingApi.createCheckout({ plan, successUrl, cancelUrl })
+      return data
+    },
+  })
+}
+
+/**
+ * Get Stripe Customer Portal URL for managing payment method
+ */
+export function useManagePaymentMethod() {
+  return useMutation({
+    mutationFn: async ({ returnUrl } = {}) => {
+      const { data } = await billingApi.managePaymentMethod({ returnUrl })
+      return data
+    },
+  })
+}
+
+/**
+ * Cancel subscription at end of billing period
+ */
+export function useCancelSubscription() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async () => {
+      const { data } = await billingApi.cancelSubscription()
+      return data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: billingKeys.all })
+    },
+  })
+}
+
+/**
+ * Reactivate a canceled subscription
+ * Returns { reactivated: true } or { reactivated: false, checkoutUrl: '...' }
+ */
+export function useReactivateSubscription() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async () => {
+      const { data } = await billingApi.reactivateSubscription()
+      return data
+    },
+    onSuccess: (data) => {
+      if (data?.reactivated) {
+        queryClient.invalidateQueries({ queryKey: billingKeys.all })
+      }
     },
   })
 }

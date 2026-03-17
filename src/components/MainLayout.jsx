@@ -4,7 +4,8 @@ import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import Sidebar from './Sidebar'
 import TopHeader from './TopHeader'
 import GlobalCommandPalette from './GlobalCommandPalette'
-import UptradeLoading, { UptradeSpinner } from './UptradeLoading'
+import SonorLoading, { SonorSpinner } from './SonorLoading'
+import SonorBootSequence from './SonorBootSequence'
 import { ModuleErrorBoundary } from './ModuleErrorBoundary'
 import useAuthStore from '@/lib/auth-store'
 import { MessagesProvider } from '@/lib/MessagesProvider'
@@ -61,6 +62,8 @@ const ProjectsModule = lazy(() => import('./projects/ProjectsModule'))
 const WebsiteModule = lazy(() => import('./website/WebsiteModule'))
 const SettingsModule = lazy(() => import('./settings/SettingsModule'))
 const OrgSettingsModule = lazy(() => import('./settings/OrgSettingsModule'))
+const PlatformModule = lazy(() => import('./platform/PlatformModule'))
+const AgencyModule = lazy(() => import('./agency/AgencyModule'))
 // Tenants management moved to Projects.jsx
 
 const MainLayout = () => {
@@ -84,6 +87,55 @@ const MainLayout = () => {
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
   const { user, isLoading } = useAuthStore()
   const hideMessengerWidget = usePageContextStore((s) => s.hideMessengerWidget)
+
+  // Boot sequence: plays once per login session
+  const [showBootSequence, setShowBootSequence] = useState(() => {
+    if (sessionStorage.getItem('sonor_has_booted')) return false
+    // Only show boot on fresh login — check if we just came from login/auth
+    const referrer = document.referrer || ''
+    const justLoggedIn = sessionStorage.getItem('sonor_just_logged_in')
+    if (justLoggedIn) {
+      sessionStorage.removeItem('sonor_just_logged_in')
+      return true
+    }
+    return false
+  })
+
+  const handleBootComplete = () => {
+    sessionStorage.setItem('sonor_has_booted', '1')
+    setShowBootSequence(false)
+    // Check if user needs onboarding redirect
+    checkOnboardingRedirect()
+  }
+
+  // Onboarding redirect: check if user's project needs onboarding
+  const checkOnboardingRedirect = async () => {
+    try {
+      const currentProject = useAuthStore.getState().currentProject
+      if (!currentProject?.id) return
+
+      const portalApiUrl = import.meta.env.VITE_PORTAL_API_URL || ''
+      const res = await fetch(`${portalApiUrl}/onboarding/${currentProject.id}`, {
+        credentials: 'include',
+      })
+      if (!res.ok) return
+
+      const data = await res.json()
+      if (data?.current_phase && data.current_phase !== 'complete' && !data.dismissed_at) {
+        navigate(`/onboarding/${currentProject.id}`)
+      }
+    } catch {
+      // Silently fail — onboarding check is non-critical
+    }
+  }
+
+  // On first load (no boot sequence), still check onboarding
+  useEffect(() => {
+    if (!showBootSequence && !sessionStorage.getItem('sonor_onboarding_checked')) {
+      sessionStorage.setItem('sonor_onboarding_checked', '1')
+      checkOnboardingRedirect()
+    }
+  }, [])
 
   // Sync activeSection with URL path for sidebar highlighting
   useEffect(() => {
@@ -159,6 +211,8 @@ const MainLayout = () => {
         'sync': 'sync',
         'projects': 'projects',
         'website': 'website',
+        'platform': 'platform',
+        'clients-managed': 'agency',
       }
       const module = moduleMap[activeSection] || activeSection
       usePageContextStore.getState().setModule(module)
@@ -176,17 +230,21 @@ const MainLayout = () => {
   const isSalesRep = user?.teamRole === 'sales_rep'
   const reducedMotion = useReducedMotion()
 
-  if (isLoading) {
-    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--surface-primary)]/80 backdrop-blur-[var(--blur-sm)]">
-        <UptradeLoading />
-      </div>
-    )
+  // Only block on loading if there's no boot sequence covering the screen.
+  // When boot IS playing, let the full layout mount behind it so the dashboard,
+  // sidebar, and all API calls resolve while the animation runs. By the time
+  // boot dissolves, everything is ready.
+  if (isLoading && !showBootSequence) {
+    return <SonorLoading />
   }
 
   return (
     <MessagesProvider>
     <div className="flex flex-col h-screen relative">
+      {/* Boot sequence overlay — fixed z-[100], dashboard loads underneath */}
+      {showBootSequence && (
+        <SonorBootSequence onComplete={handleBootComplete} />
+      )}
       {/* Skip to main content - for keyboard users */}
       <a
         href="#main-content"
@@ -273,7 +331,7 @@ const MainLayout = () => {
           <div className="flex-1 min-h-0 flex flex-col">
             <Suspense fallback={
               <div className="flex items-center justify-center h-full">
-                <UptradeSpinner size="lg" />
+                <SonorSpinner size="lg" />
               </div>
             }>
               <ModuleErrorBoundary>
@@ -336,6 +394,8 @@ const MainLayout = () => {
                 <Route path="portfolio" element={<PortfolioModule />} />
                 <Route path="settings" element={<SettingsModule />} />
                 <Route path="organization" element={<OrgSettingsModule />} />
+                <Route path="platform/*" element={<PlatformModule />} />
+                <Route path="clients-managed/*" element={<AgencyModule />} />
                 
                 {/* Proposal Editor (special case) */}
                 <Route path="proposal-editor/:proposalId?" element={<ProposalEditorModule onBack={() => navigateTo('proposals')} />} />

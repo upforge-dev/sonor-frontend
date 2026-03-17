@@ -70,7 +70,7 @@ import {
   PROJECT_STATUS_CONFIG,
 } from '@/lib/hooks'
 import { useQueryClient } from '@tanstack/react-query'
-import { adminApi, portalApi } from '@/lib/portal-api'
+import { adminApi, agenciesApi, portalApi } from '@/lib/portal-api'
 import {
   useUptradeTasks,
   useUptradeTasksStats,
@@ -96,8 +96,7 @@ import {
 } from '@/lib/hooks'
 
 // Constants
-const UPTRADE_ORG_SLUGS = ['uptrade-media']
-const UPTRADE_ORG_TYPES = ['agency']
+const AGENCY_ORG_TYPES = ['agency']
 
 // Screenshot service - using our own Portal API
 // Returns API URL for fetching screenshot metadata
@@ -159,14 +158,11 @@ function useScreenshotUrl(domain, width = 280, height = 180) {
 
 // View determination helper
 function getProjectsView(user, currentOrg) {
-  if (user?.role === 'admin' || user?.isSuperAdmin) {
+  if (user?.isSuperAdmin) {
     return 'uptrade-admin'
   }
-  if (
-    UPTRADE_ORG_SLUGS.includes(currentOrg?.slug) ||
-    UPTRADE_ORG_TYPES.includes(currentOrg?.org_type)
-  ) {
-    return 'uptrade-admin'
+  if (AGENCY_ORG_TYPES.includes(currentOrg?.org_type)) {
+    return 'agency'
   }
   if (user?.accessLevel === 'org' || user?.role === 'org_admin') {
     return 'org-level'
@@ -350,11 +346,13 @@ function ProjectTile({
 // MAIN COMPONENT
 // ============================================================================
 export default function ProjectsV2({ onNavigate }) {
-  const { user, currentOrg, currentProject, isSuperAdmin } = useAuthStore()
+  const { user, currentOrg, currentProject, isSuperAdmin, availableProjects } = useAuthStore()
   
   // Determine view type
   const viewType = useMemo(() => getProjectsView(user, currentOrg), [user, currentOrg])
-  
+  // Agency and admin views share the same multi-org layout
+  const isAdminView = viewType === 'uptrade-admin' || viewType === 'agency'
+
   const queryClient = useQueryClient()
   const { data: projectsData, isLoading: projectsLoading, isError: projectsError, refetch: refetchProjects } = useProjects()
   const storeProjects = projectsData?.projects ?? projectsData ?? []
@@ -394,10 +392,10 @@ export default function ProjectsV2({ onNavigate }) {
   const { data: uptradeTasks = [], isLoading: uptradeTasksLoading } = useUptradeTasks(
     selectedProject?.id,
     uptradeTasksFilters,
-    { enabled: !!selectedProject?.id && viewType === 'uptrade-admin' }
+    { enabled: !!selectedProject?.id && isAdminView }
   )
   const { data: uptradeTasksStats } = useUptradeTasksStats(selectedProject?.id, {
-    enabled: !!selectedProject?.id && viewType === 'uptrade-admin',
+    enabled: !!selectedProject?.id && isAdminView,
   })
   const createUptradeTaskMutation = useCreateUptradeTask(selectedProject?.id)
   const updateUptradeTaskMutation = useUpdateUptradeTask(selectedProject?.id)
@@ -409,11 +407,11 @@ export default function ProjectsV2({ onNavigate }) {
 
   const { data: userTasksData = [], isLoading: userTasksLoading } = useUserTasks(
     { categoryId: activeUserCategory },
-    { enabled: viewType !== 'uptrade-admin' }
+    { enabled: !isAdminView }
   )
   const userTasks = Array.isArray(userTasksData) ? userTasksData : (userTasksData?.tasks || [])
-  const { data: userTasksStats } = useUserTasksStats({ enabled: viewType !== 'uptrade-admin' })
-  const { data: userTasksCategories = [] } = useUserTasksCategories({ enabled: viewType !== 'uptrade-admin' })
+  const { data: userTasksStats } = useUserTasksStats({ enabled: !isAdminView })
+  const { data: userTasksCategories = [] } = useUserTasksCategories({ enabled: !isAdminView })
 
   const { data: deliverables = [], isLoading: deliverablesLoading } = useDeliverables(
     selectedProject?.id,
@@ -496,33 +494,79 @@ export default function ProjectsV2({ onNavigate }) {
   }, [fetchProjectDetails])
 
   // Load admin data (all orgs and projects)
+  // Load agency data (managed client orgs + their projects) — single API call
+  const loadAgencyData = useCallback(async () => {
+    if (viewType !== 'agency') return
+
+    setAdminLoading(true)
+    try {
+      // Single request — managed-orgs now returns nested projects
+      const response = await agenciesApi.listManagedOrgs()
+      const payload = response?.data || response
+      const managedOrgsWithProjects = payload.organizations || []
+
+      // Agency's own org with its projects from the store
+      const agencyOrg = currentOrg ? {
+        ...currentOrg,
+        projects: (availableProjects || []),
+      } : null
+
+      // Build org list (agency first, then clients)
+      const allOrgsRaw = agencyOrg ? [agencyOrg, ...managedOrgsWithProjects] : managedOrgsWithProjects
+
+      // Extract flat org list (without nested projects) for the sidebar
+      const allOrgs = allOrgsRaw.map(({ projects, ...org }) => org)
+
+      // Flatten all projects across all orgs
+      const allProjects = allOrgsRaw.flatMap(org =>
+        (org.projects || []).map(p => ({
+          ...p,
+          title: p.title || p.name,
+          org_id: p.org_id || org.id,
+        }))
+      )
+
+      setAdminOrgs(allOrgs)
+      setAdminProjects(allProjects)
+
+      if (allOrgs.length > 0 && expandedOrgs.size === 0) {
+        setExpandedOrgs(new Set([allOrgs[0].id]))
+      }
+    } catch (error) {
+      console.error('Failed to load agency data:', error)
+      toast.error('Failed to load client organizations')
+    } finally {
+      setAdminLoading(false)
+    }
+  }, [viewType, currentOrg, availableProjects])
+
   const loadAdminData = useCallback(async () => {
     if (viewType !== 'uptrade-admin') return
-    
+
     setAdminLoading(true)
     try {
       const response = await adminApi.listTenants()
       // Response is { organizations: [{ ...org, projects: [...] }], total: number }
       const payload = response?.data || response
-      
+
       // The admin API returns organizations with nested projects arrays
       const orgsWithProjects = payload.organizations || payload.tenants || []
-      
+
       // Extract orgs (without the nested projects array)
       const orgs = orgsWithProjects.map(({ projects, ...org }) => org)
-      
+
       // Flatten all projects from all orgs
-      const projects = orgsWithProjects.flatMap(org => 
+      const projects = orgsWithProjects.flatMap(org =>
         (org.projects || []).map(project => ({
           ...project,
           title: project.title || project.name,
           org_id: project.org_id || org.id, // Ensure org_id is set
         }))
       )
-      
+
       setAdminOrgs(orgs)
       setAdminProjects(projects)
-      
+
       // Auto-expand first org if none selected
       if (orgs.length > 0 && expandedOrgs.size === 0) {
         setExpandedOrgs(new Set([orgs[0].id]))
@@ -539,22 +583,24 @@ export default function ProjectsV2({ onNavigate }) {
   useEffect(() => {
     if (viewType === 'uptrade-admin') {
       loadAdminData()
+    } else if (viewType === 'agency') {
+      loadAgencyData()
     } else {
       fetchProjects()
     }
-  }, [viewType, loadAdminData, fetchProjects])
+  }, [viewType, loadAdminData, loadAgencyData, fetchProjects])
 
   // Get effective projects list
   const projects = useMemo(() => {
-    if (viewType === 'uptrade-admin') {
+    if (isAdminView) {
       return adminProjects
     }
     return storeProjects
-  }, [viewType, adminProjects, storeProjects])
+  }, [isAdminView, adminProjects, storeProjects])
 
   // Get effective organizations
   const organizations = useMemo(() => {
-    if (viewType === 'uptrade-admin') {
+    if (isAdminView) {
       return adminOrgs
     }
     // For org-level users, create a single org entry from currentOrg
@@ -740,7 +786,7 @@ export default function ProjectsV2({ onNavigate }) {
   }, [selectedProject?.id, deliverDeliverableMutation])
 
   // Loading state
-  const isLoading = viewType === 'uptrade-admin' ? adminLoading : projectsLoading
+  const isLoading = isAdminView ? adminLoading : projectsLoading
 
   if (projectsError) {
     return (
@@ -784,13 +830,13 @@ export default function ProjectsV2({ onNavigate }) {
       <Button
         variant="ghost"
         size="sm"
-        onClick={() => viewType === 'uptrade-admin' ? loadAdminData() : fetchProjects()}
+        onClick={() => viewType === 'uptrade-admin' ? loadAdminData() : viewType === 'agency' ? loadAgencyData() : fetchProjects()}
         disabled={isLoading}
       >
         <RefreshCw className={cn('h-4 w-4 mr-1.5', isLoading && 'animate-spin')} />
         <span className="hidden sm:inline">Refresh</span>
       </Button>
-      {viewType === 'uptrade-admin' && selectedProject && (
+      {isAdminView && selectedProject && (
         <Button size="sm" onClick={() => handleTaskSelect(null)}>
           <Plus className="h-4 w-4 mr-1.5" />
           New Task
@@ -802,7 +848,7 @@ export default function ProjectsV2({ onNavigate }) {
   const leftSidebarContent = (
     <ScrollArea className="h-full">
       <div className="p-4 space-y-4">
-          {viewType === 'uptrade-admin' ? (
+          {isAdminView ? (
             <UptradeTaskNavigation
               stats={uptradeTasksStats}
               activeView={activeTaskView}
@@ -852,13 +898,13 @@ export default function ProjectsV2({ onNavigate }) {
               <div className="p-2 rounded-md bg-background border">
                 <p className="text-muted-foreground">Due Today</p>
                 <p>
-                  {(viewType === 'uptrade-admin' ? uptradeTasksStats : userTasksStats)?.dueToday || 0}
+                  {(isAdminView ? uptradeTasksStats : userTasksStats)?.dueToday || 0}
                 </p>
               </div>
               <div className="p-2 rounded-md bg-background border">
                 <p className="text-muted-foreground">Overdue</p>
                 <p className="text-destructive">
-                  {(viewType === 'uptrade-admin' ? uptradeTasksStats : userTasksStats)?.overdue || 0}
+                  {(isAdminView ? uptradeTasksStats : userTasksStats)?.overdue || 0}
                 </p>
               </div>
             </div>
@@ -915,7 +961,7 @@ export default function ProjectsV2({ onNavigate }) {
               <Separator />
             </div>
           )}
-          {viewType === 'uptrade-admin' && (
+          {isAdminView && (
             <div className="space-y-2">
               <p className="uppercase tracking-wider text-muted-foreground">Organizations</p>
               {filteredData.organizations.map((org) => {
@@ -997,7 +1043,7 @@ export default function ProjectsV2({ onNavigate }) {
               )}
             </div>
           )}
-          {viewType !== 'uptrade-admin' && (
+          {!isAdminView && (
             <div className="space-y-2">
               <p className="uppercase tracking-wider text-muted-foreground">Your Projects</p>
               {projects.map((project) => (
@@ -1067,7 +1113,7 @@ export default function ProjectsV2({ onNavigate }) {
                   </TabsTrigger>
                   <TabsTrigger value="tasks" className="gap-1.5">
                     <ListTodo className="h-4 w-4" />
-                    {viewType === 'uptrade-admin' ? 'Tasks' : 'My Tasks'}
+                    {isAdminView ? 'Tasks' : 'My Tasks'}
                   </TabsTrigger>
                   <TabsTrigger value="creative" className="gap-1.5">
                     <Palette className="h-4 w-4" />
@@ -1079,7 +1125,7 @@ export default function ProjectsV2({ onNavigate }) {
                       Connections
                     </TabsTrigger>
                   )}
-                  {viewType === 'uptrade-admin' && selectedProject && (
+                  {isAdminView && selectedProject && (
                     <TabsTrigger value="settings" className="gap-1.5">
                       <Settings2 className="h-4 w-4" />
                       Settings
@@ -1096,7 +1142,7 @@ export default function ProjectsV2({ onNavigate }) {
                   {selectedProject ? (
                     <ProjectOverviewPanel 
                       project={selectedProject}
-                      isAdmin={viewType === 'uptrade-admin'}
+                      isAdmin={isAdminView}
                       onNavigateToTasks={() => setActiveTab('tasks')}
                       onNavigateToCreative={() => setActiveTab('creative')}
                       onNavigateToConnections={() => setActiveTab('connections')}
@@ -1114,7 +1160,7 @@ export default function ProjectsV2({ onNavigate }) {
                 </TabsContent>
                 
                 <TabsContent value="tasks" className="h-full m-0">
-                  {viewType === 'uptrade-admin' ? (
+                  {isAdminView ? (
                     selectedProject ? (
                       <UptradeTasksPanel
                         tasks={uptradeTasks}
@@ -1150,7 +1196,7 @@ export default function ProjectsV2({ onNavigate }) {
                       pendingApprovals={pendingApprovals}
                       stats={deliverablesStats}
                       projectId={selectedProject.id}
-                      isAdmin={viewType === 'uptrade-admin'}
+                      isAdmin={isAdminView}
                       onDeliverableCreate={handleDeliverableCreate}
                       onDeliverableSelect={handleDeliverableSelect}
                       onDeliverableDelete={handleDeliverableDelete}
@@ -1173,7 +1219,7 @@ export default function ProjectsV2({ onNavigate }) {
                       projectId={selectedProject.id}
                       connections={selectedProject.connections || []}
                       onConnectionChange={() => {
-                        viewType === 'uptrade-admin' ? loadAdminData() : fetchProjects()
+                        viewType === 'uptrade-admin' ? loadAdminData() : viewType === 'agency' ? loadAgencyData() : fetchProjects()
                       }}
                     />
                   ) : (
@@ -1187,10 +1233,10 @@ export default function ProjectsV2({ onNavigate }) {
                   {selectedProject && (
                     <ProjectSettingsPanel
                       project={selectedProject}
-                      isAdmin={viewType === 'uptrade-admin'}
+                      isAdmin={isAdminView}
                       onProjectUpdate={(updatedProject) => {
                         handleSelectProject(updatedProject)
-                        viewType === 'uptrade-admin' ? loadAdminData() : fetchProjects()
+                        viewType === 'uptrade-admin' ? loadAdminData() : viewType === 'agency' ? loadAgencyData() : fetchProjects()
                       }}
                     />
                   )}
@@ -1216,12 +1262,13 @@ export default function ProjectsV2({ onNavigate }) {
         <NewProjectModal
           open={newProjectOpen}
           onOpenChange={setNewProjectOpen}
-          isAdmin={viewType === 'uptrade-admin'}
+          isAdmin={isAdminView}
           preselectedOrgId={newProjectOrgId}
           onProjectCreated={(newProject) => {
-            // Refresh data and select the new project
             if (viewType === 'uptrade-admin') {
               loadAdminData()
+            } else if (viewType === 'agency') {
+              loadAgencyData()
             } else {
               fetchProjects()
             }
@@ -1261,7 +1308,7 @@ export default function ProjectsV2({ onNavigate }) {
             setIsDeliverableDrawerOpen(false)
             setSelectedDeliverable(null)
           }}
-          isAdmin={viewType === 'uptrade-admin'}
+          isAdmin={isAdminView}
           onApprove={(message) => handleApprove(selectedDeliverable?.id, message)}
           onRequestChanges={(feedback) => handleRequestChanges(selectedDeliverable?.id, feedback)}
           onDeliver={() => handleDeliver(selectedDeliverable?.id)}

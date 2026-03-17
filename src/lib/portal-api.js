@@ -153,8 +153,12 @@ export const authApi = {
     portalApi.post('/auth/logout'),
   
   // Submit support request
-  submitSupport: (data) => 
+  submitSupport: (data) =>
     portalApi.post('/auth/support', data),
+
+  // Public self-serve signup
+  publicSignup: (data) =>
+    portalApi.post('/auth/signup', data).then(r => r.data),
 }
 
 // ============================================================================
@@ -812,6 +816,56 @@ export const billingApi = {
 
   getInvoiceAnalytics: (invoiceId) =>
     portalApi.get(`/billing/invoices/${invoiceId}/analytics`),
+
+  // ── Subscription Management (Sonor → Org billing) ──
+
+  getSubscription: () =>
+    portalApi.get('/billing/subscription'),
+
+  getSeatInfo: () =>
+    portalApi.get('/billing/seats').then(r => r.data),
+
+  activateProject: (projectId, data) =>
+    portalApi.post(`/billing/projects/${projectId}/activate`, data),
+
+  changeProjectPlan: (projectId, data) =>
+    portalApi.patch(`/billing/projects/${projectId}/plan`, data),
+
+  deactivateProject: (projectId) =>
+    portalApi.delete(`/billing/projects/${projectId}/deactivate`),
+
+  createCheckout: (data) =>
+    portalApi.post('/billing/create-checkout', data),
+
+  managePaymentMethod: (data = {}) =>
+    portalApi.post('/billing/payment-method', data),
+
+  getPaymentMethod: () =>
+    portalApi.get('/billing/payment-method'),
+
+  cancelSubscription: () =>
+    portalApi.post('/billing/subscription/cancel'),
+
+  reactivateSubscription: () =>
+    portalApi.post('/billing/subscription/reactivate'),
+}
+
+// ============================================================================
+// Agencies API (agency → client org management)
+// ============================================================================
+
+export const agenciesApi = {
+  listManagedOrgs: (params = {}) =>
+    portalApi.get('/agencies/managed-orgs', { params }),
+
+  getManagedOrgDetail: (clientOrgId) =>
+    portalApi.get(`/agencies/managed-orgs/${clientOrgId}`),
+
+  getStats: () =>
+    portalApi.get('/agencies/managed-orgs/stats'),
+
+  createClientOrg: (data) =>
+    portalApi.post('/agencies/managed-orgs', data),
 }
 
 // ============================================================================
@@ -4190,6 +4244,82 @@ export const cmsApi = {
   /** Register Sanity schemas for Content Lake validation */
   registerSchemas: () =>
     portalApi.post('/cms/schemas/register').then(r => r.data),
+}
+
+// ============================================================================
+// Outreach API (Cold Outreach Engine)
+// ============================================================================
+
+export const outreachApi = {
+  // Domains
+  listDomains: () => portalApi.get('/outreach/domains'),
+  getDomain: (id) => portalApi.get(`/outreach/domains/${id}`),
+  addDomain: (data) => portalApi.post('/outreach/domains', data),
+  updateDomain: (id, data) => portalApi.put(`/outreach/domains/${id}`, data),
+  deleteDomain: (id) => portalApi.delete(`/outreach/domains/${id}`),
+  verifyDomain: (id) => portalApi.post(`/outreach/domains/${id}/verify`),
+  activateDomain: (id) => portalApi.post(`/outreach/domains/${id}/activate`),
+  startWarmup: (id, schedule) => portalApi.post(`/outreach/domains/${id}/warmup`, { schedule }),
+  getWarmupStatus: (id) => portalApi.get(`/outreach/domains/${id}/warmup`),
+  pauseDomain: (id) => portalApi.post(`/outreach/domains/${id}/pause`),
+  getCapacityReport: () => portalApi.get('/outreach/domains/capacity'),
+  syncDomains: () => portalApi.post('/outreach/domains/sync'),
+
+  // Sequences
+  listSequences: () => portalApi.get('/outreach/sequences'),
+  getSequence: (id) => portalApi.get(`/outreach/sequences/${id}`),
+  createSequence: (data) => portalApi.post('/outreach/sequences', data),
+  updateSequence: (id, data) => portalApi.put(`/outreach/sequences/${id}`, data),
+  deleteSequence: (id) => portalApi.delete(`/outreach/sequences/${id}`),
+  activateSequence: (id) => portalApi.post(`/outreach/sequences/${id}/activate`),
+  pauseSequence: (id) => portalApi.post(`/outreach/sequences/${id}/pause`),
+  enrollContacts: (id, contacts) => portalApi.post(`/outreach/sequences/${id}/enroll`, { contacts }),
+  getEnrollments: (id, params = {}) => portalApi.get(`/outreach/sequences/${id}/enrollments`, { params }),
+  cancelEnrollment: (enrollmentId) => portalApi.post(`/outreach/sequences/enrollments/${enrollmentId}/cancel`),
+
+  // Inbox
+  listThreads: (params = {}) => portalApi.get('/outreach/inbox', { params }),
+  getThread: (id) => portalApi.get(`/outreach/inbox/${id}`),
+  getThreadMessages: (id) => portalApi.get(`/outreach/inbox/${id}/messages`),
+  markThreadRead: (id) => portalApi.post(`/outreach/inbox/${id}/read`),
+  updateThreadStatus: (id, status) => portalApi.put(`/outreach/inbox/${id}/status`, { status }),
+  assignThread: (id, userId) => portalApi.put(`/outreach/inbox/${id}/assign`, { userId }),
+  getUnreadCount: () => portalApi.get('/outreach/inbox/unread-count'),
+
+  // Compliance
+  listSuppressions: (params = {}) => portalApi.get('/outreach/compliance/suppressions', { params }),
+  addSuppression: (email, reason) => portalApi.post('/outreach/compliance/suppressions', { email, reason }),
+  removeSuppression: (email) => portalApi.delete(`/outreach/compliance/suppressions/${encodeURIComponent(email)}`),
+  importSuppressions: (emails, reason) => portalApi.post('/outreach/compliance/suppressions/import', { emails, reason }),
+  checkSuppression: (email) => portalApi.get(`/outreach/compliance/check/${encodeURIComponent(email)}`),
+
+  // Settings
+  getSettings: () => portalApi.get('/outreach/settings'),
+  updateSettings: (data) => portalApi.put('/outreach/settings', data),
+
+  // Landing Pages
+  listLandingPages: () => portalApi.get('/outreach/landing-pages'),
+  createLandingPage: (data) => portalApi.post('/outreach/landing-pages', data),
+
+  // Verification
+  verifyEmail: (email) => portalApi.post('/outreach/verification/verify', { email }),
+  verifyBulk: (emails) => portalApi.post('/outreach/verification/verify-bulk', { emails }),
+  checkVerification: (email) => portalApi.get(`/outreach/verification/check/${encodeURIComponent(email)}`),
+  listVerifications: (params = {}) => portalApi.get('/outreach/verification', { params }),
+  getVerificationStats: () => portalApi.get('/outreach/verification/stats'),
+
+  // Analytics
+  getAnalyticsOverview: (days = 30) => portalApi.get('/outreach/analytics/overview', { params: { days } }),
+  getSequenceAnalytics: (id) => portalApi.get(`/outreach/analytics/sequences/${id}`),
+  getDomainAnalytics: () => portalApi.get('/outreach/analytics/domains'),
+  getDailyVolume: (days = 30) => portalApi.get('/outreach/analytics/daily-volume', { params: { days } }),
+
+  // Blacklist
+  checkBlacklist: (domainId) => portalApi.post(`/outreach/blacklist/check/${domainId}`),
+  getBlacklistStatus: (domainId) => portalApi.get(`/outreach/blacklist/status/${domainId}`),
+
+  // Spintax
+  previewSpintax: (data) => portalApi.post('/outreach/sequences/spintax/preview', data),
 }
 
 // ============================================================================

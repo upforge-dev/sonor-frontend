@@ -326,18 +326,16 @@ export const ContractsView = forwardRef(function ContractsView({
   const { user, currentOrg, currentProject, isSuperAdmin } = useAuthStore()
   const isAdmin = user?.role === 'admin'
   
-  // Detect if this is Sonor agency org
-  // Sonor uses Proposals (org-level) + hardcoded system emails
+  // Detect if this is an agency org
+  // Agencies use Proposals (org-level) + system emails
   // Other orgs use Contracts (project-level) + Outreach emails
   // Note: When agency admin is viewing, currentOrg may be null - treat as agency
-  const isUptradeMediaOrg = !currentOrg || // No org selected = agency admin view
-                            currentOrg?.slug === 'uptrade-media' || 
-                            currentOrg?.domain === 'sonor.io' || 
-                            currentOrg?.org_type === 'agency'
+  const isAgencyOrg = !currentOrg || // No org selected = agency admin view
+                      currentOrg?.org_type === 'agency'
   
   console.log('[Contracts] Org detection:', { 
     currentOrg: currentOrg?.slug, 
-    isUptradeMediaOrg,
+    isAgencyOrg,
     isAdmin,
     isSuperAdmin 
   })
@@ -373,7 +371,7 @@ export const ContractsView = forwardRef(function ContractsView({
 
   // Fetch data only once on mount - but re-fetch if org detection changes
   useEffect(() => {
-    console.log('[Contracts] useEffect triggered - projectId:', projectId, 'isUptradeMedia:', isUptradeMediaOrg, 'hasFetched:', hasFetchedRef.current)
+    console.log('[Contracts] useEffect triggered - projectId:', projectId, 'isAgency:', isAgencyOrg, 'hasFetched:', hasFetchedRef.current)
     
     // Always fetch on first mount, skip if already fetched for same context
     if (hasFetchedRef.current) return
@@ -381,13 +379,13 @@ export const ContractsView = forwardRef(function ContractsView({
     
     fetchContracts()
     fetchCustomers()
-  }, [projectId, isUptradeMediaOrg])
+  }, [projectId, isAgencyOrg])
 
   const fetchContracts = async () => {
-    console.log('[Contracts] fetchContracts called - isUptradeMediaOrg:', isUptradeMediaOrg)
+    console.log('[Contracts] fetchContracts called - isAgencyOrg:', isAgencyOrg)
     setIsLoading(true)
     try {
-      if (isUptradeMediaOrg) {
+      if (isAgencyOrg) {
         // Sonor: Use proposals API (org-level proposals)
         // Use proposalsApi.list() which is used consistently in Proposals.jsx
         const response = await proposalsApi.list({ limit: 100 })
@@ -428,7 +426,7 @@ export const ContractsView = forwardRef(function ContractsView({
 
   const fetchCustomers = async () => {
     try {
-      if (isUptradeMediaOrg) {
+      if (isAgencyOrg) {
         // Sonor: Fetch both clients (organizations) and prospects (CRM contacts)
         const [clientsRes, prospectsRes] = await Promise.all([
           adminApi.listClients().catch(() => ({ data: { clients: [] } })),
@@ -471,7 +469,7 @@ export const ContractsView = forwardRef(function ContractsView({
 
   // Fetch available contract templates
   const fetchTemplates = async () => {
-    if (isUptradeMediaOrg) return
+    if (isAgencyOrg) return
     try {
       const response = await commerceApi.getContractTemplates(projectId)
       setTemplates(response.data?.templates || response.data || [])
@@ -481,8 +479,8 @@ export const ContractsView = forwardRef(function ContractsView({
   }
 
   useEffect(() => {
-    if (projectId && !isUptradeMediaOrg) fetchTemplates()
-  }, [projectId, isUptradeMediaOrg])
+    if (projectId && !isAgencyOrg) fetchTemplates()
+  }, [projectId, isAgencyOrg])
 
   const handleCreateFromTemplate = async (intakeData) => {
     setIsCreatingFromTemplate(true)
@@ -508,7 +506,7 @@ export const ContractsView = forwardRef(function ContractsView({
   const handleViewContract = async (contract) => {
     setLoadingContractView(true)
     try {
-      if (contract._isProposal || isUptradeMediaOrg) {
+      if (contract._isProposal || isAgencyOrg) {
         // Sonor: Use proposals API
         const response = await proposalsApi.get(contract.id)
         setViewingContract(response.data?.proposal || response.data)
@@ -519,7 +517,7 @@ export const ContractsView = forwardRef(function ContractsView({
       }
     } catch (err) {
       console.error('Failed to fetch contract details:', err)
-      toast.error(isUptradeMediaOrg ? 'Failed to load proposal' : 'Failed to load contract')
+      toast.error(isAgencyOrg ? 'Failed to load proposal' : 'Failed to load contract')
     } finally {
       setLoadingContractView(false)
     }
@@ -531,7 +529,7 @@ export const ContractsView = forwardRef(function ContractsView({
     setLoadingContractView(true)
     try {
       let fullContract
-      if (contract._isProposal || isUptradeMediaOrg) {
+      if (contract._isProposal || isAgencyOrg) {
         // Sonor: Use proposals API
         const response = await proposalsApi.get(contract.id)
         fullContract = { ...response.data?.proposal || response.data, _isProposal: true }
@@ -542,7 +540,7 @@ export const ContractsView = forwardRef(function ContractsView({
       }
       
       // Check if project has Signal AI enabled - use AI editor if available
-      if (hasSignal || isUptradeMediaOrg) {
+      if (hasSignal || isAgencyOrg) {
         setAiContract(fullContract)
       } else {
         // Fall back to simple form dialog
@@ -560,7 +558,7 @@ export const ContractsView = forwardRef(function ContractsView({
     if (!deleteContractDialog.id) return
     
     try {
-      if (isUptradeMediaOrg) {
+      if (isAgencyOrg) {
         // Sonor: Delete proposal
         await portalApi.delete(`/proposals/${deleteContractDialog.id}`)
       } else {
@@ -568,9 +566,9 @@ export const ContractsView = forwardRef(function ContractsView({
         await commerceApi.deleteContract(projectId, deleteContractDialog.id)
       }
       setContracts(contracts.filter(c => c.id !== deleteContractDialog.id))
-      toast.success(isUptradeMediaOrg ? 'Proposal deleted' : 'Contract deleted')
+      toast.success(isAgencyOrg ? 'Proposal deleted' : 'Contract deleted')
     } catch (err) {
-      toast.error(isUptradeMediaOrg ? 'Failed to delete proposal' : 'Failed to delete contract')
+      toast.error(isAgencyOrg ? 'Failed to delete proposal' : 'Failed to delete contract')
     } finally {
       setDeleteContractDialog({ open: false, id: null, title: '', isSigned: false })
     }
@@ -579,7 +577,7 @@ export const ContractsView = forwardRef(function ContractsView({
   // Duplicate a contract
   const handleDuplicateContract = async (contract) => {
     try {
-      if (contract._isProposal || isUptradeMediaOrg) {
+      if (contract._isProposal || isAgencyOrg) {
         // Sonor: Duplicate proposal using proposals API
         const response = await proposalsApi.duplicate(contract.id)
         const newProposal = response.data?.proposal || response.data
@@ -607,7 +605,7 @@ export const ContractsView = forwardRef(function ContractsView({
       }
     } catch (err) {
       console.error('Failed to duplicate:', err)
-      toast.error(isUptradeMediaOrg ? 'Failed to duplicate proposal' : 'Failed to duplicate contract')
+      toast.error(isAgencyOrg ? 'Failed to duplicate proposal' : 'Failed to duplicate contract')
     }
   }
 
@@ -713,16 +711,16 @@ export const ContractsView = forwardRef(function ContractsView({
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-semibold text-[var(--text-primary)]">
-            {isUptradeMediaOrg ? 'Proposals' : 'Contracts'}
+            {isAgencyOrg ? 'Proposals' : 'Contracts'}
           </h2>
           <p className="text-sm text-[var(--text-secondary)]">
-            {isUptradeMediaOrg 
+            {isAgencyOrg 
               ? 'Create and manage client proposals' 
               : 'Create and manage contracts for your customers'}
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {isUptradeMediaOrg ? (
+          {isAgencyOrg ? (
             // Sonor: Use ProposalAIDialog for proposals
             <>
               <Button onClick={() => setShowAIContractDialog(true)}>
@@ -877,18 +875,18 @@ export const ContractsView = forwardRef(function ContractsView({
           ) : activeContracts.length === 0 ? (
             <EmptyState
               icon={FileText}
-              title={isUptradeMediaOrg ? "No active proposals" : "No active contracts"}
-              description={isUptradeMediaOrg 
+              title={isAgencyOrg ? "No active proposals" : "No active contracts"}
+              description={isAgencyOrg 
                 ? "Create your first proposal for a client."
                 : hasSignal 
                   ? "Create your first contract with AI assistance." 
                   : "Create your first contract to send to customers."
               }
-              actionLabel={isUptradeMediaOrg 
+              actionLabel={isAgencyOrg 
                 ? "New Proposal" 
                 : hasSignal ? "Create with AI" : "New Contract"
               }
-              onAction={() => isUptradeMediaOrg || hasSignal 
+              onAction={() => isAgencyOrg || hasSignal 
                 ? setShowAIContractDialog(true)
                 : onNavigate?.('contract-editor', { new: true })
               }
@@ -915,8 +913,8 @@ export const ContractsView = forwardRef(function ContractsView({
           {signedContracts.length === 0 ? (
             <EmptyState
               icon={CheckCircle}
-              title={isUptradeMediaOrg ? "No signed proposals" : "No signed contracts"}
-              description={isUptradeMediaOrg 
+              title={isAgencyOrg ? "No signed proposals" : "No signed contracts"}
+              description={isAgencyOrg 
                 ? "Accepted proposals will appear here." 
                 : "Signed contracts will appear here."}
             />
@@ -945,8 +943,8 @@ export const ContractsView = forwardRef(function ContractsView({
           {declinedContracts.length === 0 ? (
             <EmptyState
               icon={AlertCircle}
-              title={isUptradeMediaOrg ? "No declined proposals" : "No declined contracts"}
-              description={isUptradeMediaOrg 
+              title={isAgencyOrg ? "No declined proposals" : "No declined contracts"}
+              description={isAgencyOrg 
                 ? "Declined proposals will appear here." 
                 : "Declined contracts will appear here."}
             />
@@ -977,7 +975,7 @@ export const ContractsView = forwardRef(function ContractsView({
         onSuccess={(updatedContract) => {
           setContracts(contracts.map(c => c.id === updatedContract.id ? { ...updatedContract, _isProposal: c._isProposal } : c))
           setEditingContract(null)
-          toast.success(isUptradeMediaOrg ? 'Proposal updated' : 'Contract updated')
+          toast.success(isAgencyOrg ? 'Proposal updated' : 'Contract updated')
         }}
         onNavigate={onNavigate}
       />
@@ -987,15 +985,15 @@ export const ContractsView = forwardRef(function ContractsView({
         open={deleteContractDialog.open}
         onOpenChange={(open) => !open && setDeleteContractDialog({ open: false, id: null, title: '', isSigned: false })}
         title={deleteContractDialog.isSigned 
-          ? (isUptradeMediaOrg ? "⚠️ Delete SIGNED Proposal" : "⚠️ Delete SIGNED Contract")
-          : (isUptradeMediaOrg ? "Delete Proposal" : "Delete Contract")}
+          ? (isAgencyOrg ? "⚠️ Delete SIGNED Proposal" : "⚠️ Delete SIGNED Contract")
+          : (isAgencyOrg ? "Delete Proposal" : "Delete Contract")}
         description={
           deleteContractDialog.isSigned 
-            ? `WARNING: This is a legally signed ${isUptradeMediaOrg ? 'proposal' : 'contract'}! Deleting "${deleteContractDialog.title}" will permanently remove all signature data, records, and cannot be recovered. Only proceed if this was a test.`
+            ? `WARNING: This is a legally signed ${isAgencyOrg ? 'proposal' : 'contract'}! Deleting "${deleteContractDialog.title}" will permanently remove all signature data, records, and cannot be recovered. Only proceed if this was a test.`
             : `Are you sure you want to delete "${deleteContractDialog.title}"? This action cannot be undone.`
         }
         confirmLabel={deleteContractDialog.isSigned 
-          ? (isUptradeMediaOrg ? "Yes, Delete Signed Proposal" : "Yes, Delete Signed Contract")
+          ? (isAgencyOrg ? "Yes, Delete Signed Proposal" : "Yes, Delete Signed Contract")
           : "Delete"}
         variant="destructive"
         onConfirm={handleDeleteContract}

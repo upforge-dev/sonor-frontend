@@ -13,8 +13,8 @@ export default function SettingsModule() {
   const openAccountSettings = useAccountSettingsStore((s) => s.openModal)
 
   const activeContext = currentProject || currentOrg
-  const isUptradeMediaOrg = currentOrg?.slug === 'uptrade-media' || currentOrg?.domain === 'sonor.io' || currentOrg?.org_type === 'agency'
-  const isProjectTenant = (activeContext?.isProjectTenant === true || !!currentProject) && !isUptradeMediaOrg
+  const isAgencyOrg = currentOrg?.org_type === 'agency'
+  const isProjectTenant = (activeContext?.isProjectTenant === true || !!currentProject) && !isAgencyOrg
 
   if (!activeContext && !user) {
     return (

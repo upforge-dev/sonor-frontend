@@ -67,6 +67,7 @@ const useAuthStore = create(
       currentProject: null,    // The project context (if viewing a specific project)
       availableOrgs: [],       // Organizations the user belongs to
       availableProjects: [],   // Projects under the current organization
+      managedOrgs: [],         // Client orgs managed by this agency (for agency users)
       isSuperAdmin: false,
       accessLevel: null,       // 'organization' (full access) or 'project' (limited)
 
@@ -130,6 +131,7 @@ const useAuthStore = create(
           currentProject: null,
           availableOrgs: [],
           availableProjects: [],
+          managedOrgs: [],
           isSuperAdmin: false,
           accessLevel: null
         })
@@ -268,23 +270,22 @@ const useAuthStore = create(
           console.log('[AuthStore] FULL auth-me response:', response)
           console.log('[AuthStore] Response data:', response.data)
           
-          const { organization, availableOrgs, projects, isSuperAdmin, accessLevel } = response.data
-          
-          console.log('[AuthStore] auth-me response - org:', organization?.name, 'projects:', projects?.length, 'isSuperAdmin:', isSuperAdmin, 'accessLevel:', accessLevel)
-          
-          // Always set isSuperAdmin and accessLevel, even if no org context
-          set({ 
+          const { organization, availableOrgs, managedOrgs, projects, isSuperAdmin, accessLevel } = response.data
+
+          console.log('[AuthStore] auth-me response - org:', organization?.name, 'projects:', projects?.length, 'isSuperAdmin:', isSuperAdmin, 'accessLevel:', accessLevel, 'managedOrgs:', managedOrgs?.length)
+
+          // Always set isSuperAdmin, accessLevel, and managedOrgs, even if no org context
+          set({
             isSuperAdmin: isSuperAdmin || false,
-            accessLevel: accessLevel || 'organization' // Default to org-level for backwards compatibility
+            accessLevel: accessLevel || 'organization', // Default to org-level for backwards compatibility
+            managedOrgs: managedOrgs || [],
           })
           
           // If admin/superAdmin has no org context, automatically set them to Sonor org
           if (!organization && (isSuperAdmin || get().user?.role === 'admin')) {
             console.log('[AuthStore] Admin with no org - fetching Sonor org')
             const allOrgs = await get().fetchAllOrganizations()
-            const uptradeOrg = allOrgs?.find(org => 
-              org.slug === 'uptrade-media' || 
-              org.domain === 'sonor.io' || 
+            const uptradeOrg = allOrgs?.find(org =>
               org.org_type === 'agency'
             )
             
@@ -393,20 +394,24 @@ const useAuthStore = create(
           const response = await authApi.switchOrg({ organizationId })
           
           const { organization, role, isSuperAdmin, projects } = response.data
-          
-          // Don't auto-enter a project - show org dashboard first
-          // User can select a project from the org dashboard or project switcher
-          
+
+          // Auto-select first project if available
+          const firstProject = (projects || []).length > 0 ? projects[0] : null
+
           set({
             currentOrg: { ...organization, userRole: role },
-            currentProject: null, // Start at org level - no project selected
+            currentProject: firstProject,
             availableProjects: projects || [],
             isSuperAdmin,
             isLoading: false
           })
-          
-          // Clear any stored project context
-          localStorage.removeItem('currentTenantProject')
+
+          // Store project context if auto-selected
+          if (firstProject) {
+            localStorage.setItem('currentTenantProject', JSON.stringify(firstProject))
+          } else {
+            localStorage.removeItem('currentTenantProject')
+          }
           // Store org context
           localStorage.setItem('currentOrganization', JSON.stringify(organization))
           
@@ -673,7 +678,7 @@ export function useOrgFeatures() {
     orgName: currentOrg?.name || 'Portal',
     orgSlug: currentOrg?.slug,
     orgTheme: currentOrg?.theme || {},
-    plan: currentOrg?.plan || 'free'
+    billingPlan: currentOrg?.billing_plan || currentOrg?.plan || 'free'
   }
 }
 

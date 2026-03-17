@@ -15,7 +15,7 @@ import {
   ChevronRight,
   Loader2,
   Globe,
-  GlobeOff,
+  GlobeLock,
   Eye,
   BookTemplate,
   History,
@@ -683,7 +683,7 @@ export default function WebsitePageCmsContent({ projectId, project, selectedPage
               {unpublishPage.isPending ? (
                 <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
               ) : (
-                <GlobeOff className="h-3.5 w-3.5 mr-1.5" />
+                <GlobeLock className="h-3.5 w-3.5 mr-1.5" />
               )}
               Unpublish
             </Button>

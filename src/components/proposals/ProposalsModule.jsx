@@ -406,12 +406,12 @@ function ClientProposalRow({
 const Proposals = ({ onNavigate }) => {
   const { user, currentOrg, currentProject, isSuperAdmin } = useAuthStore()
   const isAdmin = user?.role === 'admin'
-  // Upforge org should show admin view, client orgs show tenant view
-  const isUptradeMediaOrg = currentOrg?.slug === 'uptrade-media' || currentOrg?.slug === 'upforge' || currentOrg?.domain === 'sonor.io' || currentOrg?.domain === 'upforge.io' || currentOrg?.org_type === 'agency'
-  const isInTenantContext = (!!currentProject && !isUptradeMediaOrg) || (!!currentOrg && !isUptradeMediaOrg)
+  // Agency org should show admin view, client orgs show tenant view
+  const isAgencyOrg = currentOrg?.org_type === 'agency'
+  const isInTenantContext = (!!currentProject && !isAgencyOrg) || (!!currentOrg && !isAgencyOrg)
   const canManageProposals = (isAdmin || isSuperAdmin) && !isInTenantContext
   // Client orgs can create contracts
-  const canCreateContracts = isInTenantContext && !isUptradeMediaOrg
+  const canCreateContracts = isInTenantContext && !isAgencyOrg
   
   const hasFetchedRef = useRef(false)
   const [proposals, setProposals] = useState([])

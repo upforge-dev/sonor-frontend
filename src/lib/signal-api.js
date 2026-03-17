@@ -1912,16 +1912,6 @@ export const budgetApi = {
     return response.data
   },
 
-  /**
-   * Quick check if org can make AI calls
-   * @param {string} orgId - Organization ID
-   * @returns {Promise<boolean>} Whether the org can proceed with AI calls
-   */
-  canMakeCall: async (orgId) => {
-    const response = await signalApi.get(`/budget/check/${orgId}`)
-    return response.data.canProceed
-  },
-
   // ==========================================================================
   // SIGNAL SETUP & MANAGEMENT
   // ==========================================================================
@@ -2172,6 +2162,36 @@ export const seoSkillsApi = {
 }
 
 // ============================================================================
+// Outreach Skills API
+// ============================================================================
+
+export const outreachSkillsApi = {
+  scoreDeliverability: async (subject, bodyHtml, fromDomain) => {
+    const response = await signalApi.post('/skills/prospecting/score_deliverability', {
+      subject,
+      body_html: bodyHtml,
+      from_domain: fromDomain,
+    })
+    return response.data
+  },
+
+  recommendTargets: async (data) => {
+    const response = await signalApi.post('/skills/prospecting/recommend_targets', data)
+    return response.data
+  },
+
+  analyzeSendTimes: async (data) => {
+    const response = await signalApi.post('/skills/prospecting/analyze_send_times', data)
+    return response.data
+  },
+
+  selectTestimonial: async (data) => {
+    const response = await signalApi.post('/skills/prospecting/select_testimonial', data)
+    return response.data
+  },
+}
+
+// ============================================================================
 // CRM Skills API - Alias for crmAiApi (backward compatibility)
 // ============================================================================
 
@@ -2184,6 +2204,7 @@ export const crmSkillsApi = crmAiApi
 signalApi.insights = insightsApi
 signalApi.seo = seoSkillsApi
 signalApi.crm = crmAiApi
+signalApi.outreach = outreachSkillsApi
 
 // ============================================================================
 // Default Export

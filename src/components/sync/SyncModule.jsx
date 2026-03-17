@@ -609,7 +609,7 @@ function EventDetailDialog({ event, onClose, onDeleted, onUpdated }) {
 
 export default function SyncModule({ className }) {
   const { currentOrg, currentProject, availableProjects, user } = useAuthStore()
-  const { hasAccess: hasSignalAccess, hasOrgSignal, hasCurrentProjectSignal, isAdmin } = useSignalAccess()
+  const { hasAccess: hasSignalAccess, hasCurrentProjectSignal, isAdmin } = useSignalAccess()
   
   // State
   const [selectedDate, setSelectedDate] = useState(new Date())
@@ -725,7 +725,7 @@ export default function SyncModule({ className }) {
   
   // Signal AI in Sync requires ORG-LEVEL Signal access (not project-level)
   // Project-level Signal only enables AI features within project modules, not Sync
-  const signalEnabled = hasOrgSignal
+  const signalEnabled = hasCurrentProjectSignal
   
   // Filter events by visible sources and active projects
   const filteredEvents = useMemo(() => {

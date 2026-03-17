@@ -73,19 +73,21 @@ const modKey = isWindows ? 'Ctrl' : '⌘'
 // ORG SWITCHER DROPDOWN
 // ============================================================================
 function OrgSwitcherDropdown() {
-  const { 
-    currentOrg, 
-    availableOrgs, 
-    isSuperAdmin, 
+  const {
+    currentOrg,
+    availableOrgs,
+    managedOrgs,
+    isSuperAdmin,
     switchOrganization,
     fetchAllOrganizations,
     exitProjectView,
     currentProject,
-    isLoading 
+    isLoading
   } = useAuthStore()
-  
+
   const [allOrgs, setAllOrgs] = useState([])
   const [loadingOrgs, setLoadingOrgs] = useState(false)
+  const [search, setSearch] = useState('')
 
   const loadAllOrgs = async () => {
     if (loadingOrgs || allOrgs.length > 0) return
@@ -98,7 +100,7 @@ function OrgSwitcherDropdown() {
   const handleSwitchOrg = async (org) => {
     await switchOrganization(org.id)
   }
-  
+
   // Handle clicking org name to go back to org dashboard
   const handleOrgClick = async () => {
     if (currentProject) {
@@ -106,13 +108,26 @@ function OrgSwitcherDropdown() {
     }
   }
 
-  // Use available orgs or fetched orgs
-  const orgsToShow = isSuperAdmin ? allOrgs : (availableOrgs || [])
+  // Build org lists based on user type
+  const myOrgs = isSuperAdmin ? allOrgs : (availableOrgs || [])
+  const clientOrgs = managedOrgs || []
+  const isAgency = currentOrg?.org_type === 'agency'
+
+  // Filter by search
+  const filterOrgs = (orgs) => {
+    if (!search) return orgs
+    const q = search.toLowerCase()
+    return orgs.filter(o => o.name?.toLowerCase().includes(q) || o.slug?.toLowerCase().includes(q))
+  }
+
+  const filteredMyOrgs = filterOrgs(myOrgs)
+  const filteredClientOrgs = filterOrgs(clientOrgs)
+  const hasNoResults = filteredMyOrgs.length === 0 && filteredClientOrgs.length === 0
 
   return (
     <div className="flex items-center gap-1">
       {/* Org name - clickable to go to org dashboard */}
-      <button 
+      <button
         onClick={handleOrgClick}
         className="flex items-center gap-1.5 px-2 py-1 rounded hover:bg-muted/50 transition-colors"
         disabled={isLoading}
@@ -125,11 +140,16 @@ function OrgSwitcherDropdown() {
           </Badge>
         )}
       </button>
-      
+
       {/* Dropdown toggle */}
-      <DropdownMenu onOpenChange={(open) => open && isSuperAdmin && loadAllOrgs()}>
+      <DropdownMenu onOpenChange={(open) => {
+        if (open) {
+          setSearch('')
+          if (isSuperAdmin) loadAllOrgs()
+        }
+      }}>
         <DropdownMenuTrigger asChild>
-          <button 
+          <button
             className="flex items-center justify-center w-6 h-6 rounded hover:bg-muted/50 transition-colors border border-border/50"
             disabled={isLoading}
             aria-label="Switch organization"
@@ -139,20 +159,20 @@ function OrgSwitcherDropdown() {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="w-64">
           <div className="px-2 py-1.5">
-            <Input 
-              placeholder="Find organization..." 
+            <Input
+              placeholder="Find organization..."
               className="h-8 text-sm"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
             />
           </div>
           <DropdownMenuSeparator />
-          <DropdownMenuLabel className="text-xs text-muted-foreground">Organizations</DropdownMenuLabel>
-          {orgsToShow.length === 0 && (
-            <div className="px-2 py-4 text-sm text-muted-foreground text-center">
-              {loadingOrgs ? 'Loading...' : 'No organizations'}
-            </div>
-          )}
-          {orgsToShow.map((org) => (
-            <DropdownMenuItem 
+          {/* My organizations */}
+          <DropdownMenuLabel className="text-xs text-muted-foreground">
+            {isAgency ? 'Agency' : 'Organizations'}
+          </DropdownMenuLabel>
+          {filteredMyOrgs.map((org) => (
+            <DropdownMenuItem
               key={org.id}
               onClick={() => handleSwitchOrg(org)}
               className="flex items-center justify-between"
@@ -161,6 +181,28 @@ function OrgSwitcherDropdown() {
               {currentOrg?.id === org.id && <Check className="h-4 w-4 text-primary" />}
             </DropdownMenuItem>
           ))}
+          {/* Managed client orgs (agency users) */}
+          {isAgency && filteredClientOrgs.length > 0 && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel className="text-xs text-muted-foreground">Client Organizations</DropdownMenuLabel>
+              {filteredClientOrgs.map((org) => (
+                <DropdownMenuItem
+                  key={org.id}
+                  onClick={() => handleSwitchOrg(org)}
+                  className="flex items-center justify-between"
+                >
+                  <span className="truncate">{org.name}</span>
+                  {currentOrg?.id === org.id && <Check className="h-4 w-4 text-primary" />}
+                </DropdownMenuItem>
+              ))}
+            </>
+          )}
+          {hasNoResults && (
+            <div className="px-2 py-4 text-sm text-muted-foreground text-center">
+              {loadingOrgs ? 'Loading...' : 'No organizations'}
+            </div>
+          )}
           {isSuperAdmin && (
             <>
               <DropdownMenuSeparator />

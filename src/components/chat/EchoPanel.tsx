@@ -21,6 +21,8 @@ import { cn } from '@/lib/utils'
 import { useEchoChat, type EchoPageContext } from '@/hooks/useEchoChat'
 import { ChatArea } from './ChatArea'
 import EchoLogo from '@/components/EchoLogo'
+import { openOAuthPopup } from '@/lib/oauth-popup'
+import { useAuthStore } from '@/lib/auth-store'
 
 interface EchoPanelProps {
   /** Module name (seo, crm, analytics, engage, etc.) */
@@ -121,6 +123,51 @@ export function EchoPanel({
     [echo.sendMessage],
   )
 
+  // Handle OAuth action clicks from ```actions blocks
+  const handleOAuthClick = useCallback(async (provider: string) => {
+    const currentProject = useAuthStore.getState().currentProject
+    if (!currentProject?.id) {
+      echo.sendMessage(`I tried to connect ${provider} but no project is selected.`)
+      return
+    }
+
+    const portalApiUrl = import.meta.env.VITE_PORTAL_API_URL || ''
+    const defaultModules: Record<string, string> = {
+      google: 'seo,seo_gbp,reputation,analytics',
+      facebook: 'social',
+      linkedin: 'social',
+      tiktok: 'social',
+      netlify: 'hosting',
+      yelp: 'reputation',
+      trustpilot: 'reputation',
+      shopify: 'commerce',
+    }
+    const modules = defaultModules[provider] || ''
+
+    try {
+      const response = await fetch(
+        `${portalApiUrl}/oauth/initiate/${provider}?projectId=${currentProject.id}&modules=${modules}&connectionType=business&popupMode=true`,
+        { credentials: 'include' },
+      )
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}))
+        throw new Error(err.message || 'Failed to start OAuth')
+      }
+
+      const { url } = await response.json()
+      const result = await openOAuthPopup(url, `oauth-${provider}`)
+
+      if (result.success) {
+        echo.sendMessage(`I just connected ${provider}! What should I set up next?`)
+      } else if (result.error && result.error !== 'OAuth window was closed') {
+        echo.sendMessage(`The ${provider} connection failed: ${result.error}. Can you help me try again?`)
+      }
+    } catch (err: any) {
+      echo.sendMessage(`I had trouble connecting ${provider}: ${err.message}. Let me know if you need help.`)
+    }
+  }, [echo.sendMessage])
+
   const toolCallLabel = echo.activeToolCall?.label || null
 
   // Floating trigger button when panel is closed
@@ -210,6 +257,7 @@ export function EchoPanel({
               : `Ask me anything about your ${module} data.`,
             prompts: welcomePrompts,
           }}
+          onOAuthClick={handleOAuthClick}
           className="flex-1 min-h-0"
         />
       )}

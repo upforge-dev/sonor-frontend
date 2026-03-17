@@ -116,12 +116,10 @@ export default function CommerceDashboard({ onNavigate }) {
   const projectId = currentProject?.id
   const { data: settings, refetch: fetchSettings } = useCommerceSettings(projectId)
   
-  // Detect if this is Sonor agency org
-  // Sonor uses Billing API for invoices + system emails
-  // Other orgs use Commerce invoices API + Outreach emails  
-  const isUptradeMediaOrg = currentOrg?.slug === 'uptrade-media' || 
-                            currentOrg?.domain === 'sonor.io' || 
-                            currentOrg?.org_type === 'agency'
+  // Detect if this is an agency org
+  // Agencies use Billing API for invoices + system emails
+  // Other orgs use Commerce invoices API + Outreach emails
+  const isAgencyOrg = currentOrg?.org_type === 'agency'
   
   // Get enabled offering types from commerce settings
   const enabledTypes = settings?.enabled_types || []
@@ -274,7 +272,7 @@ export default function CommerceDashboard({ onNavigate }) {
     if (!updatedContract?.id || !projectId) return
     setIsSavingContract(true)
     try {
-      const isProposal = updatedContract._isProposal || currentOrg?.slug === 'uptrade-media'
+      const isProposal = updatedContract._isProposal || currentOrg?.org_type === 'agency'
       if (isProposal) {
         await proposalsApi.update(updatedContract.id, {
           mdx_content: updatedContract.mdxContent || updatedContract.mdx_content,
@@ -477,7 +475,7 @@ export default function CommerceDashboard({ onNavigate }) {
     setInvoicesError(null)
     
     try {
-      if (isUptradeMediaOrg) {
+      if (isAgencyOrg) {
         // Sonor: Use Billing API (org-level invoices)
         const { data } = await portalApi.get('/billing/invoices', {
           params: { project_id: projectId, limit: 10 }
@@ -1307,7 +1305,7 @@ export default function CommerceDashboard({ onNavigate }) {
             <ProposalAIEditorPanel
               contract={aiEditingContract}
               projectId={projectId}
-              isProposal={aiEditingContract._isProposal || currentOrg?.slug === 'uptrade-media'}
+              isProposal={aiEditingContract._isProposal || currentOrg?.org_type === 'agency'}
               onSave={handleSaveContract}
               onContractChange={setAiEditingContract}
               onHasUnsavedChanges={setContractHasUnsavedChanges}
@@ -1733,7 +1731,7 @@ export default function CommerceDashboard({ onNavigate }) {
                   brandColors={brandColors}
                   loadInvoices={loadInvoices}
                   projectId={projectId}
-                  isUptradeMediaOrg={isUptradeMediaOrg}
+                  isAgencyOrg={isAgencyOrg}
                 />
               ) : (
                 <TransactionsView 

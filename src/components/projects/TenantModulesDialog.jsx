@@ -4,8 +4,8 @@
 import { useState, useEffect } from 'react'
 import { 
   Target, Edit, Users, ClipboardCheck, Eye, BarChart3,
-  Check, Loader2, Settings2, Sparkles, ShoppingCart, 
-  MessageSquare, Mail, HelpCircle, Info, Building2, Crown
+  Check, Loader2, Settings2, Sparkles, ShoppingCart,
+  MessageSquare, Mail, HelpCircle, Info, Building2
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -21,7 +21,6 @@ import { Separator } from '../ui/separator'
 import { Alert, AlertDescription } from '../ui/alert'
 
 import { useUpdateProject } from '@/lib/hooks'
-import useAuthStore from '../../lib/auth-store'
 
 // Modules that are always enabled for all tenants (not toggleable)
 const ALWAYS_ON_MODULES = [
@@ -80,8 +79,7 @@ const TOGGLEABLE_MODULES = [
     label: 'Signal AI', 
     icon: Sparkles, 
     description: 'AI assistant, knowledge base, and automation',
-    category: 'ai',
-    orgLevelAvailable: true // Can be enabled at org level to cover all projects
+    category: 'ai'
   },
   { 
     key: 'email_manager', 
@@ -117,11 +115,7 @@ const CATEGORIES = {
 
 const TenantModulesDialog = ({ open, onOpenChange, project }) => {
   const updateProjectMutation = useUpdateProject()
-  const { currentOrg } = useAuthStore()
-  
-  // Check if org has org-level Signal
-  const hasOrgSignal = currentOrg?.signal_enabled || currentOrg?.signalEnabled
-  
+
   // Track enabled modules locally
   const [enabledModules, setEnabledModules] = useState(new Set())
   const [isSaving, setIsSaving] = useState(false)
@@ -252,53 +246,36 @@ const TenantModulesDialog = ({ open, onOpenChange, project }) => {
                   {modules.map((module) => {
                     const Icon = module.icon
                     const isEnabled = enabledModules.has(module.key)
-                    // Check if this is Signal and org has org-level Signal
-                    const isOrgLevelEnabled = module.key === 'signal' && hasOrgSignal
-                    const effectivelyEnabled = isEnabled || isOrgLevelEnabled
-                    
+
                     return (
-                      <Card 
+                      <Card
                         key={module.key}
-                        className={`transition-colors ${isOrgLevelEnabled ? 'opacity-75' : 'cursor-pointer'} ${
-                          effectivelyEnabled ? 'border-[var(--brand-primary)] bg-[var(--brand-primary)]/5' : ''
+                        className={`transition-colors cursor-pointer ${
+                          isEnabled ? 'border-[var(--brand-primary)] bg-[var(--brand-primary)]/5' : ''
                         }`}
-                        onClick={() => !isOrgLevelEnabled && toggleModule(module.key)}
+                        onClick={() => toggleModule(module.key)}
                       >
                         <CardContent className="p-3 flex items-center gap-3">
                           <div className={`p-2 rounded-lg ${
-                            effectivelyEnabled 
-                              ? 'bg-[var(--brand-primary)]/10 text-[var(--brand-primary)]' 
+                            isEnabled
+                              ? 'bg-[var(--brand-primary)]/10 text-[var(--brand-primary)]'
                               : 'bg-[var(--surface-secondary)] text-[var(--text-secondary)]'
                           }`}>
                             <Icon className="w-4 h-4" />
                           </div>
-                          
+
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <p className="font-medium text-sm">{module.label}</p>
-                              {isOrgLevelEnabled && (
-                                <Badge variant="outline" className="text-xs bg-amber-500/10 text-amber-500 border-amber-500/30">
-                                  <Crown className="w-3 h-3 mr-1" />
-                                  Org-wide
-                                </Badge>
-                              )}
-                            </div>
+                            <p className="font-medium text-sm">{module.label}</p>
                             <p className="text-xs text-[var(--text-secondary)] truncate">
-                              {isOrgLevelEnabled 
-                                ? 'Enabled for all projects via organization subscription' 
-                                : module.description}
+                              {module.description}
                             </p>
                           </div>
-                          
-                          {isOrgLevelEnabled ? (
-                            <Check className="w-5 h-5 text-emerald-500" />
-                          ) : (
-                            <Switch 
-                              checked={isEnabled}
-                              onCheckedChange={() => toggleModule(module.key)}
-                              onClick={(e) => e.stopPropagation()}
-                            />
-                          )}
+
+                          <Switch
+                            checked={isEnabled}
+                            onCheckedChange={() => toggleModule(module.key)}
+                            onClick={(e) => e.stopPropagation()}
+                          />
                         </CardContent>
                       </Card>
                     )

@@ -1,0 +1,34 @@
+---
+description: Use Signal branding instead of generic AI branding in all UI components
+globs: "**/*.{jsx,tsx}"
+alwaysApply: false
+---
+
+# Signal Branding for AI Features
+
+All AI-powered features in the portal must use **Signal branding**, not generic "AI" language.
+
+## Naming
+
+- Use **"Signal Recommendations"** not "AI Recommendations"
+- Use **"Signal Insights"** not "AI Insights"
+- Use **"Powered by Signal"** not "Powered by AI"
+- Use **"Signal"** as the product name for any AI-driven feature
+
+## Icon
+
+Always use the custom `SignalIcon` component instead of generic icons like `Brain`, `Sparkles`, or `Bot` when labeling AI features:
+
+```jsx
+import SignalIcon from '@/components/ui/SignalIcon'
+
+// ✅ GOOD
+<SignalIcon className="h-5 w-5" />
+<span>Signal Recommendations</span>
+
+// ❌ BAD
+<Brain className="h-5 w-5" />
+<span>AI Recommendations</span>
+```
+
+The `SignalIcon` component lives at `@/components/ui/SignalIcon` and accepts `className`, `size`, and `color` props. It uses `currentColor` like lucide icons.

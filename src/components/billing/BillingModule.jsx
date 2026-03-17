@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Checkbox } from '@/components/ui/checkbox'
+import SubscriptionTab from './SubscriptionTab'
 import { AreaChart, BarChart, DonutChart } from '@tremor/react'
 import { 
   DollarSign, 
@@ -55,7 +56,6 @@ import { useFinancialReport } from '@/lib/hooks/use-reports'
 import { useQueryClient } from '@tanstack/react-query'
 import useAuthStore from '@/lib/auth-store'
 import InvoicePaymentDialog from './InvoicePaymentDialog'
-import SignalUsageBillingCard from './SignalUsageBillingCard'
 import { adminApi, billingApi } from '@/lib/portal-api'
 import { EmptyState } from '@/components/EmptyState'
 import { TableSkeleton, CardSkeleton, ListSkeleton } from '@/components/skeletons'
@@ -185,13 +185,13 @@ const Billing = () => {
   // Set default tab based on user type
   const { currentOrg, currentProject, isSuperAdmin } = useAuthStore()
   
-  // Sonor org should show admin view, client orgs show tenant view
-  const isUptradeMediaOrg = currentOrg?.slug === 'uptrade-media' || currentOrg?.domain === 'sonor.io' || currentOrg?.org_type === 'agency'
-  
+  // Agency org should show admin view, client orgs show tenant view
+  const isAgencyOrg = currentOrg?.org_type === 'agency'
+
   // Billing is ORG-LEVEL ONLY - not accessible to project-level users
-  const isInProjectContext = !!currentProject && !isUptradeMediaOrg
+  const isInProjectContext = !!currentProject && !isAgencyOrg
   const isOrgLevelUser = !!currentOrg && !isInProjectContext
-  const computedIsAdmin = (user?.role === 'admin' || isSuperAdmin) && isUptradeMediaOrg
+  const computedIsAdmin = (user?.role === 'admin' || isSuperAdmin) && isAgencyOrg
   
   // Restrict access: Billing is for org-level users only
   if (!isOrgLevelUser && !computedIsAdmin) {
@@ -1022,18 +1022,25 @@ const Billing = () => {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         {/* Admin gets full tabs, Tenants get simplified view */}
         {isAdmin ? (
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="subscription">Subscription</TabsTrigger>
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="invoices">All Invoices</TabsTrigger>
             <TabsTrigger value="overdue">Overdue</TabsTrigger>
             <TabsTrigger value="reports">Reports</TabsTrigger>
           </TabsList>
         ) : (
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="subscription">Subscription</TabsTrigger>
             <TabsTrigger value="unpaid">Unpaid</TabsTrigger>
             <TabsTrigger value="paid">Paid</TabsTrigger>
           </TabsList>
         )}
+
+        {/* ===== SUBSCRIPTION TAB (both admin and tenant) ===== */}
+        <TabsContent value="subscription">
+          <SubscriptionTab />
+        </TabsContent>
 
         {/* ===== ADMIN TABS ===== */}
         {isAdmin && (

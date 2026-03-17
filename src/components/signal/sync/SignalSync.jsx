@@ -58,10 +58,10 @@ import MeetingPrepCard from './MeetingPrepCard'
 // ============================================================================
 
 export default function SignalSync({ projectId, className }) {
-  const { hasOrgSignal, hasAccess, hasCurrentProjectSignal } = useSignalAccess()
+  const { hasAccess, hasCurrentProjectSignal } = useSignalAccess()
   const signalStatus = useSignalStatus()
   const { currentOrg } = useAuthStore()
-  
+
   const [activeTab, setActiveTab] = useState('overview')
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [calendarData, setCalendarData] = useState(null)
@@ -70,14 +70,14 @@ export default function SignalSync({ projectId, className }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [refreshing, setRefreshing] = useState(false)
-  
+
   // Selected meeting for prep
   const [selectedMeeting, setSelectedMeeting] = useState(null)
   const [meetingPrep, setMeetingPrep] = useState(null)
   const [loadingPrep, setLoadingPrep] = useState(false)
-  
-  // Check if Signal is enabled
-  const signalEnabled = hasOrgSignal || hasCurrentProjectSignal
+
+  // Check if Signal is enabled via project plan
+  const signalEnabled = hasCurrentProjectSignal
   
   // Format date for API
   const formatDate = (date) => {

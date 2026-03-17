@@ -245,19 +245,19 @@ export default function SuggestedTasksSection({
   onTaskCreated,
   className 
 }) {
-  const { hasAccess: hasSignalAccess, hasOrgSignal } = useSignalAccess()
+  const { hasAccess: hasSignalAccess, hasCurrentProjectSignal } = useSignalAccess()
   const [suggestions, setSuggestions] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [isOpen, setIsOpen] = useState(true)
   const [addingId, setAddingId] = useState(null)
 
-  // Signal requires ORG-LEVEL access (same check as SyncModule)
-  const signalEnabled = hasOrgSignal
+  // Signal requires project plan access
+  const signalEnabled = hasCurrentProjectSignal
 
   // Force refresh bypasses cache
   const loadSuggestions = useCallback(async (forceRefresh = false) => {
-    // Don't fetch if Signal is not enabled for this org
+    // Don't fetch if Signal is not enabled for this project
     if (!signalEnabled) {
       setSuggestions([])
       setLoading(false)

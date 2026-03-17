@@ -1,8 +1,4 @@
-// src/components/outreach/OutreachModule.jsx
-// Outreach Module - email campaigns, newsletters, and automation
-// Uses ModuleLayout with left sidebar for tab navigation; EmailPlatform renders content only.
-
-import { useState } from 'react'
+import { useState, lazy, Suspense } from 'react'
 import {
   BarChart3,
   Send,
@@ -10,55 +6,173 @@ import {
   Bell,
   FileText,
   Users,
-  Tag,
-  UserPlus,
   Target,
   Settings,
+  Inbox,
+  Globe,
+  ShieldCheck,
+  SearchCode,
+  ListOrdered,
+  Lock,
+  Loader2,
 } from 'lucide-react'
 import { ModuleLayout } from '@/components/ModuleLayout'
 import { MODULE_ICONS } from '@/lib/module-icons'
 import { cn } from '@/lib/utils'
+import { useSignalAccess } from '@/hooks/useSignalAccess'
 import EmailPlatform from '@/components/email/EmailPlatform'
+import AudienceTab from './AudienceTab'
 
-const OUTREACH_TABS = [
-  { value: 'overview', label: 'Overview', icon: BarChart3 },
-  { value: 'campaigns', label: 'Campaigns', icon: Send },
-  { value: 'automations', label: 'Automations', icon: Zap },
-  { value: 'transactional', label: 'Transactional', icon: Bell },
-  { value: 'templates', label: 'Templates', icon: FileText },
-  { value: 'subscribers', label: 'Subscribers', icon: Users },
-  { value: 'lists', label: 'Lists', icon: Tag },
-  { value: 'people', label: 'People', icon: UserPlus },
-  { value: 'testing', label: 'A/B Tests', icon: Target },
-  { value: 'settings', label: 'Settings', icon: Settings },
+const OutreachSequencesTab = lazy(() => import('./tabs/OutreachSequencesTab'))
+const OutreachInboxTab = lazy(() => import('./tabs/OutreachInboxTab'))
+const OutreachDiscoveryTab = lazy(() => import('./tabs/OutreachDiscoveryTab'))
+const OutreachDomainsTab = lazy(() => import('./tabs/OutreachDomainsTab'))
+const OutreachComplianceTab = lazy(() => import('./tabs/OutreachComplianceTab'))
+const OutreachAnalyticsTab = lazy(() => import('./tabs/OutreachAnalyticsTab'))
+const OutreachVerificationTab = lazy(() => import('./tabs/OutreachVerificationTab'))
+
+const SIDEBAR_SECTIONS = [
+  {
+    id: 'marketing',
+    label: 'Email Marketing',
+    items: [
+      { value: 'overview', label: 'Overview', icon: BarChart3 },
+      { value: 'campaigns', label: 'Campaigns', icon: Send },
+      { value: 'automations', label: 'Automations', icon: Zap },
+      { value: 'transactional', label: 'Transactional', icon: Bell },
+    ],
+  },
+  {
+    id: 'cold-outreach',
+    label: 'Cold Outreach',
+    requiresSignal: true,
+    items: [
+      { value: 'sequences', label: 'Sequences', icon: ListOrdered },
+      { value: 'inbox', label: 'Inbox', icon: Inbox, badge: true },
+      { value: 'discovery', label: 'Lead Discovery', icon: SearchCode },
+      { value: 'outreach-analytics', label: 'Analytics', icon: BarChart3 },
+      { value: 'verification', label: 'Verification', icon: ShieldCheck },
+    ],
+  },
+  {
+    id: 'tools',
+    label: 'Shared Tools',
+    items: [
+      { value: 'templates', label: 'Templates', icon: FileText },
+      { value: 'testing', label: 'A/B Tests', icon: Target },
+      { value: 'audience', label: 'Audience', icon: Users },
+    ],
+  },
+  {
+    id: 'infrastructure',
+    label: 'Infrastructure',
+    items: [
+      { value: 'domains', label: 'Domains', icon: Globe },
+      { value: 'compliance', label: 'Compliance', icon: ShieldCheck },
+      { value: 'settings', label: 'Settings', icon: Settings },
+    ],
+  },
 ]
+
+const EMAIL_PLATFORM_TABS = new Set([
+  'overview', 'campaigns', 'automations', 'transactional',
+  'templates', 'testing', 'settings',
+])
 
 export default function OutreachModule() {
   const [activeTab, setActiveTab] = useState('overview')
   const [showLeftSidebar, setShowLeftSidebar] = useState(true)
+  const { hasCurrentProjectSignal } = useSignalAccess()
+
+  const handleTabChange = (tab) => {
+    setActiveTab(tab)
+  }
 
   const leftSidebarContent = (
-    <div className="p-4 space-y-1">
-      <p className="uppercase tracking-wider text-muted-foreground mb-2 px-2">
-        Outreach
-      </p>
-      {OUTREACH_TABS.map((tab) => (
-        <button
-          key={tab.value}
-          onClick={() => setActiveTab(tab.value)}
-          className={cn(
-            'w-full text-left px-3 py-2 rounded-md flex items-center gap-2.5 transition-colors',
-            activeTab === tab.value
-              ? 'bg-primary/10 text-primary'
-              : 'hover:bg-muted text-foreground'
-          )}
-        >
-          <tab.icon className="h-4 w-4 flex-shrink-0" />
-          <span>{tab.label}</span>
-        </button>
-      ))}
+    <div className="p-3 space-y-4">
+      {SIDEBAR_SECTIONS.map((section) => {
+        if (section.requiresSignal && !hasCurrentProjectSignal) return null
+
+        return (
+          <div key={section.id}>
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70 mb-1.5 px-2">
+              {section.label}
+            </p>
+            <div className="space-y-0.5">
+              {section.items.map((item) => {
+                const isActive = activeTab === item.value
+                return (
+                  <button
+                    key={item.value}
+                    onClick={() => handleTabChange(item.value)}
+                    className={cn(
+                      'w-full text-left px-2.5 py-1.5 rounded-md flex items-center gap-2.5 transition-colors text-sm',
+                      isActive
+                        ? 'bg-primary/10 text-primary font-medium'
+                        : 'hover:bg-muted text-foreground/80'
+                    )}
+                  >
+                    <item.icon className="h-3.5 w-3.5 flex-shrink-0" />
+                    <span>{item.label}</span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        )
+      })}
+
+      {!hasCurrentProjectSignal && (
+        <div className="px-2 py-3 rounded-lg bg-muted/50 border border-dashed">
+          <div className="flex items-center gap-2 text-muted-foreground mb-1">
+            <Lock className="h-3.5 w-3.5" />
+            <span className="text-xs font-medium">Cold Outreach</span>
+          </div>
+          <p className="text-[11px] text-muted-foreground/70 leading-relaxed">
+            Upgrade to a Signal AI plan to unlock cold outreach sequences, unified inbox, and lead discovery.
+          </p>
+        </div>
+      )}
     </div>
   )
+
+  const lazyFallback = (
+    <div className="flex items-center justify-center py-24">
+      <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+    </div>
+  )
+
+  const renderContent = () => {
+    if (activeTab === 'audience') {
+      return <AudienceTab />
+    }
+
+    if (EMAIL_PLATFORM_TABS.has(activeTab)) {
+      return (
+        <EmailPlatform
+          embedded
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+        />
+      )
+    }
+
+    if (activeTab === 'sequences') return <Suspense fallback={lazyFallback}><OutreachSequencesTab /></Suspense>
+    if (activeTab === 'inbox') return <Suspense fallback={lazyFallback}><OutreachInboxTab /></Suspense>
+    if (activeTab === 'discovery') return <Suspense fallback={lazyFallback}><OutreachDiscoveryTab /></Suspense>
+    if (activeTab === 'domains') return <Suspense fallback={lazyFallback}><OutreachDomainsTab /></Suspense>
+    if (activeTab === 'compliance') return <Suspense fallback={lazyFallback}><OutreachComplianceTab /></Suspense>
+    if (activeTab === 'outreach-analytics') return <Suspense fallback={lazyFallback}><OutreachAnalyticsTab /></Suspense>
+    if (activeTab === 'verification') return <Suspense fallback={lazyFallback}><OutreachVerificationTab /></Suspense>
+
+    return (
+      <EmailPlatform
+        embedded
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+      />
+    )
+  }
 
   return (
     <ModuleLayout
@@ -67,7 +181,7 @@ export default function OutreachModule() {
       leftSidebarOpen={showLeftSidebar}
       onLeftSidebarOpenChange={setShowLeftSidebar}
       leftSidebarTitle="Outreach"
-      leftSidebarWidth={220}
+      leftSidebarWidth={200}
       defaultLeftSidebarOpen
     >
       <ModuleLayout.Header
@@ -75,12 +189,9 @@ export default function OutreachModule() {
         icon={MODULE_ICONS.outreach}
       />
       <ModuleLayout.Content noPadding>
-        <EmailPlatform
-          embedded
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-        />
+        {renderContent()}
       </ModuleLayout.Content>
     </ModuleLayout>
   )
 }
+

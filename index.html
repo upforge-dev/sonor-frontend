@@ -58,22 +58,19 @@
     <noscript>This site requires JavaScript to load the portal.</noscript>
     <div id="root"></div>
     
-    <!-- Initial loading overlay (fades out when React is ready) -->
+    <!-- Initial loading overlay — dark void matching boot sequence.
+         No logo, no spinner. Just the dark canvas so there's zero visual
+         discontinuity from first paint → React hydration → boot sequence.
+         Fades out when React calls hideInitialLoader(). -->
     <div id="initial-loader">
       <style>
         #initial-loader {
           position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
+          inset: 0;
           display: flex;
-          flex-direction: column;
           align-items: center;
           justify-content: center;
-          min-height: 100vh;
-          background: #ffffff;
-          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+          background: #0a0a0f;
           z-index: 9999;
           opacity: 1;
           transition: opacity 0.3s ease-out;
@@ -82,61 +79,19 @@
           opacity: 0;
           pointer-events: none;
         }
-        @media (prefers-color-scheme: dark) {
-          #initial-loader {
-            background: #030712;
-          }
+        #initial-loader .init-glow {
+          width: 160px;
+          height: 160px;
+          border-radius: 50%;
+          background: radial-gradient(circle, rgba(57,191,176,0.06) 0%, transparent 70%);
+          animation: initPulse 2s ease-in-out infinite;
         }
-        #initial-loader .svg-wrapper {
-          width: 250px;
-          height: 250px;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-        }
-        #initial-loader #logo-svg {
-          width: 180px;
-          height: 180px;
-        }
-        #initial-loader .logo-path {
-          stroke-dasharray: 2000;
-          stroke-dashoffset: 2000;
-          animation: drawPath 1.8s ease-out forwards;
-          fill: none;
-          stroke: url(#initial-gradient);
-          stroke-width: 3;
-        }
-        @keyframes drawPath {
-          to { stroke-dashoffset: 0; }
-        }
-        #initial-loader .logo-fill {
-          opacity: 0;
-          animation: fillIn 0.6s ease-out forwards;
-          animation-delay: 1.5s;
-        }
-        @keyframes fillIn {
-          to { opacity: 1; }
+        @keyframes initPulse {
+          0%, 100% { opacity: 0.3; transform: scale(1); }
+          50% { opacity: 0.8; transform: scale(1.08); }
         }
       </style>
-      <div class="svg-wrapper">
-        <svg id="logo-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 498.88 498.88">
-          <defs>
-            <linearGradient id="initial-gradient" x1="0" y1="498.88" x2="498.88" y2="0" gradientUnits="userSpaceOnUse">
-              <stop offset=".15" stop-color="#54b948"/>
-              <stop offset=".85" stop-color="#39bfb0"/>
-            </linearGradient>
-            <clipPath id="initial-clippath">
-              <path d="M250,0C112.55,0,1.12,111.43,1.12,248.88c0,116.99,80.71,215.12,189.49,241.75,5.18,1.13,10.55,1.73,16.07,1.73,41.34,0,75.22-33.51,75.22-74.85v-181.82l85.06,80.71v-72.61l-116.96-110.5-116.96,110.5v72.61l85.06-80.36v156.68c0,18.24-14.78,33.02-33.02,33.02-4.79,0-9.33-1.02-13.44-2.85h0c-66.3-29.89-112.44-96.56-112.44-174.01,0-105.38,85.43-190.81,190.81-190.81s190.81,85.43,190.81,190.81c0,91.33-64.17,167.68-149.89,186.41-5.97,28.42-25.95,51.68-52.39,62.21,3.8.17,7.63.26,11.47.26,137.45,0,248.88-111.43,248.88-248.88S387.45,0,250,0Z"/>
-            </clipPath>
-          </defs>
-          <path class="logo-path" d="M250,0C112.55,0,1.12,111.43,1.12,248.88c0,116.99,80.71,215.12,189.49,241.75,5.18,1.13,10.55,1.73,16.07,1.73,41.34,0,75.22-33.51,75.22-74.85v-181.82l85.06,80.71v-72.61l-116.96-110.5-116.96,110.5v72.61l85.06-80.36v156.68c0,18.24-14.78,33.02-33.02,33.02-4.79,0-9.33-1.02-13.44-2.85h0c-66.3-29.89-112.44-96.56-112.44-174.01,0-105.38,85.43-190.81,190.81-190.81s190.81,85.43,190.81,190.81c0,91.33-64.17,167.68-149.89,186.41-5.97,28.42-25.95,51.68-52.39,62.21,3.8.17,7.63.26,11.47.26,137.45,0,248.88-111.43,248.88-248.88S387.45,0,250,0Z"/>
-          <g class="logo-fill">
-            <g clip-path="url(#initial-clippath)">
-              <rect fill="url(#initial-gradient)" width="498.88" height="498.88"/>
-            </g>
-          </g>
-        </svg>
-      </div>
+      <div class="init-glow"></div>
     </div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

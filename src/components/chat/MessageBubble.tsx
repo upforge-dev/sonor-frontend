@@ -25,6 +25,7 @@ import { EchoChart, extractCharts } from './EchoChart'
 import { ContactCard, extractContacts } from './ContactCard'
 import { EchoDataTable, extractTables } from './EchoDataTable'
 import { EchoStatCards, extractStats } from './EchoStatCards'
+import { EchoActions, extractActions } from './EchoActions'
 import type { ChatKitItem, MessageContent, ItemReaction } from './types'
 import EchoLogo from '@/components/EchoLogo'
 import {
@@ -175,6 +176,10 @@ interface MessageBubbleProps {
   onPin?: (messageId: string) => void
   /** Whether the message is currently pinned */
   isPinned?: boolean
+  /** Action button callback (from ```actions blocks) */
+  onAction?: (actionId: string, prompt?: string) => void
+  /** OAuth action callback (opens OAuth popup for provider) */
+  onOAuth?: (provider: string) => void
   className?: string
 }
 
@@ -201,6 +206,8 @@ export function MessageBubble({
   canReplyInThread = false,
   onPin,
   isPinned = false,
+  onAction,
+  onOAuth,
   className,
 }: MessageBubbleProps) {
   const isEchoSender = message.sender?.name === 'Echo' || message.sender?.full_name === 'Echo'
@@ -343,16 +350,28 @@ export function MessageBubble({
     return extractStats(src)
   }, [tableCleanText, contactCleanText, chartCleanText, messageText, inlineCharts.length, inlineContacts.length, inlineTables.length])
 
+  // Extract action buttons from message (```actions ... ```)
+  const { cleanText: actionsCleanText, actionsGroups: inlineActions } = useMemo(() => {
+    const src = inlineStats.length > 0 ? statsCleanText
+      : inlineTables.length > 0 ? tableCleanText
+      : inlineContacts.length > 0 ? contactCleanText
+      : inlineCharts.length > 0 ? chartCleanText
+      : messageText
+    if (!src || isAssistant === false) return { cleanText: src, actionsGroups: [] }
+    return extractActions(src)
+  }, [statsCleanText, tableCleanText, contactCleanText, chartCleanText, messageText, inlineStats.length, inlineTables.length, inlineContacts.length, inlineCharts.length])
+
   // Highlight @mentions for display (wrap in ** so they render bold)
   const messageTextWithMentions = useMemo(() => {
-    const text = inlineStats.length > 0 ? statsCleanText
+    const text = inlineActions.length > 0 ? actionsCleanText
+      : inlineStats.length > 0 ? statsCleanText
       : inlineTables.length > 0 ? tableCleanText
       : inlineContacts.length > 0 ? contactCleanText
       : inlineCharts.length > 0 ? chartCleanText
       : messageText
     if (!text) return ''
     return text.replace(/@[\w.-]+/g, '**$&**')
-  }, [messageText, chartCleanText, contactCleanText, tableCleanText, statsCleanText, inlineCharts.length, inlineContacts.length, inlineTables.length, inlineStats.length])
+  }, [messageText, chartCleanText, contactCleanText, tableCleanText, statsCleanText, actionsCleanText, inlineCharts.length, inlineContacts.length, inlineTables.length, inlineStats.length, inlineActions.length])
 
   const firstUrl = useMemo(() => extractFirstUrl(messageText), [messageText])
   
@@ -597,7 +616,12 @@ export function MessageBubble({
               {inlineStats.length > 0 && inlineStats.map((group, i) => (
                 <EchoStatCards key={i} definition={group} />
               ))}
-              
+
+              {/* Action buttons */}
+              {inlineActions.length > 0 && inlineActions.map((group, i) => (
+                <EchoActions key={i} definition={group} onAction={onAction} onOAuth={onOAuth} />
+              ))}
+
               {/* Attachments */}
               {message.attachments && message.attachments.length > 0 && (
                 <AttachmentPreview attachments={message.attachments} />

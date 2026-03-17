@@ -656,10 +656,8 @@ export function EmailEditor({
   // Get brand color from project (with fallback to Sonor default)
   const brandPrimary = currentProject?.brand_primary || '#4bbf39'
   
-  // Schedule Consultation block is Sonor only
-  const isUptradeMedia = currentOrg?.slug === 'uptrade-media' || 
-                         currentOrg?.domain === 'sonor.io' || 
-                         currentOrg?.org_type === 'agency'
+  // Schedule Consultation block is agency-only
+  const isAgencyOrg = currentOrg?.org_type === 'agency'
   const projectId = currentProject?.id
   const { data: filesData, isLoading: filesLoading } = useFiles(projectId, { category: 'email' })
   const projectFiles = filesData?.files || []
@@ -1798,7 +1796,7 @@ export function EmailEditor({
     })
     
     // Schedule Consultation CTA block - Sonor only
-    if (isUptradeMedia) {
+    if (isAgencyOrg) {
       bm.add('schedule-consultation', {
         label: `<div class="gjs-block-label">📅 Schedule Call</div>`,
         category: 'Sections',

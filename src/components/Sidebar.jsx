@@ -145,10 +145,8 @@ const Sidebar = ({
   // ORG TYPE DETECTION (Agency vs Client)
   // ============================================================================
   
-  // Is this the agency org (Sonor)? Show admin view
-  const isAgencyOrg = currentOrg?.slug === 'uptrade-media' || 
-                      currentOrg?.domain === 'sonor.io' || 
-                      currentOrg?.org_type === 'agency'
+  // Is this an agency org? Show admin view
+  const isAgencyOrg = currentOrg?.org_type === 'agency'
   
   // Is this a client org? Show client view with their project features
   const isClientOrg = currentOrg && !isAgencyOrg
@@ -232,7 +230,15 @@ const Sidebar = ({
       { id: 'sync', label: 'Sync', icon: Calendar },
       { id: 'crm', label: 'CRM', icon: Users, badge: newLeadsCount > 0 ? newLeadsCount.toString() : null },
     ]
-    
+
+    // Clients - managed client orgs (agency view)
+    allNavigationItems.push({ id: 'clients-managed', label: 'Clients', icon: Building2 })
+
+    // Platform module - only for platform admins
+    if (isSuperAdmin) {
+      allNavigationItems.push({ id: 'platform', label: 'Platform', icon: Shield })
+    }
+
     // Feature-gated admin tools (show unless explicitly disabled)
     if (hasFeature('seo')) allNavigationItems.push({ id: 'seo', label: 'SEO', icon: Search })
     if (hasFeature('seo')) allNavigationItems.push({ id: 'website', label: 'Website', icon: Globe2 })

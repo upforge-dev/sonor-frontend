@@ -182,7 +182,9 @@ export async function getCurrentUser() {
     avatar: contact.avatar || session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture,
     // Organization context
     org_id: contact.org_id,
-    // Team member fields
+    // Platform admin (replaces is_team_member)
+    isPlatformAdmin: contact.is_platform_admin || contact.is_team_member || false,
+    // Legacy team member fields (deprecated — use isPlatformAdmin)
     isTeamMember: contact.is_team_member || false,
     teamRole: contact.team_role || null,
     teamStatus: contact.team_status || null,

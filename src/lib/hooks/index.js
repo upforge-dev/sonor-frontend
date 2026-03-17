@@ -66,6 +66,9 @@ export {
   usePaymentMethods,
   useAddPaymentMethod,
   useRemovePaymentMethod,
+  useSeatInfo,
+  useCancelSubscription,
+  useReactivateSubscription,
 } from './use-billing'
 
 // ═══════════════════════════════════════════════════════════════════════════

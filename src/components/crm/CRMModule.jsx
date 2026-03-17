@@ -414,9 +414,7 @@ export default function CRMDashboard() {
   const { hasCurrentProjectSignal } = useSignalAccess()
   
   // Agency detection - agencies get extra features like calls, proposals, OpenPhone
-  const isAgency = currentOrg?.org_type === 'agency' || 
-                   currentOrg?.slug === 'uptrade-media' || 
-                   currentOrg?.domain === 'sonor.io'
+  const isAgency = currentOrg?.org_type === 'agency'
   
   // Sidebar states
   const [showLeftSidebar, setShowLeftSidebar] = useState(true)

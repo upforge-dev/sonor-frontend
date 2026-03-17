@@ -84,11 +84,8 @@ const Files = ({
   const { data: projectsData } = useProjects()
   const projects = projectsData?.projects ?? projectsData ?? []
   
-  // Check if this is Sonor (agency) - should see ALL projects
-  const isAgencyOrg = isSuperAdmin || 
-                      currentOrg?.slug === 'uptrade-media' || 
-                      currentOrg?.domain === 'sonor.io' || 
-                      currentOrg?.org_type === 'agency'
+  // Check if this is an agency org - should see ALL projects
+  const isAgencyOrg = isSuperAdmin || currentOrg?.org_type === 'agency'
   
   const queryClient = useQueryClient()
   const uploadFileMutation = useUploadFile()

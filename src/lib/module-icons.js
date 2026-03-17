@@ -62,6 +62,8 @@ export const MODULE_ICONS = {
   billing: DollarSign,
   proposals: Send,
   organization: Building2,
+  platform: Shield,
+  'clients-managed': Building2,
 }
 
 export default MODULE_ICONS

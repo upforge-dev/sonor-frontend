@@ -61,7 +61,7 @@ import {
   CommandList,
 } from '@/components/ui/command'
 import { toast } from '@/lib/toast'
-import { useOrgMembers, useInviteOrgMember, useRemoveOrgMember, useResendOrgMemberInvite, useUpdateOrgMemberRole } from '@/lib/hooks'
+import { useOrgMembers, useInviteOrgMember, useRemoveOrgMember, useResendOrgMemberInvite, useUpdateOrgMemberRole, useSeatInfo } from '@/lib/hooks'
 import { adminApi } from '@/lib/portal-api'
 import useAuthStore from '@/lib/auth-store'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
@@ -110,6 +110,7 @@ export default function OrganizationUsersPanel({
 
   // React Query hooks
   const { data: membersData, isLoading } = useOrgMembers(organizationId)
+  const { data: seatInfo } = useSeatInfo(organizationId)
   const inviteMemberMutation = useInviteOrgMember()
   const removeMemberMutation = useRemoveOrgMember()
   const resendInviteMutation = useResendOrgMemberInvite()
@@ -309,6 +310,11 @@ export default function OrganizationUsersPanel({
             </CardTitle>
             <CardDescription>
               {members.length} member{members.length !== 1 ? 's' : ''} in {organizationName || 'this organization'}
+              {seatInfo && (
+                <span className="ml-2 text-[var(--text-tertiary)]">
+                  ({seatInfo.current} of {seatInfo.included} seats used)
+                </span>
+              )}
             </CardDescription>
           </div>
           {canManage && (
@@ -318,6 +324,29 @@ export default function OrganizationUsersPanel({
             </Button>
           )}
         </CardHeader>
+
+        {/* Seat limit warning */}
+        {seatInfo && !seatInfo.billingExempt && seatInfo.current >= seatInfo.included && (
+          <div className={cn(
+            'mx-6 mb-4 px-4 py-3 rounded-lg text-sm flex items-center gap-2',
+            seatInfo.current > seatInfo.included
+              ? 'bg-[var(--accent-amber)]/10 border border-[var(--accent-amber)]/20 text-[var(--accent-amber)]'
+              : 'bg-[var(--accent-blue)]/10 border border-[var(--accent-blue)]/20 text-[var(--accent-blue)]'
+          )}>
+            <Info className="h-4 w-4 shrink-0" />
+            {seatInfo.current > seatInfo.included ? (
+              <span>
+                You're using <strong>{seatInfo.current - seatInfo.included} extra seat{seatInfo.current - seatInfo.included !== 1 ? 's' : ''}</strong> beyond your plan's {seatInfo.included} included.
+                {' '}Each additional seat costs <strong>${(seatInfo.overagePrice / 100).toFixed(0)}/mo</strong>.
+              </span>
+            ) : (
+              <span>
+                All <strong>{seatInfo.included}</strong> seats in your plan are in use. Adding more members will incur an additional <strong>${(seatInfo.overagePrice / 100).toFixed(0)}/mo per seat</strong>.
+              </span>
+            )}
+          </div>
+        )}
+
         <CardContent>
           {members.length === 0 ? (
             <div className="text-center py-8 text-[var(--text-tertiary)]">

@@ -831,7 +831,7 @@ export function InvoicesView({
   loadInvoices,
   invoiceCounts,
   projectId,
-  isUptradeMediaOrg,
+  isAgencyOrg,
 }) {
   const [activeTab, setActiveTab] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')

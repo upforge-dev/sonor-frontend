@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import Protected from './components/Protected'
 import { ThemeProvider } from './components/ThemeProvider'
 import useAuthStore from './lib/auth-store'
-import UptradeLoading from './components/UptradeLoading'
+import SonorLoading from './components/SonorLoading'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import './App.css'
 
@@ -34,6 +34,12 @@ const AuditGate = lazy(() => import('./components/AuditGate'))
 const AuthCallback = lazy(() => import('./pages/AuthCallback'))
 const SiteKitAuth = lazy(() => import('./pages/SiteKitAuth'))
 const InvoicePayment = lazy(() => import('./pages/InvoicePayment'))
+
+// Self-serve signup
+const Signup = lazy(() => import('./pages/Signup'))
+
+// Onboarding flow (full-screen Echo-guided, no sidebar)
+const OnboardingFlow = lazy(() => import('./pages/OnboardingFlow'))
 
 // Sync OAuth Callback (standalone route; main sync UI is in MainLayout via components/sync)
 const SyncOAuthCallback = lazy(() => import('./pages/sync/SyncOAuthCallback'))
@@ -102,13 +108,17 @@ export default function App() {
         <Router>
           <div className="h-full bg-[var(--surface-page)] transition-colors duration-300">
             <ErrorBoundary>
-              <Suspense fallback={<UptradeLoading />}>
+              <Suspense fallback={
+                /* Dark void matching boot sequence — no spinner flash during lazy chunk loads */
+                <div style={{ position: 'fixed', inset: 0, background: '#0a0a0f', zIndex: 50 }} />
+              }>
                 <Routes>
               <Route 
                 path="/" 
                 element={isAuthenticated ? <Protected><Dashboard /></Protected> : <Navigate to="/login" replace />} 
               />
               <Route path="/login" element={<LoginPage />} />
+              <Route path="/signup" element={<Signup />} />
               <Route path="/auth/callback" element={<AuthCallback />} />
               <Route path="/auth/site-kit" element={<SiteKitAuth />} />
               <Route path="/auth/magic" element={<MagicLogin />} />
@@ -118,6 +128,10 @@ export default function App() {
               <Route path="/audit/:id" element={<AuditGate />} />
               <Route path="/pay/:token" element={<InvoicePayment />} />
               
+              {/* Onboarding — full-screen Echo-guided, no sidebar/header */}
+              <Route path="/onboarding" element={<Protected><OnboardingFlow /></Protected>} />
+              <Route path="/onboarding/:projectId" element={<Protected><OnboardingFlow /></Protected>} />
+
               {/* Sync OAuth Callback - must be standalone */}
               <Route path="/sync/callback" element={<SyncOAuthCallback />} />
               

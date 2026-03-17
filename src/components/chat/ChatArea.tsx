@@ -105,6 +105,10 @@ interface ChatAreaProps {
   onPinMessage?: (messageId: string) => Promise<{ is_pinned: boolean }>
   /** IDs of currently pinned messages (Echo only) */
   pinnedMessageIds?: Set<string>
+  /** Called when an inline action button is clicked (```actions blocks) */
+  onActionClick?: (actionId: string, prompt?: string) => void
+  /** Called when an OAuth action button is clicked (opens OAuth popup) */
+  onOAuthClick?: (provider: string) => void
   className?: string
 }
 
@@ -150,6 +154,8 @@ export function ChatArea({
   echoWelcomeContext,
   onPinMessage,
   pinnedMessageIds,
+  onActionClick,
+  onOAuthClick,
   className,
 }: ChatAreaProps) {
   const otherUserId = useMemo(() => {
@@ -202,6 +208,23 @@ export function ChatArea({
       onSendMessage(prompt)
     }
   }, [onPromptClick, onSendMessage])
+
+  // Handle inline action button click (```actions blocks)
+  const handleActionClick = useCallback((actionId: string, prompt?: string) => {
+    if (onActionClick) {
+      onActionClick(actionId, prompt)
+    } else if (prompt) {
+      // Default: send the prompt text as a message (like suggestion chips)
+      onSendMessage(prompt)
+    }
+  }, [onActionClick, onSendMessage])
+
+  // Handle OAuth action button click
+  const handleOAuthClick = useCallback((provider: string) => {
+    if (onOAuthClick) {
+      onOAuthClick(provider)
+    }
+  }, [onOAuthClick])
   
   // Typing indicator names
   const typingNames = useMemo(() => {
@@ -387,6 +410,8 @@ export function ChatArea({
                   onDelete={onDelete}
                   onPin={threadType === 'echo' && onPinMessage ? (id) => { onPinMessage(id) } : undefined}
                   isPinned={pinnedMessageIds?.has(message.id) ?? false}
+                  onAction={threadType === 'echo' ? handleActionClick : undefined}
+                  onOAuth={threadType === 'echo' ? handleOAuthClick : undefined}
                 />
               )
             })}

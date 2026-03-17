@@ -155,7 +155,7 @@ export default function BookingTypesPanel({ isOpen, onClose, inline = false }) {
   }
 
   const copyBookingLink = (type) => {
-    const orgSlug = currentOrg?.slug || 'uptrade-media'
+    const orgSlug = currentOrg?.slug || 'upforge'
     const link = `https://app.sonor.io/book/${orgSlug}/${type.slug}`
     navigator.clipboard.writeText(link)
     toast.success('Booking link copied to clipboard')

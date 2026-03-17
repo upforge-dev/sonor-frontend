@@ -7,10 +7,10 @@
  * 3. Primary Contact - Select existing or create new contact
  * 4. Modules - Enable modules for this project
  */
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import {
   Building2, Globe, User, Settings2, ChevronRight, ChevronLeft,
-  Check, Plus, Loader2, Search, AlertCircle, ExternalLink
+  Check, Plus, Loader2, Search, AlertCircle, ExternalLink, Zap, Copy, Key
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
@@ -43,10 +43,13 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 
 // Stores
 import { useProjects, useCreateProject, projectsKeys } from '@/lib/hooks'
+import { useActivateProject } from '@/lib/hooks/use-billing'
 import { useQueryClient } from '@tanstack/react-query'
-import portalApi, { adminApi } from '@/lib/portal-api'
+import portalApi, { adminApi, agenciesApi } from '@/lib/portal-api'
+import useAuthStore from '@/lib/auth-store'
+import PlanSelector from '@/components/billing/PlanSelector'
 
-// Module definitions
+// Module definitions (still used for commerce options)
 const AVAILABLE_MODULES = [
   { key: 'seo', label: 'SEO', description: 'Search rankings & optimization', icon: '🔍' },
   { key: 'analytics', label: 'Analytics', description: 'Website traffic & visitor tracking', icon: '📊' },
@@ -100,6 +103,9 @@ export function NewProjectModal({
   onProjectCreated,
 }) {
   const createProjectMutation = useCreateProject()
+  const { currentOrg, isSuperAdmin, availableProjects } = useAuthStore()
+  const isAgency = currentOrg?.org_type === 'agency'
+  const isPlatformAdmin = isSuperAdmin && !isAgency
   
   // Wizard state
   const [currentStep, setCurrentStep] = useState(0)
@@ -119,7 +125,6 @@ export function NewProjectModal({
     newOrgSlug: '',
     newOrgDomain: '',
     newOrgPlan: 'starter',
-    newOrgPrimaryColor: '#4bbf39',
     
     // Step 2: Project Details
     title: '',
@@ -127,21 +132,28 @@ export function NewProjectModal({
     description: '',
     logo_url: null,
     brand_primary: '',
-    brand_primary: '',
     resend_domain: '',
     resend_from_name: '',
-    
+
     // Step 3: Contact
     contactId: '',
     createNewContact: false,
     newContactName: '',
     newContactEmail: '',
     
-    // Step 4: Modules
-    enabledModules: ['seo', 'analytics'], // Default modules
-    commerce_types: [], // Commerce offering types (if commerce enabled)
+    // Step 4: Plan & Activation
+    plan: 'standard',
+    activateNow: true, // Whether to activate immediately (gen API key, start billing)
+
+    // Legacy module fields (auto-set by plan, but kept for commerce options)
+    enabledModules: ['seo', 'analytics'],
+    commerce_types: [],
     payment_processor: null,
   })
+
+  // Activation result
+  const [activationResult, setActivationResult] = useState(null)
+  const [apiKeyCopied, setApiKeyCopied] = useState(false)
 
   // Steps configuration
   const steps = useMemo(() => {
@@ -149,7 +161,7 @@ export function NewProjectModal({
       { key: 'org', label: 'Organization', icon: Building2 },
       { key: 'details', label: 'Project Details', icon: Globe },
       { key: 'contact', label: 'Contact', icon: User },
-      { key: 'modules', label: 'Modules', icon: Settings2 },
+      { key: 'plan', label: 'Plan & Activate', icon: Zap },
     ]
     // Skip org step if not admin or org is preselected
     if (!isAdmin && preselectedOrgId) {
@@ -158,12 +170,36 @@ export function NewProjectModal({
     return allSteps
   }, [isAdmin, preselectedOrgId])
 
+  const loadOrganizations = useCallback(async () => {
+    setIsLoading(true)
+    try {
+      if (isAgency) {
+        const response = await agenciesApi.listManagedOrgs()
+        const payload = response?.data || response
+        const managedOrgs = payload.organizations || []
+        const agencyOrg = currentOrg ? { id: currentOrg.id, name: currentOrg.name, slug: currentOrg.slug, domain: currentOrg.domain } : null
+        const allOrgs = agencyOrg ? [agencyOrg, ...managedOrgs] : managedOrgs
+        setOrganizations(allOrgs)
+      } else {
+        const response = await adminApi.listTenants()
+        const orgs = (response.data?.organizations || response.data?.tenants || [])
+          .filter(org => !org.isProjectTenant)
+        setOrganizations(orgs)
+      }
+    } catch (error) {
+      console.error('Failed to load organizations:', error)
+      toast.error('Failed to load organizations')
+    } finally {
+      setIsLoading(false)
+    }
+  }, [isAgency, currentOrg])
+
   // Load organizations for admin
   useEffect(() => {
     if (open && isAdmin) {
       loadOrganizations()
     }
-  }, [open, isAdmin])
+  }, [open, isAdmin, loadOrganizations])
 
   // Load contacts when org is selected
   useEffect(() => {
@@ -183,12 +219,10 @@ export function NewProjectModal({
         newOrgSlug: '',
         newOrgDomain: '',
         newOrgPlan: 'starter',
-        newOrgPrimaryColor: '#4bbf39',
         title: '',
         domain: '',
         description: '',
         logo_url: null,
-        brand_primary: '',
         brand_primary: '',
         resend_domain: '',
         resend_from_name: '',
@@ -196,28 +230,16 @@ export function NewProjectModal({
         createNewContact: false,
         newContactName: '',
         newContactEmail: '',
+        plan: 'standard',
+        activateNow: true,
         enabledModules: ['seo', 'analytics'],
         commerce_types: [],
         payment_processor: null,
       })
+      setActivationResult(null)
+      setApiKeyCopied(false)
     }
   }, [open, preselectedOrgId])
-
-  const loadOrganizations = async () => {
-    setIsLoading(true)
-    try {
-      const response = await adminApi.listTenants()
-      // Filter to only actual organizations (not projects which have isProjectTenant=true)
-      const orgs = (response.data?.organizations || response.data?.tenants || [])
-        .filter(org => !org.isProjectTenant)
-      setOrganizations(orgs)
-    } catch (error) {
-      console.error('Failed to load organizations:', error)
-      toast.error('Failed to load organizations')
-    } finally {
-      setIsLoading(false)
-    }
-  }
 
   const loadContacts = async (orgId) => {
     try {
@@ -258,8 +280,8 @@ export function NewProjectModal({
                  formData.newContactEmail.trim().length > 0
         }
         return true // Allow skipping contact selection
-      case 'modules':
-        return true // No validation needed
+      case 'plan':
+        return !!formData.plan
       default:
         return true
     }
@@ -294,13 +316,22 @@ export function NewProjectModal({
 
       // Step 1: Create org if needed
       if (formData.createNewOrg) {
-        const orgResponse = await adminApi.createTenant({
-          name: formData.newOrgName,
-          slug: formData.newOrgSlug,
-          domain: formData.newOrgDomain || undefined,
-          plan: formData.newOrgPlan,
-        })
-        orgId = orgResponse.data.id
+        if (isAgency) {
+          const orgResponse = await agenciesApi.createClientOrg({
+            name: formData.newOrgName,
+            slug: formData.newOrgSlug,
+            domain: formData.newOrgDomain || undefined,
+          })
+          orgId = orgResponse.data.id
+        } else {
+          const orgResponse = await adminApi.createTenant({
+            name: formData.newOrgName,
+            slug: formData.newOrgSlug,
+            domain: formData.newOrgDomain || undefined,
+            plan: formData.newOrgPlan,
+          })
+          orgId = orgResponse.data.id
+        }
       }
 
       // Step 2: Create contact if needed
@@ -325,13 +356,12 @@ export function NewProjectModal({
 
       const newProject = await createProjectMutation.mutateAsync(projectData)
 
-      // Step 4: Update project with all settings
+      // Step 4: Update project with settings
+      const validBrandPrimary = /^#[0-9a-fA-F]{6}$/.test(formData.brand_primary || '') ? formData.brand_primary : undefined
       const updateData = {
         domain: formData.domain || undefined,
-        features: formData.enabledModules,
         logo_url: formData.logo_url || undefined,
-        brand_primary: formData.brand_primary || undefined,
-        brand_primary: formData.brand_primary || undefined,
+        brand_primary: validBrandPrimary,
         settings: {
           resend_domain: formData.resend_domain || undefined,
           resend_from_name: formData.resend_from_name || undefined,
@@ -339,10 +369,30 @@ export function NewProjectModal({
           payment_processor: formData.payment_processor || undefined,
         },
       }
-      
+
       await portalApi.put(`/projects/${newProject.id}`, updateData)
 
-      toast.success(`Project "${formData.title}" created successfully!`)
+      // Step 5: Activate project if requested (generates API key, starts billing)
+      if (formData.activateNow) {
+        try {
+          const activateResponse = await portalApi.post(`/billing/projects/${newProject.id}/activate`, {
+            plan: formData.plan,
+          })
+          setActivationResult(activateResponse.data)
+          toast.success(`Project "${formData.title}" created and activated!`)
+          onProjectCreated?.(newProject)
+          // Don't close modal — show API key first
+          return
+        } catch (activateError) {
+          console.error('Project created but activation failed:', activateError)
+          toast.warning(`Project created but activation failed: ${activateError.response?.data?.message || 'Unknown error'}. You can activate it later from Billing.`)
+          onProjectCreated?.(newProject)
+          onOpenChange(false)
+          return
+        }
+      }
+
+      toast.success(`Project "${formData.title}" created as draft. Activate it from Billing > Subscription to start.`)
       onProjectCreated?.(newProject)
       onOpenChange(false)
     } catch (error) {
@@ -412,7 +462,7 @@ export function NewProjectModal({
                       onClick={() => handleChange('createNewOrg', true)}
                     >
                       <Plus className="h-4 w-4 mr-2" />
-                      Create New Organization
+                      {isAgency ? 'Create New Client Organization' : 'Create New Organization'}
                     </Button>
                   </>
                 ) : (
@@ -464,7 +514,7 @@ export function NewProjectModal({
                       </div>
                     </div>
                     
-                    <div className="grid grid-cols-2 gap-4">
+                    {isPlatformAdmin && (
                       <div className="space-y-2">
                         <Label>Plan</Label>
                         <Select 
@@ -481,24 +531,7 @@ export function NewProjectModal({
                           </SelectContent>
                         </Select>
                       </div>
-                      
-                      <div className="space-y-2">
-                        <Label>Brand Color</Label>
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="color"
-                            value={formData.newOrgPrimaryColor}
-                            onChange={(e) => handleChange('newOrgPrimaryColor', e.target.value)}
-                            className="w-10 h-9 rounded border cursor-pointer"
-                          />
-                          <Input
-                            value={formData.newOrgPrimaryColor}
-                            onChange={(e) => handleChange('newOrgPrimaryColor', e.target.value)}
-                            className="flex-1 font-mono text-sm"
-                          />
-                        </div>
-                      </div>
-                    </div>
+                    )}
                     
                     <Button 
                       variant="ghost" 
@@ -560,44 +593,25 @@ export function NewProjectModal({
             
             <Separator className="my-4" />
             
-            {/* Brand Colors */}
+            {/* Brand Primary (project-level only) */}
             <div>
-              <Label className="text-sm font-semibold mb-3 block">Brand Colors (Optional)</Label>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-2">
-                  <Label className="text-xs text-muted-foreground">Primary Color</Label>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="color"
-                      value={formData.brand_primary || '#4bbf39'}
-                      onChange={(e) => handleChange('brand_primary', e.target.value)}
-                      className="w-10 h-9 rounded border cursor-pointer"
-                    />
-                    <Input
-                      value={formData.brand_primary}
-                      onChange={(e) => handleChange('brand_primary', e.target.value)}
-                      placeholder="#4bbf39"
-                      className="flex-1 font-mono text-sm"
-                    />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs text-muted-foreground">Secondary Color</Label>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="color"
-                      value={formData.brand_primary || '#39bfb0'}
-                      onChange={(e) => handleChange('brand_primary', e.target.value)}
-                      className="w-10 h-9 rounded border cursor-pointer"
-                    />
-                    <Input
-                      value={formData.brand_primary}
-                      onChange={(e) => handleChange('brand_primary', e.target.value)}
-                      placeholder="#39bfb0"
-                      className="flex-1 font-mono text-sm"
-                    />
-                  </div>
-                </div>
+              <Label className="text-sm font-semibold mb-3 block">Brand Primary (Optional)</Label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={/^#[0-9a-fA-F]{6}$/.test(formData.brand_primary || '') ? formData.brand_primary : '#4bbf39'}
+                  onChange={(e) => handleChange('brand_primary', e.target.value)}
+                  className="w-10 h-9 rounded border cursor-pointer"
+                />
+                <Input
+                  value={formData.brand_primary}
+                  onChange={(e) => {
+                    const v = e.target.value
+                    handleChange('brand_primary', v.startsWith('#') ? v : v ? `#${v}` : '')
+                  }}
+                  placeholder="#4bbf39"
+                  className="flex-1 font-mono text-sm"
+                />
               </div>
             </div>
             
@@ -737,147 +751,118 @@ export function NewProjectModal({
           </div>
         )
 
-      case 'modules':
-        return (
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 mb-4">
-              <Settings2 className="h-5 w-5 text-primary" />
-              <h3 className="font-semibold">Enable Modules</h3>
-            </div>
-            
-            <p className="text-sm text-muted-foreground">
-              Select which modules to enable for this project. You can change these later in project settings.
-            </p>
-            
-            <div className="grid gap-3">
-              {AVAILABLE_MODULES.map(module => (
-                <div
-                  key={module.key}
-                  className={cn(
-                    "flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-colors",
-                    formData.enabledModules.includes(module.key)
-                      ? "border-primary bg-primary/5"
-                      : "hover:bg-muted/50"
-                  )}
-                  onClick={() => toggleModule(module.key)}
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="text-xl">{module.icon}</span>
-                    <div>
-                      <p className="font-medium text-sm">{module.label}</p>
-                      <p className="text-xs text-muted-foreground">{module.description}</p>
+      case 'plan':
+        // If we have an activation result, show the API key
+        if (activationResult) {
+          return (
+            <div className="space-y-6">
+              <div className="text-center py-4">
+                <div className="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mx-auto mb-4">
+                  <Check className="h-6 w-6 text-green-600 dark:text-green-400" />
+                </div>
+                <h3 className="text-lg font-semibold">Project Activated!</h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Your project is live on the <span className="font-medium capitalize">{formData.plan.replace('_', ' ')}</span> plan.
+                </p>
+              </div>
+
+              {activationResult.apiKey && (
+                <div className="space-y-3">
+                  <Label className="text-sm font-semibold flex items-center gap-2">
+                    <Key className="h-4 w-4" />
+                    Your API Key
+                  </Label>
+                  <Alert>
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>
+                      Copy this key now — it won't be shown again.
+                    </AlertDescription>
+                  </Alert>
+                  <div className="flex items-center gap-2">
+                    <code className="flex-1 bg-muted px-3 py-2 rounded text-sm font-mono break-all">
+                      {activationResult.apiKey}
+                    </code>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        navigator.clipboard.writeText(activationResult.apiKey)
+                        setApiKeyCopied(true)
+                        toast.success('API key copied!')
+                        setTimeout(() => setApiKeyCopied(false), 3000)
+                      }}
+                    >
+                      {apiKeyCopied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                    </Button>
+                  </div>
+
+                  <div className="space-y-2 mt-4">
+                    <Label className="text-xs text-muted-foreground">Add to your .env.local:</Label>
+                    <div className="flex items-center gap-2">
+                      <code className="flex-1 bg-muted px-3 py-2 rounded text-sm font-mono">
+                        SONOR_API_KEY={activationResult.apiKey}
+                      </code>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          navigator.clipboard.writeText(`SONOR_API_KEY=${activationResult.apiKey}`)
+                          toast.success('Env var copied!')
+                        }}
+                      >
+                        <Copy className="h-4 w-4" />
+                      </Button>
                     </div>
                   </div>
-                  <Switch 
-                    checked={formData.enabledModules.includes(module.key)}
-                    onCheckedChange={() => toggleModule(module.key)}
-                  />
                 </div>
-              ))}
+              )}
             </div>
-            
-            {/* Commerce Options - Only show if commerce is enabled */}
-            {formData.enabledModules.includes('commerce') && (
-              <>
-                <Separator className="my-6" />
-                <div className="space-y-3">
-                  <Label className="text-sm font-semibold">Commerce Options</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Select which types of offerings this project will sell.
+          )
+        }
+
+        return (
+          <div className="space-y-6">
+            <div className="flex items-center gap-2 mb-2">
+              <Zap className="h-5 w-5 text-primary" />
+              <h3 className="font-semibold">Plan & Activation</h3>
+            </div>
+
+            <p className="text-sm text-muted-foreground">
+              Choose a plan for this project. The plan determines which features are available and the monthly cost.
+            </p>
+
+            <PlanSelector
+              value={formData.plan}
+              onChange={(plan) => handleChange('plan', plan)}
+              isAgency={isAgency}
+              compact
+            />
+
+            <Separator className="my-4" />
+
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label className="text-sm font-semibold">Activate Now</Label>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Generates an API key and starts billing immediately
                   </p>
-                  <div className="grid grid-cols-2 gap-3">
-                    <label className="flex items-center gap-2 p-3 rounded-lg border bg-card hover:bg-accent cursor-pointer transition-colors">
-                      <input
-                        type="checkbox"
-                        checked={formData.commerce_types?.includes('product')}
-                        onChange={(e) => {
-                          e.stopPropagation()
-                          const types = formData.commerce_types || []
-                          handleChange('commerce_types', 
-                            types.includes('product') 
-                              ? types.filter(t => t !== 'product')
-                              : [...types, 'product']
-                          )
-                        }}
-                        className="rounded border-border"
-                      />
-                      <span className="text-sm font-medium">Products</span>
-                    </label>
-                    <label className="flex items-center gap-2 p-3 rounded-lg border bg-card hover:bg-accent cursor-pointer transition-colors">
-                      <input
-                        type="checkbox"
-                        checked={formData.commerce_types?.includes('service')}
-                        onChange={(e) => {
-                          e.stopPropagation()
-                          const types = formData.commerce_types || []
-                          handleChange('commerce_types', 
-                            types.includes('service') 
-                              ? types.filter(t => t !== 'service')
-                              : [...types, 'service']
-                          )
-                        }}
-                        className="rounded border-border"
-                      />
-                      <span className="text-sm font-medium">Services</span>
-                    </label>
-                    <label className="flex items-center gap-2 p-3 rounded-lg border bg-card hover:bg-accent cursor-pointer transition-colors">
-                      <input
-                        type="checkbox"
-                        checked={formData.commerce_types?.includes('class')}
-                        onChange={(e) => {
-                          e.stopPropagation()
-                          const types = formData.commerce_types || []
-                          handleChange('commerce_types', 
-                            types.includes('class') 
-                              ? types.filter(t => t !== 'class')
-                              : [...types, 'class']
-                          )
-                        }}
-                        className="rounded border-border"
-                      />
-                      <span className="text-sm font-medium">Classes</span>
-                    </label>
-                    <label className="flex items-center gap-2 p-3 rounded-lg border bg-card hover:bg-accent cursor-pointer transition-colors">
-                      <input
-                        type="checkbox"
-                        checked={formData.commerce_types?.includes('event')}
-                        onChange={(e) => {
-                          e.stopPropagation()
-                          const types = formData.commerce_types || []
-                          handleChange('commerce_types', 
-                            types.includes('event') 
-                              ? types.filter(t => t !== 'event')
-                              : [...types, 'event']
-                          )
-                        }}
-                        className="rounded border-border"
-                      />
-                      <span className="text-sm font-medium">Events</span>
-                    </label>
-                  </div>
-                  
-                  <div className="mt-4">
-                    <Label className="text-sm">Payment Processor</Label>
-                    <Select 
-                      value={formData.payment_processor || 'none'} 
-                      onValueChange={(v) => handleChange('payment_processor', v === 'none' ? null : v)}
-                    >
-                      <SelectTrigger className="mt-1.5">
-                        <SelectValue placeholder="Select payment processor..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">None (Configure later)</SelectItem>
-                        <SelectItem value="stripe">Stripe</SelectItem>
-                        <SelectItem value="square">Square</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Payment processor credentials can be configured in project settings
-                    </p>
-                  </div>
                 </div>
-              </>
-            )}
+                <Switch
+                  checked={formData.activateNow}
+                  onCheckedChange={(checked) => handleChange('activateNow', checked)}
+                />
+              </div>
+
+              {!formData.activateNow && (
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    Project will be saved as a draft. You can activate it later from Billing &gt; Subscription.
+                  </AlertDescription>
+                </Alert>
+              )}
+            </div>
           </div>
         )
 
@@ -909,40 +894,52 @@ export function NewProjectModal({
         <Separator className="my-4" />
         
         <div className="flex justify-between">
-          <Button
-            variant="outline"
-            onClick={handleBack}
-            disabled={currentStep === 0 || isCreating}
-          >
-            <ChevronLeft className="h-4 w-4 mr-1" />
-            Back
-          </Button>
-          
-          {isLastStep ? (
-            <Button 
-              onClick={handleCreate}
-              disabled={isCreating || !validateStep()}
-            >
-              {isCreating ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Creating...
-                </>
-              ) : (
-                <>
-                  <Check className="h-4 w-4 mr-2" />
-                  Create Project
-                </>
-              )}
-            </Button>
+          {activationResult ? (
+            <>
+              <div />
+              <Button onClick={() => onOpenChange(false)}>
+                <Check className="h-4 w-4 mr-2" />
+                Done
+              </Button>
+            </>
           ) : (
-            <Button 
-              onClick={handleNext}
-              disabled={!validateStep()}
-            >
-              Next
-              <ChevronRight className="h-4 w-4 ml-1" />
-            </Button>
+            <>
+              <Button
+                variant="outline"
+                onClick={handleBack}
+                disabled={currentStep === 0 || isCreating}
+              >
+                <ChevronLeft className="h-4 w-4 mr-1" />
+                Back
+              </Button>
+
+              {isLastStep ? (
+                <Button
+                  onClick={handleCreate}
+                  disabled={isCreating || !validateStep()}
+                >
+                  {isCreating ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      {formData.activateNow ? 'Creating & Activating...' : 'Creating...'}
+                    </>
+                  ) : (
+                    <>
+                      <Check className="h-4 w-4 mr-2" />
+                      {formData.activateNow ? 'Create & Activate' : 'Create as Draft'}
+                    </>
+                  )}
+                </Button>
+              ) : (
+                <Button
+                  onClick={handleNext}
+                  disabled={!validateStep()}
+                >
+                  Next
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+              )}
+            </>
           )}
         </div>
       </DialogContent>

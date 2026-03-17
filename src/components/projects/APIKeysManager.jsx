@@ -119,30 +119,17 @@ export default function APIKeysManager({ projectId, isAdmin }) {
             <p className="text-green-700 dark:text-green-300">
               Save this key now - it won't be shown again!
             </p>
-            <div className="flex items-center gap-2 mt-2">
-              <code className="flex-1 p-2 bg-white dark:bg-gray-900 rounded border font-mono text-xs break-all">
-                {newlyCreatedKey.key}
-              </code>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => copyToClipboard(newlyCreatedKey.key)}
-              >
-                <Copy className="h-3 w-3" />
-              </Button>
-            </div>
-            <div className="mt-3 p-2 bg-gray-50 dark:bg-gray-900 rounded border">
+            <div className="mt-2 p-2 bg-white dark:bg-gray-900 rounded border">
               <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Add to your .env.local:
               </p>
               <div className="flex items-center gap-2">
-                <code className="flex-1 font-mono text-xs text-gray-600 dark:text-gray-400">
+                <code className="flex-1 font-mono text-xs break-all text-gray-600 dark:text-gray-400">
                   SONOR_API_KEY={newlyCreatedKey.key}
                 </code>
                 <Button
                   size="sm"
-                  variant="ghost"
-                  className="h-6 w-6 p-0"
+                  variant="outline"
                   onClick={() => copyToClipboard(`SONOR_API_KEY=${newlyCreatedKey.key}`)}
                 >
                   <Copy className="h-3 w-3" />

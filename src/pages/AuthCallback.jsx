@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Loader2 } from 'lucide-react'
+// No loading spinner — seamless dark void matching boot sequence aesthetic
 import useAuthStore from '../lib/auth-store'
 import { authApi, contactsApi } from '../lib/portal-api'
 import { supabase, getCurrentUser } from '../lib/supabase-auth'
@@ -181,6 +181,10 @@ export default function AuthCallback() {
           console.log('[AuthCallback] Auth state after setUser:', { isAuthenticated, user: userToSet.email })
           
           console.log('[AuthCallback] Auth successful, redirecting to dashboard')
+          // Flag for boot sequence on next page load
+          sessionStorage.setItem('sonor_just_logged_in', '1')
+          sessionStorage.removeItem('sonor_has_booted')
+          sessionStorage.removeItem('sonor_onboarding_checked')
           navigate('/dashboard', { replace: true })
         } else {
           // SECURITY: User authenticated via OAuth but has no contact record
@@ -202,13 +206,36 @@ export default function AuthCallback() {
     handleCallback()
   }, [navigate, setUser, fetchOrganizationContext])
 
+  // Seamless dark void — same background as login page + boot sequence.
+  // No spinner, no text. Just the dark canvas with a subtle central glow
+  // so there's zero visual discontinuity in the login → boot transition.
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-950">
-      <div className="text-center">
-        <Loader2 className="w-12 h-12 animate-spin text-green-500 mx-auto mb-4" />
-        <p className="text-white text-lg">Completing sign in...</p>
-        <p className="text-gray-400 text-sm mt-2">Please wait...</p>
+    <>
+      <style>{`
+        .auth-callback-void {
+          position: fixed;
+          inset: 0;
+          z-index: 200;
+          background: #0a0a0f;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .auth-callback-glow {
+          width: 200px;
+          height: 200px;
+          border-radius: 50%;
+          background: radial-gradient(circle, rgba(57,191,176,0.06) 0%, transparent 70%);
+          animation: authPulse 2s ease-in-out infinite;
+        }
+        @keyframes authPulse {
+          0%, 100% { opacity: 0.4; transform: scale(1); }
+          50% { opacity: 1; transform: scale(1.1); }
+        }
+      `}</style>
+      <div className="auth-callback-void">
+        <div className="auth-callback-glow" />
       </div>
-    </div>
+    </>
   )
 }

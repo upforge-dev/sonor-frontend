@@ -146,14 +146,12 @@ export default function EmailComposeDialog({
   // Use passed projectId or fall back to current project
   const effectiveProjectId = projectId || currentProject?.id
   
-  // Schedule Consultation is Sonor only feature
-  const isUptradeMedia = currentOrg?.slug === 'uptrade-media' || 
-                         currentOrg?.domain === 'sonor.io' || 
-                         currentOrg?.org_type === 'agency'
-  
-  // Filter templates based on org
-  const availableTemplates = isUptradeMedia 
-    ? TEMPLATES 
+  // Schedule Consultation is agency-only feature
+  const isAgencyOrg = currentOrg?.org_type === 'agency'
+
+  // Filter templates based on org type
+  const availableTemplates = isAgencyOrg
+    ? TEMPLATES
     : TEMPLATES.filter(t => t.id !== 'schedule_call')
 
   const [activeTab, setActiveTab] = useState('compose')

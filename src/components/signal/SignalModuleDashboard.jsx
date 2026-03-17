@@ -13,7 +13,6 @@ import {
   ChevronRight,
   Sparkles,
   Wand2,
-  Crown,
   Building2
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -135,11 +134,11 @@ export default function SignalModuleDashboard({ projectId: propProjectId, siteUr
   }
 
   const isEnabled = moduleConfig?.is_enabled
-  
-  // Check for org-level Signal
-  const hasOrgSignal = currentOrg?.signal_enabled || currentOrg?.signalEnabled
-  const signalScope = hasOrgSignal ? 'org' : (isEnabled ? 'project' : 'none')
-  const effectivelyEnabled = isEnabled || hasOrgSignal
+
+  // Check project plan for Signal access
+  const currentPlan = currentProject?.plan || 'standard'
+  const hasSignalPlan = currentPlan === 'limited_ai' || currentPlan === 'full_signal'
+  const effectivelyEnabled = isEnabled || hasSignalPlan
   
   // Get current project name for display
   const currentProjectName = currentProject?.title || 
@@ -164,24 +163,14 @@ export default function SignalModuleDashboard({ projectId: propProjectId, siteUr
           <div>
             <h1 className="text-2xl font-bold flex items-center gap-2">
               Signal AI
-              {hasOrgSignal ? (
-                <Badge variant="default" className="bg-amber-500/20 text-amber-400">
-                  <Crown className="w-3 h-3 mr-1" />
-                  Org-wide
-                </Badge>
-              ) : (
-                <Badge variant={effectivelyEnabled ? 'default' : 'secondary'} className={cn(
-                  effectivelyEnabled && 'bg-emerald-500/20 text-emerald-400'
-                )}>
-                  {effectivelyEnabled ? 'Active' : 'Inactive'}
-                </Badge>
-              )}
+              <Badge variant={effectivelyEnabled ? 'default' : 'secondary'} className={cn(
+                effectivelyEnabled && 'bg-emerald-500/20 text-emerald-400'
+              )}>
+                {effectivelyEnabled ? 'Active' : 'Inactive'}
+              </Badge>
             </h1>
             <p className="text-muted-foreground">
-              {hasOrgSignal 
-                ? `Organization-wide AI brain — covers all projects in ${currentOrg?.name}`
-                : `Central AI brain for ${currentProjectName} — powers chat widget, SEO insights, and smart responses`
-              }
+              Central AI brain for {currentProjectName} — powers chat widget, SEO insights, and smart responses
             </p>
           </div>
         </div>
@@ -206,22 +195,11 @@ export default function SignalModuleDashboard({ projectId: propProjectId, siteUr
       </div>
 
       {/* Signal status notices */}
-      {hasOrgSignal && (
-        <Alert className="bg-amber-500/10 border-amber-500/30">
-          <Crown className="h-4 w-4 text-amber-500" />
-          <AlertDescription className="text-amber-200">
-            <strong>Organization Signal:</strong> Your organization has org-wide Signal AI enabled. 
-            All projects have access to Echo AI, cross-project analytics, and shared knowledge base.
-          </AlertDescription>
-        </Alert>
-      )}
-      
       {!effectivelyEnabled && (
         <Alert>
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            Signal AI is not enabled for this project. Enable it from the <strong>Projects</strong> view by editing the project's modules,
-            or contact your admin to enable organization-wide Signal.
+            Signal AI is not enabled for this project. Upgrade the project plan to <strong>Limited AI</strong> or <strong>Full Signal</strong> to enable AI features.
           </AlertDescription>
         </Alert>
       )}
