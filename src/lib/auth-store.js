@@ -239,10 +239,10 @@ const useAuthStore = create(
                 id: project.id,
                 name: project.title,
                 domain: project.domain,
+                plan: project.plan || 'standard',
                 features: project.features || [],
                 brand_primary: project.brand_primary,
-                brand_primary: project.brand_primary,
-                theme: { 
+                theme: {
                   primaryColor: project.brand_primary || project.theme?.primaryColor || '#4bbf39',
                   logoUrl: project.theme?.logoUrl,
                   faviconUrl: project.favicon_url || project.theme?.faviconUrl
@@ -353,10 +353,10 @@ const useAuthStore = create(
                   id: firstProject.id,
                   name: firstProject.title,
                   domain: firstProject.domain,
+                  plan: firstProject.plan || 'standard',
                   features: firstProject.features || [],
                   brand_primary: firstProject.brand_primary,
-                  brand_primary: firstProject.brand_primary,
-                  theme: { 
+                  theme: {
                     primaryColor: firstProject.brand_primary || '#4bbf39',
                     logoUrl: firstProject.logo_url
                   },
@@ -444,10 +444,10 @@ const useAuthStore = create(
             id: project.id,
             name: project.title,
             domain: project.domain,
+            plan: project.plan || 'standard',
             features: project.features || [],
             brand_primary: project.brand_primary,
-            brand_primary: project.brand_primary,
-            theme: { 
+            theme: {
               primaryColor: project.brand_primary || '#4bbf39',
               logoUrl: project.logo_url,
               faviconUrl: project.favicon_url
