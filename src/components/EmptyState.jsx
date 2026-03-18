@@ -9,6 +9,7 @@
  *   <EmptyState.List icon={Receipt} title="No invoices yet" actionLabel="Create Invoice" onAction={...} />
  */
 
+import { Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 const variantStyles = {
@@ -16,6 +17,18 @@ const variantStyles = {
   list: { wrapper: 'py-12', iconSize: 'p-4', iconClass: 'h-10 w-10' },
   card: { wrapper: 'py-10', iconSize: 'p-5', iconClass: 'h-11 w-11' },
   table: { wrapper: 'py-8', iconSize: 'p-3', iconClass: 'h-9 w-9' },
+}
+
+function dispatchEchoPrompt(prompt) {
+  window.dispatchEvent(
+    new CustomEvent('open-echo', {
+      detail: {
+        context: `empty-state:${encodeURIComponent(prompt.slice(0, 80))}`,
+        prefill: prompt,
+        path: window.location.pathname,
+      },
+    })
+  )
 }
 
 export function EmptyState({
@@ -27,6 +40,8 @@ export function EmptyState({
   action,
   compact = false,
   variant = 'default', // 'default' | 'list' | 'card' | 'table'
+  echoPrompt,
+  echoActions,
 }) {
   const buttonLabel = action?.label || actionLabel
   const buttonOnClick = action?.onClick || onAction
@@ -58,6 +73,44 @@ export function EmptyState({
           {buttonLabel}
         </Button>
       )}
+
+      {/* Echo action buttons */}
+      {echoActions && echoActions.length > 0 ? (
+        <div className={`flex flex-wrap items-center justify-center gap-2 ${buttonLabel && buttonOnClick ? 'mt-3' : ''}`}>
+          {echoActions.map((echoAction, idx) => (
+            <Button
+              key={idx}
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+              style={{
+                color: 'var(--brand-primary)',
+                borderColor: 'color-mix(in srgb, var(--brand-primary) 30%, transparent)',
+              }}
+              onClick={() => dispatchEchoPrompt(echoAction.prompt)}
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+              {echoAction.label}
+            </Button>
+          ))}
+        </div>
+      ) : echoPrompt ? (
+        <div className={buttonLabel && buttonOnClick ? 'mt-3' : ''}>
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1.5"
+            style={{
+              color: 'var(--brand-primary)',
+              borderColor: 'color-mix(in srgb, var(--brand-primary) 30%, transparent)',
+            }}
+            onClick={() => dispatchEchoPrompt(echoPrompt)}
+          >
+            <Sparkles className="h-3.5 w-3.5" />
+            Ask Echo
+          </Button>
+        </div>
+      ) : null}
     </div>
   )
 }

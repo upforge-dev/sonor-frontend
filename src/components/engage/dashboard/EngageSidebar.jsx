@@ -68,7 +68,7 @@ export default function EngageSidebar({
 
   return (
     <ScrollArea className="h-full py-4">
-      <nav className="space-y-1 px-2">
+      <nav className="space-y-1 px-2" data-tour="engage-widgets">
         {/* Highlights Tab */}
         <button
           type="button"
@@ -332,11 +332,12 @@ export default function EngageSidebar({
         
         <button
           type="button"
+          data-tour="engage-targeting"
           onClick={() => onViewChange('targeting')}
           className={cn(
             "w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all duration-200",
             currentView === 'targeting'
-              ? "bg-[var(--brand-primary)]/10 text-[var(--text-primary)] font-medium" 
+              ? "bg-[var(--brand-primary)]/10 text-[var(--text-primary)] font-medium"
               : "text-[var(--text-secondary)] hover:bg-[var(--glass-bg-hover)] hover:text-[var(--text-primary)]"
           )}
         >
@@ -346,11 +347,12 @@ export default function EngageSidebar({
         
         <button
           type="button"
+          data-tour="engage-analytics"
           onClick={() => onViewChange('analytics')}
           className={cn(
             "w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all duration-200",
             currentView === 'analytics'
-              ? "bg-[var(--brand-primary)]/10 text-[var(--text-primary)] font-medium" 
+              ? "bg-[var(--brand-primary)]/10 text-[var(--text-primary)] font-medium"
               : "text-[var(--text-secondary)] hover:bg-[var(--glass-bg-hover)] hover:text-[var(--text-primary)]"
           )}
         >
@@ -360,11 +362,12 @@ export default function EngageSidebar({
         
         <button
           type="button"
+          data-tour="engage-builder"
           onClick={() => onViewChange('templates')}
           className={cn(
             "w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all duration-200",
             currentView === 'templates'
-              ? "bg-[var(--brand-primary)]/10 text-[var(--text-primary)] font-medium" 
+              ? "bg-[var(--brand-primary)]/10 text-[var(--text-primary)] font-medium"
               : "text-[var(--text-secondary)] hover:bg-[var(--glass-bg-hover)] hover:text-[var(--text-primary)]"
           )}
         >

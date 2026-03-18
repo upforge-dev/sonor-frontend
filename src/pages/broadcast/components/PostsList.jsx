@@ -554,6 +554,12 @@ export function PostsList({ posts, viewMode = 'grid', onEdit, onCreatePost }) {
         description="Create your first post to get started"
         actionLabel={onCreatePost ? 'Create Your First Post' : undefined}
         onAction={onCreatePost ? () => onCreatePost({}) : undefined}
+        echoPrompt="What should I post about for my business?"
+        echoActions={[
+          { label: 'Write my first post', prompt: 'Help me write my first social media post for my business' },
+          { label: 'Content calendar', prompt: 'Help me build a social media content calendar for the month' },
+          { label: 'Post ideas', prompt: 'Give me 10 engaging post ideas for my business' },
+        ]}
       />
     );
   }

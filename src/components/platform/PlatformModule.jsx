@@ -3,7 +3,7 @@ import { ModuleLayout } from '@/components/ModuleLayout'
 import { MODULE_ICONS } from '@/lib/module-icons'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
-import { Building2, DollarSign, UserPlus, Activity, ShieldCheck, Plus } from 'lucide-react'
+import { Building2, DollarSign, UserPlus, Activity, ShieldCheck, Plus, MessageCircle } from 'lucide-react'
 import useAuthStore from '@/lib/auth-store'
 import { Navigate } from 'react-router-dom'
 import TenantList from './TenantList'
@@ -12,6 +12,7 @@ import RevenueDashboard from './RevenueDashboard'
 import OnboardingPipeline from './OnboardingPipeline'
 import HealthScores from './HealthScores'
 import PlatformAdmins from './PlatformAdmins'
+import EchoPublicAnalytics from './EchoPublicAnalytics'
 
 const PlatformModule = () => {
   const { isSuperAdmin } = useAuthStore()
@@ -77,6 +78,13 @@ const PlatformModule = () => {
                 <ShieldCheck className="h-4 w-4 mr-2" />
                 Admins
               </TabsTrigger>
+              <TabsTrigger
+                value="echo-analytics"
+                className="rounded-none border-b-2 border-transparent data-[state=active]:border-[var(--brand-primary)] data-[state=active]:text-[var(--brand-primary)] data-[state=active]:bg-transparent px-4 py-2.5"
+              >
+                <MessageCircle className="h-4 w-4 mr-2" />
+                Echo Analytics
+              </TabsTrigger>
             </TabsList>
 
             <div className="flex-1 min-h-0 overflow-y-auto">
@@ -102,6 +110,10 @@ const PlatformModule = () => {
 
               <TabsContent value="admins" className="mt-0">
                 <PlatformAdmins />
+              </TabsContent>
+
+              <TabsContent value="echo-analytics" className="mt-0">
+                <EchoPublicAnalytics />
               </TabsContent>
             </div>
           </Tabs>

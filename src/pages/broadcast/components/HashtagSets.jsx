@@ -461,6 +461,12 @@ export function HashtagSets({ onSelectHashtags }) {
           description="Create reusable hashtag collections for quick access"
           actionLabel="Create Your First Set"
           onAction={handleCreate}
+          echoPrompt="What hashtags should I use for my business?"
+          echoActions={[
+            { label: 'Find hashtags', prompt: 'What are the best hashtags for my business and industry?' },
+            { label: 'Hashtag strategy', prompt: 'How should I use hashtags to grow my social media reach?' },
+            { label: 'Create a set', prompt: 'Help me create a hashtag set for my social media posts' },
+          ]}
         />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

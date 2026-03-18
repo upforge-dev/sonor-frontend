@@ -9,7 +9,7 @@
  * - Live website visitor chats (thread_type: 'visitor') → Portal API with WebSocket
  */
 
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { 
   MessageCircle, 
@@ -53,6 +53,7 @@ import { useEngageLiveChat } from '@/hooks/useEngageLiveChat'
 import SignalIcon from '@/components/ui/SignalIcon'
 import EchoLogo from '@/components/EchoLogo.jsx'
 import useAuthStore from '@/lib/auth-store'
+import usePageContextStore from '@/lib/page-context-store'
 import { useBrandColors } from '@/hooks/useBrandColors'
 import { messagesApi, chatkitApi, engageApi, portalApi } from '@/lib/portal-api'
 import { echoApi } from '@/lib/signal-api'
@@ -519,6 +520,24 @@ export function MessagesModuleV2({
   // Echo Chat (AI - SSE Streaming)
   // ─────────────────────────────────────────────────────────────────────────────
   
+  // Read current module context from page-context-store (set by MainLayout on navigation)
+  const currentModule = usePageContextStore((s) => s.module)
+  const currentPage = usePageContextStore((s) => s.page)
+  const currentEntityType = usePageContextStore((s) => s.entityType)
+  const currentEntityId = usePageContextStore((s) => s.entityId)
+  const currentEntityName = usePageContextStore((s) => s.entityName)
+
+  const echoPageContext = useMemo(() => {
+    if (!currentModule) return undefined
+    return {
+      module: currentModule,
+      page: currentPage,
+      entityType: currentEntityType,
+      entityId: currentEntityId,
+      entityName: currentEntityName,
+    }
+  }, [currentModule, currentPage, currentEntityType, currentEntityId, currentEntityName])
+
   const {
     thread: echoThread,
     messages: echoMessages,
@@ -539,6 +558,7 @@ export function MessagesModuleV2({
     skill: null,
     contextId: project?.id,
     projectId: project?.id,
+    pageContext: echoPageContext,
     enabled: activeTab === 'echo',
   })
   
@@ -547,6 +567,48 @@ export function MessagesModuleV2({
     isEchoActive: activeTab === 'echo',
     enabled: true,
   })
+
+  // Contextual help auto-send: when navigating via "What's this?" or help shortcut,
+  // the URL contains ?context=whats-this:{helpKey} or page-help:{module} or search-help:{helpKey}.
+  // We auto-send a message to Echo with the appropriate question.
+  const contextAutoSentRef = useRef<string | null>(null)
+  useEffect(() => {
+    if (activeTab !== 'echo') return
+    const contextParam = searchParams.get('context')
+    if (!contextParam || contextAutoSentRef.current === contextParam) return
+    if (echoLoading) return // Wait for Echo to be ready
+
+    contextAutoSentRef.current = contextParam
+
+    // Parse the context type and key
+    let autoMessage: string | null = null
+    if (contextParam.startsWith('whats-this:')) {
+      const helpKey = contextParam.replace('whats-this:', '')
+      const label = helpKey.replace(/\//g, ' > ').replace(/[-_]/g, ' ')
+      autoMessage = `What is this? Explain the "${label}" element — what it does and how to use it.`
+    } else if (contextParam.startsWith('page-help:')) {
+      const module = contextParam.replace('page-help:', '')
+      autoMessage = `I'm on the ${module} page. What can I do here? Give me a quick overview.`
+    } else if (contextParam.startsWith('search-help:')) {
+      const helpKey = contextParam.replace('search-help:', '')
+      const label = helpKey.replace(/\//g, ' > ').replace(/[-_]/g, ' ')
+      autoMessage = `Search the help docs for information about "${label}".`
+    }
+
+    if (autoMessage) {
+      // Small delay to ensure Echo is mounted and ready
+      const timer = setTimeout(() => {
+        sendEchoMessage(autoMessage!)
+        // Clean the context param from URL so refresh doesn't re-send
+        setSearchParams(prev => {
+          const next = new URLSearchParams(prev)
+          next.delete('context')
+          return next
+        }, { replace: true })
+      }, 500)
+      return () => clearTimeout(timer)
+    }
+  }, [activeTab, searchParams, echoLoading, sendEchoMessage, setSearchParams])
 
   // Dynamic welcome context (latest insight, goals, new leads)
   const [echoWelcomeContext, setEchoWelcomeContext] = useState(null)
@@ -1249,12 +1311,81 @@ export function MessagesModuleV2({
     return threadListPresence[userId] ?? 'offline'
   }, [activeTab, portalPresenceFor, threadListPresence])
   
-  // Welcome screen config
+  // Module-specific Echo prompts — shown when user is on a specific module page
+  const MODULE_PROMPTS: Record<string, { greeting: string; description: string; prompts: Array<{ label: string; prompt: string; icon?: string }> }> = {
+    crm: {
+      greeting: 'Echo / CRM',
+      description: 'Ask me anything about your CRM data.',
+      prompts: [
+        { label: 'Follow-ups due', prompt: 'Which contacts need follow-up today?', icon: 'users' },
+        { label: 'Pipeline status', prompt: 'Give me a pipeline overview', icon: 'chart' },
+        { label: 'Draft email', prompt: 'Draft a follow-up email for this contact', icon: 'write' },
+      ],
+    },
+    seo: {
+      greeting: 'Echo / SEO',
+      description: 'Ask me anything about your SEO performance.',
+      prompts: [
+        { label: 'Quick wins', prompt: 'What are the top SEO quick wins right now?', icon: 'search' },
+        { label: 'Content gaps', prompt: 'Identify content gaps on our pages', icon: 'write' },
+        { label: 'Rankings overview', prompt: 'How are our keyword rankings trending?', icon: 'trending' },
+      ],
+    },
+    analytics: {
+      greeting: 'Echo / Analytics',
+      description: 'Ask me anything about your site performance.',
+      prompts: [
+        { label: 'Traffic trends', prompt: 'What are the traffic trends this week?', icon: 'trending' },
+        { label: 'Top pages', prompt: 'Show me the top performing pages', icon: 'chart' },
+        { label: 'Conversion analysis', prompt: 'Analyze our conversion rates', icon: 'search' },
+      ],
+    },
+    blog: {
+      greeting: 'Echo / Blog',
+      description: 'Ask me anything about your blog and content.',
+      prompts: [
+        { label: 'Content ideas', prompt: 'Suggest blog topics based on our keywords', icon: 'write' },
+        { label: 'Draft a post', prompt: 'Help me write a blog post', icon: 'file' },
+        { label: 'Performance', prompt: 'Which blog posts are performing best?', icon: 'trending' },
+      ],
+    },
+    commerce: {
+      greeting: 'Echo / Commerce',
+      description: 'Ask me anything about your products and sales.',
+      prompts: [
+        { label: 'Sales overview', prompt: 'How are sales performing this month?', icon: 'chart' },
+        { label: 'Product descriptions', prompt: 'Help me write product descriptions', icon: 'write' },
+      ],
+    },
+    reputation: {
+      greeting: 'Echo / Reputation',
+      description: 'Ask me anything about your reviews and reputation.',
+      prompts: [
+        { label: 'New reviews', prompt: 'Show me recent reviews that need responses', icon: 'message' },
+        { label: 'Draft responses', prompt: 'Help me draft review responses', icon: 'write' },
+      ],
+    },
+    broadcast: {
+      greeting: 'Echo / Broadcast',
+      description: 'Ask me anything about your email campaigns.',
+      prompts: [
+        { label: 'Campaign ideas', prompt: 'Suggest email campaign ideas', icon: 'write' },
+        { label: 'Performance', prompt: 'How did my last campaign perform?', icon: 'chart' },
+      ],
+    },
+  }
+
+  // Welcome screen config — adapts to current module context
   const welcomeConfig = useMemo(() => {
     if (activeTab === 'echo') {
+      // If user is on a specific module, show module-specific prompts
+      if (currentModule && MODULE_PROMPTS[currentModule]) {
+        return MODULE_PROMPTS[currentModule]
+      }
+      // Default Echo prompts
       return {
         greeting: "Hi! I'm Echo, your AI assistant.",
-        description: "Ask me anything about your business — analytics, leads, SEO, content, and more.",
+        description: "Ask me anything about your business. Analytics, leads, SEO, content, and more.",
         prompts: [
           { label: "Today's schedule", prompt: "What's on my schedule today?", icon: 'calendar' },
           { label: 'Which leads need attention?', prompt: 'Show me my high-priority leads that need follow-up', icon: 'users' },
@@ -1275,7 +1406,7 @@ export function MessagesModuleV2({
       description: 'Waiting for visitors to connect...',
       prompts: [],
     }
-  }, [activeTab])
+  }, [activeTab, currentModule])
   
   const isWidget = variant === 'widget'
   const showListView = isWidget && !selectedThreadId

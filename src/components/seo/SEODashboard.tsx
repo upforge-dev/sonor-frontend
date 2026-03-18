@@ -27,6 +27,7 @@ import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import GscPropertySelector from './GscPropertySelector'
 import GscConnectModal from './GscConnectModal'
+import { SignalSuggestsPanel } from '@/components/ai/SignalSuggestsPanel'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -348,6 +349,8 @@ export default function SEODashboard({ onNavigate }: SEODashboardProps) {
           <RefreshCw className={cn("h-4 w-4 mr-2", syncing && "animate-spin")} />{syncing ? 'Syncing...' : 'Sync Now'}
         </Button>
       </div>
+
+      <SignalSuggestsPanel module="seo" className="mb-4" />
 
       {!gscConnected && !gscLoading && (
         <Card className="border-amber-500/30 bg-amber-500/5">

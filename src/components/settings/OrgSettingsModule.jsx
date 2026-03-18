@@ -120,6 +120,7 @@ export default function OrgSettings() {
   }
 
   return (
+    <div data-sonor-help="settings/organization">
     <ModuleLayout>
       <ModuleLayout.Header
         title="Organization Settings"
@@ -290,5 +291,6 @@ export default function OrgSettings() {
         </div>
       </ModuleLayout.Content>
     </ModuleLayout>
+    </div>
   )
 }

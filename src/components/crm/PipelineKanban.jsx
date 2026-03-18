@@ -366,7 +366,7 @@ export default function PipelineKanban({
   }
 
   return (
-    <div className={cn('flex flex-col h-full', className)} onDragEnd={handleDragEnd}>
+    <div data-sonor-help="crm/pipeline-kanban" className={cn('flex flex-col h-full', className)} onDragEnd={handleDragEnd}>
       {/* Kanban Board — relative wrapper gives the absolutely-positioned
           scroll container a real pixel height so columns can scroll. */}
       <div className="flex-1 min-h-0 relative">

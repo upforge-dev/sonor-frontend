@@ -473,6 +473,39 @@ export const echoApi = {
     const response = await signalApi.get(`/echo/unread${params}`)
     return response.data?.data?.count ?? 0
   },
+
+  /**
+   * Send a natural-language command to Echo for execution.
+   * Unlike chat, commands are expected to trigger actions (create, update, delete)
+   * rather than conversational responses.
+   *
+   * @param {string} query - Natural language command (e.g. "publish the blog draft about SEO")
+   * @param {Object} [pageContext] - Current page context for command routing
+   * @param {string} [pageContext.path] - Current route path
+   * @param {string} [pageContext.module] - Active module (e.g. 'seo', 'crm')
+   * @param {Object} [pageContext.selection] - Currently selected entity, if any
+   * @returns {Promise<Object>} Command execution result
+   */
+  command: async (query, pageContext) => {
+    const response = await signalApi.post('/echo/command', {
+      query,
+      pageContext,
+    })
+    return response.data?.data ?? response.data
+  },
+
+  /**
+   * Fetch contextual AI suggestions for a given module.
+   * Returns actionable suggestions based on the project's current data
+   * (e.g. SEO improvements, CRM follow-ups, analytics insights).
+   *
+   * @param {string} module - Module key (e.g. 'seo', 'crm', 'analytics', 'broadcast')
+   * @returns {Promise<Array<{id: string, type: string, title: string, description: string, action?: Object}>>}
+   */
+  getSuggestions: async (module) => {
+    const response = await signalApi.get(`/signal/suggestions/${encodeURIComponent(module)}`)
+    return response.data?.data ?? []
+  },
 }
 
 // ============================================================================
@@ -2205,6 +2238,55 @@ signalApi.insights = insightsApi
 signalApi.seo = seoSkillsApi
 signalApi.crm = crmAiApi
 signalApi.outreach = outreachSkillsApi
+
+// ============================================================================
+// Echo Analytics API - Public Echo conversation analytics for platform admins
+// ============================================================================
+
+export const echoAnalyticsApi = {
+  /**
+   * Get public Echo overview metrics for a project
+   * @param {string} projectId
+   * @param {number} [days=30]
+   */
+  overview: (projectId, days = 30) =>
+    signalApi
+      .get(`/echo/analytics/public-overview?projectId=${projectId}&days=${days}`)
+      .then((r) => r.data),
+
+  /**
+   * Get top questions asked in public Echo conversations
+   * @param {string} projectId
+   * @param {number} [days=30]
+   * @param {number} [limit=20]
+   */
+  topQuestions: (projectId, days = 30, limit = 20) =>
+    signalApi
+      .get(
+        `/echo/analytics/top-questions?projectId=${projectId}&days=${days}&limit=${limit}`,
+      )
+      .then((r) => r.data),
+
+  /**
+   * Get lead conversion metrics from public Echo
+   * @param {string} projectId
+   * @param {number} [days=30]
+   */
+  conversions: (projectId, days = 30) =>
+    signalApi
+      .get(`/echo/analytics/conversions?projectId=${projectId}&days=${days}`)
+      .then((r) => r.data),
+
+  /**
+   * Get content gaps — questions Echo couldn't answer well
+   * @param {string} projectId
+   * @param {number} [limit=15]
+   */
+  contentGaps: (projectId, limit = 15) =>
+    signalApi
+      .get(`/echo/analytics/content-gaps?projectId=${projectId}&limit=${limit}`)
+      .then((r) => r.data),
+}
 
 // ============================================================================
 // Default Export

@@ -140,6 +140,11 @@ function TrendingTopicsCarousel({ topics, isLoading, onTopicClick, onRefresh }) 
             actionLabel={onRefresh ? 'Refresh' : undefined}
             onAction={onRefresh}
             compact
+            echoPrompt="What should I post about for my business?"
+            echoActions={[
+              { label: 'Post ideas', prompt: 'Give me 5 content ideas for my business to post on social media' },
+              { label: 'Trending topics', prompt: 'What topics are trending in my industry right now?' },
+            ]}
           />
         </CardContent>
       </Card>

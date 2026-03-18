@@ -33,6 +33,7 @@ import {
 } from 'lucide-react'
 import useAuthStore from '@/lib/auth-store'
 import { adminApi, proposalsApi, crmApi } from '@/lib/portal-api'
+import { SignalSuggestsPanel } from '@/components/ai/SignalSuggestsPanel'
 import ProposalAIDialog from './ProposalAIDialog'
 import EditProposalDialog from './EditProposalDialog'
 import NewContractModal from './NewContractModal'
@@ -646,6 +647,11 @@ const Proposals = ({ onNavigate }) => {
                 icon={Send}
                 title="No pending proposals"
                 description="You don't have any proposals waiting for review from Upforge."
+                echoPrompt="How do proposals work?"
+                echoActions={[
+                  { label: 'How proposals work', prompt: 'How does the proposal workflow work in Sonor?' },
+                  { label: 'Review a proposal', prompt: 'What should I look for when reviewing a proposal?' },
+                ]}
               />
             ) : (
               <div className="space-y-3">
@@ -678,6 +684,11 @@ const Proposals = ({ onNavigate }) => {
                       Create Contract
                     </Button>
                   }
+                  echoPrompt="How do I create a contract for a customer?"
+                  echoActions={[
+                    { label: 'Draft a contract', prompt: 'Help me draft a contract for a new customer' },
+                    { label: 'Contract best practices', prompt: 'What should I include in a customer contract?' },
+                  ]}
                 />
               ) : (
                 <div className="space-y-3">
@@ -702,6 +713,11 @@ const Proposals = ({ onNavigate }) => {
                 icon={CheckCircle}
                 title="No signed documents"
                 description="Signed proposals and contracts will appear here."
+                echoPrompt="How do I get proposals signed faster?"
+                echoActions={[
+                  { label: 'Speed up signing', prompt: 'What are tips to get proposals signed quickly?' },
+                  { label: 'Follow up on proposals', prompt: 'Write a follow-up message for an unsigned proposal' },
+                ]}
               />
             ) : (
               <div className="space-y-3">
@@ -748,7 +764,7 @@ const Proposals = ({ onNavigate }) => {
   const declinedProposals = proposals.filter(p => p.status === 'declined')
 
   return (
-    <div className="h-full overflow-y-auto p-6 lg:p-8 space-y-6">
+    <div data-sonor-help="proposals/dashboard" className="h-full overflow-y-auto p-6 lg:p-8 space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-[var(--text-primary)]">Proposals</h1>
@@ -765,6 +781,8 @@ const Proposals = ({ onNavigate }) => {
           }}
         />
       </div>
+
+      <SignalSuggestsPanel module="proposals" className="mb-4" />
 
       <Card>
         <CardContent className="pt-6">
@@ -806,6 +824,12 @@ const Proposals = ({ onNavigate }) => {
                   description="Create your first proposal to send to clients."
                   actionLabel="Create Proposal"
                   onAction={() => setShowAIProposalDialog(true)}
+                  echoPrompt="How do I write a winning proposal?"
+                  echoActions={[
+                    { label: 'Write a proposal', prompt: 'Help me write a compelling proposal for a new client' },
+                    { label: 'Proposal structure', prompt: 'What sections should a great client proposal include?' },
+                    { label: 'Pricing tips', prompt: 'How should I price my services in a proposal?' },
+                  ]}
                 />
               ) : (
                 activeProposals.map((proposal) => (
@@ -831,6 +855,11 @@ const Proposals = ({ onNavigate }) => {
                   icon={CheckCircle}
                   title="No signed proposals"
                   description="Signed proposals will appear here."
+                  echoPrompt="How do I close more proposals?"
+                  echoActions={[
+                    { label: 'Closing strategies', prompt: 'What are effective strategies to close more proposals?' },
+                    { label: 'Follow up message', prompt: 'Write a follow-up message for a client who hasn\'t signed yet' },
+                  ]}
                 />
               ) : (
                 signedProposals.map((proposal) => (
@@ -859,6 +888,11 @@ const Proposals = ({ onNavigate }) => {
                   icon={AlertCircle}
                   title="No declined proposals"
                   description="Declined proposals will appear here."
+                  echoPrompt="How can I improve my proposal win rate?"
+                  echoActions={[
+                    { label: 'Improve proposals', prompt: 'How can I improve my proposals to reduce declined rates?' },
+                    { label: 'Win rate tips', prompt: 'What are best practices to increase proposal win rates?' },
+                  ]}
                 />
               ) : (
                 declinedProposals.map((proposal) => (

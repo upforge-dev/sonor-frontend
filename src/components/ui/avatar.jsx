@@ -6,7 +6,7 @@ import * as AvatarPrimitive from "@radix-ui/react-avatar"
 import { cn } from "@/lib/utils"
 
 function Avatar({
-  className,
+  className = '',
   ...props
 }) {
   return (
@@ -18,7 +18,7 @@ function Avatar({
 }
 
 function AvatarImage({
-  className,
+  className = '',
   ...props
 }) {
   return (
@@ -30,7 +30,7 @@ function AvatarImage({
 }
 
 function AvatarFallback({
-  className,
+  className = '',
   ...props
 }) {
   return (

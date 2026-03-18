@@ -29,7 +29,7 @@ export default function SettingsModule() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div data-sonor-help="settings/project-settings" className="max-w-4xl mx-auto">
       <div className="flex items-center gap-3 mb-8">
         <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[var(--accent-primary)] to-[var(--accent-secondary)] flex items-center justify-center">
           <SettingsIcon className="w-5 h-5 text-white" />

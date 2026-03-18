@@ -1011,7 +1011,7 @@ const Billing = () => {
   ) : null
 
   return (
-    <ModuleLayout ariaLabel="Billing">
+    <ModuleLayout data-sonor-help="billing/dashboard" ariaLabel="Billing">
       <ModuleLayout.Header
         title="Billing"
         icon={MODULE_ICONS.billing}

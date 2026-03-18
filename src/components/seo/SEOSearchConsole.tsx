@@ -520,7 +520,7 @@ export default function SEOSearchConsole({ projectId }: SEOSearchConsoleProps) {
 
   return (
     <TooltipProvider>
-      <div className="space-y-6">
+      <div className="space-y-6" data-sonor-help="seo/rankings">
         {/* ── HEADER ROW ─────────────────────────────────────── */}
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>

@@ -2,7 +2,7 @@
  * ProspectDetailPanel - Glass-styled slide-over panel for prospect details
  * Features: Tabbed content, glass surfaces, smooth animations, quick actions
  */
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { cn } from '@/lib/utils'
 import {
   X,
@@ -59,6 +59,8 @@ import ProspectEmailsWithSignal from './ProspectEmailsWithSignal'
 import EditProspectDialog from './EditProspectDialog'
 import AssignContactDialog from './AssignContactDialog'
 import { useProspectTimeline } from '@/hooks/useProspectTimeline'
+import { EchoGenerateButton } from '@/components/ai/EchoGenerateButton'
+import { EchoTextActions } from '@/components/ai/EchoTextActions'
 
 // Format duration
 function formatDuration(seconds) {
@@ -678,38 +680,61 @@ function EmailsTab({ emails = [], scheduledFollowups = [], isLoading = false, on
 }
 
 // Notes Tab
-function NotesTab({ 
-  notes = [], 
+function NotesTab({
+  notes = [],
   isLoading = false,
   newNote = '',
   onNewNoteChange,
   onAddNote,
-  isAddingNote = false
+  isAddingNote = false,
+  prospectId
 }) {
+  const noteContainerRef = useRef(null)
+
   return (
     <div className="space-y-4">
       {/* Add Note Form */}
       <GlassCard padding="md">
         <h4 className="text-sm font-semibold text-[var(--text-primary)] mb-3">Add Note</h4>
         <div className="flex gap-2">
-          <Textarea
-            placeholder="Add a note about this prospect..."
-            value={newNote}
-            onChange={(e) => onNewNoteChange?.(e.target.value)}
-            rows={2}
-            className="flex-1 rounded-xl"
-          />
-          <Button
-            onClick={onAddNote}
-            disabled={!newNote?.trim() || isAddingNote}
-            className="self-end rounded-xl"
-          >
-            {isAddingNote ? (
-              <UptradeSpinner size="sm" className="[&_p]:hidden [&_svg]:!h-4 [&_svg]:!w-4" />
-            ) : (
-              <Send className="h-4 w-4" />
-            )}
-          </Button>
+          <div ref={noteContainerRef} className="relative flex-1">
+            <Textarea
+              placeholder="Add a note about this prospect..."
+              value={newNote}
+              onChange={(e) => onNewNoteChange?.(e.target.value)}
+              rows={2}
+              className="rounded-xl w-full"
+            />
+            <EchoTextActions
+              containerRef={noteContainerRef}
+              onReplace={(newText, { start, end }) =>
+                onNewNoteChange?.(newNote.slice(0, start) + newText + newNote.slice(end))
+              }
+              entityType="crm_contact"
+              entityId={prospectId}
+            />
+          </div>
+          <div className="flex flex-col gap-2 self-end">
+            <EchoGenerateButton
+              entityType="crm_contact"
+              entityId={prospectId}
+              field="note"
+              currentValue={newNote}
+              onGenerate={(text) => onNewNoteChange?.(text)}
+              size="sm"
+            />
+            <Button
+              onClick={onAddNote}
+              disabled={!newNote?.trim() || isAddingNote}
+              className="rounded-xl"
+            >
+              {isAddingNote ? (
+                <UptradeSpinner size="sm" className="[&_p]:hidden [&_svg]:!h-4 [&_svg]:!w-4" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
+            </Button>
+          </div>
         </div>
       </GlassCard>
       
@@ -921,7 +946,7 @@ export default function ProspectDetailPanel({
       />
       
       {/* Panel */}
-      <div className={cn(
+      <div data-sonor-help="crm/contact-detail" className={cn(
         'fixed right-0 top-0 bottom-0 w-full max-w-3xl z-50',
         'glass-elevated border-l border-[var(--glass-border)]',
         'flex flex-col',
@@ -1108,13 +1133,14 @@ export default function ProspectDetailPanel({
             </TabsContent>
             
             <TabsContent value="notes" className="mt-0">
-              <NotesTab 
+              <NotesTab
                 notes={noteItems}
                 isLoading={isLoadingActivity}
                 newNote={newNote}
                 onNewNoteChange={onNewNoteChange}
                 onAddNote={onAddNote}
                 isAddingNote={isAddingNote}
+                prospectId={prospect?.id}
               />
             </TabsContent>
             

@@ -69,6 +69,7 @@ import { cn } from '@/lib/utils'
 import { format, subDays, formatDistanceToNow } from 'date-fns'
 import { EmptyState } from '@/components/EmptyState'
 import { DashboardEchoWidget } from './DashboardEchoWidget'
+import DashboardReveal from '@/components/onboarding/DashboardReveal'
 
 // ==================== Widget Components ====================
 
@@ -917,8 +918,15 @@ export default function ProjectDashboard({ onNavigate }) {
   // Get top pages from store
   const topPages = storeTopPages || []
   
+  // Check if this is a first-load after boot sequence (for reveal animation)
+  const shouldReveal = useRef(
+    sessionStorage.getItem('sonor_has_booted') === '1' &&
+    !sessionStorage.getItem('sonor_dashboard_revealed')
+  )
+
   return (
     <div className="h-full min-h-0 overflow-auto p-6">
+      <DashboardReveal shouldAnimate={shouldReveal.current}>
       <div className="space-y-6">
       {/* Project Header */}
       <div className="bg-gradient-to-br from-[var(--glass-bg)] to-[var(--surface-secondary)] backdrop-blur-xl rounded-2xl p-6 border border-[var(--glass-border)] shadow-[var(--shadow-lg)]">
@@ -1139,6 +1147,7 @@ export default function ProjectDashboard({ onNavigate }) {
         </div>
       </div>
       </div>
+      </DashboardReveal>
     </div>
   )
 }

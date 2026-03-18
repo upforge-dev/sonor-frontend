@@ -99,6 +99,7 @@ import {
   YelpApiKeyDialog,
 } from '@/components/reputation/ReputationOAuthDialogs'
 import GbpLocationSelector from '@/components/projects/GbpLocationSelector'
+import { SignalSuggestsPanel } from '@/components/ai/SignalSuggestsPanel'
 
 // ============================================================================
 // SIDEBAR SECTIONS
@@ -2626,6 +2627,12 @@ export default function ReputationModule({ onNavigate }) {
                   icon={MessageSquare}
                   title="No reviews found"
                   description="Reviews from your connected platforms will appear here."
+                  echoPrompt="How do I get more customer reviews?"
+                  echoActions={[
+                    { label: 'Get more reviews', prompt: 'What are effective ways to get more customer reviews?' },
+                    { label: 'Review request message', prompt: 'Write a message asking a happy customer to leave a review' },
+                    { label: 'Connect platforms', prompt: 'How do I connect Google or Yelp to pull in my reviews?' },
+                  ]}
                 />
               )}
             </div>
@@ -2707,7 +2714,7 @@ export default function ReputationModule({ onNavigate }) {
                   <nav className="space-y-1 px-2">
                     {/* Reviews Section */}
                   <Collapsible open={reviewsOpen} onOpenChange={setReviewsOpen}>
-                    <CollapsibleTrigger className="flex items-center justify-between w-full px-4 py-2 text-[var(--text-secondary)] hover:bg-[var(--glass-bg-hover)]">
+                    <CollapsibleTrigger data-tour="reputation-reviews" className="flex items-center justify-between w-full px-4 py-2 text-[var(--text-secondary)] hover:bg-[var(--glass-bg-hover)]">
                       <span className="flex items-center gap-2">
                         <MessageSquare className="h-4 w-4" />
                         Reviews
@@ -2743,7 +2750,7 @@ export default function ReputationModule({ onNavigate }) {
 
                   {/* Insights Section */}
                   <Collapsible open={insightsOpen} onOpenChange={setInsightsOpen}>
-                    <CollapsibleTrigger className="flex items-center justify-between w-full px-4 py-2 text-[var(--text-secondary)] hover:bg-[var(--glass-bg-hover)]">
+                    <CollapsibleTrigger data-tour="reputation-insights" className="flex items-center justify-between w-full px-4 py-2 text-[var(--text-secondary)] hover:bg-[var(--glass-bg-hover)]">
                       <span className="flex items-center gap-2">
                         <BarChart3 className="h-4 w-4" />
                         Insights
@@ -2771,7 +2778,7 @@ export default function ReputationModule({ onNavigate }) {
 
                   {/* Automation Section */}
                   <Collapsible open={automationOpen} onOpenChange={setAutomationOpen}>
-                    <CollapsibleTrigger className="flex items-center justify-between w-full px-4 py-2 text-[var(--text-secondary)] hover:bg-[var(--glass-bg-hover)]">
+                    <CollapsibleTrigger data-tour="reputation-request" className="flex items-center justify-between w-full px-4 py-2 text-[var(--text-secondary)] hover:bg-[var(--glass-bg-hover)]">
                       <span className="flex items-center gap-2">
                         <Zap className="h-4 w-4" />
                         Automation
@@ -2800,7 +2807,7 @@ export default function ReputationModule({ onNavigate }) {
                   </nav>
 
                   {/* Integrations Section (like Commerce) */}
-                  <div className="mt-6 px-2">
+                  <div className="mt-6 px-2" data-tour="reputation-widget">
                     <div className="flex items-center justify-between px-3 py-2 text-xs font-medium text-[var(--text-tertiary)] uppercase tracking-wide">
                       Integrations
                       <Button
@@ -2975,7 +2982,7 @@ export default function ReputationModule({ onNavigate }) {
   return (
     <TooltipProvider>
       <ModuleLayout ariaLabel="Reputation" leftSidebar={leftSidebarContent} defaultLeftSidebarOpen={true}>
-        <ModuleLayout.Header title="Reputation" icon={MODULE_ICONS.reputation} subtitle={headerSubtitle} actions={headerActions} />
+        <ModuleLayout.Header title="Reputation" icon={MODULE_ICONS.reputation} subtitle={headerSubtitle} actions={headerActions} data-tour="reputation-overview" />
         <ModuleLayout.Content>
             {/* Sub-header with stats */}
             <div className="px-6 py-3 border-b border-[var(--glass-border)] bg-muted/5">
@@ -3003,6 +3010,7 @@ export default function ReputationModule({ onNavigate }) {
 
             {/* Content Area */}
             <div className="p-6">
+              <SignalSuggestsPanel module="reputation" className="mb-4" />
               {renderContent()}
             </div>
         </ModuleLayout.Content>

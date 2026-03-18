@@ -193,17 +193,17 @@ export default function SignalModule({ projectId: propProjectId, onNavigate }) {
   const renderTabContent = () => {
     switch (activeTab) {
       case 'pulse':
-        return <SignalPulse projectId={projectId} onNavigate={setActiveTab} />
+        return <div data-tour="signal-pulse"><SignalPulse projectId={projectId} onNavigate={setActiveTab} /></div>
       case 'mind':
-        return <SignalMind projectId={projectId} onNavigate={setActiveTab} />
+        return <div data-tour="signal-mind"><SignalMind projectId={projectId} onNavigate={setActiveTab} /></div>
       case 'insights':
         return <SignalInsights projectId={projectId} onNavigate={setActiveTab} />
       case 'config':
         return <SignalConfig projectId={projectId} onNavigateToWizard={() => setShowWizard(true)} />
       case 'playground':
-        return <SignalPlayground projectId={projectId} />
+        return <div data-tour="signal-playground"><SignalPlayground projectId={projectId} /></div>
       case 'voice':
-        return <SignalVoiceLab projectId={projectId} />
+        return <div data-tour="signal-voice"><SignalVoiceLab projectId={projectId} /></div>
       case 'training':
         return <SignalTraining projectId={projectId} />
       default:
@@ -212,7 +212,7 @@ export default function SignalModule({ projectId: propProjectId, onNavigate }) {
   }
 
   return (
-    <div className="relative h-full min-h-0 flex flex-col">
+    <div data-sonor-help="signal/dashboard" className="relative h-full min-h-0 flex flex-col">
       {/* Ambient background */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <motion.div 
@@ -230,7 +230,7 @@ export default function SignalModule({ projectId: propProjectId, onNavigate }) {
       <div className="relative z-10 flex-1 min-h-0 overflow-y-auto">
         <div className="space-y-6 p-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between" data-tour="signal-header">
           <div className="flex items-center gap-4">
             <motion.div 
               className="relative"
@@ -276,7 +276,7 @@ export default function SignalModule({ projectId: propProjectId, onNavigate }) {
         </div>
         
         {/* Navigation Tabs - Redesigned */}
-        <div className="relative">
+        <div className="relative" data-tour="signal-tabs">
           <div className="flex gap-1 p-1.5 bg-gradient-to-r from-white/[0.03] to-white/[0.01] backdrop-blur-sm rounded-xl border border-white/[0.05] overflow-x-auto">
             {TABS.map((tab, index) => (
               <motion.button

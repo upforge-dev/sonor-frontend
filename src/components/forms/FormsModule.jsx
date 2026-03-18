@@ -17,21 +17,23 @@ const SubmissionDetail = lazy(() => import('@/pages/forms/SubmissionDetail'))
 export default function FormsModule() {
   return (
     <Suspense fallback={<UptradeLoading />}>
+      <div data-sonor-help="forms/dashboard" className="contents">
       <Routes>
         {/* Dashboard - main forms view */}
         <Route index element={<FormsDashboard />} />
-        
+
         {/* Form management */}
         <Route path="new" element={<FormCreate />} />
         <Route path=":id" element={<FormDetail />} />
         <Route path=":id/edit" element={<FormEdit />} />
-        
+
         {/* Submission detail */}
         <Route path="submissions/:id" element={<SubmissionDetail />} />
-        
+
         {/* Fallback */}
         <Route path="*" element={<Navigate to="/forms" replace />} />
       </Routes>
+      </div>
     </Suspense>
   )
 }

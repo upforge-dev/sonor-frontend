@@ -49,6 +49,7 @@ import ClothingSizesModal from '@/components/commerce/ClothingSizesModal'
 import VariantsManagement from '@/components/commerce/VariantsManagement'
 import ScheduleManagement from '@/components/commerce/ScheduleManagement'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { EchoGenerateButton } from '@/components/ai/EchoGenerateButton'
 import { format } from 'date-fns'
 
 // Type configuration
@@ -368,33 +369,66 @@ export default function OfferingEdit({ offeringId, onBack }) {
           <CardContent className="space-y-4">
             <div>
               <Label htmlFor="name">Name *</Label>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => handleChange('name', e.target.value)}
-                placeholder={`Enter ${currentConfig.label.toLowerCase()} name`}
-              />
+              <div className="flex items-center gap-2">
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => handleChange('name', e.target.value)}
+                  placeholder={`Enter ${currentConfig.label.toLowerCase()} name`}
+                  className="flex-1"
+                />
+                <EchoGenerateButton
+                  entityType="commerce_offering"
+                  entityId={id}
+                  field="name"
+                  currentValue={formData.name}
+                  onGenerate={(text) => handleChange('name', text)}
+                  size="sm"
+                />
+              </div>
             </div>
-            
+
             <div>
               <Label htmlFor="short_description">Short Description</Label>
-              <Input
-                id="short_description"
-                value={formData.short_description}
-                onChange={(e) => handleChange('short_description', e.target.value)}
-                placeholder="Brief summary for listings"
-              />
+              <div className="flex items-center gap-2">
+                <Input
+                  id="short_description"
+                  value={formData.short_description}
+                  onChange={(e) => handleChange('short_description', e.target.value)}
+                  placeholder="Brief summary for listings"
+                  className="flex-1"
+                />
+                <EchoGenerateButton
+                  entityType="commerce_offering"
+                  entityId={id}
+                  field="short_description"
+                  currentValue={formData.short_description}
+                  onGenerate={(text) => handleChange('short_description', text)}
+                  size="sm"
+                />
+              </div>
             </div>
-            
+
             <div>
               <Label htmlFor="description">Full Description</Label>
-              <Textarea
-                id="description"
-                value={formData.description}
-                onChange={(e) => handleChange('description', e.target.value)}
-                placeholder="Detailed description"
-                rows={5}
-              />
+              <div className="flex items-start gap-2">
+                <Textarea
+                  id="description"
+                  value={formData.description}
+                  onChange={(e) => handleChange('description', e.target.value)}
+                  placeholder="Detailed description"
+                  rows={5}
+                  className="flex-1"
+                />
+                <EchoGenerateButton
+                  entityType="commerce_offering"
+                  entityId={id}
+                  field="description"
+                  currentValue={formData.description}
+                  onGenerate={(text) => handleChange('description', text)}
+                  size="sm"
+                />
+              </div>
             </div>
           </CardContent>
         </Card>

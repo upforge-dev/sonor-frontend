@@ -12,6 +12,11 @@ import { MessagesProvider } from '@/lib/MessagesProvider'
 import usePageContextStore from '@/lib/page-context-store'
 import { Menu, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { useTour } from '@/hooks/useTour'
+
+const TourOverlay = lazy(() => import('./tour/TourOverlay'))
+const EchoPill = lazy(() => import('./tour/EchoPill'))
+const SonorContextMenu = lazy(() => import('./SonorContextMenu'))
 
 // Lazy load all section components for better code splitting
 const DashboardModule = lazy(() => import('./dashboard/DashboardModule'))
@@ -87,6 +92,9 @@ const MainLayout = () => {
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
   const { user, isLoading } = useAuthStore()
   const hideMessengerWidget = usePageContextStore((s) => s.hideMessengerWidget)
+
+  // Module tour system — detects ?tour=1 from Echo's start_walkthrough tool
+  const tour = useTour()
 
   // Boot sequence: plays once per login session
   const [showBootSequence, setShowBootSequence] = useState(() => {
@@ -200,11 +208,12 @@ const MainLayout = () => {
         'team': 'team',
         'settings': 'settings',
         'files': 'files',
-        'blog': 'content',
-        'portfolio': 'content',
+        'blog': 'blog',
+        'portfolio': 'portfolio',
         'signal': 'signal',
         'broadcast': 'broadcast',
         'affiliates': 'affiliates',
+        'reputation': 'reputation',
         'ecommerce': 'commerce',
         'commerce': 'commerce',
         'forms': 'forms',
@@ -416,11 +425,45 @@ const MainLayout = () => {
       </Suspense>
 
       {/* Global Command Palette */}
-      <GlobalCommandPalette 
+      <GlobalCommandPalette
         open={commandPaletteOpen}
         onOpenChange={setCommandPaletteOpen}
         onNavigate={navigateTo}
       />
+
+      {/* Module Tour Overlay — spotlight + tooltip walkthrough system */}
+      {tour.isActive && tour.tour && (
+        <Suspense fallback={null}>
+          <TourOverlay
+            steps={tour.tour.steps}
+            currentStep={tour.currentStep}
+            onNext={tour.next}
+            onPrev={tour.prev}
+            onClose={tour.close}
+            moduleName={tour.moduleName}
+          />
+        </Suspense>
+      )}
+
+      {/* Sonor Contextual Help — right-click "What's this?" + hover hints */}
+      <Suspense fallback={null}>
+        <SonorContextMenu />
+      </Suspense>
+
+      {/* Echo floating pill — only visible during active tours as contextual guide */}
+      {tour.isActive && (
+        <Suspense fallback={null}>
+          <EchoPill
+            showTip
+            message={
+              tour.tour
+                ? `Exploring ${tour.moduleName} — step ${tour.currentStep + 1} of ${tour.tour.steps.length}`
+                : undefined
+            }
+            onOpenChat={() => navigateTo('signal')}
+          />
+        </Suspense>
+      )}
     </div>
     </MessagesProvider>
   )

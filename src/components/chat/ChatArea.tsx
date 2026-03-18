@@ -109,6 +109,15 @@ interface ChatAreaProps {
   onActionClick?: (actionId: string, prompt?: string) => void
   /** Called when an OAuth action button is clicked (opens OAuth popup) */
   onOAuthClick?: (provider: string) => void
+  /** Data migration context for ```datamigration blocks during onboarding */
+  migrationContext?: {
+    apiUrl: string
+    authToken: string
+    projectId: string
+    orgId: string
+    onComplete?: (result: { imported: number; skipped: number; errors: number }) => void
+    onSkip?: () => void
+  }
   className?: string
 }
 
@@ -156,6 +165,7 @@ export function ChatArea({
   pinnedMessageIds,
   onActionClick,
   onOAuthClick,
+  migrationContext,
   className,
 }: ChatAreaProps) {
   const otherUserId = useMemo(() => {
@@ -412,6 +422,7 @@ export function ChatArea({
                   isPinned={pinnedMessageIds?.has(message.id) ?? false}
                   onAction={threadType === 'echo' ? handleActionClick : undefined}
                   onOAuth={threadType === 'echo' ? handleOAuthClick : undefined}
+                  migrationContext={threadType === 'echo' ? migrationContext : undefined}
                 />
               )
             })}

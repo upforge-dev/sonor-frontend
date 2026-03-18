@@ -109,9 +109,12 @@ function OrgSwitcherDropdown() {
   }
 
   // Build org lists based on user type
-  const myOrgs = isSuperAdmin ? allOrgs : (availableOrgs || [])
-  const clientOrgs = managedOrgs || []
   const isAgency = currentOrg?.org_type === 'agency'
+  const clientOrgs = managedOrgs || []
+  const clientOrgIds = new Set(clientOrgs.map(o => o.id))
+  // For agencies: exclude managed client orgs from the top section (they appear under "Client Organizations")
+  const allAvailable = isSuperAdmin ? allOrgs : (availableOrgs || [])
+  const myOrgs = isAgency ? allAvailable.filter(o => !clientOrgIds.has(o.id)) : allAvailable
 
   // Filter by search
   const filterOrgs = (orgs) => {

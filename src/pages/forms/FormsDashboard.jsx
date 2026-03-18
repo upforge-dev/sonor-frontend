@@ -94,6 +94,8 @@ import HighlightsView from './components/HighlightsView'
 import FormDefaultsView from './components/FormDefaultsView'
 import FormsSettingsView from './components/FormsSettingsView'
 import OrgTemplatesView from './components/OrgTemplatesView'
+import { SignalSuggestsPanel } from '@/components/ai/SignalSuggestsPanel'
+import { NaturalLanguageFilter } from '@/components/ai/NaturalLanguageFilter'
 
 // =============================================================================
 // CONSTANTS
@@ -176,6 +178,7 @@ export default function FormsDashboard() {
   const [deliveryTab, setDeliveryTab] = useState('rules')
   const [searchQuery, setSearchQuery] = useState('')
   const [viewMode, setViewMode] = useState('list')
+  const [nlFilters, setNlFilters] = useState({})
   
   // Collapsible states
   const [formsOpen, setFormsOpen] = useState(true)
@@ -375,15 +378,41 @@ export default function FormsDashboard() {
     return counts
   }, [submissions])
 
-  // Filter forms by search
+  // Filter forms by search and NL filters
   const filteredForms = useMemo(() => {
-    if (!searchQuery) return forms
+    let result = forms
     const query = searchQuery.toLowerCase()
-    return forms.filter(f => 
-      f.name?.toLowerCase().includes(query) ||
-      f.slug?.toLowerCase().includes(query)
-    )
-  }, [forms, searchQuery])
+    if (query) {
+      result = result.filter(f =>
+        f.name?.toLowerCase().includes(query) ||
+        f.slug?.toLowerCase().includes(query)
+      )
+    }
+    // NL filter: status
+    if (nlFilters?.status && nlFilters.status !== 'all') {
+      const s = nlFilters.status
+      if (s === 'active') result = result.filter(f => f.isActive)
+      else if (s === 'draft' || s === 'inactive') result = result.filter(f => !f.isActive)
+    }
+    // NL filter: search override
+    if (nlFilters?.search) {
+      const q = nlFilters.search.toLowerCase()
+      result = result.filter(f =>
+        f.name?.toLowerCase().includes(q) || f.slug?.toLowerCase().includes(q)
+      )
+    }
+    return result
+  }, [forms, searchQuery, nlFilters])
+
+  // NL-filtered submissions (applied on top of the existing submissions array)
+  const filteredSubmissions = useMemo(() => {
+    if (!nlFilters || Object.keys(nlFilters).length === 0) return submissions
+    let result = submissions
+    if (nlFilters.status) result = result.filter(s => s.status === nlFilters.status)
+    if (nlFilters.quality_tier) result = result.filter(s => s.quality_tier === nlFilters.quality_tier)
+    if (nlFilters.form_id) result = result.filter(s => s.form_id === nlFilters.form_id)
+    return result
+  }, [submissions, nlFilters])
 
   // ==========================================================================
   // VIEW HANDLERS
@@ -611,6 +640,11 @@ export default function FormsDashboard() {
           className="pl-9 w-64 h-9"
         />
       </div>
+      <NaturalLanguageFilter
+        module="forms"
+        onFiltersResolved={(filters) => setNlFilters(filters)}
+        placeholder="e.g. new submissions from contact forms this week"
+      />
       <Tooltip>
         <TooltipTrigger asChild>
           <Button variant="ghost" size="icon" onClick={handleRefresh} disabled={isRefreshing} className="h-9 w-9">
@@ -668,14 +702,14 @@ export default function FormsDashboard() {
                 </button>
 
                 {/* Forms Section */}
-                <Collapsible open={formsOpen} onOpenChange={setFormsOpen}>
+                <Collapsible open={formsOpen} onOpenChange={setFormsOpen} data-tour="forms-list">
                   <CollapsibleTrigger asChild>
                     <button
                       type="button"
                       className={cn(
                         "w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all duration-200",
                         currentView === 'forms'
-                          ? "bg-[var(--brand-primary)]/10 text-[var(--text-primary)] font-medium" 
+                          ? "bg-[var(--brand-primary)]/10 text-[var(--text-primary)] font-medium"
                           : "text-[var(--text-secondary)] hover:bg-[var(--glass-bg-hover)] hover:text-[var(--text-primary)]"
                       )}
                     >
@@ -718,7 +752,7 @@ export default function FormsDashboard() {
                 </Collapsible>
 
                 {/* Submissions Section */}
-                <Collapsible open={submissionsOpen} onOpenChange={setSubmissionsOpen}>
+                <Collapsible open={submissionsOpen} onOpenChange={setSubmissionsOpen} data-tour="forms-submissions">
                   <CollapsibleTrigger asChild>
                     <button
                       type="button"
@@ -793,11 +827,12 @@ export default function FormsDashboard() {
                 {/* Templates */}
                 <button
                   type="button"
+                  data-tour="forms-builder"
                   onClick={() => setView('templates')}
                   className={cn(
                     "w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all duration-200",
                     currentView === 'templates'
-                      ? "bg-[var(--brand-primary)]/10 text-[var(--text-primary)] font-medium" 
+                      ? "bg-[var(--brand-primary)]/10 text-[var(--text-primary)] font-medium"
                       : "text-[var(--text-secondary)] hover:bg-[var(--glass-bg-hover)] hover:text-[var(--text-primary)]"
                   )}
                 >
@@ -823,7 +858,7 @@ export default function FormsDashboard() {
                 )}
 
                 {/* Delivery Rules Section */}
-                <Collapsible open={deliveryOpen} onOpenChange={setDeliveryOpen}>
+                <Collapsible open={deliveryOpen} onOpenChange={setDeliveryOpen} data-tour="forms-routing">
                   <CollapsibleTrigger asChild>
                     <button
                       type="button"
@@ -919,10 +954,11 @@ export default function FormsDashboard() {
         rightSidebarTitle="Submission Detail"
         rightSidebarWidth={420}
       >
-        <ModuleLayout.Header title="Forms" icon={MODULE_ICONS.forms} subtitle={headerSubtitle} actions={headerActions} />
+        <ModuleLayout.Header data-tour="forms-overview" title="Forms" icon={MODULE_ICONS.forms} subtitle={headerSubtitle} actions={headerActions} />
         <ModuleLayout.Content>
           <ScrollArea className="flex-1 h-full">
           <div className="p-6">
+            <SignalSuggestsPanel module="forms" className="mb-4" />
             {currentView === 'highlights' && (
               <HighlightsView
                 forms={forms}
@@ -996,7 +1032,7 @@ export default function FormsDashboard() {
                   </div>
                 )}
                 <SubmissionsView
-                  submissions={submissions}
+                  submissions={filteredSubmissions}
                   isLoading={isSubmissionsLoading}
                   viewMode={viewMode}
                   filter={submissionsTab}

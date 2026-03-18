@@ -89,7 +89,7 @@ export default function SEOKeywordTracking({ projectId }) {
   })
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-sonor-help="seo/keywords">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

@@ -184,7 +184,7 @@ export function EchoPanel({
           className,
         )}
       >
-        <EchoLogo size="sm" />
+        <EchoLogo size={20} animated={false} isPulsing={false} />
         <span className="text-sm font-medium">Ask Echo</span>
       </button>
     )
@@ -205,7 +205,7 @@ export function EchoPanel({
       {/* Header */}
       <div className="shrink-0 flex items-center justify-between px-4 py-2.5 border-b border-[var(--glass-border)]/30 bg-[var(--surface-secondary)]/50">
         <div className="flex items-center gap-2">
-          <EchoLogo size="sm" />
+          <EchoLogo size={20} animated={false} isPulsing={false} />
           <div>
             <span className="text-sm font-semibold text-[var(--text-primary)]">Echo</span>
             <span className="ml-1.5 text-[10px] font-medium text-[var(--text-tertiary)] uppercase tracking-wider">
@@ -251,7 +251,7 @@ export function EchoPanel({
           suggestionChips={echo.suggestionChips}
           error={echo.error}
           welcomeConfig={{
-            greeting: `Echo — ${module.charAt(0).toUpperCase() + module.slice(1)} Assistant`,
+            greeting: `Echo / ${module.charAt(0).toUpperCase() + module.slice(1)}`,
             description: entityName
               ? `I have context on ${entityName}. How can I help?`
               : `Ask me anything about your ${module} data.`,

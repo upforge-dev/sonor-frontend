@@ -95,6 +95,7 @@ export default function WebsiteModule() {
 
   return (
     <ModuleLayout
+      data-sonor-help="website/dashboard"
       leftSidebar={
         projectId ? (
           <WebsiteSidebar
@@ -121,6 +122,7 @@ export default function WebsiteModule() {
         title="Website"
         icon={MODULE_ICONS.website}
         subtitle="Page-level content: metadata, images, FAQ, schema, and more"
+        data-tour="website-header"
         actions={
           !projectId ? (
             <Button variant="outline" size="sm" onClick={() => navigate('/projects')}>

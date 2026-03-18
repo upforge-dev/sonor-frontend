@@ -107,7 +107,7 @@ export default function APIKeysManager({ projectId, isAdmin }) {
   }
 
   return (
-    <div className="space-y-4">
+    <div data-sonor-help="settings/api-keys" className="space-y-4">
       {/* New key alert (shown after creation) */}
       {newlyCreatedKey && (
         <Alert className="bg-green-50 dark:bg-green-950/20 border-green-200">

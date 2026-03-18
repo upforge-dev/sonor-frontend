@@ -217,6 +217,7 @@ export default function AffiliatesModule({ className }) {
         className="gap-1.5"
         style={{ backgroundColor: primary }}
         onClick={() => setShowCreateForm(true)}
+        data-tour="affiliates-create"
       >
         <Plus className="h-4 w-4" />
         <span className="hidden sm:inline">Add Affiliate</span>
@@ -253,7 +254,7 @@ export default function AffiliatesModule({ className }) {
     </div>
   )
   const leftSidebarContent = (
-    <div className="p-4 space-y-6">
+    <div className="p-4 space-y-6" data-tour="affiliates-sidebar">
       <div className="relative">
         <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
@@ -313,7 +314,7 @@ export default function AffiliatesModule({ className }) {
     </div>
   )
   const rightSidebarContent = selectedAffiliate ? (
-    <AffiliateDetailPanel affiliate={selectedAffiliate} offers={offers} />
+    <div data-tour="affiliates-detail"><AffiliateDetailPanel affiliate={selectedAffiliate} offers={offers} /></div>
   ) : (
     <div className="h-full flex items-center justify-center text-muted-foreground">
       <div className="text-center p-6">
@@ -327,6 +328,7 @@ export default function AffiliatesModule({ className }) {
   return (
     <TooltipProvider>
       <ModuleLayout
+        data-sonor-help="affiliates/dashboard"
         ariaLabel="Affiliates"
         className={className}
         leftSidebar={leftSidebarContent}
@@ -345,8 +347,9 @@ export default function AffiliatesModule({ className }) {
           icon={MODULE_ICONS.affiliates}
           subtitle={subtitle}
           actions={headerActions}
+          data-tour="affiliates-header"
         />
-        <ModuleLayout.Content>
+        <ModuleLayout.Content data-tour="affiliates-grid">
           {isError ? (
             <div className="p-4 flex items-center justify-center min-h-[200px]">
               <QueryErrorFallback

@@ -1,9 +1,10 @@
 // src/pages/LoginPage.jsx
 import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
-import { Button } from '../components/ui/button'
-import { Input } from '../components/ui/input'
-import { Label } from '../components/ui/label'
+// UI components available if needed
+// import { Button } from '../components/ui/button'
+// import { Input } from '../components/ui/input'
+// import { Label } from '../components/ui/label'
 import { Lock, Mail, Eye, EyeOff, ShieldCheck, Loader2, HelpCircle, ChevronRight } from 'lucide-react'
 import useAuthStore from '../lib/auth-store'
 import { signInWithGoogle, resetPasswordForEmail } from '../lib/supabase-auth'
@@ -44,7 +45,7 @@ function normalizeErr(e) {
 export default function LoginPage() {
   const [params] = useSearchParams()
   const navigate = useNavigate()
-  const { login: authLogin, signup: authSignup, checkAuth, isAuthenticated, user } = useAuthStore()
+  const { login: authLogin, signup: authSignup, isAuthenticated, user } = useAuthStore()
   const nextPath = params.get('next') || '/dashboard'
   const brandKey = (params.get('brand') || 'default').toLowerCase()
 

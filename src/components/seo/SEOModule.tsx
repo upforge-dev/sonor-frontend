@@ -20,7 +20,6 @@ import { MODULE_ICONS } from '@/lib/module-icons'
 import { Settings, Rocket } from 'lucide-react'
 import { UptradeSpinner } from '@/components/UptradeLoading'
 import { useSignalAccess } from '@/lib/signal-access'
-import { EchoPanel } from '@/components/chat/EchoPanel'
 
 // Import SEO Sidebar content (nav sections)
 import SEOSidebar from '@/components/seo/SEOSidebar'
@@ -101,6 +100,7 @@ export default function SEOModule() {
   <>
     <TooltipProvider>
       <ModuleLayout
+        data-sonor-help="seo/dashboard"
         leftSidebar={
           <SEOSidebar
             activeTab={activeTab}
@@ -114,6 +114,7 @@ export default function SEOModule() {
         ariaLabel="SEO module"
       >
         <ModuleLayout.Header
+          data-tour="seo-overview"
           title="SEO"
           icon={MODULE_ICONS.seo}
           subtitle={subtitle}
@@ -139,7 +140,7 @@ export default function SEOModule() {
             </>
           }
         />
-        <ModuleLayout.Content>
+        <ModuleLayout.Content data-tour="seo-pages-table">
           <div className="space-y-6 p-6">
             {!projectId && !authCurrentProject?.domain && (
               <div className="rounded-lg border border-border/50 bg-muted/30 py-12 text-center">
@@ -209,7 +210,6 @@ export default function SEOModule() {
       />
     </TooltipProvider>
 
-    <EchoPanel module="seo" />
   </>
   )
 }

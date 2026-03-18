@@ -78,6 +78,8 @@ import { PlatformIcon, PlatformSelector } from './PlatformIcon';
 import { AiImageGenerator } from './AiImageGenerator';
 import portalApi from '@/lib/portal-api';
 import { toast } from 'sonner';
+import { EchoGenerateButton } from '@/components/ai/EchoGenerateButton';
+import { EchoTextActions } from '@/components/ai/EchoTextActions';
 
 // =============================================================================
 // CONSTANTS
@@ -1152,6 +1154,7 @@ export function PostComposerPage({
   const [aspectRatio, setAspectRatio] = useState('9:16');
   const [showPreviewPanel, setShowPreviewPanel] = useState(true);
   const contentRef = useRef(null);
+  const captionContainerRef = useRef(null);
 
   // Initialize from edit post or defaults
   useEffect(() => {
@@ -1513,6 +1516,14 @@ export function PostComposerPage({
                   <div className="flex items-center justify-between">
                     <Label className="text-xs font-medium text-[var(--text-secondary)]">Caption</Label>
                     <div className="flex items-center gap-1">
+                      <EchoGenerateButton
+                        entityType="broadcast_post"
+                        entityId={projectId}
+                        field="content"
+                        currentValue={content}
+                        onGenerate={(text) => handleContentChange(text)}
+                        size="sm"
+                      />
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Button variant="ghost" size="icon" onClick={handleUndo} disabled={historyIndex <= 0} className="h-6 w-6">
@@ -1537,16 +1548,26 @@ export function PostComposerPage({
                       </span>
                     </div>
                   </div>
-                  <Textarea
-                    ref={contentRef}
-                    value={content}
-                    onChange={(e) => handleContentChange(e.target.value)}
-                    placeholder={postType === 'reel' ? "Write an engaging caption for your Reel..." : "What's on your mind? Share something awesome..."}
-                    className={cn(
-                      'resize-none bg-[var(--glass-bg)] text-sm leading-relaxed',
-                      postType === 'reel' ? 'min-h-[100px]' : 'min-h-[160px]'
-                    )}
-                  />
+                  <div ref={captionContainerRef} className="relative">
+                    <Textarea
+                      ref={contentRef}
+                      value={content}
+                      onChange={(e) => handleContentChange(e.target.value)}
+                      placeholder={postType === 'reel' ? "Write an engaging caption for your Reel..." : "What's on your mind? Share something awesome..."}
+                      className={cn(
+                        'resize-none bg-[var(--glass-bg)] text-sm leading-relaxed w-full',
+                        postType === 'reel' ? 'min-h-[100px]' : 'min-h-[160px]'
+                      )}
+                    />
+                    <EchoTextActions
+                      containerRef={captionContainerRef}
+                      onReplace={(newText, { start, end }) =>
+                        handleContentChange(content.slice(0, start) + newText + content.slice(end))
+                      }
+                      entityType="broadcast_post"
+                      entityId={projectId}
+                    />
+                  </div>
                   {errors.content && (
                     <p className="text-xs text-red-500">{errors.content}</p>
                   )}

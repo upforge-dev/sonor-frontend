@@ -430,7 +430,7 @@ export default function SEOTechnicalAudit({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-sonor-help="seo/technical-audit">
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
@@ -532,11 +532,11 @@ export default function SEOTechnicalAudit({
             <Zap className="h-4 w-4" />
             Core Web Vitals
           </TabsTrigger>
-          <TabsTrigger value="indexing" className="gap-2">
+          <TabsTrigger value="indexing" className="gap-2" data-tour="seo-redirects">
             <Search className="h-4 w-4" />
             Indexing
           </TabsTrigger>
-          <TabsTrigger value="links" className="gap-2">
+          <TabsTrigger value="links" className="gap-2" data-tour="seo-internal-links">
             <Link2 className="h-4 w-4" />
             Internal Links
           </TabsTrigger>
@@ -616,12 +616,14 @@ export default function SEOTechnicalAudit({
               value={`${auditData?.indexing.indexed || 0}/${auditData?.indexing.total || 0}`}
               status={auditData?.indexing.indexed >= auditData?.indexing.total * 0.8 ? 'good' : 'warning'}
             />
-            <MetricCard
-              icon={FileCode}
-              label="Schema Coverage"
-              value={`${auditData?.schema.coverage || 0}%`}
-              status={auditData && parseFloat(auditData.schema.coverage) >= 50 ? 'good' : 'warning'}
-            />
+            <div data-tour="seo-schemas">
+              <MetricCard
+                icon={FileCode}
+                label="Schema Coverage"
+                value={`${auditData?.schema.coverage || 0}%`}
+                status={auditData && parseFloat(auditData.schema.coverage) >= 50 ? 'good' : 'warning'}
+              />
+            </div>
             <MetricCard
               icon={Link2}
               label="Avg Internal Links"

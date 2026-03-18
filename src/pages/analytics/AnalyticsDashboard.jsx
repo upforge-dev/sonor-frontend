@@ -46,6 +46,8 @@ import { UptradeSpinner } from '@/components/UptradeLoading'
 import SignalIcon from '@/components/ui/SignalIcon'
 import { cn } from '@/lib/utils'
 import Analytics from '@/components/Analytics'
+import { SignalSuggestsPanel } from '@/components/ai/SignalSuggestsPanel'
+import { NaturalLanguageFilter } from '@/components/ai/NaturalLanguageFilter'
 
 // Lazy load view components for code splitting
 const PageAnalyticsView = lazy(() => import('./views/PageAnalyticsView'))
@@ -63,10 +65,11 @@ function ViewLoader() {
 }
 
 // Sidebar navigation item (content only; ModuleLayout provides the panel)
-function SidebarItem({ icon: Icon, label, active, onClick, count, indent = 0 }) {
+function SidebarItem({ icon: Icon, label, active, onClick, count, indent = 0, 'data-tour': dataTour, ...rest }) {
   return (
     <button
       onClick={onClick}
+      data-tour={dataTour}
       className={cn(
         "w-full flex items-center gap-2.5 px-3 py-2 rounded-md transition-colors",
         active ? "bg-primary/10 text-primary" : "hover:bg-muted text-foreground"
@@ -194,17 +197,19 @@ function AnalyticsSidebar({ signalEnabled, onSignalInsightsClick, onSignalAlerts
             label="Highlights"
             active={currentView === 'highlights' && !selectedPath}
             onClick={handleHighlightsClick}
+            data-tour="analytics-traffic"
           />
           <SidebarItem
             icon={Route}
             label="Journeys"
             active={currentView === 'journeys'}
             onClick={handleJourneysClick}
+            data-tour="analytics-journeys"
           />
         </div>
 
         <div>
-          <p className="px-3 py-1.5 uppercase tracking-wider text-muted-foreground">
+          <p className="px-3 py-1.5 uppercase tracking-wider text-muted-foreground" data-tour="analytics-pages">
             Site Pages
           </p>
           {isLoadingPages ? (
@@ -244,12 +249,14 @@ function AnalyticsSidebar({ signalEnabled, onSignalInsightsClick, onSignalAlerts
                 label="Insights"
                 active={currentView === 'signal-insights'}
                 onClick={onSignalInsightsClick}
+                data-tour="analytics-heatmap"
               />
               <SidebarItem
                 icon={AlertTriangle}
                 label="Traffic Alerts"
                 active={currentView === 'signal-alerts'}
                 onClick={onSignalAlertsClick}
+                data-tour="analytics-conversions"
               />
             </div>
           </div>
@@ -286,7 +293,8 @@ export default function AnalyticsDashboard() {
   const [showAIPanel, setShowAIPanel] = useState(false)
   const [customDateRange, setCustomDateRange] = useState(null)
   const [isCustomRangeOpen, setIsCustomRangeOpen] = useState(false)
-  
+  const [nlFilters, setNlFilters] = useState({})
+
   // Check if this project has Signal enabled
   const signalEnabled = hasProjectSignal
   
@@ -362,12 +370,27 @@ export default function AnalyticsDashboard() {
     setShowAIPanel(false)
   }
 
+  // Handle NL-resolved analytics filters (date range, path focus, etc.)
+  const handleNLFiltersResolved = (filters) => {
+    setNlFilters(filters)
+    if (filters?.dateRange) {
+      const days = parseInt(filters.dateRange, 10)
+      if (!isNaN(days)) {
+        setCustomDateRange(null)
+        setDateRange(days)
+      }
+    }
+    if (filters?.path && currentProject?.id) {
+      fetchPageAnalytics(currentProject.id, filters.path, dateRange)
+    }
+  }
+
   const headerSubtitle = signalEnabled ? 'AI-powered analytics' : undefined
   const headerActions = (
     <>
       <Popover open={isCustomRangeOpen} onOpenChange={setIsCustomRangeOpen}>
-        <Select 
-          value={customDateRange ? 'custom' : String(dateRange)} 
+        <Select
+          value={customDateRange ? 'custom' : String(dateRange)}
           onValueChange={handleDateRangeChange}
         >
           <SelectTrigger className="w-[180px] h-8 text-xs">
@@ -394,6 +417,11 @@ export default function AnalyticsDashboard() {
           />
         </PopoverContent>
       </Popover>
+      <NaturalLanguageFilter
+        module="analytics"
+        onFiltersResolved={handleNLFiltersResolved}
+        placeholder="e.g. traffic from last 7 days on homepage"
+      />
       <Button
         variant="ghost"
         size="icon"
@@ -421,6 +449,7 @@ export default function AnalyticsDashboard() {
       }
     >
       <ModuleLayout.Header
+        data-tour="analytics-overview"
         title="Analytics"
         icon={MODULE_ICONS.analytics}
         subtitle={headerSubtitle}
@@ -431,6 +460,9 @@ export default function AnalyticsDashboard() {
           currentView === 'journeys' ? "h-full" : "p-6",
           showAIPanel && "pr-0"
         )}>
+          {currentView === 'highlights' && (
+            <SignalSuggestsPanel module="analytics" className="mb-4" />
+          )}
           <AnimatePresence mode="wait">
             <motion.div
               key={currentView + (selectedPath || '')}

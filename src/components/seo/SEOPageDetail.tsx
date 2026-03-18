@@ -698,7 +698,7 @@ function SEOPageDetailInner({ page, site, projectId }: SEOPageDetailInnerProps) 
   const metaStatus = getMetaLengthStatus(page.meta_description_length)
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-sonor-help="seo/page-detail">
       {/* Action Message Toast */}
       {actionMessage && (
         <div 

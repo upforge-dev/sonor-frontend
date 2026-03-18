@@ -107,10 +107,11 @@ function NavItem({ item, isActive, onClick, isCollapsed, hasSignal, alertCount }
     <button
       onClick={() => !isLocked && onClick(item.id)}
       disabled={isLocked}
+      data-tour={`seo-${item.id}`}
       className={cn(
         "w-full flex items-center gap-3 px-3 py-2 rounded-md transition-colors",
-        isActive 
-          ? "bg-primary/10 text-primary" 
+        isActive
+          ? "bg-primary/10 text-primary"
           : "hover:bg-muted text-foreground",
         isLocked && "opacity-50 cursor-not-allowed"
       )}

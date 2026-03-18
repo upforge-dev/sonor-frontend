@@ -167,7 +167,7 @@ export default function PipelineSettingsDialog({ open, onClose, projectId, onUpd
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
+      <DialogContent data-sonor-help="crm/settings" className="max-w-4xl max-h-[90vh] flex flex-col">
         <DialogHeader className="flex-shrink-0">
           <DialogTitle>Pipeline Configuration</DialogTitle>
           <DialogDescription>

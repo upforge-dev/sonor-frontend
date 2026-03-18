@@ -385,6 +385,12 @@ export default function DiscountCodesManagement({ open, onOpenChange }) {
                   }
                   actionLabel={discountCodes.length === 0 ? 'Create Your First Code' : undefined}
                   onAction={discountCodes.length === 0 ? handleCreate : undefined}
+                  echoPrompt="How do I use discount codes to drive more sales?"
+                  echoActions={[
+                    { label: 'Discount strategy', prompt: 'What discount strategies work best for growing sales?' },
+                    { label: 'Create a promo', prompt: 'Help me create a discount promotion for my store' },
+                    { label: 'Seasonal offers', prompt: 'What seasonal discount ideas should I run for my business?' },
+                  ]}
                 />
               </CardContent>
             </Card>

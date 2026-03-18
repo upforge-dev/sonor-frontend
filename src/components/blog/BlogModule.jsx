@@ -2,13 +2,16 @@
 // Unified Blog Dashboard - uses ModuleLayout for consistent shell
 // Dark theme compatible, brand colors only
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import useAuthStore from '@/lib/auth-store'
 import { useBrandColors } from '@/hooks/useBrandColors'
 import { useSignalAccess } from '@/lib/signal-access'
 import { blogApi, filesApi } from '@/lib/portal-api'
 import { skillsApi } from '@/lib/signal-api'
 import SignalIcon from '@/components/ui/SignalIcon'
+import { EchoGenerateButton } from '@/components/ai/EchoGenerateButton'
+import { EchoTextActions } from '@/components/ai/EchoTextActions'
+import { NaturalLanguageFilter } from '@/components/ai/NaturalLanguageFilter'
 import { ModuleLayout } from '@/components/ModuleLayout'
 import { EmptyState } from '@/components/EmptyState'
 import { MODULE_ICONS } from '@/lib/module-icons'
@@ -102,6 +105,7 @@ import {
 import { cn } from '@/lib/utils'
 import { format, formatDistanceToNow } from 'date-fns'
 import { toast } from 'sonner'
+import { SignalSuggestsPanel } from '@/components/ai/SignalSuggestsPanel'
 
 // ============================================================================
 // SIDEBAR SECTIONS
@@ -1181,6 +1185,8 @@ function EditPostDialog({ open, onOpenChange, post, onSave, onRegenerateImage, b
   const [featuredImage, setFeaturedImage] = useState('')
   const [isSaving, setIsSaving] = useState(false)
   const [isGeneratingImage, setIsGeneratingImage] = useState(false)
+  const excerptRef = useRef(null)
+  const contentRef = useRef(null)
 
   // Use project-specific categories from props, with fallback
   const categoryOptions = blogCategories.length > 0 
@@ -1334,24 +1340,56 @@ function EditPostDialog({ open, onOpenChange, post, onSave, onRegenerateImage, b
           {/* Title */}
           <div className="space-y-2">
             <Label htmlFor="edit-title">Title</Label>
-            <Input
-              id="edit-title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Post title"
-            />
+            <div className="flex items-center gap-2">
+              <Input
+                id="edit-title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Post title"
+                className="flex-1"
+              />
+              <EchoGenerateButton
+                entityType="blog_post"
+                entityId={post?.id}
+                field="title"
+                currentValue={title}
+                onGenerate={(text) => setTitle(text)}
+                size="sm"
+              />
+            </div>
           </div>
 
           {/* Excerpt */}
           <div className="space-y-2">
             <Label htmlFor="edit-excerpt">Excerpt / Meta Description</Label>
-            <Textarea
-              id="edit-excerpt"
-              value={excerpt}
-              onChange={(e) => setExcerpt(e.target.value)}
-              placeholder="Brief description for SEO and previews"
-              rows={3}
-            />
+            <div className="flex items-start gap-2">
+              <div ref={excerptRef} className="relative flex-1">
+                <Textarea
+                  id="edit-excerpt"
+                  value={excerpt}
+                  onChange={(e) => setExcerpt(e.target.value)}
+                  placeholder="Brief description for SEO and previews"
+                  rows={3}
+                  className="w-full"
+                />
+                <EchoTextActions
+                  containerRef={excerptRef}
+                  onReplace={(newText, { start, end }) =>
+                    setExcerpt((prev) => prev.slice(0, start) + newText + prev.slice(end))
+                  }
+                  entityType="blog_post"
+                  entityId={post?.id}
+                />
+              </div>
+              <EchoGenerateButton
+                entityType="blog_post"
+                entityId={post?.id}
+                field="excerpt"
+                currentValue={excerpt}
+                onGenerate={(text) => setExcerpt(text)}
+                size="sm"
+              />
+            </div>
             <p className="text-xs text-[var(--text-tertiary)]">
               {excerpt?.length || 0}/160 characters (recommended)
             </p>
@@ -1359,7 +1397,7 @@ function EditPostDialog({ open, onOpenChange, post, onSave, onRegenerateImage, b
 
           {/* Category & Status Row */}
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
+            <div className="space-y-2" data-tour="blog-categories">
               <Label>Category</Label>
               <Select value={category} onValueChange={setCategory}>
                 <SelectTrigger>
@@ -1392,14 +1430,24 @@ function EditPostDialog({ open, onOpenChange, post, onSave, onRegenerateImage, b
           {/* Content */}
           <div className="space-y-2">
             <Label htmlFor="edit-content">Content (Markdown)</Label>
-            <Textarea
-              id="edit-content"
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              placeholder="Blog post content in Markdown..."
-              rows={12}
-              className="font-mono text-sm"
-            />
+            <div ref={contentRef} className="relative">
+              <Textarea
+                id="edit-content"
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                placeholder="Blog post content in Markdown..."
+                rows={12}
+                className="font-mono text-sm w-full"
+              />
+              <EchoTextActions
+                containerRef={contentRef}
+                onReplace={(newText, { start, end }) =>
+                  setContent((prev) => prev.slice(0, start) + newText + prev.slice(end))
+                }
+                entityType="blog_post"
+                entityId={post?.id}
+              />
+            </div>
           </div>
         </div>
 
@@ -1443,6 +1491,7 @@ export default function BlogDashboard() {
   const [searchQuery, setSearchQuery] = useState('')
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [sortBy, setSortBy] = useState('newest')
+  const [nlFilters, setNlFilters] = useState({})
 
   // Dialogs
   const [aiDialogOpen, setAiDialogOpen] = useState(false)
@@ -1645,10 +1694,24 @@ export default function BlogDashboard() {
     // Search filter
     if (searchQuery) {
       const query = searchQuery.toLowerCase()
-      result = result.filter(p => 
+      result = result.filter(p =>
         p.title.toLowerCase().includes(query) ||
         p.excerpt?.toLowerCase().includes(query)
       )
+    }
+
+    // Natural-language resolved filters
+    if (nlFilters?.search) {
+      const q = nlFilters.search.toLowerCase()
+      result = result.filter(p =>
+        p.title?.toLowerCase().includes(q) || p.excerpt?.toLowerCase().includes(q)
+      )
+    }
+    if (nlFilters?.status && nlFilters.status !== 'all') {
+      result = result.filter(p => p.status === nlFilters.status)
+    }
+    if (nlFilters?.featured != null) {
+      result = result.filter(p => Boolean(p.featured) === Boolean(nlFilters.featured))
     }
 
     // Sort
@@ -1664,7 +1727,7 @@ export default function BlogDashboard() {
     }
 
     return result
-  }, [posts, currentView, searchQuery, sortBy])
+  }, [posts, currentView, searchQuery, sortBy, nlFilters])
 
   // Stats for sidebar badges
   const postCounts = useMemo(() => ({
@@ -1752,6 +1815,12 @@ export default function BlogDashboard() {
               }
               actionLabel={posts.length === 0 ? (hasSignalAccess ? 'Create with Signal' : 'New Post') : undefined}
               onAction={posts.length === 0 ? () => setAiDialogOpen(true) : undefined}
+              echoPrompt="How do I create my first blog post?"
+              echoActions={[
+                { label: 'Draft a post', prompt: 'Help me write my first blog post' },
+                { label: 'Content strategy', prompt: 'What should I blog about for my business?' },
+                { label: 'SEO tips', prompt: 'How do I optimize my blog posts for SEO?' },
+              ]}
             />
           )}
         </Card>
@@ -1771,6 +1840,11 @@ export default function BlogDashboard() {
           className="pl-9 w-64 h-8 bg-[var(--glass-bg)] border-[var(--glass-border)]"
         />
       </div>
+      <NaturalLanguageFilter
+        module="blog"
+        onFiltersResolved={(filters) => setNlFilters(filters)}
+        placeholder="e.g. published posts from this month"
+      />
       <Select value={sortBy} onValueChange={setSortBy}>
         <SelectTrigger className="w-32 h-8">
           <ArrowUpDown className="h-3 w-3 mr-2" />
@@ -1842,7 +1916,7 @@ export default function BlogDashboard() {
   const leftSidebar = (
     <ScrollArea className="h-full py-4">
       <nav className="space-y-1 px-2">
-        <Collapsible open={postsOpen} onOpenChange={setPostsOpen}>
+        <Collapsible open={postsOpen} onOpenChange={setPostsOpen} data-tour="blog-posts">
           <CollapsibleTrigger className="flex items-center justify-between w-full px-3 py-2 text-[var(--text-secondary)] hover:bg-[var(--glass-bg-hover)] rounded-lg">
             <span className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
@@ -1875,7 +1949,7 @@ export default function BlogDashboard() {
           </CollapsibleContent>
         </Collapsible>
         {hasSignalAccess && (
-          <Collapsible open={signalBrainOpen} onOpenChange={setSignalBrainOpen}>
+          <Collapsible open={signalBrainOpen} onOpenChange={setSignalBrainOpen} data-tour="blog-editor">
             <CollapsibleTrigger className="flex items-center justify-between w-full px-3 py-2 text-[var(--text-secondary)] hover:bg-[var(--glass-bg-hover)] rounded-lg">
               <span className="flex items-center gap-2">
                 <SignalIcon className="h-4 w-4" />
@@ -1902,7 +1976,7 @@ export default function BlogDashboard() {
             </CollapsibleContent>
           </Collapsible>
         )}
-        <Collapsible open={seoToolsOpen} onOpenChange={setSeoToolsOpen}>
+        <Collapsible open={seoToolsOpen} onOpenChange={setSeoToolsOpen} data-tour="blog-seo">
           <CollapsibleTrigger className="flex items-center justify-between w-full px-3 py-2 text-[var(--text-secondary)] hover:bg-[var(--glass-bg-hover)] rounded-lg">
             <span className="flex items-center gap-2">
               <Target className="h-4 w-4" />
@@ -1935,18 +2009,21 @@ export default function BlogDashboard() {
   return (
     <TooltipProvider>
       <ModuleLayout
+        data-sonor-help="blog/dashboard"
         leftSidebar={leftSidebar}
         leftSidebarTitle="Blog"
         defaultLeftSidebarOpen
         ariaLabel="Blog module"
       >
         <ModuleLayout.Header
+          data-tour="blog-overview"
           title="Blog"
           icon={MODULE_ICONS.blog}
           subtitle={hasSignalAccess ? 'Content & SEO with Signal' : 'Content & SEO'}
           actions={headerActions}
         />
         <ModuleLayout.Content noPadding={false}>
+          <SignalSuggestsPanel module="blog" className="mb-4" />
           <div className="px-4 py-3 border-b border-[var(--glass-border)] bg-muted/5 mb-6 -mx-4 -mt-4">
             <div className="flex items-center gap-6 text-sm">
               <span className="text-[var(--text-secondary)]">

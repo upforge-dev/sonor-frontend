@@ -26,6 +26,7 @@ import { ContactCard, extractContacts } from './ContactCard'
 import { EchoDataTable, extractTables } from './EchoDataTable'
 import { EchoStatCards, extractStats } from './EchoStatCards'
 import { EchoActions, extractActions } from './EchoActions'
+import { extractOnboardingBlocks, OnboardingBlockRenderer } from '@/components/onboarding/OnboardingBlocks'
 import type { ChatKitItem, MessageContent, ItemReaction } from './types'
 import EchoLogo from '@/components/EchoLogo'
 import {
@@ -180,6 +181,15 @@ interface MessageBubbleProps {
   onAction?: (actionId: string, prompt?: string) => void
   /** OAuth action callback (opens OAuth popup for provider) */
   onOAuth?: (provider: string) => void
+  /** Data migration context for ```datamigration blocks during onboarding */
+  migrationContext?: {
+    apiUrl: string
+    authToken: string
+    projectId: string
+    orgId: string
+    onComplete?: (result: { imported: number; skipped: number; errors: number }) => void
+    onSkip?: () => void
+  }
   className?: string
 }
 
@@ -208,6 +218,7 @@ export function MessageBubble({
   isPinned = false,
   onAction,
   onOAuth,
+  migrationContext,
   className,
 }: MessageBubbleProps) {
   const isEchoSender = message.sender?.name === 'Echo' || message.sender?.full_name === 'Echo'
@@ -361,9 +372,22 @@ export function MessageBubble({
     return extractActions(src)
   }, [statsCleanText, tableCleanText, contactCleanText, chartCleanText, messageText, inlineStats.length, inlineTables.length, inlineContacts.length, inlineCharts.length])
 
+  // Extract onboarding cinematic blocks (```dataflood, ```moduleunlock, ```constellation)
+  const { cleanText: onboardingCleanText, blocks: onboardingBlocks } = useMemo(() => {
+    const src = inlineActions.length > 0 ? actionsCleanText
+      : inlineStats.length > 0 ? statsCleanText
+      : inlineTables.length > 0 ? tableCleanText
+      : inlineContacts.length > 0 ? contactCleanText
+      : inlineCharts.length > 0 ? chartCleanText
+      : messageText
+    if (!src || isAssistant === false) return { cleanText: src, blocks: [] }
+    return extractOnboardingBlocks(src)
+  }, [actionsCleanText, statsCleanText, tableCleanText, contactCleanText, chartCleanText, messageText, inlineActions.length, inlineStats.length, inlineTables.length, inlineContacts.length, inlineCharts.length])
+
   // Highlight @mentions for display (wrap in ** so they render bold)
   const messageTextWithMentions = useMemo(() => {
-    const text = inlineActions.length > 0 ? actionsCleanText
+    const text = onboardingBlocks.length > 0 ? onboardingCleanText
+      : inlineActions.length > 0 ? actionsCleanText
       : inlineStats.length > 0 ? statsCleanText
       : inlineTables.length > 0 ? tableCleanText
       : inlineContacts.length > 0 ? contactCleanText
@@ -371,7 +395,7 @@ export function MessageBubble({
       : messageText
     if (!text) return ''
     return text.replace(/@[\w.-]+/g, '**$&**')
-  }, [messageText, chartCleanText, contactCleanText, tableCleanText, statsCleanText, actionsCleanText, inlineCharts.length, inlineContacts.length, inlineTables.length, inlineStats.length, inlineActions.length])
+  }, [messageText, chartCleanText, contactCleanText, tableCleanText, statsCleanText, actionsCleanText, onboardingCleanText, inlineCharts.length, inlineContacts.length, inlineTables.length, inlineStats.length, inlineActions.length, onboardingBlocks.length])
 
   const firstUrl = useMemo(() => extractFirstUrl(messageText), [messageText])
   
@@ -620,6 +644,11 @@ export function MessageBubble({
               {/* Action buttons */}
               {inlineActions.length > 0 && inlineActions.map((group, i) => (
                 <EchoActions key={i} definition={group} onAction={onAction} onOAuth={onOAuth} />
+              ))}
+
+              {/* Onboarding cinematic blocks (dataflood, moduleunlock, constellation) */}
+              {onboardingBlocks.length > 0 && onboardingBlocks.map((block, i) => (
+                <OnboardingBlockRenderer key={`${block.type}-${i}`} block={block} onOAuthClick={onOAuth} migrationContext={migrationContext} />
               ))}
 
               {/* Attachments */}

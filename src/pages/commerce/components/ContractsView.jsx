@@ -876,20 +876,28 @@ export const ContractsView = forwardRef(function ContractsView({
             <EmptyState
               icon={FileText}
               title={isAgencyOrg ? "No active proposals" : "No active contracts"}
-              description={isAgencyOrg 
+              description={isAgencyOrg
                 ? "Create your first proposal for a client."
-                : hasSignal 
-                  ? "Create your first contract with AI assistance." 
+                : hasSignal
+                  ? "Create your first contract with AI assistance."
                   : "Create your first contract to send to customers."
               }
-              actionLabel={isAgencyOrg 
-                ? "New Proposal" 
+              actionLabel={isAgencyOrg
+                ? "New Proposal"
                 : hasSignal ? "Create with AI" : "New Contract"
               }
-              onAction={() => isAgencyOrg || hasSignal 
+              onAction={() => isAgencyOrg || hasSignal
                 ? setShowAIContractDialog(true)
                 : onNavigate?.('contract-editor', { new: true })
               }
+              echoPrompt={isAgencyOrg ? "How do I create a great client proposal?" : "How do I create my first contract?"}
+              echoActions={isAgencyOrg ? [
+                { label: 'Write a proposal', prompt: 'Help me write a compelling proposal for a new client' },
+                { label: 'Proposal tips', prompt: 'What makes a winning agency proposal?' },
+              ] : [
+                { label: 'Draft a contract', prompt: 'Help me draft a service contract for a customer' },
+                { label: 'Contract essentials', prompt: 'What should every customer contract include?' },
+              ]}
             />
           ) : (
             activeContracts.map((contract) => (
@@ -914,9 +922,14 @@ export const ContractsView = forwardRef(function ContractsView({
             <EmptyState
               icon={CheckCircle}
               title={isAgencyOrg ? "No signed proposals" : "No signed contracts"}
-              description={isAgencyOrg 
-                ? "Accepted proposals will appear here." 
+              description={isAgencyOrg
+                ? "Accepted proposals will appear here."
                 : "Signed contracts will appear here."}
+              echoPrompt="How do I get more proposals signed?"
+              echoActions={[
+                { label: 'Close faster', prompt: 'What are strategies to get contracts signed faster?' },
+                { label: 'Follow up', prompt: 'Write a follow-up message for a client who hasn\'t signed yet' },
+              ]}
             />
           ) : (
             signedContracts.map((contract) => (
@@ -944,9 +957,14 @@ export const ContractsView = forwardRef(function ContractsView({
             <EmptyState
               icon={AlertCircle}
               title={isAgencyOrg ? "No declined proposals" : "No declined contracts"}
-              description={isAgencyOrg 
-                ? "Declined proposals will appear here." 
+              description={isAgencyOrg
+                ? "Declined proposals will appear here."
                 : "Declined contracts will appear here."}
+              echoPrompt="How can I reduce declined proposals?"
+              echoActions={[
+                { label: 'Win rate tips', prompt: 'How can I improve my proposal acceptance rate?' },
+                { label: 'Objection handling', prompt: 'How should I handle common reasons clients decline proposals?' },
+              ]}
             />
           ) : (
             declinedContracts.map((contract) => (

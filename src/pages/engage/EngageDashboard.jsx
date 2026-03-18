@@ -60,6 +60,7 @@ import EngageTargeting from '@/components/engage/EngageTargeting'
 import SignalIcon from '@/components/ui/SignalIcon'
 import { useSignalAccess } from '@/lib/signal-access'
 import { Badge } from '@/components/ui/badge'
+import { SignalSuggestsPanel } from '@/components/ai/SignalSuggestsPanel'
 
 // Element type configurations
 const ELEMENT_TYPES = {
@@ -419,9 +420,12 @@ export default function EngageDashboard() {
         rightSidebar={rightSidebarContent}
         defaultRightSidebarOpen={true}
       >
-        <ModuleLayout.Header title="Engage" icon={MODULE_ICONS.engage} subtitle={headerSubtitle} actions={headerActions} />
+        <ModuleLayout.Header data-tour="engage-overview" title="Engage" icon={MODULE_ICONS.engage} subtitle={headerSubtitle} actions={headerActions} />
         <ModuleLayout.Content>
-          <div className="p-6">{renderMainContent()}</div>
+          <div className="p-6">
+            <SignalSuggestsPanel module="engage" className="mb-4" />
+            {renderMainContent()}
+          </div>
         </ModuleLayout.Content>
       </ModuleLayout>
     </TooltipProvider>

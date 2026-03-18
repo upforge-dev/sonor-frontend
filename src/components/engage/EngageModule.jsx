@@ -17,17 +17,19 @@ import EngageStudio from '@/pages/engage/EngageStudio'
 export default function EngageModule() {
   return (
     <Suspense fallback={<UptradeLoading />}>
+      <div data-sonor-help="engage/dashboard" className="contents">
       <Routes>
         {/* Design Studio - full-screen editor (not wrapped in MainLayout) */}
         <Route path="/studio/:id" element={<EngageStudio />} />
         <Route path="/studio" element={<Navigate to="/engage" replace />} />
-        
+
         {/* Dashboard with embedded views */}
         <Route path="/*" element={<EngageDashboard />} />
-        
+
         {/* Fallback */}
         <Route path="*" element={<Navigate to="/engage" replace />} />
       </Routes>
+      </div>
     </Suspense>
   )
 }

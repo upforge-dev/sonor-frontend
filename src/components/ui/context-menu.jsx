@@ -43,8 +43,8 @@ function ContextMenuRadioGroup({
 }
 
 function ContextMenuSubTrigger({
-  className,
-  inset,
+  className = '',
+  inset = false,
   children,
   ...props
 }) {
@@ -64,7 +64,7 @@ function ContextMenuSubTrigger({
 }
 
 function ContextMenuSubContent({
-  className,
+  className = '',
   ...props
 }) {
   return (
@@ -79,7 +79,7 @@ function ContextMenuSubContent({
 }
 
 function ContextMenuContent({
-  className,
+  className = '',
   ...props
 }) {
   return (
@@ -96,8 +96,8 @@ function ContextMenuContent({
 }
 
 function ContextMenuItem({
-  className,
-  inset,
+  className = '',
+  inset = false,
   variant = "default",
   ...props
 }) {
@@ -115,7 +115,7 @@ function ContextMenuItem({
 }
 
 function ContextMenuCheckboxItem({
-  className,
+  className = '',
   children,
   checked,
   ...props
@@ -141,7 +141,7 @@ function ContextMenuCheckboxItem({
 }
 
 function ContextMenuRadioItem({
-  className,
+  className = '',
   children,
   ...props
 }) {
@@ -165,8 +165,8 @@ function ContextMenuRadioItem({
 }
 
 function ContextMenuLabel({
-  className,
-  inset,
+  className = '',
+  inset = false,
   ...props
 }) {
   return (
@@ -182,7 +182,7 @@ function ContextMenuLabel({
 }
 
 function ContextMenuSeparator({
-  className,
+  className = '',
   ...props
 }) {
   return (
@@ -194,7 +194,7 @@ function ContextMenuSeparator({
 }
 
 function ContextMenuShortcut({
-  className,
+  className = '',
   ...props
 }) {
   return (

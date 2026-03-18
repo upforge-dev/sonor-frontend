@@ -5,7 +5,8 @@
  */
 import React from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { AlertTriangle, RefreshCw, Home } from 'lucide-react'
+import { AlertTriangle, RefreshCw, Home, MessageCircle } from 'lucide-react'
+import { askEchoAboutError } from '@/lib/echo-error-helper'
 import { Button } from './ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card'
 
@@ -70,6 +71,17 @@ export class ModuleErrorBoundaryClass extends React.Component {
                 <Button onClick={this.handleRetry} className="flex-1 gap-2" variant="default">
                   <RefreshCw className="h-4 w-4" />
                   Try again
+                </Button>
+                <Button
+                  onClick={() => {
+                    const error = this.state.error || new Error('Unknown module error')
+                    askEchoAboutError(error, { module: 'unknown', action: 'loading module' })
+                  }}
+                  variant="outline"
+                  className="flex-1 gap-2"
+                >
+                  <MessageCircle className="h-4 w-4" />
+                  Ask Echo
                 </Button>
                 <Button
                   onClick={() => this.props.onGoHome?.()}

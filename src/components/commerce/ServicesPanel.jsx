@@ -171,7 +171,7 @@ export function ServicesPanel({
                 </div>
               </div>
               )
-            }))}
+            })}
             {displayUpcoming.length === 0 && (
               <div className="text-center py-6 text-muted-foreground text-sm">
                 No upcoming appointments

@@ -5,7 +5,7 @@
  * Allows editing proposal pricing, add-ons, content, and media
  * after creation.
  */
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect, useMemo, useRef } from 'react'
 import { 
   Dialog, 
   DialogContent, 
@@ -44,6 +44,8 @@ import {
 } from 'lucide-react'
 import { adminApi, filesApi, proposalsApi } from '@/lib/portal-api'
 import { cn } from '@/lib/utils'
+import { EchoGenerateButton } from '@/components/ai/EchoGenerateButton'
+import { EchoTextActions } from '@/components/ai/EchoTextActions'
 
 // Payment terms options
 const PAYMENT_TERMS = [
@@ -92,6 +94,7 @@ export default function EditProposalDialog({
   const [isSaving, setIsSaving] = useState(false)
   const [isSending, setIsSending] = useState(false)
   const [activeTab, setActiveTab] = useState('pricing')
+  const descriptionRef = useRef(null)
   const [clients, setClients] = useState([])
   const [isLoadingClients, setIsLoadingClients] = useState(false)
   
@@ -405,21 +408,54 @@ export default function EditProposalDialog({
             <TabsContent value="details" className="mt-0 space-y-6">
               <div className="space-y-2">
                 <Label className="text-[var(--text-secondary)]">Title</Label>
-                <Input
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className="glass-bg border-[var(--glass-border)]"
-                />
+                <div className="flex items-center gap-2">
+                  <Input
+                    value={formData.title}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    className="glass-bg border-[var(--glass-border)] flex-1"
+                  />
+                  <EchoGenerateButton
+                    entityType="proposal"
+                    entityId={proposal?.id}
+                    field="title"
+                    currentValue={formData.title}
+                    onGenerate={(text) => setFormData({ ...formData, title: text })}
+                    size="sm"
+                  />
+                </div>
               </div>
 
               <div className="space-y-2">
                 <Label className="text-[var(--text-secondary)]">Description</Label>
-                <Textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  rows={3}
-                  className="glass-bg border-[var(--glass-border)] resize-none"
-                />
+                <div className="flex items-start gap-2">
+                  <div ref={descriptionRef} className="relative flex-1">
+                    <Textarea
+                      value={formData.description}
+                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                      rows={3}
+                      className="glass-bg border-[var(--glass-border)] resize-none w-full"
+                    />
+                    <EchoTextActions
+                      containerRef={descriptionRef}
+                      onReplace={(newText, { start, end }) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          description: prev.description.slice(0, start) + newText + prev.description.slice(end),
+                        }))
+                      }
+                      entityType="proposal"
+                      entityId={proposal?.id}
+                    />
+                  </div>
+                  <EchoGenerateButton
+                    entityType="proposal"
+                    entityId={proposal?.id}
+                    field="description"
+                    currentValue={formData.description}
+                    onGenerate={(text) => setFormData({ ...formData, description: text })}
+                    size="sm"
+                  />
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">

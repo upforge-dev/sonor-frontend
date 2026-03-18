@@ -60,7 +60,7 @@ export function ThreadList({
   const [searchResults, setSearchResults] = useState<SearchResult[]>([])
   const [isSearching, setIsSearching] = useState(false)
   const [showSearch, setShowSearch] = useState(false)
-  const searchTimerRef = useRef<ReturnType<typeof setTimeout>>()
+  const searchTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined)
   const searchInputRef = useRef<HTMLInputElement>(null)
 
   const handleSearchChange = useCallback((value: string) => {

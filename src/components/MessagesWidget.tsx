@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils'
 import { X, Minus, Globe, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import useAuthStore from '@/lib/auth-store'
+import usePageContextStore from '@/lib/page-context-store'
 import { useBrandColors } from '@/hooks/useBrandColors'
 import { portalApi } from '@/lib/portal-api'
 import MessagesModuleV2 from '@/components/messages/MessagesModuleV2'
@@ -44,6 +45,7 @@ export default function MessagesWidget({ hidden = false }: MessagesWidgetProps) 
   const user = useAuthStore((state) => state.user)
   const project = useAuthStore((state) => state.currentProject)
   const brandColors = useBrandColors()
+  const currentModule = usePageContextStore((s) => s.module)
 
   // Live session count from Engage API (single source of truth)
   useEffect(() => {
@@ -103,6 +105,18 @@ export default function MessagesWidget({ hidden = false }: MessagesWidgetProps) 
     setOpenWithTab('echo')
   }, [])
 
+  // Listen for 'open-echo' custom events (from contextual help, error boundaries, etc.)
+  // Opens the widget directly to the Echo tab instead of navigating to the full Messages page
+  useEffect(() => {
+    const handleOpenEcho = (e: CustomEvent) => {
+      setOpenWithTab('echo')
+      setIsOpen(true)
+      setIsMinimized(false)
+    }
+    window.addEventListener('open-echo', handleOpenEcho as EventListener)
+    return () => window.removeEventListener('open-echo', handleOpenEcho as EventListener)
+  }, [])
+
   if (hidden || !user) return null
 
   const hasLiveSessions = liveSessionCount > 0
@@ -143,9 +157,15 @@ export default function MessagesWidget({ hidden = false }: MessagesWidgetProps) 
                   <h3 className="font-semibold text-sm text-[var(--text-primary)]">
                     Messages
                   </h3>
-                  <p className="text-[10px] text-[var(--text-tertiary)]">
-                    Echo, Team & Live
-                  </p>
+                  {currentModule && openWithTab === 'echo' ? (
+                    <p className="text-[10px] text-[var(--brand-primary)]">
+                      Echo / {currentModule.charAt(0).toUpperCase() + currentModule.slice(1)}
+                    </p>
+                  ) : (
+                    <p className="text-[10px] text-[var(--text-tertiary)]">
+                      Echo, Team & Live
+                    </p>
+                  )}
                 </div>
               </div>
               <div className="flex items-center gap-1">

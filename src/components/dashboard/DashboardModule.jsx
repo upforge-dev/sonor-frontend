@@ -11,10 +11,10 @@ const Dashboard = ({ onNavigate }) => {
     (!!currentProject && !isAgencyOrg) || (!!currentOrg && !isAgencyOrg)
 
   if (isInTenantContext) {
-    return <TenantDashboard onNavigate={onNavigate} />
+    return <div data-sonor-help="dashboard/overview"><TenantDashboard onNavigate={onNavigate} /></div>
   }
 
-  return <AgencyDashboard onNavigate={onNavigate} />
+  return <div data-sonor-help="dashboard/overview"><AgencyDashboard onNavigate={onNavigate} /></div>
 }
 
 export default Dashboard

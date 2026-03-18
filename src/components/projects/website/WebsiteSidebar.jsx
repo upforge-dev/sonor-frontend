@@ -60,7 +60,7 @@ export default function WebsiteSidebar({
       <ScrollArea className="flex-1">
         <div className="p-2 space-y-1">
           {/* Collapsible "Pages" - contains the full page list */}
-          <Collapsible open={pagesOpen} onOpenChange={setPagesOpen}>
+          <Collapsible open={pagesOpen} onOpenChange={setPagesOpen} data-tour="website-pages">
             <CollapsibleTrigger
               className={cn(
                 'flex items-center gap-2 w-full py-2 px-2 rounded-md text-sm font-medium',
@@ -97,6 +97,10 @@ export default function WebsiteSidebar({
             {SECTION_ITEMS.map((item) => {
               const Icon = item.icon
               const isActive = activeSection === item.id
+              const tourTarget = item.id === WEBSITE_SECTIONS.IMAGES ? 'website-images'
+                : item.id === WEBSITE_SECTIONS.METADATA ? 'website-metadata'
+                : item.id === WEBSITE_SECTIONS.SCHEMA ? 'website-schema'
+                : undefined
               return (
                 <button
                   key={item.id}
@@ -108,6 +112,7 @@ export default function WebsiteSidebar({
                     isActive && 'bg-primary/10 text-primary'
                   )}
                   title={item.description}
+                  {...(tourTarget ? { 'data-tour': tourTarget } : {})}
                 >
                   <Icon
                     className={cn(

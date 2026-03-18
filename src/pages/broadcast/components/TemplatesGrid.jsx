@@ -409,6 +409,12 @@ export function TemplatesGrid({ searchQuery = '', onUseTemplate }) {
           description="Create reusable templates to speed up your workflow"
           actionLabel="Create Template"
           onAction={() => setShowEditor(true)}
+          echoPrompt="Help me create a reusable post template"
+          echoActions={[
+            { label: 'Write a template', prompt: 'Help me write a reusable social media post template for my business' },
+            { label: 'Template ideas', prompt: 'What types of post templates should every business have?' },
+            { label: 'Engagement tips', prompt: 'What makes a social media post template high-performing?' },
+          ]}
         />
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">

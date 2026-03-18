@@ -89,7 +89,7 @@ export default function OutreachModule() {
   }
 
   const leftSidebarContent = (
-    <div className="p-3 space-y-4">
+    <div className="p-3 space-y-4" data-tour="outreach-sidebar">
       {SIDEBAR_SECTIONS.map((section) => {
         if (section.requiresSignal && !hasCurrentProjectSignal) return null
 
@@ -111,6 +111,9 @@ export default function OutreachModule() {
                         ? 'bg-primary/10 text-primary font-medium'
                         : 'hover:bg-muted text-foreground/80'
                     )}
+                    {...(item.value === 'campaigns' ? { 'data-tour': 'outreach-campaigns' } : {})}
+                    {...(item.value === 'sequences' ? { 'data-tour': 'outreach-sequences' } : {})}
+                    {...(item.value === 'audience' ? { 'data-tour': 'outreach-audience' } : {})}
                   >
                     <item.icon className="h-3.5 w-3.5 flex-shrink-0" />
                     <span>{item.label}</span>
@@ -176,6 +179,7 @@ export default function OutreachModule() {
 
   return (
     <ModuleLayout
+      data-sonor-help="outreach/dashboard"
       ariaLabel="Outreach"
       leftSidebar={leftSidebarContent}
       leftSidebarOpen={showLeftSidebar}
@@ -187,6 +191,7 @@ export default function OutreachModule() {
       <ModuleLayout.Header
         title="Outreach"
         icon={MODULE_ICONS.outreach}
+        data-tour="outreach-header"
       />
       <ModuleLayout.Content noPadding>
         {renderContent()}

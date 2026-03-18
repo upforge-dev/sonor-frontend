@@ -46,6 +46,7 @@ import { MediaLibrary } from './components/MediaLibrary';
 import { PlatformIcon } from './components/PlatformIcon';
 import { BroadcastOverview } from './components/BroadcastOverview';
 import { toast } from 'sonner';
+import { SignalSuggestsPanel } from '@/components/ai/SignalSuggestsPanel';
 
 // =============================================================================
 // CONSTANTS
@@ -402,11 +403,12 @@ export function Broadcast({ onNavigate }) {
                     {/* Overview */}
                     <button
                       type="button"
+                      data-tour="broadcast-campaigns"
                       onClick={() => setCurrentView('overview')}
                       className={cn(
                         "w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200",
                         currentView === 'overview'
-                          ? "bg-[var(--brand-primary)]/10 text-[var(--text-primary)]" 
+                          ? "bg-[var(--brand-primary)]/10 text-[var(--text-primary)]"
                           : "text-[var(--text-secondary)] hover:bg-[var(--glass-bg-hover)] hover:text-[var(--text-primary)]"
                       )}
                     >
@@ -415,7 +417,7 @@ export function Broadcast({ onNavigate }) {
                     </button>
 
                     {/* Create Section */}
-                    <div className="pt-4 pb-1">
+                    <div className="pt-4 pb-1" data-tour="broadcast-editor">
                       <p className="px-3 uppercase tracking-wider text-[var(--text-tertiary)]">Create</p>
                     </div>
                     {NAV_ITEMS.create.map((item) => (
@@ -436,7 +438,7 @@ export function Broadcast({ onNavigate }) {
                     ))}
 
                     {/* Manage Section */}
-                    <div className="pt-4 pb-1">
+                    <div className="pt-4 pb-1" data-tour="broadcast-lists">
                       <p className="px-3 uppercase tracking-wider text-[var(--text-tertiary)]">Manage</p>
                     </div>
                     {NAV_ITEMS.manage.map((item) => (
@@ -476,7 +478,7 @@ export function Broadcast({ onNavigate }) {
                     ))}
 
                     {/* Stats Summary */}
-                    <div className="pt-6 px-3 space-y-3">
+                    <div className="pt-6 px-3 space-y-3" data-tour="broadcast-automation">
                       <div className="p-3 rounded-lg bg-[var(--glass-bg)] border border-[var(--glass-border)]">
                         <div className="flex items-center justify-between mb-2">
                           <span className="text-xs font-medium text-[var(--text-tertiary)]">This Month</span>
@@ -503,9 +505,12 @@ export function Broadcast({ onNavigate }) {
   return (
     <TooltipProvider>
       <ModuleLayout ariaLabel="Broadcast" leftSidebar={leftSidebarContent} defaultLeftSidebarOpen={true}>
-        <ModuleLayout.Header title="Broadcast" icon={MODULE_ICONS.broadcast} actions={headerActions} />
+        <ModuleLayout.Header title="Broadcast" icon={MODULE_ICONS.broadcast} actions={headerActions} data-tour="broadcast-overview" />
         <ModuleLayout.Content>
           <div className="h-full flex flex-col overflow-hidden bg-[var(--glass-bg)]/30 backdrop-blur-sm min-h-0">
+            {currentView === 'overview' && (
+              <SignalSuggestsPanel module="broadcast" className="mx-4 mt-4 mb-0 flex-shrink-0" />
+            )}
             {(currentView === 'posts' || currentView === 'library') && (
               <div className="flex-shrink-0 h-12 border-b flex items-center justify-between px-4 bg-card/50">
                 <div className="relative">

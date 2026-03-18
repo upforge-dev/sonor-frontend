@@ -452,7 +452,7 @@ export default function ClientsView({ onClientClick, brandColors }) {
   )
 
   return (
-    <div className="flex flex-col h-full min-h-0">
+    <div data-sonor-help="crm/contacts-list" className="flex flex-col h-full min-h-0">
       {/* Header */}
       <div className="flex-none p-4 space-y-4">
         {/* Summary Cards */}

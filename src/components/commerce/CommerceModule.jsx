@@ -43,5 +43,5 @@ export default function CommerceModuleWrapper({ onNavigate }) {
     }
   }, [location.pathname, navigate])
 
-  return <CommerceDashboard onNavigate={onNavigate} />
+  return <div data-sonor-help="commerce/dashboard"><CommerceDashboard onNavigate={onNavigate} /></div>
 }

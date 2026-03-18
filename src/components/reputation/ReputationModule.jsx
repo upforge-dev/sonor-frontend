@@ -100,5 +100,5 @@ export default function ReputationModuleDashboard({ projectId: propProjectId, on
   }
 
   // Render the reputation module dashboard
-  return <ReputationModule onNavigate={onNavigate} />
+  return <div data-sonor-help="reputation/dashboard"><ReputationModule onNavigate={onNavigate} /></div>
 }

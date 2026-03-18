@@ -102,6 +102,7 @@ import usePageContextStore from '@/lib/page-context-store'
 import { cn } from '@/lib/utils'
 import { format, subDays } from 'date-fns'
 import { toast } from '@/lib/toast'
+import { SignalSuggestsPanel } from '@/components/ai/SignalSuggestsPanel'
 
 async function getOfferings(projectId, params) {
   const res = await commerceApi.getOfferings(projectId, params)
@@ -803,11 +804,12 @@ export default function CommerceDashboard({ onNavigate }) {
             {/* Highlights Tab */}
             <button
               type="button"
+              data-tour="commerce-analytics"
               onClick={() => setView('highlights')}
               className={cn(
                 "w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all duration-200",
                 currentView === 'highlights'
-                  ? "bg-[var(--brand-primary)]/10 text-[var(--text-primary)] font-medium" 
+                  ? "bg-[var(--brand-primary)]/10 text-[var(--text-primary)] font-medium"
                   : "text-[var(--text-secondary)] hover:bg-[var(--glass-bg-hover)] hover:text-[var(--text-primary)]"
               )}
             >
@@ -821,10 +823,11 @@ export default function CommerceDashboard({ onNavigate }) {
               <CollapsibleTrigger asChild>
                 <button
                   type="button"
+                  data-tour="commerce-products"
                   className={cn(
                     "w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all duration-200",
                     currentView === 'products'
-                      ? "bg-[var(--brand-primary)]/10 text-[var(--text-primary)] font-medium" 
+                      ? "bg-[var(--brand-primary)]/10 text-[var(--text-primary)] font-medium"
                       : "text-[var(--text-secondary)] hover:bg-[var(--glass-bg-hover)] hover:text-[var(--text-primary)]"
                   )}
                 >
@@ -985,10 +988,11 @@ export default function CommerceDashboard({ onNavigate }) {
               <CollapsibleTrigger asChild>
                 <button
                   type="button"
+                  data-tour="commerce-orders"
                   className={cn(
                     "w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all duration-200",
                     currentView === 'sales'
-                      ? "bg-[var(--brand-primary)]/10 text-[var(--text-primary)] font-medium" 
+                      ? "bg-[var(--brand-primary)]/10 text-[var(--text-primary)] font-medium"
                       : "text-[var(--text-secondary)] hover:bg-[var(--glass-bg-hover)] hover:text-[var(--text-primary)]"
                   )}
                 >
@@ -1045,10 +1049,11 @@ export default function CommerceDashboard({ onNavigate }) {
               <CollapsibleTrigger asChild>
                 <button
                   type="button"
+                  data-tour="commerce-checkout"
                   className={cn(
                     "w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all duration-200",
                     currentView === 'customers'
-                      ? "bg-[var(--brand-primary)]/10 text-[var(--text-primary)] font-medium" 
+                      ? "bg-[var(--brand-primary)]/10 text-[var(--text-primary)] font-medium"
                       : "text-[var(--text-secondary)] hover:bg-[var(--glass-bg-hover)] hover:text-[var(--text-primary)]"
                   )}
                 >
@@ -1334,7 +1339,7 @@ export default function CommerceDashboard({ onNavigate }) {
         }}
         ariaLabel="Commerce module"
       >
-        <ModuleLayout.Header title="Commerce" icon={MODULE_ICONS.commerce} />
+        <ModuleLayout.Header title="Commerce" icon={MODULE_ICONS.commerce} data-tour="commerce-overview" />
         <ModuleLayout.Content>
           <main className="flex-1 overflow-auto min-h-0">
         {/* Header */}
@@ -1537,6 +1542,9 @@ export default function CommerceDashboard({ onNavigate }) {
             ? ''
             : 'px-6 py-4 pb-6'
         }>
+          {currentView === 'highlights' && (
+            <SignalSuggestsPanel module="commerce" className="mb-4" />
+          )}
           {currentView === 'offering' && offeringId ? (
             offeringMode === 'edit' ? (
               <OfferingEdit

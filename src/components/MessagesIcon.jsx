@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-const MessagesIcon = ({ size = 48, onClick }) => {
+const MessagesIcon = ({ size = 48, className = '', onClick = undefined }) => {
   const [isHovered, setIsHovered] = useState(false);
   const [isActivated, setIsActivated] = useState(false);
 

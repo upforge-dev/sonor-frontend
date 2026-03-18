@@ -458,7 +458,7 @@ function ModuleLayoutRoot({
   )
 }
 
-function ModuleHeader({ title, subtitle, breadcrumbs = [], actions, icon, className }) {
+function ModuleHeader({ title, subtitle, breadcrumbs = [], actions, icon, className, ...rest }) {
   const layout = useModuleLayout()
 
   const hasRightSidebar = layout?.hasRightSidebar ?? false
@@ -506,6 +506,7 @@ function ModuleHeader({ title, subtitle, breadcrumbs = [], actions, icon, classN
         role="region"
         aria-label="Page header"
         initial={false}
+        {...rest}
       >
         {/* Left panel toggle – far left */}
         {hasLeftSidebar && (
@@ -615,7 +616,7 @@ function ModuleHeader({ title, subtitle, breadcrumbs = [], actions, icon, classN
   )
 }
 
-function ModuleContent({ children, className, padding = 'none', noPadding: noPaddingProp, contentTransition = true }) {
+function ModuleContent({ children, className, padding = 'none', noPadding: noPaddingProp, contentTransition = true, ...rest }) {
   const reducedMotion = useReducedMotion()
   const noPadding = noPaddingProp ?? (padding === 'none' || padding === false)
   const doFade = contentTransition && !reducedMotion
@@ -626,6 +627,7 @@ function ModuleContent({ children, className, padding = 'none', noPadding: noPad
         !noPadding && 'p-4',
         className
       )}
+      {...rest}
       role="region"
       aria-label="Page content"
       initial={doFade ? { opacity: 0 } : false}

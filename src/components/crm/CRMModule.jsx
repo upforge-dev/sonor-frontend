@@ -116,7 +116,8 @@ import {
   ACTIVE_STAGES,
   mapApiStagesToConfig,
 } from './pipelineStages'
-import { EchoPanel } from '@/components/chat/EchoPanel'
+import { SignalSuggestsPanel } from '@/components/ai/SignalSuggestsPanel'
+import { NaturalLanguageFilter } from '@/components/ai/NaturalLanguageFilter'
 
 // Re-export for consumers that import from CRMModule
 export const PIPELINE_STAGES = DEFAULT_PIPELINE_STAGES
@@ -440,6 +441,7 @@ export default function CRMDashboard() {
   const debouncedSearch = useDebounce(searchQuery, 300)
   const [sourceFilter, setSourceFilter] = useState('all')
   const [stageFilters, setStageFilters] = useState([]) // Multi-select stages
+  const [nlFilters, setNlFilters] = useState({}) // Natural-language resolved filters
   
   // Selected prospect(s)
   const [selectedProspect, setSelectedProspect] = useState(null)
@@ -513,7 +515,9 @@ export default function CRMDashboard() {
       if (debouncedSearch) params.search = debouncedSearch
       if (sourceFilter !== 'all') params.source = sourceFilter
       if (stageFilters.length > 0) params.stages = stageFilters.join(',')
-      
+      // Merge any NL-resolved filters (may override structured filters)
+      if (nlFilters && Object.keys(nlFilters).length > 0) Object.assign(params, nlFilters)
+
       console.log('[CRM] Fetching prospects with params:', params)
       
       const response = await crmApi.listProspects(params)
@@ -528,7 +532,7 @@ export default function CRMDashboard() {
     } finally {
       setIsLoading(false)
     }
-  }, [currentProject?.id, debouncedSearch, sourceFilter, stageFilters])
+  }, [currentProject?.id, debouncedSearch, sourceFilter, stageFilters, nlFilters])
 
   // Auto-fetch on filter changes or project change
   useEffect(() => {
@@ -656,6 +660,11 @@ export default function CRMDashboard() {
           onChange={(e) => setSearchQuery(e.target.value)}
         />
       </div>
+      <NaturalLanguageFilter
+        module="crm"
+        onFiltersResolved={(filters) => setNlFilters(filters)}
+        placeholder="e.g. leads from last week not yet contacted"
+      />
       <Tooltip>
         <TooltipTrigger asChild>
           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleRefresh} disabled={isRefreshing}>
@@ -713,6 +722,7 @@ export default function CRMDashboard() {
   <>
     <TooltipProvider>
       <ModuleLayout
+        data-sonor-help="crm/dashboard"
         ariaLabel={isAgency ? 'CRM' : 'Prospects'}
         leftSidebarOpen={showLeftSidebar}
         rightSidebarOpen={showRightSidebar}
@@ -843,6 +853,7 @@ export default function CRMDashboard() {
                       <div className="space-y-1">
                         <button
                           onClick={() => setViewMode('pipeline')}
+                          data-tour="crm-pipeline"
                           className={cn(
                             "w-full text-left px-3 py-2 rounded-lg transition-colors flex items-center gap-2",
                             viewMode === 'pipeline'
@@ -879,6 +890,7 @@ export default function CRMDashboard() {
                         </button>
                         <button
                           onClick={() => setViewMode('tasks')}
+                          data-tour="crm-activity"
                           className={cn(
                             "w-full text-left px-3 py-2 rounded-lg transition-colors flex items-center gap-2",
                             viewMode === 'tasks'
@@ -915,6 +927,7 @@ export default function CRMDashboard() {
                         </button>
                         <button
                           onClick={() => setViewMode('clients')}
+                          data-tour="crm-contacts"
                           className={cn(
                             "w-full text-left px-3 py-2 rounded-lg transition-colors flex items-center gap-2",
                             viewMode === 'clients'
@@ -927,6 +940,7 @@ export default function CRMDashboard() {
                         </button>
                         <button
                           onClick={() => setViewMode('unassigned')}
+                          data-tour="crm-leads"
                           className={cn(
                             "w-full text-left px-3 py-2 rounded-lg transition-colors flex items-center gap-2 relative",
                             viewMode === 'unassigned'
@@ -1073,6 +1087,7 @@ export default function CRMDashboard() {
         )}
       >
         <ModuleLayout.Header
+          data-tour="crm-overview"
           title={isAgency ? 'CRM' : 'Prospects'}
           icon={MODULE_ICONS.crm}
           subtitle={subtitle}
@@ -1080,6 +1095,7 @@ export default function CRMDashboard() {
         />
         <ModuleLayout.Content>
           <div className="flex-1 overflow-hidden flex flex-col h-full min-h-0">
+            <SignalSuggestsPanel module="crm" className="mb-4 mx-4 mt-4 flex-shrink-0" />
             {isLoading ? (
               <div className="flex-1 flex items-center justify-center">
                 <div className="flex flex-col items-center gap-3">
@@ -1260,7 +1276,6 @@ export default function CRMDashboard() {
         />
     </TooltipProvider>
 
-    <EchoPanel module="crm" />
   </>
   )
 }

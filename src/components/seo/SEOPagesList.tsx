@@ -31,6 +31,7 @@ import {
 import { useSeoPages, seoPageKeys } from '@/hooks/seo'
 import { seoApi } from '@/lib/portal-api'
 import SEOBulkEditModal from './SEOBulkEditModal'
+import { NaturalLanguageFilter } from '@/components/ai/NaturalLanguageFilter'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 
@@ -130,14 +131,15 @@ export default function SEOPagesList({ site, projectId }: SEOPagesListProps) {
   const [crawlingSitemap, setCrawlingSitemap] = useState<boolean>(false)
   const [bulkEditOpen, setBulkEditOpen] = useState<boolean>(false)
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set())
+  const [nlFilters, setNlFilters] = useState<Record<string, any>>({})
 
   // Use projectId directly (new architecture) or fallback to site.id (legacy)
   const siteId: string | undefined = projectId || site?.id
 
   // React Query: Fetch pages with filters
   // Automatically refetches when filters change!
-  const { 
-    data: pagesData, 
+  const {
+    data: pagesData,
     isLoading: pagesLoading,
     refetch: refetchPages
   } = useSeoPages(siteId || '', {
@@ -147,6 +149,8 @@ export default function SEOPagesList({ site, projectId }: SEOPagesListProps) {
     status: pageStatusFilter,
     indexingStatus: statusFilter !== 'all' ? (statusFilter === 'not-indexed' ? 'not_indexed' : statusFilter) : undefined,
     sortBy,
+    // NL-resolved filters merge in last (may override structured filters above)
+    ...nlFilters,
   })
 
   // Extract pages and pagination from response (ensure array; handles raw API shape)
@@ -443,10 +447,10 @@ export default function SEOPagesList({ site, projectId }: SEOPagesListProps) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-sonor-help="seo/pages-list">
       {/* Header Actions */}
       <div className="flex items-center justify-between flex-wrap gap-4">
-        <div className="flex items-center gap-2 flex-1 min-w-[200px] max-w-md">
+        <div className="flex items-center gap-2 flex-1 min-w-[200px] max-w-xl">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -456,6 +460,11 @@ export default function SEOPagesList({ site, projectId }: SEOPagesListProps) {
               className="pl-9"
             />
           </div>
+          <NaturalLanguageFilter
+            module="seo"
+            onFiltersResolved={(filters) => setNlFilters(filters)}
+            placeholder="e.g. pages with poor health score not indexed"
+          />
         </div>
 
         <div className="flex items-center gap-2">

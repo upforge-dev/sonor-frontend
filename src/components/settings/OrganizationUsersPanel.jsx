@@ -261,7 +261,7 @@ export default function OrganizationUsersPanel({
   }
 
   const handleResendInvite = async (member) => {
-    const contactId = member.contact?.id
+    const contactId = getContactId(member)
     if (!contactId) {
       toast.error('Cannot resend invite for this member')
       return
@@ -274,7 +274,9 @@ export default function OrganizationUsersPanel({
       const contact = member.contact || member
       toast.success(`Invitation resent to ${contact.email}`)
     } catch (error) {
-      toast.error(error.message || 'Failed to resend invitation')
+      const msg = error.response?.data?.message
+      const errMsg = Array.isArray(msg) ? msg[0] : (msg || error.message || 'Failed to resend invitation')
+      toast.error(errMsg)
     }
   }
 
@@ -301,7 +303,7 @@ export default function OrganizationUsersPanel({
 
   return (
     <>
-      <Card className="border-[var(--glass-border)] bg-[var(--glass-bg)]">
+      <Card data-sonor-help="settings/team" className="border-[var(--glass-border)] bg-[var(--glass-bg)]">
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
             <CardTitle className="flex items-center gap-2">

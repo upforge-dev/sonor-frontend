@@ -17,12 +17,17 @@
 
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { X, ChevronRight, Loader2 } from 'lucide-react'
+import { X } from 'lucide-react'
 import LogoSvg from '@/assets/logo.svg?react'
 import useAuthStore from '@/lib/auth-store'
 import { useEchoChat } from '@/hooks/useEchoChat'
 import { ChatArea } from '@/components/chat/ChatArea'
 import { openOAuthPopup } from '@/lib/oauth-popup'
+import { getSession } from '@/lib/supabase-auth'
+import { lazy, Suspense } from 'react'
+
+const SonicWaveform = lazy(() => import('@/components/onboarding/SonicWaveform'))
+const FrequencyBars = lazy(() => import('@/components/onboarding/FrequencyBars'))
 
 const ONBOARDING_PHASES = [
   { key: 'welcome', label: 'Welcome' },
@@ -213,6 +218,41 @@ export default function OnboardingFlow() {
     navigate('/dashboard')
   }, [projectId, navigate])
 
+  // Migration context — provides auth + project info to DataMigrationWizard blocks
+  const migrationContext = useMemo(() => {
+    if (!projectId || !currentOrg?.id) return undefined
+    const portalApiUrl = import.meta.env.VITE_PORTAL_API_URL || ''
+    return {
+      apiUrl: portalApiUrl,
+      authToken: '', // Will be resolved per-request via getSession() inside the wizard
+      projectId,
+      orgId: currentOrg.id,
+      onComplete: (result: { imported: number; skipped: number; errors: number }) => {
+        echo.sendMessage(
+          `[system:migration_complete] Data import finished. ` +
+          `Imported: ${result.imported}, Skipped: ${result.skipped}, Errors: ${result.errors}. ` +
+          `Please congratulate the user and offer to import more data or move to walkthroughs.`
+        )
+      },
+      onSkip: () => {
+        echo.sendMessage(
+          `[system:migration_skip] User chose to skip data migration. ` +
+          `Please acknowledge and advance to the walkthroughs phase.`
+        )
+      },
+    }
+  }, [projectId, currentOrg?.id, echo.sendMessage])
+
+  // Resolve auth token for migration context on each render cycle
+  useEffect(() => {
+    if (!migrationContext) return
+    getSession().then(({ data }) => {
+      if (data?.session?.access_token && migrationContext) {
+        migrationContext.authToken = data.session.access_token
+      }
+    })
+  }, [migrationContext])
+
   // No project — show a project creation prompt or redirect
   if (!projectId && !stateLoading) {
     // The Echo conversation will handle project creation via the onboarding skill
@@ -295,6 +335,13 @@ export default function OnboardingFlow() {
       {/* Background mesh */}
       <div className="onboarding-mesh" />
 
+      {/* Ambient sonic waveform — the platform's heartbeat */}
+      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 0, opacity: 0.5 }}>
+        <Suspense fallback={null}>
+          <SonicWaveform variant="ambient" height={80} />
+        </Suspense>
+      </div>
+
       {/* Header bar */}
       <header className="relative z-10 flex items-center justify-between px-6 py-4 border-b border-white/5">
         {/* Logo + Progress */}
@@ -367,10 +414,9 @@ export default function OnboardingFlow() {
       <div className="relative z-10 flex-1 min-h-0 flex flex-col onboard-fade-in onboarding-chat-area">
         {stateLoading ? (
           <div className="flex-1 flex items-center justify-center">
-            <div className="flex flex-col items-center gap-3">
-              <Loader2 className="w-8 h-8 animate-spin text-[#39bfb0]" />
-              <p className="text-sm text-white/30">Preparing your setup...</p>
-            </div>
+            <Suspense fallback={null}>
+              <FrequencyBars variant="listening" bars={13} height={36} label="Preparing your setup..." />
+            </Suspense>
           </div>
         ) : (
           <div className="flex-1 min-h-0 flex justify-center">
@@ -389,6 +435,7 @@ export default function OnboardingFlow() {
                 suggestionChips={echo.suggestionChips}
                 onActionClick={handleActionClick}
                 onOAuthClick={handleOAuthClick}
+                migrationContext={migrationContext}
                 placeholder="Ask anything, or type to continue..."
                 welcomeConfig={{
                   greeting: 'Welcome to Sonor',

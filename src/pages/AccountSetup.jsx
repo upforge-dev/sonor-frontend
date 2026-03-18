@@ -7,7 +7,7 @@ import { Button } from '../components/ui/button'
 import { Input } from '../components/ui/input'
 import { Label } from '../components/ui/label'
 import { Loader2, CheckCircle2, XCircle, Mail, Lock, Eye, EyeOff } from 'lucide-react'
-import { supabase, signInWithGoogle, signUp } from '../lib/supabase-auth'
+import { supabase, signInWithGoogle, signUp, signInWithPassword, getCurrentUser } from '../lib/supabase-auth'
 import useAuthStore from '../lib/auth-store'
 import axios from 'axios'
 import { authApi } from '../lib/portal-api'
@@ -17,7 +17,7 @@ export default function AccountSetup() {
   const [searchParams] = useSearchParams()
   const token = searchParams.get('token')
   
-  const { setUser } = useAuthStore()
+  const { setUser, fetchOrganizationContext } = useAuthStore()
   
   const [status, setStatus] = useState('validating') // validating, ready, creating, success, error
   const [error, setError] = useState('')
@@ -125,26 +125,33 @@ export default function AccountSetup() {
       setError('')
       setStatus('creating')
       
-      // Create account with Supabase
-      const { user, session, error: signupError } = await signUp(
-        tokenData.email,
-        password,
-        { name: tokenData.name }
-      )
-      
-      if (signupError) {
-        throw signupError
-      }
-      
-      // Complete setup on the backend
       if (token) {
-        // Custom JWT token flow
+        // Invite flow: backend creates auth user server-side (bypasses Supabase email confirmation)
         await authApi.completeSetup({
           token,
-          method: 'password'
+          method: 'password',
+          password,
         })
+        // Sign in with the new password to establish session
+        const { error: signInError } = await signInWithPassword(tokenData.email, password)
+        if (signInError) throw signInError
+        // Populate auth store so dashboard loads correctly
+        const contactUser = await getCurrentUser()
+        if (contactUser) {
+          setUser(contactUser)
+          const { data: { session } } = await supabase.auth.getSession()
+          if (session?.access_token) {
+            await fetchOrganizationContext(session.access_token)
+          }
+        }
       } else {
-        // Supabase magic link flow - just mark account as setup
+        // Supabase magic link flow - create via client signUp, then mark setup complete
+        const { error: signupError } = await signUp(
+          tokenData.email,
+          password,
+          { name: tokenData.name }
+        )
+        if (signupError) throw signupError
         await authApi.markSetupComplete()
       }
       
@@ -158,7 +165,9 @@ export default function AccountSetup() {
     } catch (err) {
       console.error('[AccountSetup] Password signup error:', err)
       setStatus('ready')
-      setError(err.message || 'Failed to create account')
+      const apiMsg = err.response?.data?.message
+      const msg = Array.isArray(apiMsg) ? apiMsg[0] : (apiMsg || err.message || 'Failed to create account')
+      setError(msg)
       setIsSubmitting(false)
     }
   }

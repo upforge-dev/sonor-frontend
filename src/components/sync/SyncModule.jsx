@@ -1284,6 +1284,7 @@ export default function SyncModule({ className }) {
   return (
     <TooltipProvider>
       <ModuleLayout
+        data-sonor-help="sync/dashboard"
         ariaLabel="Sync"
         className={className}
         leftSidebarOpen={showLeftSidebar}
@@ -1297,7 +1298,7 @@ export default function SyncModule({ className }) {
         leftSidebar={(
           <div className="p-4 space-y-6">
                     {/* Quick Actions */}
-                    <div className="space-y-2">
+                    <div className="space-y-2" data-tour="sync-create">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button className="w-full justify-between gap-2 bg-emerald-600 hover:bg-emerald-700">
@@ -1342,7 +1343,7 @@ export default function SyncModule({ className }) {
                     </div>
                     
                     {/* Navigation */}
-                    <div className="space-y-1">
+                    <div className="space-y-1" data-tour="sync-views">
                       <p className="uppercase tracking-wider text-muted-foreground mb-2">Views</p>
                       {[
                         { id: 'calendar', icon: Calendar, label: 'Calendar' },
@@ -1351,15 +1352,17 @@ export default function SyncModule({ className }) {
                         { id: 'booking-types', icon: Link2, label: 'Booking Types' },
                         { id: 'pto', icon: CalendarOff, label: 'PTO & Holidays', onClick: () => setShowExceptionsPanel(true) },
                       ].map((item) => (
-                        <button 
+                        <button
                           key={item.id}
                           onClick={item.onClick || (() => setCenterView(item.id))}
                           className={cn(
                             "w-full text-left px-3 py-2 rounded-md flex items-center gap-2.5 transition-colors",
                             (item.id === centerView || (item.id === 'pto' && false))
-                              ? "bg-primary/10 text-primary" 
+                              ? "bg-primary/10 text-primary"
                               : "hover:bg-muted text-foreground"
                           )}
+                          {...(item.id === 'booking-types' ? { 'data-tour': 'sync-booking-types' } : {})}
+                          {...(item.id === 'bookings' ? { 'data-tour': 'sync-bookings' } : {})}
                         >
                           <item.icon className="h-4 w-4" />
                           {item.label}
@@ -1847,7 +1850,7 @@ export default function SyncModule({ className }) {
           </>
         )}
       >
-        <ModuleLayout.Header title="Sync" icon={MODULE_ICONS.sync} subtitle={subtitle} actions={headerActions} />
+        <ModuleLayout.Header title="Sync" icon={MODULE_ICONS.sync} subtitle={subtitle} actions={headerActions} data-tour="sync-calendar" />
         <ModuleLayout.Content noPadding>
           {centerView === 'bookings' ? (
             <BookingsListPanel inline onClose={() => setCenterView('calendar')} />

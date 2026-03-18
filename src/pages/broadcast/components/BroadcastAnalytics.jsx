@@ -278,6 +278,11 @@ export function BroadcastAnalytics() {
                 icon={TrendingUp}
                 title="No posts in this period"
                 description="Publish some posts to see performance data"
+                echoPrompt="How do I improve my social media performance?"
+                echoActions={[
+                  { label: 'Posting strategy', prompt: 'What posting frequency and timing works best for social media?' },
+                  { label: 'Boost engagement', prompt: 'How do I create posts that get more likes, shares, and comments?' },
+                ]}
               />
             </CardContent>
           </Card>
