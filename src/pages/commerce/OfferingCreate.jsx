@@ -43,6 +43,7 @@ import {
   Clock,
 } from 'lucide-react'
 import { EchoGenerateButton } from '@/components/ai/EchoGenerateButton'
+import SizeChartEditor from '@/components/commerce/SizeChartEditor'
 
 // Preset clothing sizes
 const SIZE_PRESETS = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL']
@@ -167,6 +168,7 @@ export default function OfferingCreate({ type: propType, embedded = false, onBac
 
   // Image upload state - images are held locally until form submit
   const [images, setImages] = useState([]) // { id, file, preview }
+  const [sizeChart, setSizeChart] = useState(null)
   const [isDragging, setIsDragging] = useState(false)
 
   // Forms and SEO pages are now fetched via React Query hooks automatically
@@ -277,6 +279,7 @@ export default function OfferingCreate({ type: propType, embedded = false, onBac
         if (formData.is_clothing) {
           data.is_clothing = true
           data.track_inventory = true
+          data.size_chart = sizeChart || null
           // Product-level inventory not used for clothing; variants hold inventory
         } else {
           data.track_inventory = formData.track_inventory
@@ -713,7 +716,7 @@ export default function OfferingCreate({ type: propType, embedded = false, onBac
                 />
               </div>
 
-              {formData.is_clothing ? (
+              {formData.is_clothing && (
                 <div className="space-y-4 pt-2 border-t">
                   <Label>Size Variants</Label>
                   <p className="text-sm text-muted-foreground">
@@ -769,7 +772,25 @@ export default function OfferingCreate({ type: propType, embedded = false, onBac
                     </p>
                   )}
                 </div>
-              ) : (
+              )}
+
+              {formData.is_clothing && (
+                <div className="space-y-2 pt-2 border-t">
+                  <div>
+                    <Label>Size Chart</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Measurement table shown to customers to help them choose the right size.
+                    </p>
+                  </div>
+                  <SizeChartEditor
+                    value={sizeChart}
+                    onChange={setSizeChart}
+                    existingSizes={Object.keys(formData.sizeVariants || {})}
+                  />
+                </div>
+              )}
+
+              {!formData.is_clothing && (
                 <>
                   <div className="flex items-center justify-between">
                     <div>

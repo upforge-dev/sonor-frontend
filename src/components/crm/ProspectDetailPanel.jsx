@@ -33,7 +33,8 @@ import {
   CheckCircle2,
   XCircle,
   Pencil,
-  UserPlus
+  UserPlus,
+  ShoppingBag
 } from 'lucide-react'
 import { UptradeSpinner } from '@/components/UptradeLoading'
 import { Button } from '@/components/ui/button'
@@ -58,6 +59,7 @@ import ProspectTimeline from './ProspectTimeline'
 import ProspectEmailsWithSignal from './ProspectEmailsWithSignal'
 import EditProspectDialog from './EditProspectDialog'
 import AssignContactDialog from './AssignContactDialog'
+import CommerceHistoryTab from './CommerceHistoryTab'
 import { useProspectTimeline } from '@/hooks/useProspectTimeline'
 import { EchoGenerateButton } from '@/components/ai/EchoGenerateButton'
 import { EchoTextActions } from '@/components/ai/EchoTextActions'
@@ -891,6 +893,17 @@ export default function ProspectDetailPanel({
   const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false)
   const [isAssigning, setIsAssigning] = useState(false)
 
+  // Show Commerce tab for customers or contacts with purchase history
+  const showCommerceTab = (
+    prospect?.contact_type === 'customer' ||
+    (prospect?.purchase_count != null && prospect.purchase_count > 0) ||
+    (Array.isArray(prospect?.tags) && prospect.tags.some(t =>
+      typeof t === 'string'
+        ? ['customer', 'commerce'].includes(t.toLowerCase())
+        : ['customer', 'commerce'].includes(t?.name?.toLowerCase())
+    ))
+  )
+
   // Timeline hook
   const {
     events: timelineEvents,
@@ -1049,7 +1062,10 @@ export default function ProspectDetailPanel({
         
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
-          <TabsList className="flex-shrink-0 grid grid-cols-8 mx-6 mt-4 bg-[var(--glass-bg-inset)] p-1 rounded-xl">
+          <TabsList className={cn(
+            'flex-shrink-0 mx-6 mt-4 bg-[var(--glass-bg-inset)] p-1 rounded-xl grid',
+            showCommerceTab ? 'grid-cols-9' : 'grid-cols-8'
+          )}>
             <TabsTrigger value="overview" className="rounded-lg text-xs">Overview</TabsTrigger>
             <TabsTrigger value="timeline" className="rounded-lg text-xs">Timeline</TabsTrigger>
             <TabsTrigger value="website" className="rounded-lg text-xs">Website</TabsTrigger>
@@ -1058,6 +1074,12 @@ export default function ProspectDetailPanel({
             <TabsTrigger value="emails" className="rounded-lg text-xs">Emails</TabsTrigger>
             <TabsTrigger value="notes" className="rounded-lg text-xs">Notes</TabsTrigger>
             <TabsTrigger value="activity" className="rounded-lg text-xs">Activity</TabsTrigger>
+            {showCommerceTab && (
+              <TabsTrigger value="commerce" className="rounded-lg text-xs flex items-center gap-1">
+                <ShoppingBag className="h-3 w-3" />
+                Commerce
+              </TabsTrigger>
+            )}
           </TabsList>
           
           <ScrollArea className="flex-1 p-6">
@@ -1147,6 +1169,12 @@ export default function ProspectDetailPanel({
             <TabsContent value="activity" className="mt-0">
               <ActivityTab activity={activity} isLoading={isLoadingActivity} />
             </TabsContent>
+
+            {showCommerceTab && (
+              <TabsContent value="commerce" className="mt-0">
+                <CommerceHistoryTab prospect={prospect} />
+              </TabsContent>
+            )}
           </ScrollArea>
         </Tabs>
       </div>

@@ -54,6 +54,7 @@ import {
   Ticket,
   CalendarDays,
   ChevronRight,
+  Ruler,
 } from 'lucide-react'
 import { toast } from '@/lib/toast'
 import { format, formatDistanceToNow, isPast, isFuture, isToday } from 'date-fns'
@@ -531,6 +532,48 @@ export default function OfferingDetail({ offeringId, onBack, onEdit }) {
                     </div>
                   </div>
                 )}
+              </CardContent>
+            </Card>
+          )}
+
+          {currentOffering.is_clothing && currentOffering.size_chart && (
+            <Card className="mt-4">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Ruler className="h-4 w-4" />
+                  Size Chart
+                </CardTitle>
+                <CardDescription>
+                  Measurement guide in {currentOffering.size_chart.unit || 'inches'}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left py-2 pr-4 font-medium text-muted-foreground text-xs">Size</th>
+                        {currentOffering.size_chart.measurements?.map((m, i) => (
+                          <th key={i} className="text-center py-2 px-3 font-medium text-xs text-muted-foreground">
+                            {m}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {currentOffering.size_chart.rows?.map((row, rowIdx) => (
+                        <tr key={rowIdx} className="border-b last:border-0">
+                          <td className="py-2 pr-4 font-semibold text-sm">{row.size}</td>
+                          {row.values?.map((val, colIdx) => (
+                            <td key={colIdx} className="py-2 px-3 text-center text-sm text-muted-foreground">
+                              {val !== '' && val !== null && val !== undefined ? val : '—'}
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </CardContent>
             </Card>
           )}

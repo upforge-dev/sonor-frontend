@@ -233,7 +233,15 @@ const useAuthStore = create(
             try {
               const project = JSON.parse(storedProject)
               console.log('[AuthStore] Restoring project context:', project.title)
-              
+
+              // If cached project is missing plan field, it's stale (pre-plan-propagation).
+              // Clear cache and skip restore — the fresh /auth/me fetch will auto-select with full data.
+              if (!project.plan) {
+                console.log('[AuthStore] Stale project cache (missing plan), clearing — will re-select from API')
+                localStorage.removeItem('currentTenantProject')
+                throw new Error('stale_cache') // Jump to catch → skip setting stale context
+              }
+
               // Build project context
               const projectContext = {
                 id: project.id,
@@ -256,7 +264,9 @@ const useAuthStore = create(
                 isSuperAdmin: true // Admin who switched to project
               })
             } catch (e) {
-              console.error('[AuthStore] Failed to parse stored project:', e)
+              if (e?.message !== 'stale_cache') {
+                console.error('[AuthStore] Failed to parse stored project:', e)
+              }
               localStorage.removeItem('currentTenantProject')
             }
           }

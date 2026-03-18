@@ -66,7 +66,7 @@ export default function AnalyticsModuleWrapper({ onNavigate }) {
   }, [currentProject?.id, buildHierarchy, reset, setHierarchyLoading, topPages])
 
   return (
-    <div data-sonor-help="analytics/dashboard">
+    <div data-sonor-help="analytics/dashboard" className="h-full min-h-0">
       <AnalyticsDashboard onNavigate={onNavigate} />
     </div>
   )

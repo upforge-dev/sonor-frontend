@@ -105,11 +105,16 @@ export default function MessagesWidget({ hidden = false }: MessagesWidgetProps) 
     setOpenWithTab('echo')
   }, [])
 
+  // Echo context passed from open-echo events (contextual help, errors, etc.)
+  const [echoContext, setEchoContext] = useState<string | null>(null)
+
   // Listen for 'open-echo' custom events (from contextual help, error boundaries, etc.)
-  // Opens the widget directly to the Echo tab instead of navigating to the full Messages page
+  // Opens the widget in-place to the Echo tab with context — no page navigation needed.
   useEffect(() => {
     const handleOpenEcho = (e: CustomEvent) => {
+      const context = e.detail?.context || null
       setOpenWithTab('echo')
+      setEchoContext(context)
       setIsOpen(true)
       setIsMinimized(false)
     }
@@ -194,6 +199,8 @@ export default function MessagesWidget({ hidden = false }: MessagesWidgetProps) 
                 variant="widget"
                 className="h-full"
                 defaultTab={openWithTab}
+                echoContext={echoContext}
+                onEchoContextConsumed={() => setEchoContext(null)}
               />
             </div>
           </div>

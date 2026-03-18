@@ -3315,7 +3315,11 @@ export const commerceApi = {
   /** Delete a customer */
   deleteCustomer: (projectId, id) =>
     portalApi.delete(`/commerce/customers/${projectId}/${id}`),
-  
+
+  /** Get full transaction history for a contact (purchases, invoices, contracts) */
+  getCustomerHistory: (projectId, contactId) =>
+    portalApi.get(`/commerce/customers/${projectId}/${contactId}/history`),
+
   // ==================== SETTINGS ====================
   
   /** Get commerce settings for a project */

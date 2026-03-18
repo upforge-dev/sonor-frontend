@@ -7,11 +7,18 @@ import { Link } from 'react-router-dom'
 import { useCommerceSales, useUpdateCommerceSale, useShipSale, useBatchShip } from '@/lib/hooks'
 import { useQueryClient } from '@tanstack/react-query'
 import useAuthStore from '@/lib/auth-store'
+import portalApi from '@/lib/portal-api'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import {
   Select,
   SelectContent,
@@ -44,6 +51,9 @@ import {
   RefreshCw,
   Calendar,
   Package,
+  Truck,
+  Download,
+  Copy,
   ExternalLink,
 } from 'lucide-react'
 import { toast } from '@/lib/toast'
@@ -56,11 +66,27 @@ const statusConfig = {
   cancelled: { label: 'Cancelled', variant: 'outline', icon: null },
 }
 
+const shippingStatusConfig = {
+  unshipped: { label: 'Unshipped', className: 'text-amber-600 border-amber-500/30' },
+  shipped: { label: 'Shipped', className: 'text-blue-600 border-blue-500/30' },
+  delivered: { label: 'Delivered', className: 'text-green-600 border-green-500/30' },
+}
+
+function getShippingStatus(sale) {
+  if (sale.shipping_status === 'delivered') return 'delivered'
+  if (sale.shipping_status === 'shipped' || sale.shipping_tracking_number) return 'shipped'
+  if (sale.shipping_address) return 'unshipped'
+  return null
+}
+
 export default function SalesPage() {
   const { currentProject } = useAuthStore()
   const [statusFilter, setStatusFilter] = useState('all')
   const [dateFilter, setDateFilter] = useState('all')
   const [selectedForShip, setSelectedForShip] = useState(new Set())
+  const [selectedSale, setSelectedSale] = useState(null)
+  const [buyingLabel, setBuyingLabel] = useState(false)
+  const queryClient = useQueryClient()
   const updateSaleMutation = useUpdateCommerceSale()
   const shipSaleMutation = useShipSale()
   const batchShipMutation = useBatchShip()
@@ -196,6 +222,26 @@ export default function SalesPage() {
     }
   }
 
+  const handleBuyLabel = async (sale) => {
+    setBuyingLabel(true)
+    try {
+      const response = await portalApi.post(`/commerce/shipping/${currentProject?.id}/${sale.id}/buy-label`)
+      const updated = response.data
+      // Refresh sales list and update the selected sale with fresh data
+      queryClient.invalidateQueries({ queryKey: ['commerce', 'sales'] })
+      // Merge updated shipping fields into selectedSale so the dialog updates immediately
+      setSelectedSale(prev => ({ ...prev, ...updated }))
+      toast.success('Shipping label created')
+      if (updated?.shipping_label_url) {
+        window.open(updated.shipping_label_url, '_blank')
+      }
+    } catch (error) {
+      toast.error(error?.response?.data?.message || 'Failed to create shipping label')
+    } finally {
+      setBuyingLabel(false)
+    }
+  }
+
   const shippableSales = sales.filter(s => s.shipping_address && (s.payment_status === 'paid' || s.status === 'completed') && s.shipping_status !== 'shipped')
 
   return (
@@ -307,6 +353,18 @@ export default function SalesPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Sale Detail Dialog */}
+      <SaleDetailDialog
+        sale={selectedSale}
+        open={!!selectedSale}
+        onOpenChange={(open) => { if (!open) setSelectedSale(null) }}
+        projectId={currentProject?.id}
+        onBuyLabel={handleBuyLabel}
+        buyingLabel={buyingLabel}
+        onShip={handleShip}
+        shipPending={shipSaleMutation.isPending}
+      />
 
       {/* Table */}
       <Card>
@@ -444,50 +502,30 @@ export default function SalesPage() {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        {sale.shipping_status === 'shipped' ? (
-                          <div className="space-y-1">
-                            {sale.shipping_tracking_number && (
-                              <a
-                                href={sale.shipping_status === 'shipped' && sale.shipping_tracking_number ? `https://tools.usps.com/go/TrackConfirmAction?tLabels=${sale.shipping_tracking_number}` : '#'}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-sm text-primary hover:underline flex items-center gap-1"
-                              >
-                                {sale.shipping_tracking_number}
-                                <ExternalLink className="h-3 w-3" />
-                              </a>
-                            )}
-                            {sale.shipping_label_url && (
-                              <a
-                                href={sale.shipping_label_url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-xs text-muted-foreground hover:underline"
-                              >
-                                Print label
-                              </a>
-                            )}
-                            {sale.shipping_billing_status === 'failed' && (
-                              <Link
-                                to={`/c/${currentProject?.slug}/commerce`}
-                                className="inline-flex items-center"
-                              >
-                                <Badge variant="destructive" className="text-[10px] mt-0.5">
+                        {(() => {
+                          const shippingStatus = getShippingStatus(sale)
+                          if (!shippingStatus) return <span className="text-muted-foreground text-sm">—</span>
+                          const cfg = shippingStatusConfig[shippingStatus]
+                          return (
+                            <div className="space-y-1">
+                              <Badge variant="outline" className={cfg.className}>
+                                {shippingStatus === 'shipped' && <Truck className="h-3 w-3 mr-1" />}
+                                {shippingStatus === 'delivered' && <Check className="h-3 w-3 mr-1" />}
+                                {cfg.label}
+                              </Badge>
+                              {sale.shipping_tracking_number && (
+                                <p className="text-xs text-muted-foreground font-mono truncate max-w-[120px]">
+                                  {sale.shipping_tracking_number}
+                                </p>
+                              )}
+                              {sale.shipping_billing_status === 'failed' && (
+                                <Badge variant="destructive" className="text-[10px]">
                                   Billing failed
                                 </Badge>
-                              </Link>
-                            )}
-                            {sale.shipping_billing_status === 'succeeded' && (
-                              <Badge variant="outline" className="text-[10px] text-green-600 border-green-500/30 mt-0.5">
-                                Charged
-                              </Badge>
-                            )}
-                          </div>
-                        ) : sale.shipping_address ? (
-                          <Badge variant="outline" className="text-amber-600 border-amber-500/30">Unshipped</Badge>
-                        ) : (
-                          <span className="text-muted-foreground text-sm">—</span>
-                        )}
+                              )}
+                            </div>
+                          )
+                        })()}
                       </TableCell>
                       <TableCell>
                         <DropdownMenu>
@@ -497,7 +535,7 @@ export default function SalesPage() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => setSelectedSale(sale)}>
                               <Eye className="h-4 w-4 mr-2" />
                               View Details
                             </DropdownMenuItem>
@@ -538,6 +576,228 @@ export default function SalesPage() {
         </CardContent>
       </Card>
     </div>
+  )
+}
+
+function ShippingStatusBadge({ sale }) {
+  const status = getShippingStatus(sale)
+  if (!status) return null
+  const cfg = shippingStatusConfig[status]
+  return (
+    <Badge variant="outline" className={cfg.className}>
+      {status === 'shipped' && <Truck className="h-3 w-3 mr-1" />}
+      {status === 'delivered' && <Check className="h-3 w-3 mr-1" />}
+      {status === 'unshipped' && <Package className="h-3 w-3 mr-1" />}
+      {cfg.label}
+    </Badge>
+  )
+}
+
+function SaleDetailDialog({ sale, open, onOpenChange, projectId, onBuyLabel, buyingLabel, onShip, shipPending }) {
+  if (!sale) return null
+
+  const shippingStatus = getShippingStatus(sale)
+  const hasLabel = !!sale.shipping_label_url
+  const hasTracking = !!sale.shipping_tracking_number
+  const hasShippingAddress = !!sale.shipping_address
+  const isProduct = sale.offering?.type === 'product' || hasShippingAddress
+  const canBuyLabel = isProduct && hasShippingAddress && !hasLabel && !hasTracking
+  const canShip = hasShippingAddress && (sale.payment_status === 'paid' || sale.status === 'completed') && sale.shipping_status !== 'shipped'
+
+  const copyToClipboard = (text) => {
+    navigator.clipboard.writeText(text).then(() => toast.success('Copied to clipboard'))
+  }
+
+  const config = statusConfig[sale.status] || statusConfig.pending
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <ShoppingCart className="h-5 w-5" />
+            Sale Details
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          {/* Sale Summary */}
+          <div className="grid grid-cols-2 gap-3 text-sm">
+            <div>
+              <p className="text-muted-foreground text-xs mb-0.5">Date</p>
+              <p className="font-medium">{new Date(sale.created_at).toLocaleDateString()}</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground text-xs mb-0.5">Status</p>
+              <Badge variant={config.variant}>{config.label}</Badge>
+            </div>
+            <div>
+              <p className="text-muted-foreground text-xs mb-0.5">Customer</p>
+              <p className="font-medium">
+                {sale.customer?.name || sale.customer?.email || sale.customer_name || sale.customer_email || 'Anonymous'}
+              </p>
+            </div>
+            <div>
+              <p className="text-muted-foreground text-xs mb-0.5">Amount</p>
+              <p className="font-medium">${sale.total_amount?.toLocaleString()}</p>
+            </div>
+            {sale.offering && (
+              <div className="col-span-2">
+                <p className="text-muted-foreground text-xs mb-0.5">Offering</p>
+                <p className="font-medium">{sale.offering.name}</p>
+              </div>
+            )}
+          </div>
+
+          {/* Shipping Section */}
+          {(hasShippingAddress || hasLabel || hasTracking) && (
+            <div className="rounded-lg border bg-card p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold text-sm flex items-center gap-2">
+                  <Truck className="h-4 w-4" />
+                  Shipping
+                </h3>
+                <ShippingStatusBadge sale={sale} />
+              </div>
+
+              {/* Shipping Address */}
+              {hasShippingAddress && (
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Ship to</p>
+                  <div className="text-sm">
+                    {typeof sale.shipping_address === 'string' ? (
+                      <p>{sale.shipping_address}</p>
+                    ) : (
+                      <>
+                        {sale.shipping_address.name && <p className="font-medium">{sale.shipping_address.name}</p>}
+                        {sale.shipping_address.line1 && <p>{sale.shipping_address.line1}</p>}
+                        {sale.shipping_address.line2 && <p>{sale.shipping_address.line2}</p>}
+                        {(sale.shipping_address.city || sale.shipping_address.state || sale.shipping_address.postal_code) && (
+                          <p>
+                            {[sale.shipping_address.city, sale.shipping_address.state, sale.shipping_address.postal_code]
+                              .filter(Boolean).join(', ')}
+                          </p>
+                        )}
+                        {sale.shipping_address.country && <p>{sale.shipping_address.country}</p>}
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Carrier / Service */}
+              {(sale.shipping_carrier || sale.shipping_service) && (
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  {sale.shipping_carrier && (
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-0.5">Carrier</p>
+                      <p className="font-medium capitalize">{sale.shipping_carrier}</p>
+                    </div>
+                  )}
+                  {sale.shipping_service && (
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-0.5">Service</p>
+                      <p className="font-medium">{sale.shipping_service}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Tracking Number */}
+              {hasTracking && (
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Tracking Number</p>
+                  <div className="flex items-center gap-2">
+                    <code className="text-sm font-mono bg-muted px-2 py-1 rounded flex-1 truncate">
+                      {sale.shipping_tracking_number}
+                    </code>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 shrink-0"
+                      onClick={() => copyToClipboard(sale.shipping_tracking_number)}
+                    >
+                      <Copy className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 shrink-0"
+                      asChild
+                    >
+                      <a
+                        href={`https://tools.usps.com/go/TrackConfirmAction?tLabels=${sale.shipping_tracking_number}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <ExternalLink className="h-3.5 w-3.5" />
+                      </a>
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Label & Action Buttons */}
+              <div className="flex flex-wrap gap-2 pt-1">
+                {hasLabel && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    asChild
+                  >
+                    <a href={sale.shipping_label_url} target="_blank" rel="noopener noreferrer">
+                      <Download className="h-3.5 w-3.5 mr-1.5" />
+                      Download Label
+                    </a>
+                  </Button>
+                )}
+
+                {canBuyLabel && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onBuyLabel(sale)}
+                    disabled={buyingLabel}
+                  >
+                    <Package className="h-3.5 w-3.5 mr-1.5" />
+                    {buyingLabel ? 'Creating Label...' : 'Create Shipping Label'}
+                  </Button>
+                )}
+
+                {canShip && !hasLabel && !canBuyLabel && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onShip(sale.id)}
+                    disabled={shipPending}
+                  >
+                    <Package className="h-3.5 w-3.5 mr-1.5" />
+                    {shipPending ? 'Generating...' : 'Generate Label'}
+                  </Button>
+                )}
+
+                {sale.shipping_billing_status === 'failed' && (
+                  <Badge variant="destructive" className="text-xs">Billing failed</Badge>
+                )}
+                {sale.shipping_billing_status === 'succeeded' && (
+                  <Badge variant="outline" className="text-xs text-green-600 border-green-500/30">Charged</Badge>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* No shipping info but is a product type */}
+          {isProduct && !hasShippingAddress && !hasLabel && !hasTracking && (
+            <div className="rounded-lg border bg-card p-4">
+              <p className="text-sm text-muted-foreground flex items-center gap-2">
+                <Package className="h-4 w-4" />
+                No shipping address on file for this sale.
+              </p>
+            </div>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
   )
 }
 

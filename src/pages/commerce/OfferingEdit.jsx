@@ -47,6 +47,7 @@ import {
 import CommerceImageUploader from '@/components/commerce/CommerceImageUploader'
 import ClothingSizesModal from '@/components/commerce/ClothingSizesModal'
 import VariantsManagement from '@/components/commerce/VariantsManagement'
+import SizeChartEditor from '@/components/commerce/SizeChartEditor'
 import ScheduleManagement from '@/components/commerce/ScheduleManagement'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { EchoGenerateButton } from '@/components/ai/EchoGenerateButton'
@@ -119,6 +120,7 @@ export default function OfferingEdit({ offeringId, onBack }) {
         // Product fields
         sku: currentOffering.sku || '',
         is_clothing: currentOffering.is_clothing ?? false,
+        size_chart: currentOffering.size_chart || null,
         track_inventory: currentOffering.track_inventory || false,
         inventory_count: currentOffering.inventory_count?.toString() || '',
         // Service/Class fields
@@ -200,6 +202,7 @@ export default function OfferingEdit({ offeringId, onBack }) {
       }
       if (currentOffering.type === 'product') {
         data.is_clothing = formData.is_clothing ?? false
+        data.size_chart = formData.size_chart || null
       }
       if (currentConfig?.fields.includes('inventory')) {
         data.track_inventory = formData.track_inventory
@@ -601,6 +604,22 @@ export default function OfferingEdit({ offeringId, onBack }) {
                       Manage sizes
                     </Button>
                   </div>
+                </div>
+              )}
+
+              {formData.is_clothing && (
+                <div className="space-y-2">
+                  <div>
+                    <p className="text-sm font-medium">Size Chart</p>
+                    <p className="text-xs text-muted-foreground">
+                      Measurement table shown to customers to help them choose the right size.
+                    </p>
+                  </div>
+                  <SizeChartEditor
+                    value={formData.size_chart}
+                    onChange={(chart) => handleChange('size_chart', chart)}
+                    existingSizes={variants.map((v) => v.options?.Size ?? v.name)}
+                  />
                 </div>
               )}
 

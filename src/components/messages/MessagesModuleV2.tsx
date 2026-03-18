@@ -82,6 +82,10 @@ interface MessagesModuleProps {
   className?: string
   /** 'widget' = single-column layout with back button when thread selected (for floating bubble) */
   variant?: 'full' | 'widget'
+  /** Context string from open-echo events (e.g., 'whats-this:crm/pipeline', 'error-help:...') */
+  echoContext?: string | null
+  /** Called after echoContext has been consumed (auto-sent to Echo) so parent can clear it */
+  onEchoContextConsumed?: () => void
 }
 
 interface Contact {
@@ -401,6 +405,8 @@ export function MessagesModuleV2({
   onThreadChange,
   className,
   variant = 'full',
+  echoContext,
+  onEchoContextConsumed,
 }: MessagesModuleProps) {
   const [searchParams, setSearchParams] = useSearchParams()
   
@@ -568,24 +574,27 @@ export function MessagesModuleV2({
     enabled: true,
   })
 
-  // Contextual help auto-send: when navigating via "What's this?" or help shortcut,
-  // the URL contains ?context=whats-this:{helpKey} or page-help:{module} or search-help:{helpKey}.
-  // We auto-send a message to Echo with the appropriate question.
+  // Contextual help auto-send: triggered by either:
+  // 1. echoContext prop (from MessagesWidget open-echo event — preferred, stays on page)
+  // 2. URL ?context= param (fallback for direct /messages navigation)
+  // Converts context strings like 'whats-this:crm/pipeline' into natural questions.
   const contextAutoSentRef = useRef<string | null>(null)
   useEffect(() => {
     if (activeTab !== 'echo') return
-    const contextParam = searchParams.get('context')
+
+    // Prefer prop-based context (from widget), fall back to URL param
+    const contextParam = echoContext || searchParams.get('context')
     if (!contextParam || contextAutoSentRef.current === contextParam) return
     if (echoLoading) return // Wait for Echo to be ready
 
     contextAutoSentRef.current = contextParam
 
-    // Parse the context type and key
+    // Parse the context type and build the auto-message
     let autoMessage: string | null = null
     if (contextParam.startsWith('whats-this:')) {
       const helpKey = contextParam.replace('whats-this:', '')
       const label = helpKey.replace(/\//g, ' > ').replace(/[-_]/g, ' ')
-      autoMessage = `What is this? Explain the "${label}" element — what it does and how to use it.`
+      autoMessage = `What is this? Explain the "${label}" element, what it does, and how to use it.`
     } else if (contextParam.startsWith('page-help:')) {
       const module = contextParam.replace('page-help:', '')
       autoMessage = `I'm on the ${module} page. What can I do here? Give me a quick overview.`
@@ -593,22 +602,29 @@ export function MessagesModuleV2({
       const helpKey = contextParam.replace('search-help:', '')
       const label = helpKey.replace(/\//g, ' > ').replace(/[-_]/g, ' ')
       autoMessage = `Search the help docs for information about "${label}".`
+    } else if (contextParam.startsWith('error-help:')) {
+      const errorMsg = contextParam.replace('error-help:', '')
+      autoMessage = `I got an error: "${errorMsg}". What went wrong and how do I fix it?`
     }
 
     if (autoMessage) {
       // Small delay to ensure Echo is mounted and ready
       const timer = setTimeout(() => {
         sendEchoMessage(autoMessage!)
-        // Clean the context param from URL so refresh doesn't re-send
-        setSearchParams(prev => {
-          const next = new URLSearchParams(prev)
-          next.delete('context')
-          return next
-        }, { replace: true })
+        // Notify parent that context was consumed (so widget can clear it)
+        onEchoContextConsumed?.()
+        // Also clean URL param if it was the source
+        if (searchParams.get('context')) {
+          setSearchParams(prev => {
+            const next = new URLSearchParams(prev)
+            next.delete('context')
+            return next
+          }, { replace: true })
+        }
       }, 500)
       return () => clearTimeout(timer)
     }
-  }, [activeTab, searchParams, echoLoading, sendEchoMessage, setSearchParams])
+  }, [activeTab, echoContext, searchParams, echoLoading, sendEchoMessage, setSearchParams, onEchoContextConsumed])
 
   // Dynamic welcome context (latest insight, goals, new leads)
   const [echoWelcomeContext, setEchoWelcomeContext] = useState(null)

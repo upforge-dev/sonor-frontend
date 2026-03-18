@@ -163,19 +163,8 @@ const MainLayout = () => {
     return () => window.removeEventListener('portal:navigate', handler)
   }, [navigate])
 
-  // Global open-echo event: navigates to Echo chat with optional context
-  useEffect(() => {
-    const handler = (e) => {
-      const context = e.detail?.context || ''
-      const path = e.detail?.path || ''
-      const params = new URLSearchParams({ tab: 'echo' })
-      if (context) params.set('context', context)
-      if (path) params.set('page', path)
-      navigate(`/messages?${params.toString()}`)
-    }
-    window.addEventListener('open-echo', handler)
-    return () => window.removeEventListener('open-echo', handler)
-  }, [navigate])
+  // Global open-echo event: handled by MessagesWidget (floating chat bubble).
+  // The widget opens in-place without navigating away from the current page.
 
   // Handle sidebar section change - navigates to the route
   const handleSectionChange = (section) => {
