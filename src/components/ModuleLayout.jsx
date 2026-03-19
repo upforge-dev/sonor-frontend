@@ -372,7 +372,7 @@ function ModuleLayoutRoot({
   return (
     <ModuleLayoutContext.Provider value={contextValue}>
       <motion.div
-        className={cn('flex flex-col h-full min-h-0 bg-[var(--glass-bg)] backdrop-blur-xl', className)}
+        className={cn('flex flex-col flex-1 min-h-0 overflow-hidden bg-[var(--glass-bg)] backdrop-blur-xl', className)}
         role="region"
         aria-label={ariaLabel}
         initial={false}
@@ -402,7 +402,7 @@ function ModuleLayoutRoot({
               </motion.aside>
             )}
           </AnimatePresence>
-          <div className="flex flex-col flex-1 min-w-0 min-h-0 overflow-hidden" data-module-column>
+          <div className="flex flex-col flex-1 min-w-0 min-h-0 overflow-y-auto overflow-x-hidden" data-module-column>
             {contentChild}
           </div>
           <AnimatePresence initial={false}>
@@ -617,25 +617,20 @@ function ModuleHeader({ title, subtitle, breadcrumbs = [], actions, icon, classN
 }
 
 function ModuleContent({ children, className, padding = 'none', noPadding: noPaddingProp, contentTransition = true, ...rest }) {
-  const reducedMotion = useReducedMotion()
   const noPadding = noPaddingProp ?? (padding === 'none' || padding === false)
-  const doFade = contentTransition && !reducedMotion
   return (
-    <motion.div
+    <div
       className={cn(
-        'flex-1 min-h-0 overflow-auto scrollbar-hide text-[var(--text-primary)] text-sm font-sans',
+        'flex-1 min-h-0 overflow-y-auto overflow-x-hidden scrollbar-hide text-[var(--text-primary)] text-sm font-sans',
         !noPadding && 'p-4',
         className
       )}
       {...rest}
       role="region"
       aria-label="Page content"
-      initial={doFade ? { opacity: 0 } : false}
-      animate={{ opacity: 1 }}
-      transition={doFade ? CONTENT_FADE : { duration: 0 }}
     >
       {children}
-    </motion.div>
+    </div>
   )
 }
 

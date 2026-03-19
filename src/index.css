@@ -344,6 +344,19 @@ h1, h2, h3, h4, h5, h6 {
   display: none !important;
 }
 
+/*
+ * Force React Router's classless wrapper divs to participate in the flex layout chain.
+ * Without this, <Routes> inserts a plain <div> that breaks height constraints,
+ * causing content to overflow instead of scroll.
+ */
+#main-content > div > div:not([class]) {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0%;
+  min-height: 0;
+  overflow: hidden;
+}
+
 /* ModuleLayout three columns: hide all scrollbars (native + Radix ScrollArea) */
 [data-module-column] {
   -ms-overflow-style: none;

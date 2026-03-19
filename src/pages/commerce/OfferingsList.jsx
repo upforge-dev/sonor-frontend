@@ -207,7 +207,7 @@ export default function CommerceOfferings({ type: typeProp }) {
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col">
       {/* Header */}
       <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-10">
         <div className="px-6 py-4">
@@ -315,7 +315,7 @@ export default function CommerceOfferings({ type: typeProp }) {
       </div>
       
       {/* Content */}
-      <div className="flex-1 overflow-auto p-6">
+      <div className="p-6">
         {isLoading ? (
           viewMode === 'grid' ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">

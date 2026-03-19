@@ -326,14 +326,12 @@ const MainLayout = () => {
 
         {/* Main Content - Uses React Router for nested routes */}
         <main id="main-content" className="flex-1 min-w-0 overflow-hidden flex flex-col min-h-0" role="main" aria-label="Page content">
-          <div className="flex-1 min-h-0 flex flex-col">
             <Suspense fallback={
               <div className="flex items-center justify-center h-full">
                 <SonorSpinner size="lg" />
               </div>
             }>
               <ModuleErrorBoundary>
-                <div className="flex-1 min-h-0 flex flex-col h-full">
                   <Routes>
                 {/* Dashboard */}
                 <Route index element={isSalesRep ? <RepDashboardModule onNavigate={navigateTo} /> : <DashboardModule onNavigate={navigateTo} />} />
@@ -401,10 +399,8 @@ const MainLayout = () => {
                 {/* Catch-all - redirect to dashboard instead of rendering it */}
                 <Route path="*" element={<Navigate to="/" replace />} />
                   </Routes>
-                </div>
               </ModuleErrorBoundary>
             </Suspense>
-          </div>
         </main>
       </div>
 
