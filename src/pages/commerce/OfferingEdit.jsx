@@ -1416,6 +1416,31 @@ function EventEditView({
                   </Select>
                 </CardContent>
               </Card>
+
+              {/* External Registration Link */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>External Registration</CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    Link to an external ticketing or registration page instead of using built-in checkout.
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  <div>
+                    <Label htmlFor="external_url_settings">External URL</Label>
+                    <Input
+                      id="external_url_settings"
+                      type="url"
+                      value={formData.external_url}
+                      onChange={(e) => handleChange('external_url', e.target.value)}
+                      placeholder="https://eventbrite.com/e/your-event"
+                    />
+                    <p className="text-sm text-muted-foreground mt-1">
+                      When set, visitors will be directed to this link instead of the Sonor checkout flow.
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
             </TabsContent>
           </Tabs>
 
