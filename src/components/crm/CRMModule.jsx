@@ -1094,16 +1094,16 @@ export default function CRMDashboard() {
           actions={headerActions}
         />
         <ModuleLayout.Content>
-          <div className="flex flex-col min-h-0">
-            <SignalSuggestsPanel module="crm" className="mb-4 mx-4 mt-4 flex-shrink-0" />
+          <div>
+            <SignalSuggestsPanel module="crm" className="mb-4 mx-4 mt-4" />
             {isLoading ? (
-              <div className="flex-1 flex items-center justify-center">
+              <div className="flex items-center justify-center py-24">
                 <div className="flex flex-col items-center gap-3">
                   <UptradeSpinner size="md" label="Loading prospects..." />
                 </div>
               </div>
             ) : !currentProject ? (
-              <div className="flex-1 flex items-center justify-center">
+              <div className="flex items-center justify-center py-24">
                 <div className="text-center max-w-md">
                   <div 
                     className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4"
@@ -1118,7 +1118,7 @@ export default function CRMDashboard() {
                 </div>
               </div>
             ) : filteredProspects.length === 0 ? (
-              <div className="flex-1 flex items-center justify-center">
+              <div className="flex items-center justify-center py-24">
                 <div className="text-center max-w-md">
                   <div 
                     className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4"
@@ -1145,7 +1145,7 @@ export default function CRMDashboard() {
               </div>
             ) : viewMode === 'analytics' ? (
               // Analytics View
-              <div className="flex-1">
+              <div>
                 <CRMAnalyticsDashboard
                   projectId={currentProject?.id}
                   brandColors={brandColors}
@@ -1176,7 +1176,7 @@ export default function CRMDashboard() {
               />
             ) : viewMode === 'unassigned' ? (
               // Unassigned Leads Queue - Leads waiting to be claimed/assigned
-              <div className="flex-1 min-h-0 p-4">
+              <div className="p-4">
                 <UnassignedLeadsQueue 
                   onLeadClick={handleProspectClick}
                   onLeadAssigned={handleLeadAssigned}
@@ -1193,7 +1193,7 @@ export default function CRMDashboard() {
               <SalesModule title="Prospecting" fetchParams={{ source: 'extension' }} />
             ) : viewMode === 'pipeline' ? (
               // Pipeline/Kanban View - Fill vertical space
-              <div className="flex-1 min-h-0 p-4">
+              <div className="p-4">
                 <PipelineKanban
                   pipelineStages={pipelineStages}
                   prospects={filteredProspects}
@@ -1225,26 +1225,23 @@ export default function CRMDashboard() {
                   onArchive={(prospect) => {
                     handleUpdateStage(prospect.id, 'closed_lost')
                   }}
-                  className="h-full"
                 />
               </div>
             ) : (
               // List View
-              <ScrollArea className="flex-1 min-h-0">
-                <div className="p-4 space-y-2">
-                  {filteredProspects.map((prospect) => (
-                    <ProspectCard
-                      key={prospect.id}
-                      prospect={prospect}
-                      isSelected={selectedProspect?.id === prospect.id}
-                      onClick={handleProspectClick}
-                      compact
-                      brandColors={brandColors}
-                      pipelineStages={pipelineStages}
-                    />
-                  ))}
-                </div>
-              </ScrollArea>
+              <div className="p-4 space-y-2">
+                {filteredProspects.map((prospect) => (
+                  <ProspectCard
+                    key={prospect.id}
+                    prospect={prospect}
+                    isSelected={selectedProspect?.id === prospect.id}
+                    onClick={handleProspectClick}
+                    compact
+                    brandColors={brandColors}
+                    pipelineStages={pipelineStages}
+                  />
+                ))}
+              </div>
             )}
           </div>
         </ModuleLayout.Content>

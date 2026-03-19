@@ -457,7 +457,7 @@ export default function AnalyticsDashboard() {
       />
       <ModuleLayout.Content>
         <div className={cn(
-          currentView === 'journeys' ? "h-full" : "p-6",
+          "p-6",
           showAIPanel && "pr-0"
         )}>
           {currentView === 'highlights' && (
@@ -470,7 +470,6 @@ export default function AnalyticsDashboard() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.15 }}
-              className={currentView === 'journeys' || currentView === 'signal-alerts' ? "h-full" : ""}
             >
               <Suspense fallback={<ViewLoader />}>
                 {currentView === 'highlights' ? (
@@ -478,13 +477,13 @@ export default function AnalyticsDashboard() {
                 ) : currentView === 'journeys' ? (
                   <JourneysView />
                 ) : currentView === 'signal-alerts' ? (
-                  <div className="h-full p-6">
+                  <div className="p-6">
                     <Suspense fallback={<ViewLoader />}>
                       <SignalAlertsPanel />
                     </Suspense>
                   </div>
                 ) : currentView === 'signal-insights' ? (
-                  <div className="h-full">
+                  <div>
                     <Suspense fallback={<ViewLoader />}>
                       <AIInsightsPanel 
                         path={selectedPath}

@@ -507,12 +507,12 @@ export function Broadcast({ onNavigate }) {
       <ModuleLayout ariaLabel="Broadcast" leftSidebar={leftSidebarContent} defaultLeftSidebarOpen={true}>
         <ModuleLayout.Header title="Broadcast" icon={MODULE_ICONS.broadcast} actions={headerActions} data-tour="broadcast-overview" />
         <ModuleLayout.Content>
-          <div className="flex flex-col bg-[var(--glass-bg)]/30 backdrop-blur-sm min-h-0">
+          <div className="bg-[var(--glass-bg)]/30 backdrop-blur-sm">
             {currentView === 'overview' && (
-              <SignalSuggestsPanel module="broadcast" className="mx-4 mt-4 mb-0 flex-shrink-0" />
+              <SignalSuggestsPanel module="broadcast" className="mx-4 mt-4 mb-0" />
             )}
             {(currentView === 'posts' || currentView === 'library') && (
-              <div className="flex-shrink-0 h-12 border-b flex items-center justify-between px-4 bg-card/50">
+              <div className="h-12 border-b flex items-center justify-between px-4 bg-card/50">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-tertiary)]" />
                   <Input
@@ -599,10 +599,7 @@ export function Broadcast({ onNavigate }) {
             )}
             
             {/* Main content area */}
-            <div className={cn(
-              "flex-1 min-h-0",
-              (currentView === 'posts' || currentView === 'library') && "h-[calc(100%-48px)]"
-            )}>
+            <div>
               {renderContent()}
             </div>
           </div>

@@ -1341,7 +1341,7 @@ export default function CommerceDashboard({ onNavigate }) {
       >
         <ModuleLayout.Header title="Commerce" icon={MODULE_ICONS.commerce} data-tour="commerce-overview" />
         <ModuleLayout.Content>
-          <main className="flex-1 min-h-0">
+          <div>
         {/* Header */}
         <div className="bg-card/80 backdrop-blur-sm border-b sticky top-0 z-10">
           <div className="px-6 py-4">
@@ -1821,7 +1821,7 @@ export default function CommerceDashboard({ onNavigate }) {
             )
           )}
         </div>
-          </main>
+          </div>
         </ModuleLayout.Content>
       </ModuleLayout>
 
