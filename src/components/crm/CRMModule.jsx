@@ -1094,7 +1094,7 @@ export default function CRMDashboard() {
           actions={headerActions}
         />
         <ModuleLayout.Content>
-          <div className="flex-1 overflow-hidden flex flex-col h-full min-h-0">
+          <div className="flex flex-col min-h-0">
             <SignalSuggestsPanel module="crm" className="mb-4 mx-4 mt-4 flex-shrink-0" />
             {isLoading ? (
               <div className="flex-1 flex items-center justify-center">
@@ -1145,8 +1145,8 @@ export default function CRMDashboard() {
               </div>
             ) : viewMode === 'analytics' ? (
               // Analytics View
-              <div className="flex-1 overflow-auto">
-                <CRMAnalyticsDashboard 
+              <div className="flex-1">
+                <CRMAnalyticsDashboard
                   projectId={currentProject?.id}
                   brandColors={brandColors}
                 />
@@ -1176,7 +1176,7 @@ export default function CRMDashboard() {
               />
             ) : viewMode === 'unassigned' ? (
               // Unassigned Leads Queue - Leads waiting to be claimed/assigned
-              <div className="flex-1 min-h-0 p-4 overflow-auto">
+              <div className="flex-1 min-h-0 p-4">
                 <UnassignedLeadsQueue 
                   onLeadClick={handleProspectClick}
                   onLeadAssigned={handleLeadAssigned}

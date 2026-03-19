@@ -292,8 +292,8 @@ export function Broadcast({ onNavigate }) {
         );
       case 'posts':
         return (
-          <div className="h-full overflow-auto p-6">
-            <PostsList 
+          <div className="p-6">
+            <PostsList
               posts={filteredPosts}
               viewMode={viewMode}
               onEdit={handleEditPost}
@@ -305,14 +305,14 @@ export function Broadcast({ onNavigate }) {
         return <UnifiedInbox />;
       case 'analytics':
         return (
-          <div className="h-full overflow-auto p-6">
+          <div className="p-6">
             <BroadcastAnalytics />
           </div>
         );
       case 'library':
         return (
-          <div className="h-full overflow-auto p-6">
-            <MediaLibrary 
+          <div className="p-6">
+            <MediaLibrary
               searchQuery={searchQuery}
               onUseTemplate={(template) => handleCreatePost({ template })}
               onSelectMedia={(media) => handleCreatePost({ media: [media] })}
@@ -507,7 +507,7 @@ export function Broadcast({ onNavigate }) {
       <ModuleLayout ariaLabel="Broadcast" leftSidebar={leftSidebarContent} defaultLeftSidebarOpen={true}>
         <ModuleLayout.Header title="Broadcast" icon={MODULE_ICONS.broadcast} actions={headerActions} data-tour="broadcast-overview" />
         <ModuleLayout.Content>
-          <div className="h-full flex flex-col overflow-hidden bg-[var(--glass-bg)]/30 backdrop-blur-sm min-h-0">
+          <div className="flex flex-col bg-[var(--glass-bg)]/30 backdrop-blur-sm min-h-0">
             {currentView === 'overview' && (
               <SignalSuggestsPanel module="broadcast" className="mx-4 mt-4 mb-0 flex-shrink-0" />
             )}
@@ -600,7 +600,7 @@ export function Broadcast({ onNavigate }) {
             
             {/* Main content area */}
             <div className={cn(
-              "h-full overflow-hidden",
+              "flex-1 min-h-0",
               (currentView === 'posts' || currentView === 'library') && "h-[calc(100%-48px)]"
             )}>
               {renderContent()}

@@ -579,7 +579,7 @@ const Proposals = ({ onNavigate }) => {
     const signedContracts = myContracts.filter(p => ['signed', 'accepted'].includes(p.status))
 
     return (
-      <div className="h-full overflow-y-auto p-6 lg:p-8 space-y-6">
+      <div className="p-6 lg:p-8 space-y-6">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-[var(--text-primary)]">
@@ -764,7 +764,7 @@ const Proposals = ({ onNavigate }) => {
   const declinedProposals = proposals.filter(p => p.status === 'declined')
 
   return (
-    <div data-sonor-help="proposals/dashboard" className="h-full overflow-y-auto p-6 lg:p-8 space-y-6">
+    <div data-sonor-help="proposals/dashboard" className="p-6 lg:p-8 space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-[var(--text-primary)]">Proposals</h1>

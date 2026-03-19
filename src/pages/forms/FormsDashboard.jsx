@@ -956,7 +956,6 @@ export default function FormsDashboard() {
       >
         <ModuleLayout.Header data-tour="forms-overview" title="Forms" icon={MODULE_ICONS.forms} subtitle={headerSubtitle} actions={headerActions} />
         <ModuleLayout.Content>
-          <ScrollArea className="flex-1 h-full">
           <div className="p-6">
             <SignalSuggestsPanel module="forms" className="mb-4" />
             {currentView === 'highlights' && (
@@ -1067,7 +1066,6 @@ export default function FormsDashboard() {
               <FormsSettingsView projectId={projectId} />
             )}
           </div>
-        </ScrollArea>
         </ModuleLayout.Content>
       </ModuleLayout>
       
