@@ -8,7 +8,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { echoApi } from '@/lib/signal-api'
 
-const POLL_INTERVAL_MS = 30_000
+const POLL_INTERVAL_MS = 120_000
 
 interface UseEchoUnreadOptions {
   /** Only poll when the Echo tab is NOT active */

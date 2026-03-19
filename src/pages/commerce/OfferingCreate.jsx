@@ -124,6 +124,7 @@ export default function OfferingCreate({ type: propType, embedded = false, onBac
         form_id: '',
         seo_page_id: searchParams.get('seo_page_id') || '',
         page_path: searchParams.get('page_path') || '',
+        external_url: '',
         deposit_enabled: false,
         deposit_type: 'percentage',
         deposit_amount: '',
@@ -134,7 +135,7 @@ export default function OfferingCreate({ type: propType, embedded = false, onBac
         event_end_time: '',
       }
     }
-    
+
     // Default empty form
     return {
       type: propType || 'product',
@@ -155,6 +156,7 @@ export default function OfferingCreate({ type: propType, embedded = false, onBac
       form_id: '',
       seo_page_id: '',
       page_path: '',
+      external_url: '',
       deposit_enabled: false,
       deposit_type: 'percentage',
       deposit_amount: '',
@@ -296,6 +298,10 @@ export default function OfferingCreate({ type: propType, embedded = false, onBac
       }
       if (currentConfig?.fields.includes('capacity')) {
         data.capacity = formData.capacity ? parseInt(formData.capacity) : null
+      }
+      // External URL (events/classes that link externally instead of using internal checkout)
+      if (formData.external_url?.trim()) {
+        data.external_url = formData.external_url.trim()
       }
       if (currentConfig?.fields.includes('deposit') && formData.deposit_enabled) {
         data.deposit_settings = {
@@ -876,6 +882,33 @@ export default function OfferingCreate({ type: propType, embedded = false, onBac
                   </p>
                 </div>
               )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* External Registration Link - Events and Classes */}
+        {(currentType === 'event' || currentType === 'class') && (
+          <Card>
+            <CardHeader>
+              <CardTitle>External Registration</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Link to an external ticketing or registration page instead of using built-in checkout.
+              </p>
+            </CardHeader>
+            <CardContent>
+              <div>
+                <Label htmlFor="external_url">External URL</Label>
+                <Input
+                  id="external_url"
+                  type="url"
+                  value={formData.external_url}
+                  onChange={(e) => handleChange('external_url', e.target.value)}
+                  placeholder="https://eventbrite.com/e/your-event"
+                />
+                <p className="text-sm text-muted-foreground mt-1">
+                  When set, visitors will be directed to this link instead of the Sonor checkout flow.
+                </p>
+              </div>
             </CardContent>
           </Card>
         )}

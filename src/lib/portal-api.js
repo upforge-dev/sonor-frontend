@@ -106,6 +106,23 @@ portalApi.interceptors.response.use(
   }
 )
 
+// 429 retry with backoff — retry once after delay
+portalApi.interceptors.response.use(
+  response => response,
+  async error => {
+    const config = error.config
+    if (error.response?.status === 429 && !config.__retried) {
+      config.__retried = true
+      const retryAfter = error.response.headers['retry-after']
+      const delay = retryAfter ? parseInt(retryAfter) * 1000 : 2000
+      console.warn(`[Portal API] 429 throttled, retrying in ${delay}ms:`, config.url)
+      await new Promise(r => setTimeout(r, delay))
+      return portalApi(config)
+    }
+    return Promise.reject(error)
+  }
+)
+
 // ============================================================================
 // Auth API
 // ============================================================================

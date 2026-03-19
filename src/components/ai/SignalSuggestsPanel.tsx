@@ -8,7 +8,8 @@
  * Plan-gated: Standard-plan users see a single teaser suggestion with an
  * upgrade prompt instead of real data.
  */
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useCallback } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { Sparkles, ChevronDown, RefreshCw } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { echoApi } from '@/lib/signal-api'
@@ -34,10 +35,6 @@ interface SignalSuggestsPanelProps {
 }
 
 const STORAGE_KEY_PREFIX = 'signal-suggests-collapsed:'
-const CACHE_TTL_MS = 15 * 60 * 1000 // 15 minutes
-
-// In-memory suggestion cache keyed by module
-const suggestionCache = new Map<string, { data: Suggestion[]; fetchedAt: number }>()
 
 const severityColors: Record<string, string> = {
   info: 'var(--brand-primary, #3b82f6)',
@@ -78,9 +75,16 @@ export function SignalSuggestsPanel({
     }
   })
 
-  const [suggestions, setSuggestions] = useState<Suggestion[]>([])
-  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading')
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const { data: suggestions = [], status: queryStatus, refetch } = useQuery({
+    queryKey: ['signal-suggestions', module],
+    queryFn: () => echoApi.getSuggestions(module),
+    staleTime: 1000 * 60 * 60 * 24,  // 24 hours
+    gcTime: 1000 * 60 * 60 * 24,
+    refetchInterval: 1000 * 60 * 60,  // 1 hour
+    enabled: canUseSuggestions,
+  })
+
+  const status = queryStatus === 'pending' ? 'loading' : queryStatus === 'error' ? 'error' : 'ready'
 
   const toggleCollapsed = useCallback(() => {
     setCollapsed((prev) => {
@@ -93,53 +97,6 @@ export function SignalSuggestsPanel({
       return next
     })
   }, [storageKey])
-
-  const fetchSuggestions = useCallback(
-    async (force = false) => {
-      // Check cache first
-      if (!force) {
-        const cached = suggestionCache.get(module)
-        if (cached && Date.now() - cached.fetchedAt < CACHE_TTL_MS) {
-          setSuggestions(cached.data)
-          setStatus('ready')
-          return
-        }
-      }
-
-      setStatus('loading')
-      try {
-        const data: Suggestion[] = await echoApi.getSuggestions(module)
-        suggestionCache.set(module, { data, fetchedAt: Date.now() })
-        setSuggestions(data)
-        setStatus('ready')
-      } catch {
-        // If we have stale cache, still show it
-        const cached = suggestionCache.get(module)
-        if (cached) {
-          setSuggestions(cached.data)
-          setStatus('ready')
-        } else {
-          setStatus('error')
-        }
-      }
-    },
-    [module]
-  )
-
-  // Initial fetch + polling interval
-  useEffect(() => {
-    if (!canUseSuggestions) return
-
-    fetchSuggestions()
-
-    intervalRef.current = setInterval(() => {
-      fetchSuggestions(true)
-    }, CACHE_TTL_MS)
-
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current)
-    }
-  }, [canUseSuggestions, fetchSuggestions])
 
   // Plan-gated: show teaser + upgrade for Standard plan
   if (!canUseSuggestions) {
@@ -270,7 +227,7 @@ export function SignalSuggestsPanel({
           </p>
           <button
             type="button"
-            onClick={() => fetchSuggestions(true)}
+            onClick={() => refetch()}
             className="inline-flex items-center gap-1 text-xs font-medium transition-opacity hover:opacity-80 cursor-pointer"
             style={{ color: 'var(--brand-primary)' }}
           >

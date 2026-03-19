@@ -194,7 +194,7 @@ export function useRealtimeAnalytics(projectId, options = {}) {
       return response.data || response
     },
     enabled: !!projectId,
-    refetchInterval: 60_000, // 60s – reduce auth/API load
+    refetchInterval: 120_000, // 120s – reduce auth/API load
     staleTime: 0, // Always consider stale
     ...options,
   })

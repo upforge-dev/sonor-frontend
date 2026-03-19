@@ -226,7 +226,7 @@ export function useSiteRealtimeAnalytics(projectId, options = {}) {
     },
     enabled: !!projectId,
     staleTime: 1000 * 10, // 10 seconds
-    refetchInterval: 1000 * 60, // 60s – reduce auth/API load
+    refetchInterval: 1000 * 120, // 120s – reduce auth/API load
     ...options,
   })
 }

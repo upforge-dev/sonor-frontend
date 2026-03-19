@@ -129,6 +129,8 @@ export default function OfferingEdit({ offeringId, onBack }) {
         capacity: currentOffering.capacity?.toString() || '',
         // Service intake form
         form_id: currentOffering.form_id || '',
+        // External registration link
+        external_url: currentOffering.external_url || '',
         // Page association
         seo_page_id: currentOffering.seo_page_id || '',
         page_path: currentOffering.page_path || '',
@@ -219,6 +221,8 @@ export default function OfferingEdit({ offeringId, onBack }) {
       if (currentConfig?.fields.includes('capacity')) {
         data.capacity = formData.capacity ? parseInt(formData.capacity) : null
       }
+      // External URL (events/classes that link externally)
+      data.external_url = formData.external_url?.trim() || null
       if (currentConfig?.fields.includes('deposit')) {
         data.deposit_required = formData.deposit_enabled || false
         data.deposit_type = formData.deposit_type || null
@@ -721,6 +725,33 @@ export default function OfferingEdit({ offeringId, onBack }) {
                   </p>
                 </div>
               )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* External Registration Link - Events and Classes */}
+        {(currentOffering?.type === 'event' || currentOffering?.type === 'class') && (
+          <Card>
+            <CardHeader>
+              <CardTitle>External Registration</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Link to an external ticketing or registration page instead of using built-in checkout.
+              </p>
+            </CardHeader>
+            <CardContent>
+              <div>
+                <Label htmlFor="external_url">External URL</Label>
+                <Input
+                  id="external_url"
+                  type="url"
+                  value={formData.external_url}
+                  onChange={(e) => handleChange('external_url', e.target.value)}
+                  placeholder="https://eventbrite.com/e/your-event"
+                />
+                <p className="text-sm text-muted-foreground mt-1">
+                  When set, visitors will be directed to this link instead of the Sonor checkout flow.
+                </p>
+              </div>
             </CardContent>
           </Card>
         )}
