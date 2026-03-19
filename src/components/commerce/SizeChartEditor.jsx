@@ -1,6 +1,6 @@
 // src/components/commerce/SizeChartEditor.jsx
 // Editable size chart table for clothing products.
-// Supports inch/cm unit toggle, measurement column presets, and inline cell editing.
+// Supports inch/cm unit toggle with auto-conversion, measurement column presets, and inline cell editing.
 
 import { useState, useEffect } from 'react'
 import { Plus, X, Ruler } from 'lucide-react'
@@ -12,13 +12,47 @@ const MEASUREMENT_PRESETS = {
   Dresses: ['Bust', 'Waist', 'Hip', 'Length'],
 }
 
+// ── Conversion helpers ─────────────────────────────────────────────────────────
+
+const CM_PER_INCH = 2.54
+
+/**
+ * Convert a single value from `fromUnit` to the other unit.
+ * Returns null if the value is not a valid number.
+ */
+function convertValue(value, fromUnit) {
+  if (value === '' || value === null || value === undefined) return null
+  const num = parseFloat(value)
+  if (isNaN(num)) return null
+  if (fromUnit === 'inches') return Math.round(num * CM_PER_INCH * 10) / 10
+  return Math.round((num / CM_PER_INCH) * 10) / 10
+}
+
+/**
+ * Rebuild values_alt for a row given current primary values and unit.
+ */
+function convertRow(row, fromUnit) {
+  return {
+    ...row,
+    values_alt: row.values.map((v) => convertValue(v, fromUnit)),
+  }
+}
+
+// ── Chart builder ──────────────────────────────────────────────────────────────
+
 function buildEmptyChart(measurements, existingSizes = []) {
   return {
     unit: 'inches',
     measurements,
-    rows: existingSizes.map((size) => ({ size, values: measurements.map(() => '') })),
+    rows: existingSizes.map((size) => ({
+      size,
+      values: measurements.map(() => ''),
+      values_alt: measurements.map(() => null),
+    })),
   }
 }
+
+// ── Editor component ──────────────────────────────────────────────────────────
 
 export default function SizeChartEditor({ value, onChange, existingSizes = [] }) {
   // chart mirrors the value prop; local edits immediately propagate via onChange
@@ -34,13 +68,26 @@ export default function SizeChartEditor({ value, onChange, existingSizes = [] })
     onChange(next)
   }
 
-  // ── Unit toggle ─────────────────────────────────────────────────────────────
+  // ── Unit toggle ──────────────────────────────────────────────────────────────
+  // Switching units: swap values ↔ values_alt for all rows, flip the unit field.
 
-  function setUnit(unit) {
-    emit({ ...chart, unit })
+  function switchUnit(newUnit) {
+    if (!chart || chart.unit === newUnit) return
+
+    const rows = chart.rows.map((row) => {
+      const newValues = (row.values_alt || []).map((v) => (v !== null && v !== undefined ? v : ''))
+      const newValuesAlt = row.values.map((v) => convertValue(v, chart.unit))
+      return {
+        ...row,
+        values: newValues,
+        values_alt: newValuesAlt,
+      }
+    })
+
+    emit({ ...chart, unit: newUnit, rows })
   }
 
-  // ── Preset selection ─────────────────────────────────────────────────────────
+  // ── Preset selection ──────────────────────────────────────────────────────────
 
   function applyPreset(presetName) {
     const measurements = MEASUREMENT_PRESETS[presetName]
@@ -51,7 +98,11 @@ export default function SizeChartEditor({ value, onChange, existingSizes = [] })
 
   function addMeasurement() {
     const measurements = [...chart.measurements, 'Measurement']
-    const rows = chart.rows.map((row) => ({ ...row, values: [...row.values, ''] }))
+    const rows = chart.rows.map((row) => ({
+      ...row,
+      values: [...row.values, ''],
+      values_alt: [...(row.values_alt || []), null],
+    }))
     emit({ ...chart, measurements, rows })
   }
 
@@ -65,14 +116,22 @@ export default function SizeChartEditor({ value, onChange, existingSizes = [] })
     const rows = chart.rows.map((row) => ({
       ...row,
       values: row.values.filter((_, i) => i !== colIdx),
+      values_alt: (row.values_alt || []).filter((_, i) => i !== colIdx),
     }))
     emit({ ...chart, measurements, rows })
   }
 
-  // ── Rows ─────────────────────────────────────────────────────────────────────
+  // ── Rows ──────────────────────────────────────────────────────────────────────
 
   function addRow() {
-    const newRow = { size: 'New', values: chart.measurements.map(() => '') }
+    const newRow = convertRow(
+      {
+        size: 'New',
+        values: chart.measurements.map(() => ''),
+        values_alt: chart.measurements.map(() => null),
+      },
+      chart.unit,
+    )
     emit({ ...chart, rows: [...chart.rows, newRow] })
   }
 
@@ -85,7 +144,10 @@ export default function SizeChartEditor({ value, onChange, existingSizes = [] })
     const rows = chart.rows.map((row, i) => {
       if (i !== rowIdx) return row
       const values = row.values.map((v, j) => (j === colIdx ? val : v))
-      return { ...row, values }
+      const values_alt = (row.values_alt || []).map((v, j) =>
+        j === colIdx ? convertValue(val, chart.unit) : v,
+      )
+      return { ...row, values, values_alt }
     })
     emit({ ...chart, rows })
   }
@@ -102,7 +164,17 @@ export default function SizeChartEditor({ value, onChange, existingSizes = [] })
     onChange(null)
   }
 
-  // ── Render ────────────────────────────────────────────────────────────────────
+  // ── Helpers ───────────────────────────────────────────────────────────────────
+
+  const altUnit = chart?.unit === 'inches' ? 'cm' : 'in'
+
+  function getAltPreview(val) {
+    const converted = convertValue(val, chart.unit)
+    if (converted === null) return null
+    return `≈ ${converted} ${altUnit}`
+  }
+
+  // ── Render ─────────────────────────────────────────────────────────────────────
 
   if (!chart) {
     return (
@@ -155,7 +227,7 @@ export default function SizeChartEditor({ value, onChange, existingSizes = [] })
             <button
               key={u}
               type="button"
-              onClick={() => setUnit(u)}
+              onClick={() => switchUnit(u)}
               className={cn(
                 'px-3 py-1 rounded text-xs font-medium transition-colors',
                 chart.unit === u
@@ -201,7 +273,7 @@ export default function SizeChartEditor({ value, onChange, existingSizes = [] })
 
                 {/* Measurement column headers — editable */}
                 {chart.measurements.map((m, colIdx) => (
-                  <th key={colIdx} className="px-1 py-1.5 min-w-[90px]">
+                  <th key={colIdx} className="px-1 py-1.5 min-w-[110px]">
                     <div className="flex items-center gap-0.5">
                       <input
                         type="text"
@@ -256,21 +328,32 @@ export default function SizeChartEditor({ value, onChange, existingSizes = [] })
                   </td>
 
                   {/* Value cells */}
-                  {row.values.map((val, colIdx) => (
-                    <td key={colIdx} className="px-1 py-1">
-                      <input
-                        type="number"
-                        value={val}
-                        onChange={(e) => updateCell(rowIdx, colIdx, e.target.value)}
-                        placeholder="—"
-                        className="w-full text-xs bg-transparent border rounded px-2 py-1 outline-none focus:ring-1 text-center"
-                        style={{
-                          borderColor: 'var(--glass-border)',
-                          color: 'var(--text-primary)',
-                        }}
-                      />
-                    </td>
-                  ))}
+                  {row.values.map((val, colIdx) => {
+                    const preview = getAltPreview(val)
+                    return (
+                      <td key={colIdx} className="px-1 py-1">
+                        <input
+                          type="number"
+                          value={val}
+                          onChange={(e) => updateCell(rowIdx, colIdx, e.target.value)}
+                          placeholder="—"
+                          className="w-full text-xs bg-transparent border rounded px-2 py-1 outline-none focus:ring-1 text-center"
+                          style={{
+                            borderColor: 'var(--glass-border)',
+                            color: 'var(--text-primary)',
+                          }}
+                        />
+                        {preview && (
+                          <div
+                            className="text-center mt-0.5"
+                            style={{ fontSize: '10px', color: 'var(--text-tertiary)', lineHeight: 1.2 }}
+                          >
+                            {preview}
+                          </div>
+                        )}
+                      </td>
+                    )
+                  })}
 
                   {/* Remove row */}
                   <td className="px-1 py-1 w-8">

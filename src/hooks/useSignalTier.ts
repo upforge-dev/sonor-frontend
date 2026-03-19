@@ -38,8 +38,19 @@ interface SignalTier {
  */
 export function useSignalTier(): SignalTier {
   const currentProject = useAuthStore((state) => state.currentProject)
+  const availableProjects = useAuthStore((state) => state.availableProjects)
 
-  const plan: Plan = (currentProject?.plan as Plan) || 'standard'
+  // Use currentProject.plan, but if it's 'standard', double-check against fresh API data
+  // in availableProjects. This catches stale cache where plan was upgraded in DB but the
+  // cached currentProject still says 'standard'.
+  let plan: Plan = (currentProject?.plan as Plan) || 'standard'
+
+  if (plan === 'standard' && currentProject?.id && availableProjects?.length) {
+    const freshProject = availableProjects.find((p: any) => p.id === currentProject.id)
+    if (freshProject?.plan && freshProject.plan !== 'standard') {
+      plan = freshProject.plan as Plan
+    }
+  }
 
   const hasSignalAI = plan === 'limited_ai' || plan === 'full_signal'
   const hasFullSignal = plan === 'full_signal'

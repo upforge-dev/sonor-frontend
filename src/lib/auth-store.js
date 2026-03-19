@@ -280,7 +280,7 @@ const useAuthStore = create(
           console.log('[AuthStore] FULL auth-me response:', response)
           console.log('[AuthStore] Response data:', response.data)
           
-          const { organization, availableOrgs, managedOrgs, projects, isSuperAdmin, accessLevel } = response.data
+          let { organization, availableOrgs, managedOrgs, projects, isSuperAdmin, accessLevel } = response.data
 
           console.log('[AuthStore] auth-me response - org:', organization?.name, 'projects:', projects?.length, 'isSuperAdmin:', isSuperAdmin, 'accessLevel:', accessLevel, 'managedOrgs:', managedOrgs?.length)
 
@@ -317,25 +317,48 @@ const useAuthStore = create(
               // Same org - merge fresh data into cached (preserves extra fields)
               mergedOrg = { ...cachedOrg, ...organization }
             } else if (cachedOrg) {
-              // Different org in cache vs API - trust the cached org
-              // but we need to re-fetch projects for the cached org
-              console.log('[AuthStore] Cached org differs from API org, keeping cached:', cachedOrg.name)
+              // Different org in cache vs API — trust the cached org (user explicitly switched here).
+              // But the projects from getMe are for the API's resolved org, not the cached one.
+              // We need to re-fetch projects for the cached org so the project switcher shows the right list.
+              console.log('[AuthStore] Cached org differs from API org, keeping cached:', cachedOrg.name, '— re-fetching projects')
               mergedOrg = cachedOrg
-              // The projects returned are for API org, not cached org
-              // This mismatch is resolved by passing currentOrgId to getMe above
+
+              try {
+                const switchResponse = await authApi.switchOrg({ organizationId: cachedOrg.id })
+                const cachedOrgProjects = switchResponse?.data?.projects || []
+                projects = cachedOrgProjects
+                console.log('[AuthStore] Re-fetched projects for cached org:', cachedOrgProjects.length)
+              } catch (refetchErr) {
+                console.warn('[AuthStore] Failed to re-fetch projects for cached org:', refetchErr.message)
+                // Fall through with the API projects as best-effort
+              }
             } else {
               // No cached org - use fresh from API
               mergedOrg = organization
             }
-            
-            set({ 
+
+            set({
               currentOrg: mergedOrg,
               availableOrgs: availableOrgs || [],
               availableProjects: projects || []
             })
-            
+
             // Update localStorage with merged data
             localStorage.setItem('currentOrganization', JSON.stringify(mergedOrg))
+
+            // If a project is already selected (from cache), refresh its plan from the fresh API data.
+            // This handles the case where plan was changed in DB (e.g. upgraded to full_signal)
+            // but the cached currentProject still has the old plan.
+            const selectedProject = get().currentProject
+            if (selectedProject?.id && projects?.length) {
+              const freshProject = projects.find((p) => p.id === selectedProject.id)
+              if (freshProject && freshProject.plan && freshProject.plan !== selectedProject.plan) {
+                console.log('[AuthStore] Refreshing stale project plan:', selectedProject.plan, '->', freshProject.plan)
+                const updatedProject = { ...selectedProject, plan: freshProject.plan }
+                set({ currentProject: updatedProject })
+                localStorage.setItem('currentTenantProject', JSON.stringify({ ...freshProject }))
+              }
+            }
             
             // Auto-select project if:
             // 1. User has exactly one project, OR
