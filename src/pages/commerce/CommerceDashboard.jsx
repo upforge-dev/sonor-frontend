@@ -26,6 +26,17 @@ import { InvoiceEditDialog } from './components/InvoiceEditDialog'
 import ProposalAIEditorPanel from '@/components/proposals/ProposalAIEditorPanel'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { useDeleteInvoice, useVoidInvoice } from '@/lib/hooks/use-billing'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import { Checkbox } from '@/components/ui/checkbox'
 import { HighlightsView, ProductsView, ServicesView, EventsView } from './components/CommerceViews'
 import { STATUS_CONFIG, PRICE_TYPE_CONFIG, SIDEBAR_SECTIONS } from './components/CommerceConstants'
 import { ActivityItem, StatsCard } from './components/CommerceStats'
@@ -183,6 +194,7 @@ export default function CommerceDashboard({ onNavigate }) {
   // Invoice detail panel actions (edit, delete, void)
   const [editingInvoiceId, setEditingInvoiceId] = useState(null)
   const [pendingDeleteId, setPendingDeleteId] = useState(null)
+  const [notifyOnDelete, setNotifyOnDelete] = useState(false)
   const [pendingVoidId, setPendingVoidId] = useState(null)
   const [aiEditingContract, setAiEditingContract] = useState(null)
   const [contractHasUnsavedChanges, setContractHasUnsavedChanges] = useState(false)
@@ -256,14 +268,17 @@ export default function CommerceDashboard({ onNavigate }) {
   const handleInvoiceDeleteRequest = () => setPendingDeleteId(selectedInvoiceId)
   const handleInvoiceDeleteConfirm = () => {
     if (!pendingDeleteId) return
-    deleteInvoiceMutation.mutate(pendingDeleteId, {
+    deleteInvoiceMutation.mutate({ invoiceId: pendingDeleteId, notify: notifyOnDelete }, {
       onSuccess: () => {
         toast.success('Invoice deleted')
         onClearInvoice()
         loadInvoices?.()
       },
       onError: (err) => toast.error(err?.message || 'Failed to delete invoice'),
-      onSettled: () => setPendingDeleteId(null),
+      onSettled: () => {
+        setPendingDeleteId(null)
+        setNotifyOnDelete(false)
+      },
     })
   }
   const handleInvoiceVoidRequest = () => setPendingVoidId(selectedInvoiceId)
@@ -1845,15 +1860,49 @@ export default function CommerceDashboard({ onNavigate }) {
       />
 
       {/* Delete invoice confirmation */}
-      <ConfirmDialog
-        open={!!pendingDeleteId}
-        onOpenChange={(open) => !open && setPendingDeleteId(null)}
-        title="Delete invoice"
-        description="This will permanently remove the invoice. This action cannot be undone."
-        confirmText="Delete"
-        onConfirm={handleInvoiceDeleteConfirm}
-        isLoading={deleteInvoiceMutation.isPending}
-      />
+      <AlertDialog open={!!pendingDeleteId} onOpenChange={(open) => {
+        if (!open) {
+          setPendingDeleteId(null)
+          setNotifyOnDelete(false)
+        }
+      }}>
+        <AlertDialogContent className="bg-[var(--glass-bg)] border-[var(--glass-border)]">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-[var(--text-primary)]">Delete invoice</AlertDialogTitle>
+            <AlertDialogDescription className="text-[var(--text-secondary)]">
+              This will permanently remove the invoice. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex items-center gap-3 py-2">
+            <Checkbox
+              id="notify-recipient"
+              checked={notifyOnDelete}
+              onCheckedChange={(checked) => setNotifyOnDelete(!!checked)}
+            />
+            <label
+              htmlFor="notify-recipient"
+              className="text-sm text-[var(--text-primary)] cursor-pointer select-none"
+            >
+              Send cancellation notice to recipient
+            </label>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              className="border-[var(--glass-border)] text-[var(--text-primary)]"
+              disabled={deleteInvoiceMutation.isPending}
+            >
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleInvoiceDeleteConfirm}
+              disabled={deleteInvoiceMutation.isPending}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              {deleteInvoiceMutation.isPending ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Void invoice confirmation */}
       <ConfirmDialog

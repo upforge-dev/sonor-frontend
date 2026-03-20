@@ -301,43 +301,40 @@ export default function ProjectSettingsPanel({ project, isAdmin, onProjectUpdate
     if (!project?.id || !currentOrg?.id) return
     setLoadingMembers(true)
     try {
-      // Get project members (includes user details via join)
-      const projectRes = await portalApi.get(`/admin/projects/${project.id}/members`)
-      const projectMembers = projectRes.data || []
-      
-      // Get org members (includes user details via join)
-      const orgRes = await portalApi.get(`/admin/organizations/${currentOrg.id}/members`)
-      const orgMembers = orgRes.data || []
-      
-      // Combine and dedupe by user_id
       const memberMap = new Map()
-      
-      // Process project members
-      projectMembers.forEach(m => {
-        const userId = m.user_id || m.id
-        if (userId && m.email) {
-          memberMap.set(userId, {
-            id: userId,
-            email: m.email,
-            full_name: m.full_name || m.name || m.email,
-            source: 'project'
-          })
-        }
-      })
-      
-      // Process org members (add if not already present)
-      orgMembers.forEach(m => {
-        const userId = m.user_id || m.id
-        if (userId && m.email && !memberMap.has(userId)) {
-          memberMap.set(userId, {
-            id: userId,
-            email: m.email,
-            full_name: m.full_name || m.name || m.email,
-            source: 'org'
-          })
-        }
-      })
-      
+
+      // Try admin endpoints first (returns auth users)
+      try {
+        const projectRes = await portalApi.get(`/admin/projects/${project.id}/members`)
+        ;(projectRes.data || []).forEach(m => {
+          const userId = m.user_id || m.id
+          if (userId && m.email) {
+            memberMap.set(userId, { id: userId, email: m.email, full_name: m.full_name || m.name || m.email, source: 'project' })
+          }
+        })
+      } catch { /* project members endpoint may not exist or return empty */ }
+
+      try {
+        const orgRes = await portalApi.get(`/admin/organizations/${currentOrg.id}/members`)
+        ;(orgRes.data || []).forEach(m => {
+          const userId = m.user_id || m.id
+          if (userId && m.email && !memberMap.has(userId)) {
+            memberMap.set(userId, { id: userId, email: m.email, full_name: m.full_name || m.name || m.email, source: 'org' })
+          }
+        })
+      } catch { /* org members endpoint may not exist or return empty */ }
+
+      // Also fetch contacts who are org members (catches members without auth accounts)
+      try {
+        const contactsRes = await portalApi.get(`/contacts`, { params: { orgId: currentOrg.id, contactType: 'client', limit: 50 } })
+        const contacts = contactsRes.data?.data || contactsRes.data || []
+        contacts.forEach(c => {
+          if (c.id && c.email && !memberMap.has(c.id)) {
+            memberMap.set(c.id, { id: c.id, email: c.email, full_name: c.name || c.email, source: 'contact' })
+          }
+        })
+      } catch { /* contacts fallback */ }
+
       setTeamMembers(Array.from(memberMap.values()))
     } catch (error) {
       console.error('Failed to load team members:', error)

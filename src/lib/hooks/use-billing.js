@@ -143,13 +143,16 @@ export function useVoidInvoice() {
 
 /**
  * Delete invoice (admin only)
+ * @param {string} invoiceId
+ * @param {{ notify?: boolean }} options - pass notify: true to send cancellation email to recipient
  */
 export function useDeleteInvoice() {
   const queryClient = useQueryClient()
-  
+
   return useMutation({
-    mutationFn: async (invoiceId) => {
-      await billingApi.deleteInvoice(invoiceId)
+    mutationFn: async ({ invoiceId, notify } = {}) => {
+      const params = notify ? { notify: 'true' } : {}
+      await billingApi.deleteInvoice(invoiceId, params)
       return invoiceId
     },
     onSuccess: (invoiceId) => {

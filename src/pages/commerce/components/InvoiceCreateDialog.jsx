@@ -25,7 +25,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
-import { Send, Loader2, Zap, Receipt, DollarSign, User, UserPlus } from 'lucide-react'
+import { Send, Loader2, Zap, Receipt, DollarSign, User, UserPlus, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 // Default due date: 14 days from now
@@ -64,7 +64,11 @@ export function InvoiceCreateDialog({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState(null)
   const [success, setSuccess] = useState(false)
-  
+
+  // CC email input state
+  const [showCcInput, setShowCcInput] = useState(false)
+  const [ccInputValue, setCcInputValue] = useState('')
+
   // Invoice data
   const [formData, setFormData] = useState({
     selectedCustomerId: '', // '' = one-off, id = existing client
@@ -72,6 +76,7 @@ export function InvoiceCreateDialog({
     email: '',
     name: '',
     company: '',
+    cc_emails: [],
     amount: '',
     description: '',
     due_date: getDefaultDueDate(),
@@ -103,6 +108,7 @@ export function InvoiceCreateDialog({
         email: '',
         name: '',
         company: '',
+        cc_emails: [],
         amount: '',
         description: '',
         due_date: getDefaultDueDate(),
@@ -118,6 +124,8 @@ export function InvoiceCreateDialog({
       })
       setError(null)
       setSuccess(false)
+      setShowCcInput(false)
+      setCcInputValue('')
     }
   }, [open])
 
@@ -186,6 +194,29 @@ export function InvoiceCreateDialog({
     }
   }
 
+  // CC email helpers
+  const addCcEmail = (raw) => {
+    const emails = raw.split(',').map(e => e.trim().toLowerCase()).filter(Boolean)
+    const valid = emails.filter(e => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e))
+    if (!valid.length) return
+    setFormData(prev => ({
+      ...prev,
+      cc_emails: [...new Set([...prev.cc_emails, ...valid])],
+    }))
+    setCcInputValue('')
+  }
+
+  const removeCcEmail = (email) => {
+    setFormData(prev => ({ ...prev, cc_emails: prev.cc_emails.filter(e => e !== email) }))
+  }
+
+  const handleCcKeyDown = (e) => {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault()
+      addCcEmail(ccInputValue)
+    }
+  }
+
   // Update deposit amount when percentage changes
   const handleDepositPercentageChange = (percentage) => {
     const amount = parseFloat(formData.amount) || 0
@@ -248,6 +279,7 @@ export function InvoiceCreateDialog({
         description,
         dueDate: formData.due_date,
         sendImmediately: formData.send_now,
+        cc_emails: formData.cc_emails.length ? formData.cc_emails : undefined,
         isRecurring: formData.isRecurring || undefined,
         recurringInterval: formData.isRecurring ? formData.recurringInterval : undefined,
         recurringDayOfMonth: formData.isRecurring ? formData.recurringDayOfMonth : undefined,
@@ -361,7 +393,18 @@ export function InvoiceCreateDialog({
 
             {/* Customer Email */}
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-[var(--text-primary)]">Email Address *</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="email" className="text-[var(--text-primary)]">Email Address *</Label>
+                {!showCcInput && (
+                  <button
+                    type="button"
+                    onClick={() => setShowCcInput(true)}
+                    className="text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] underline underline-offset-2"
+                  >
+                    + Add CC
+                  </button>
+                )}
+              </div>
               <Input
                 id="email"
                 type="email"
@@ -371,6 +414,40 @@ export function InvoiceCreateDialog({
                 required
                 className="bg-[var(--glass-bg-inset)] border-[var(--glass-border)] text-[var(--text-primary)]"
               />
+              {/* CC section */}
+              {showCcInput && (
+                <div className="space-y-2 pt-1">
+                  <Label className="text-[var(--text-secondary)] text-xs">CC (comma-separated, press Enter to add)</Label>
+                  <Input
+                    type="text"
+                    value={ccInputValue}
+                    onChange={(e) => setCcInputValue(e.target.value)}
+                    onKeyDown={handleCcKeyDown}
+                    onBlur={() => { if (ccInputValue.trim()) addCcEmail(ccInputValue) }}
+                    placeholder="cc@example.com, another@example.com"
+                    className="bg-[var(--glass-bg-inset)] border-[var(--glass-border)] text-[var(--text-primary)]"
+                  />
+                  {formData.cc_emails.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {formData.cc_emails.map((email) => (
+                        <span
+                          key={email}
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-[var(--glass-bg-inset)] border border-[var(--glass-border)] text-[var(--text-primary)]"
+                        >
+                          {email}
+                          <button
+                            type="button"
+                            onClick={() => removeCcEmail(email)}
+                            className="text-[var(--text-tertiary)] hover:text-[var(--text-primary)] ml-0.5"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Customer Name & Company */}

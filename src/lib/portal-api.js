@@ -775,8 +775,8 @@ export const billingApi = {
   updateInvoice: (id, data) => 
     portalApi.put(`/billing/invoices/${id}`, data),
   
-  deleteInvoice: (id) => 
-    portalApi.delete(`/billing/invoices/${id}`),
+  deleteInvoice: (id, params = {}) =>
+    portalApi.delete(`/billing/invoices/${id}`, { params }),
   
   sendInvoice: (id, data = {}) => 
     portalApi.post(`/billing/invoices/${id}/send`, data),
