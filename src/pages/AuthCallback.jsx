@@ -103,36 +103,40 @@ export default function AuthCallback() {
         headers: { Authorization: `Bearer ${accessToken}` }
       }
       
+      let setupLinked = false
+
       if (pendingSetupToken) {
         console.log('[AuthCallback] Completing account setup after OAuth...')
         localStorage.removeItem('pendingSetupToken')
-        
+
         try {
           const googleId = user?.user_metadata?.provider_id || user?.id
-          
-          // Use the token directly since session may not be synced yet
           await authApi.completeSetup({
             token: pendingSetupToken,
             method: 'google',
             googleId
           })
-          
+          setupLinked = true
           console.log('[AuthCallback] Account setup completed via Google OAuth')
         } catch (setupError) {
-          console.error('[AuthCallback] Failed to complete setup:', setupError)
+          console.error('[AuthCallback] Failed to complete setup (token may be expired):', setupError)
         }
       } else if (pendingSetupContactId) {
         console.log('[AuthCallback] Completing account setup (contactId)...')
         localStorage.removeItem('pendingSetupContactId')
-        
+
         try {
           await authApi.markSetupComplete()
+          setupLinked = true
         } catch (setupError) {
           console.error('[AuthCallback] Failed to complete setup:', setupError)
         }
-      } else {
-        // Link contact by email for regular OAuth logins
-        console.log('[AuthCallback] Linking contact for:', user.email)
+      }
+
+      // Always try linkContact as fallback — handles expired tokens, regular logins,
+      // and any case where the contact exists but auth_user_id isn't linked yet.
+      if (!setupLinked) {
+        console.log('[AuthCallback] Linking contact by email for:', user.email)
         try {
           await authApi.linkContact({
             email: user.email,

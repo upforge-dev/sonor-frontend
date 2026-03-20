@@ -50,7 +50,9 @@ export default function Signup() {
     setForm((prev) => ({ ...prev, [field]: value }))
   }
 
-  const handleAccountNext = (e) => {
+  const [existingOrg, setExistingOrg] = useState(null)
+
+  const handleAccountNext = async (e) => {
     e.preventDefault()
     setError('')
 
@@ -58,10 +60,23 @@ export default function Signup() {
     if (!form.email.trim()) return setError('Email is required')
     if (!form.password || form.password.length < 8) return setError('Password must be at least 8 characters')
 
+    // Check if email belongs to an existing org member — if so, skip plan selection
+    try {
+      const { data } = await authApi.checkExistingMembership(form.email.trim())
+      if (data?.exists && data?.orgName) {
+        setExistingOrg(data)
+        // Skip plan picker — go straight to signup with existing org
+        handleSignup(data)
+        return
+      }
+    } catch {
+      // Not found or endpoint doesn't exist yet — continue to plan picker
+    }
+
     setStep('plan')
   }
 
-  const handleSignup = async () => {
+  const handleSignup = async (existingOrgData = null) => {
     setIsSubmitting(true)
     setError('')
 
@@ -70,8 +85,9 @@ export default function Signup() {
         name: form.name.trim(),
         email: form.email.trim(),
         password: form.password,
-        plan: form.plan,
-        businessName: form.businessName.trim() || form.name.trim(),
+        plan: existingOrgData ? undefined : form.plan,
+        businessName: existingOrgData ? undefined : (form.businessName.trim() || form.name.trim()),
+        linkToExistingOrg: !!existingOrgData,
       })
 
       if (data.success) {
