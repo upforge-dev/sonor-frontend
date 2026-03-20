@@ -77,11 +77,15 @@ export function SignalSuggestsPanel({
 
   const { data: suggestions = [], status: queryStatus, refetch } = useQuery({
     queryKey: ['signal-suggestions', module],
-    queryFn: () => echoApi.getSuggestions(module),
+    queryFn: async () => {
+      const result = await echoApi.getSuggestions(module)
+      return Array.isArray(result) ? result : []
+    },
     staleTime: 1000 * 60 * 60 * 24,  // 24 hours
     gcTime: 1000 * 60 * 60 * 24,
     refetchInterval: 1000 * 60 * 60,  // 1 hour
     enabled: canUseSuggestions,
+    retry: false,
   })
 
   const status = queryStatus === 'pending' ? 'loading' : queryStatus === 'error' ? 'error' : 'ready'
