@@ -130,7 +130,7 @@ export default function SyncCalendarView({ data, date, viewMode, signalEnabled, 
         </div>
         
         {/* Timeline */}
-        <div className="border rounded-lg overflow-hidden bg-card">
+        <div className="border rounded-lg overflow-hidden bg-[var(--glass-bg)]">
           {hours.map((hour) => {
             const hourEvents = events.filter(e => e.startTime.getHours() === hour)
             
@@ -253,7 +253,7 @@ export default function SyncCalendarView({ data, date, viewMode, signalEnabled, 
     return (
       <div className="space-y-4">
         {/* Week Grid */}
-        <div className="border rounded-lg overflow-hidden bg-card">
+        <div className="border rounded-lg overflow-hidden bg-[var(--glass-bg)]">
           {/* Header Row */}
           <div className="grid grid-cols-8 border-b bg-muted/30">
             <div className="p-2 text-xs font-medium text-muted-foreground border-r" />
@@ -343,7 +343,7 @@ export default function SyncCalendarView({ data, date, viewMode, signalEnabled, 
 
 function StatCard({ label, value }) {
   return (
-    <div className="p-4 rounded-lg border bg-card">
+    <div className="p-4 rounded-lg border bg-[var(--glass-bg)]">
       <div className="text-2xl font-bold">{value}</div>
       <div className="text-xs text-muted-foreground">{label}</div>
     </div>
@@ -355,7 +355,7 @@ function MonthGrid({ date, events }) {
   const now = new Date()
   
   return (
-    <div className="border rounded-lg overflow-hidden bg-card">
+    <div className="border rounded-lg overflow-hidden bg-[var(--glass-bg)]">
       {/* Weekday Headers */}
       <div className="grid grid-cols-7 border-b bg-muted/30">
         {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (

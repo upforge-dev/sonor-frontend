@@ -91,7 +91,7 @@ function AffiliateTile({ affiliate, isSelected, onSelect, offers }) {
       whileTap={{ scale: 0.99 }}
       className={cn(
         "w-full p-4 rounded-xl border text-left transition-all duration-200",
-        "bg-card hover:bg-card/80 hover:shadow-md",
+        "bg-[var(--glass-bg)] hover:bg-[var(--glass-bg)]/80 hover:shadow-md",
         isSelected
           ? "ring-2 ring-primary border-primary shadow-md"
           : "border-border hover:border-primary/30"

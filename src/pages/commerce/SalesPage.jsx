@@ -651,7 +651,7 @@ function SaleDetailDialog({ sale, open, onOpenChange, projectId, onBuyLabel, buy
 
           {/* Shipping Section */}
           {(hasShippingAddress || hasLabel || hasTracking) && (
-            <div className="rounded-lg border bg-card p-4 space-y-3">
+            <div className="rounded-lg border bg-[var(--glass-bg)] p-4 space-y-3">
               <div className="flex items-center justify-between">
                 <h3 className="font-semibold text-sm flex items-center gap-2">
                   <Truck className="h-4 w-4" />
@@ -788,7 +788,7 @@ function SaleDetailDialog({ sale, open, onOpenChange, projectId, onBuyLabel, buy
 
           {/* No shipping info but is a product type */}
           {isProduct && !hasShippingAddress && !hasLabel && !hasTracking && (
-            <div className="rounded-lg border bg-card p-4">
+            <div className="rounded-lg border bg-[var(--glass-bg)] p-4">
               <p className="text-sm text-muted-foreground flex items-center gap-2">
                 <Package className="h-4 w-4" />
                 No shipping address on file for this sale.

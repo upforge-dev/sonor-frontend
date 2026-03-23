@@ -146,7 +146,7 @@ export function HighlightsView({ stats, products, services = [], events = [], tr
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Revenue Trend Chart */}
-        <div className="lg:col-span-2 rounded-xl bg-card border border-[var(--glass-border)] p-4">
+        <div className="lg:col-span-2 rounded-xl bg-[var(--glass-bg)] border border-[var(--glass-border)] p-4">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="text-sm font-medium text-[var(--text-primary)]">Revenue Trend</h3>
@@ -178,7 +178,7 @@ export function HighlightsView({ stats, products, services = [], events = [], tr
         </div>
 
         {/* Sales by Type Donut */}
-        <div className="rounded-xl bg-card border border-[var(--glass-border)] p-4">
+        <div className="rounded-xl bg-[var(--glass-bg)] border border-[var(--glass-border)] p-4">
           <div className="mb-4">
             <h3 className="text-sm font-medium text-[var(--text-primary)]">Offerings by Type</h3>
             <p className="text-xs text-[var(--text-tertiary)]">Distribution breakdown</p>
@@ -220,7 +220,7 @@ export function HighlightsView({ stats, products, services = [], events = [], tr
       {/* Recent Activity + Top Products Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Recent Activity */}
-        <div className="rounded-xl bg-card border border-[var(--glass-border)] p-4">
+        <div className="rounded-xl bg-[var(--glass-bg)] border border-[var(--glass-border)] p-4">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="text-sm font-medium text-[var(--text-primary)]">Recent Activity</h3>
@@ -249,7 +249,7 @@ export function HighlightsView({ stats, products, services = [], events = [], tr
         </div>
 
         {/* Top Offerings */}
-        <div className="rounded-xl bg-card border border-[var(--glass-border)] p-4">
+        <div className="rounded-xl bg-[var(--glass-bg)] border border-[var(--glass-border)] p-4">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="text-sm font-medium text-[var(--text-primary)]">Top Offerings</h3>

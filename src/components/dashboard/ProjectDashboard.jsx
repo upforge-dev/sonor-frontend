@@ -13,6 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
+import { StatTile } from '@/components/ui/stat-tile'
 import {
   AreaChart,
   Area,
@@ -73,10 +74,10 @@ import DashboardReveal from '@/components/onboarding/DashboardReveal'
 
 // ==================== Widget Components ====================
 
-// Stats Card - Reusable metric display
-function StatsCard({ title, value, subtitle, icon: Icon, trend, trendValue, color = 'primary', isLoading }) {
-  const brandColors = useBrandColors()
-  
+// Stats Card - Thin wrapper around unified StatTile
+const COLOR_MAP = { primary: 'brand', secondary: 'brand', emerald: 'green', cyan: 'teal' }
+
+function StatsCard({ title, value, subtitle, icon, trend, trendValue, color = 'primary', isLoading }) {
   if (isLoading) {
     return (
       <Card className="bg-[var(--glass-bg)] backdrop-blur-sm border-[var(--glass-border)]">
@@ -93,56 +94,18 @@ function StatsCard({ title, value, subtitle, icon: Icon, trend, trendValue, colo
       </Card>
     )
   }
-  
-  const colorClasses = {
-    primary: 'bg-[var(--brand-primary)]/10 text-[var(--brand-primary)]',
-    secondary: 'bg-[var(--brand-primary)]/10 text-[var(--brand-primary)]',
-    blue: 'bg-blue-500/10 text-blue-500',
-    purple: 'bg-purple-500/10 text-purple-500',
-    emerald: 'bg-emerald-500/10 text-emerald-500',
-    orange: 'bg-orange-500/10 text-orange-500',
-    pink: 'bg-pink-500/10 text-pink-500',
-    cyan: 'bg-cyan-500/10 text-cyan-500',
-  }
-  
+
   return (
-    <Card className="bg-[var(--glass-bg)] backdrop-blur-sm border-[var(--glass-border)]">
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-xs text-[var(--text-tertiary)] uppercase tracking-wider">{title}</p>
-            <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">{value}</p>
-            {(subtitle || trend) && (
-              <div className="flex items-center gap-1 mt-1">
-                {trend && (
-                  <>
-                    {trend === 'up' ? (
-                      <TrendingUp className="h-3 w-3 text-emerald-500" />
-                    ) : trend === 'down' ? (
-                      <TrendingDown className="h-3 w-3 text-red-500" />
-                    ) : null}
-                    {trendValue && (
-                      <span className={cn(
-                        "text-xs font-medium",
-                        trend === 'up' ? "text-emerald-500" : trend === 'down' ? "text-red-500" : "text-[var(--text-tertiary)]"
-                      )}>
-                        {trendValue}
-                      </span>
-                    )}
-                  </>
-                )}
-                {subtitle && (
-                  <span className="text-xs text-[var(--text-tertiary)]">{subtitle}</span>
-                )}
-              </div>
-            )}
-          </div>
-          <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center", colorClasses[color])}>
-            <Icon className="w-5 h-5" />
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+    <StatTile
+      label={title}
+      value={value}
+      subtitle={subtitle}
+      icon={icon}
+      trend={trend}
+      change={trendValue}
+      color={COLOR_MAP[color] || color}
+      variant="horizontal"
+    />
   )
 }
 

@@ -146,7 +146,7 @@ function SuggestionCard({ suggestion, onAdd, onDismiss, isAdding }) {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, x: -100 }}
       className={cn(
-        "p-3 rounded-lg border bg-card hover:shadow-sm transition-all group cursor-default",
+        "p-3 rounded-lg border bg-[var(--glass-bg)] hover:shadow-sm transition-all group cursor-default",
         urgency === 'critical' && "border-red-300 dark:border-red-500/30",
         urgency === 'high' && "border-amber-300 dark:border-amber-500/30"
       )}

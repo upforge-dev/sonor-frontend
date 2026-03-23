@@ -143,7 +143,7 @@ function TemplateCard({ template, onSelect, onPreview, isSelected }) {
         "hover:border-primary/50 hover:shadow-lg hover:-translate-y-1",
         isSelected 
           ? "border-primary bg-primary/5 shadow-md" 
-          : "border-border bg-card"
+          : "border-border bg-[var(--glass-bg)]"
       )}
       onClick={() => onSelect(template)}
     >

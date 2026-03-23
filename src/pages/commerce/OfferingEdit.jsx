@@ -43,6 +43,9 @@ import {
   Ticket,
   DollarSign,
   Image as ImageIcon,
+  Plus,
+  X,
+  Info,
 } from 'lucide-react'
 import CommerceImageUploader from '@/components/commerce/CommerceImageUploader'
 import ClothingSizesModal from '@/components/commerce/ClothingSizesModal'
@@ -139,6 +142,8 @@ export default function OfferingEdit({ offeringId, onBack }) {
         deposit_type: currentOffering.deposit_type || 'percentage',
         deposit_amount: currentOffering.deposit_amount?.toString() || '',
         deposit_auto_charge: currentOffering.auto_charge_remaining ?? true,
+        // Metadata (care instructions, sizing notes, notices, model info)
+        metadata: currentOffering.metadata || {},
       })
 
       // Build images array from featured + gallery
@@ -234,6 +239,11 @@ export default function OfferingEdit({ offeringId, onBack }) {
       data.seo_page_id = formData.seo_page_id || null
       data.page_path = formData.page_path || null
 
+      // Metadata (care instructions, sizing notes, notices, model info)
+      if (formData.metadata && Object.keys(formData.metadata).length > 0) {
+        data.metadata = formData.metadata
+      }
+
       // Image order and featured (from drag/reorder on edit — only persist on Save)
       const featured = images.find((i) => i.is_featured)
       if (featured) data.featured_image_id = featured.id
@@ -305,7 +315,7 @@ export default function OfferingEdit({ offeringId, onBack }) {
   }
 
   return (
-    <div className="p-6 max-w-3xl mx-auto space-y-6">
+    <div className="p-6 space-y-6">
       {/* Modals at top level so they portal correctly and aren't clipped by form/layout */}
       {currentOffering?.type === 'product' && (
         <>
@@ -364,6 +374,21 @@ export default function OfferingEdit({ offeringId, onBack }) {
               images={images}
               featuredImageId={currentOffering.featured_image_id}
               onImagesChange={handleImagesChange}
+              isClothing={formData?.is_clothing}
+              imageModelInfo={formData?.metadata?.image_model_info}
+              onModelInfoChange={(imageId, info) => {
+                const current = formData.metadata?.image_model_info || {}
+                const updated = { ...current }
+                if (info) {
+                  updated[imageId] = info
+                } else {
+                  delete updated[imageId]
+                }
+                handleChange('metadata', {
+                  ...formData.metadata,
+                  image_model_info: Object.keys(updated).length ? updated : undefined,
+                })
+              }}
             />
           </CardContent>
         </Card>
@@ -619,11 +644,13 @@ export default function OfferingEdit({ offeringId, onBack }) {
                       Measurement table shown to customers to help them choose the right size.
                     </p>
                   </div>
-                  <SizeChartEditor
-                    value={formData.size_chart}
-                    onChange={(chart) => handleChange('size_chart', chart)}
-                    existingSizes={variants.map((v) => v.options?.Size ?? v.name)}
-                  />
+                  <div className="overflow-x-auto -mx-6 px-6">
+                    <SizeChartEditor
+                      value={formData.size_chart}
+                      onChange={(chart) => handleChange('size_chart', chart)}
+                      existingSizes={variants.map((v) => v.options?.Size ?? v.name)}
+                    />
+                  </div>
                 </div>
               )}
 
@@ -669,6 +696,102 @@ export default function OfferingEdit({ offeringId, onBack }) {
                   />
                 </div>
               )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Product Details (clothing-specific: care, sizing, notices) */}
+        {currentOffering?.type === 'product' && formData.is_clothing && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Info className="h-5 w-5" />
+                Product Details
+              </CardTitle>
+              <CardDescription>
+                Care instructions, sizing notes, and product notices displayed on the storefront
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label htmlFor="care_instructions">Care Instructions</Label>
+                <Textarea
+                  id="care_instructions"
+                  value={formData.metadata?.care_instructions || ''}
+                  onChange={(e) => handleChange('metadata', {
+                    ...formData.metadata,
+                    care_instructions: e.target.value || undefined,
+                  })}
+                  placeholder="e.g. Do not wash on hot or dry on high heat. This will cause the shirt to shrink."
+                  rows={3}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="sizing_notes">Sizing Notes</Label>
+                <Input
+                  id="sizing_notes"
+                  value={formData.metadata?.sizing_notes || ''}
+                  onChange={(e) => handleChange('metadata', {
+                    ...formData.metadata,
+                    sizing_notes: e.target.value || undefined,
+                  })}
+                  placeholder="e.g. Fits true to size, Runs small — order one size up"
+                />
+              </div>
+
+              <div>
+                <Label>Product Notices</Label>
+                <p className="text-sm text-muted-foreground mb-2">
+                  Warning messages displayed on the product page (e.g. recommended items, important notes)
+                </p>
+                {(formData.metadata?.notices || []).map((notice, idx) => (
+                  <div key={idx} className="flex items-start gap-2 mb-2">
+                    <Textarea
+                      value={notice}
+                      onChange={(e) => {
+                        const updated = [...(formData.metadata?.notices || [])]
+                        updated[idx] = e.target.value
+                        handleChange('metadata', {
+                          ...formData.metadata,
+                          notices: updated,
+                        })
+                      }}
+                      rows={2}
+                      className="flex-1"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-muted-foreground hover:text-destructive shrink-0 mt-1"
+                      onClick={() => {
+                        const updated = (formData.metadata?.notices || []).filter((_, i) => i !== idx)
+                        handleChange('metadata', {
+                          ...formData.metadata,
+                          notices: updated.length ? updated : undefined,
+                        })
+                      }}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    handleChange('metadata', {
+                      ...formData.metadata,
+                      notices: [...(formData.metadata?.notices || []), ''],
+                    })
+                  }}
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  Add Notice
+                </Button>
+              </div>
             </CardContent>
           </Card>
         )}
@@ -921,7 +1044,7 @@ export default function OfferingEdit({ offeringId, onBack }) {
 // Loading skeleton
 function EditSkeleton() {
   return (
-    <div className="p-6 max-w-3xl mx-auto space-y-6">
+    <div className="p-6 space-y-6">
       <div className="flex items-center gap-4">
         <Skeleton className="h-10 w-10 rounded-lg" />
         <div>

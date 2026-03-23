@@ -189,7 +189,7 @@ function FlowNode({
         isSelected 
           ? "border-2 shadow-lg" 
           : "border-border/50 hover:border-border shadow-sm hover:shadow-md",
-        "bg-card"
+        "bg-[var(--glass-bg)]"
       )}
       style={{
         borderColor: isSelected ? primaryColor : undefined,
@@ -476,7 +476,7 @@ function BigStat({
         style={{ backgroundColor: color }}
       />
       
-      <div className="relative bg-card/80 backdrop-blur-sm border border-border/30 rounded-3xl p-8 hover:border-border/50 transition-all duration-300">
+      <div className="relative bg-[var(--glass-bg)]/80 backdrop-blur-sm border border-border/30 rounded-3xl p-8 hover:border-border/50 transition-all duration-300">
         {/* Icon */}
         <div 
           className="inline-flex p-4 rounded-2xl mb-5"
@@ -538,8 +538,8 @@ function SessionCard({
       className={cn(
         "border rounded-2xl overflow-hidden transition-all duration-300",
         isExpanded 
-          ? "bg-card border-border shadow-lg" 
-          : "bg-card/50 border-border/30 hover:border-border/50 hover:bg-card/80"
+          ? "bg-[var(--glass-bg)] border-border shadow-lg" 
+          : "bg-[var(--glass-bg)]/50 border-border/30 hover:border-border/50 hover:bg-[var(--glass-bg)]/80"
       )}
     >
       {/* Header */}
@@ -730,14 +730,16 @@ function TopPathsSection({
 // Main Component
 // ============================================
 
-export default function JourneysView() {
+export default function JourneysView({ dateRange: parentDateRange }: { dateRange?: number } = {}) {
   const { currentProject } = useAuthStore()
   const { primary, secondary } = useBrandColors()
-  
-  // State
+
+  // State — use parent dateRange if provided
   const [isLoading, setIsLoading] = useState(true)
   const [isRefreshing, setIsRefreshing] = useState(false)
-  const [days, setDays] = useState(30)
+  const [localDays, setLocalDays] = useState(30)
+  const days = parentDateRange ?? localDays
+  const setDays = setLocalDays
   const [expandedSession, setExpandedSession] = useState<string | null>(null)
   
   // Data
@@ -840,7 +842,7 @@ export default function JourneysView() {
             {/* Controls */}
             <div className="flex items-center gap-3">
               <Select value={days.toString()} onValueChange={(v) => setDays(parseInt(v))}>
-                <SelectTrigger className="w-36 bg-card/80 backdrop-blur-sm border-border/30 rounded-xl">
+                <SelectTrigger className="w-36 bg-[var(--glass-bg)]/80 backdrop-blur-sm border-border/30 rounded-xl">
                   <SelectValue placeholder="Time range" />
                 </SelectTrigger>
                 <SelectContent>
@@ -856,7 +858,7 @@ export default function JourneysView() {
                 size="icon"
                 onClick={handleRefresh}
                 disabled={isRefreshing}
-                className="bg-card/80 backdrop-blur-sm border-border/30 rounded-xl h-10 w-10"
+                className="bg-[var(--glass-bg)]/80 backdrop-blur-sm border-border/30 rounded-xl h-10 w-10"
               >
                 <RefreshCw className={cn("h-4 w-4", isRefreshing && "animate-spin")} />
               </Button>
@@ -909,7 +911,7 @@ export default function JourneysView() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              className="bg-card/50 backdrop-blur-sm border border-border/30 rounded-3xl p-8 overflow-hidden"
+              className="bg-[var(--glass-bg)]/50 backdrop-blur-sm border border-border/30 rounded-3xl p-8 overflow-hidden"
             >
               <div className="flex items-center justify-between mb-6">
                 <div>
@@ -948,7 +950,7 @@ export default function JourneysView() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.35 }}
-                className="lg:col-span-3 bg-card/50 backdrop-blur-sm border border-border/30 rounded-3xl p-8"
+                className="lg:col-span-3 bg-[var(--glass-bg)]/50 backdrop-blur-sm border border-border/30 rounded-3xl p-8"
               >
                 <div className="mb-6">
                   <h2 className="text-xl font-semibold">Top Navigation Paths</h2>
@@ -967,7 +969,7 @@ export default function JourneysView() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4 }}
-                className="lg:col-span-2 bg-card/50 backdrop-blur-sm border border-border/30 rounded-3xl p-8"
+                className="lg:col-span-2 bg-[var(--glass-bg)]/50 backdrop-blur-sm border border-border/30 rounded-3xl p-8"
               >
                 <div className="mb-6">
                   <h2 className="text-xl font-semibold">Recent Sessions</h2>
@@ -1009,7 +1011,7 @@ export default function JourneysView() {
                 className="grid md:grid-cols-2 gap-5"
               >
                 {summary?.topEntryPage && (
-                  <div className="bg-card/50 backdrop-blur-sm border border-border/30 rounded-3xl p-6 flex items-center gap-5">
+                  <div className="bg-[var(--glass-bg)]/50 backdrop-blur-sm border border-border/30 rounded-3xl p-6 flex items-center gap-5">
                     <div 
                       className="p-4 rounded-2xl"
                       style={{ backgroundColor: `${primary}15` }}
@@ -1023,7 +1025,7 @@ export default function JourneysView() {
                   </div>
                 )}
                 {summary?.topExitPage && (
-                  <div className="bg-card/50 backdrop-blur-sm border border-border/30 rounded-3xl p-6 flex items-center gap-5">
+                  <div className="bg-[var(--glass-bg)]/50 backdrop-blur-sm border border-border/30 rounded-3xl p-6 flex items-center gap-5">
                     <div 
                       className="p-4 rounded-2xl"
                       style={{ backgroundColor: `${secondary || primary}15` }}
@@ -1045,7 +1047,7 @@ export default function JourneysView() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.55 }}
-                className="bg-card/50 backdrop-blur-sm border border-border/30 rounded-3xl p-6"
+                className="bg-[var(--glass-bg)]/50 backdrop-blur-sm border border-border/30 rounded-3xl p-6"
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-5">

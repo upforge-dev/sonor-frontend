@@ -1264,7 +1264,7 @@ const Files = ({
                           <Checkbox
                             checked={isFileSelected(file.id)}
                             onCheckedChange={() => toggleFileSelection(file.id)}
-                            className="bg-card/95 border-2 border-white shadow pointer-events-none"
+                            className="bg-[var(--glass-bg)]/95 border-2 border-white shadow pointer-events-none"
                           />
                         </div>
                         {/* Used by site badge (managed image slots) */}
@@ -1306,7 +1306,7 @@ const Files = ({
                         <div className="absolute top-2 right-2 z-20 opacity-0 group-hover:opacity-100 transition-opacity">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                              <Button variant="secondary" size="icon" className="h-8 w-8 rounded-full shadow-md bg-card/95 hover:bg-card text-card-foreground border border-border">
+                              <Button variant="secondary" size="icon" className="h-8 w-8 rounded-full shadow-md bg-[var(--glass-bg)]/95 hover:bg-[var(--glass-bg)] text-card-foreground border border-border">
                                 <MoreVertical className="h-4 w-4" />
                               </Button>
                             </DropdownMenuTrigger>
@@ -1366,7 +1366,7 @@ const Files = ({
                             <Button
                               variant="secondary"
                               size="sm"
-                              className="h-7 flex-1 text-xs bg-card/95 hover:bg-card text-card-foreground border border-border"
+                              className="h-7 flex-1 text-xs bg-[var(--glass-bg)]/95 hover:bg-[var(--glass-bg)] text-card-foreground border border-border"
                               onClick={(e) => { e.stopPropagation(); handleDownload(file) }}
                             >
                               <Download className="w-3 h-3 mr-1" />
@@ -1376,7 +1376,7 @@ const Files = ({
                               <Button
                                 variant="secondary"
                                 size="sm"
-                                className="h-7 px-2 bg-card/95 hover:bg-card text-card-foreground border border-border"
+                                className="h-7 px-2 bg-[var(--glass-bg)]/95 hover:bg-[var(--glass-bg)] text-card-foreground border border-border"
                                 onClick={(e) => { e.stopPropagation(); window.open(getPreviewUrl(file), '_blank') }}
                                 title="View full size"
                               >

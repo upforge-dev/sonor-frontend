@@ -963,7 +963,8 @@ export default function ProjectSettingsPanel({ project, isAdmin, onProjectUpdate
                   className="mt-1.5"
                 />
                 <p className="text-xs text-muted-foreground mt-1">
-                  Custom domain for sending emails via Resend
+                  Custom domain for transactional email (proposals, invoices). Cold outreach sending domains live under{' '}
+                  <span className="font-medium text-foreground">Outreach → Sending Domains</span>: use <span className="font-medium">Link existing</span> if the hostname is already in Resend, or <span className="font-medium">Add Domain</span> to create it. <span className="font-medium">Sync Resend</span> only refreshes domains already linked for this organization.
                 </p>
               </div>
               <div>
@@ -1071,7 +1072,7 @@ export default function ProjectSettingsPanel({ project, isAdmin, onProjectUpdate
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {/* SEO */}
-              <div className="p-3 rounded-lg border bg-card">
+              <div className="p-3 rounded-lg border bg-[var(--glass-bg)]">
                 <FeatureToggle
                   feature="SEO"
                   enabled={formData.features.includes('seo')}
@@ -1082,7 +1083,7 @@ export default function ProjectSettingsPanel({ project, isAdmin, onProjectUpdate
               </div>
               
               {/* Analytics */}
-              <div className="p-3 rounded-lg border bg-card">
+              <div className="p-3 rounded-lg border bg-[var(--glass-bg)]">
                 <FeatureToggle
                   feature="Analytics"
                   enabled={formData.features.includes('analytics')}
@@ -1093,7 +1094,7 @@ export default function ProjectSettingsPanel({ project, isAdmin, onProjectUpdate
               </div>
               
               {/* Forms */}
-              <div className="p-3 rounded-lg border bg-card">
+              <div className="p-3 rounded-lg border bg-[var(--glass-bg)]">
                 <FeatureToggle
                   feature="Forms"
                   enabled={formData.features.includes('forms')}
@@ -1104,7 +1105,7 @@ export default function ProjectSettingsPanel({ project, isAdmin, onProjectUpdate
               </div>
               
               {/* Engage */}
-              <div className="p-3 rounded-lg border bg-card">
+              <div className="p-3 rounded-lg border bg-[var(--glass-bg)]">
                 <FeatureToggle
                   feature="Engage"
                   enabled={formData.features.includes('engage')}
@@ -1115,7 +1116,7 @@ export default function ProjectSettingsPanel({ project, isAdmin, onProjectUpdate
               </div>
               
               {/* Broadcast */}
-              <div className="p-3 rounded-lg border bg-card">
+              <div className="p-3 rounded-lg border bg-[var(--glass-bg)]">
                 <FeatureToggle
                   feature="Broadcast"
                   enabled={formData.features.includes('broadcast')}
@@ -1126,7 +1127,7 @@ export default function ProjectSettingsPanel({ project, isAdmin, onProjectUpdate
               </div>
               
               {/* Reputation */}
-              <div className="p-3 rounded-lg border bg-card">
+              <div className="p-3 rounded-lg border bg-[var(--glass-bg)]">
                 <FeatureToggle
                   feature="Reputation"
                   enabled={formData.features.includes('reputation')}
@@ -1137,7 +1138,7 @@ export default function ProjectSettingsPanel({ project, isAdmin, onProjectUpdate
               </div>
               
               {/* Commerce */}
-              <div className="p-3 rounded-lg border bg-card">
+              <div className="p-3 rounded-lg border bg-[var(--glass-bg)]">
                 <FeatureToggle
                   feature="Commerce"
                   enabled={formData.features.includes('commerce') || formData.features.includes('ecommerce')}
@@ -1148,7 +1149,7 @@ export default function ProjectSettingsPanel({ project, isAdmin, onProjectUpdate
               </div>
               
               {/* Blog */}
-              <div className="p-3 rounded-lg border bg-card">
+              <div className="p-3 rounded-lg border bg-[var(--glass-bg)]">
                 <FeatureToggle
                   feature="Blog"
                   enabled={formData.features.includes('blog')}
@@ -1159,7 +1160,7 @@ export default function ProjectSettingsPanel({ project, isAdmin, onProjectUpdate
               </div>
               
               {/* Prospects (was CRM) */}
-              <div className="p-3 rounded-lg border bg-card">
+              <div className="p-3 rounded-lg border bg-[var(--glass-bg)]">
                 <FeatureToggle
                   feature="Prospects"
                   enabled={formData.features.includes('prospects') || formData.features.includes('crm')}
@@ -1170,7 +1171,7 @@ export default function ProjectSettingsPanel({ project, isAdmin, onProjectUpdate
               </div>
               
               {/* Outreach (was Email) */}
-              <div className="p-3 rounded-lg border bg-card">
+              <div className="p-3 rounded-lg border bg-[var(--glass-bg)]">
                 <FeatureToggle
                   feature="Outreach"
                   enabled={formData.features.includes('outreach') || formData.features.includes('email')}
@@ -1181,7 +1182,7 @@ export default function ProjectSettingsPanel({ project, isAdmin, onProjectUpdate
               </div>
               
               {/* Affiliates */}
-              <div className="p-3 rounded-lg border bg-card">
+              <div className="p-3 rounded-lg border bg-[var(--glass-bg)]">
                 <FeatureToggle
                   feature="Affiliates"
                   enabled={formData.features.includes('affiliates')}
@@ -1227,7 +1228,7 @@ export default function ProjectSettingsPanel({ project, isAdmin, onProjectUpdate
               <div>
                 <Label className="text-sm font-medium mb-3 block">Enabled Offering Types</Label>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  <label className="flex items-center gap-2 p-3 rounded-lg border bg-card hover:bg-accent cursor-pointer transition-colors">
+                  <label className="flex items-center gap-2 p-3 rounded-lg border bg-[var(--glass-bg)] hover:bg-accent cursor-pointer transition-colors">
                     <input
                       type="checkbox"
                       checked={formData.commerce_types?.includes('product') ?? true}
@@ -1237,7 +1238,7 @@ export default function ProjectSettingsPanel({ project, isAdmin, onProjectUpdate
                     />
                     <span className="text-sm font-medium">Products</span>
                   </label>
-                  <label className="flex items-center gap-2 p-3 rounded-lg border bg-card hover:bg-accent cursor-pointer transition-colors">
+                  <label className="flex items-center gap-2 p-3 rounded-lg border bg-[var(--glass-bg)] hover:bg-accent cursor-pointer transition-colors">
                     <input
                       type="checkbox"
                       checked={formData.commerce_types?.includes('service') ?? true}
@@ -1247,7 +1248,7 @@ export default function ProjectSettingsPanel({ project, isAdmin, onProjectUpdate
                     />
                     <span className="text-sm font-medium">Services</span>
                   </label>
-                  <label className="flex items-center gap-2 p-3 rounded-lg border bg-card hover:bg-accent cursor-pointer transition-colors">
+                  <label className="flex items-center gap-2 p-3 rounded-lg border bg-[var(--glass-bg)] hover:bg-accent cursor-pointer transition-colors">
                     <input
                       type="checkbox"
                       checked={formData.commerce_types?.includes('event') ?? false}
@@ -1280,7 +1281,7 @@ export default function ProjectSettingsPanel({ project, isAdmin, onProjectUpdate
                   ) : (
                     <div className="space-y-3">
                       {/* Stripe */}
-                      <div className="flex items-center justify-between p-3 rounded-lg border bg-card">
+                      <div className="flex items-center justify-between p-3 rounded-lg border bg-[var(--glass-bg)]">
                         <div className="flex-1">
                           <p className="font-medium text-sm">Stripe</p>
                           {commerceSettings?.stripe_connected ? (
@@ -1328,7 +1329,7 @@ export default function ProjectSettingsPanel({ project, isAdmin, onProjectUpdate
                       </div>
                       
                       {/* Square */}
-                      <div className="flex items-center justify-between p-3 rounded-lg border bg-card">
+                      <div className="flex items-center justify-between p-3 rounded-lg border bg-[var(--glass-bg)]">
                         <div className="flex-1">
                           <p className="font-medium text-sm">Square</p>
                           {commerceSettings?.square_connected ? (

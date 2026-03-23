@@ -93,7 +93,7 @@ function PlaybookCard({ playbook, onApply, isLoading }) {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       className={cn(
-        "p-4 rounded-xl border bg-card hover:shadow-md transition-all group",
+        "p-4 rounded-xl border bg-[var(--glass-bg)] hover:shadow-md transition-all group",
         playbook.is_system && "border-dashed"
       )}
     >

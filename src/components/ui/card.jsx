@@ -10,9 +10,9 @@ function Card({
     <div
       data-slot="card"
       className={cn(
-        // Glass card styling
+        // High-frosting glass card
         "flex flex-col gap-6 rounded-[var(--radius-xl)] py-6",
-        "bg-[var(--glass-bg)] backdrop-blur-[var(--blur-lg)]",
+        "bg-[var(--glass-bg)] backdrop-blur-[var(--blur-xl)] backdrop-saturate-[1.8]",
         "border border-[var(--glass-border)]",
         "shadow-[var(--shadow-glass)]",
         "text-[var(--text-primary)]",

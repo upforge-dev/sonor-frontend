@@ -172,7 +172,7 @@ export default function APIKeysManager({ projectId, isAdmin }) {
               key={key.id} 
               className={cn(
                 "flex items-center justify-between p-3 rounded-lg border",
-                key.isActive ? "bg-card" : "bg-muted/50 opacity-60"
+                key.isActive ? "bg-[var(--glass-bg)]" : "bg-muted/50 opacity-60"
               )}
             >
               <div className="flex-1 min-w-0">

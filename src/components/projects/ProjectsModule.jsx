@@ -204,7 +204,7 @@ function ProjectTile({
   return (
     <div
       className={cn(
-        "group relative rounded-lg border bg-card overflow-hidden cursor-pointer transition-all",
+        "group relative rounded-lg border bg-[var(--glass-bg)] overflow-hidden cursor-pointer transition-all",
         "hover:shadow-md hover:border-primary/30",
         isActive && "ring-2 ring-primary border-primary"
       )}

@@ -184,7 +184,7 @@ export function UnifiedInbox() {
     <TooltipProvider>
       <div className="flex h-full">
         {/* LEFT: Signal Assistance Sidebar */}
-        <div className="hidden w-72 shrink-0 flex-col border-r border-[var(--glass-border)] bg-card/80 backdrop-blur-sm lg:flex xl:w-80">
+        <div className="hidden w-72 shrink-0 flex-col border-r border-[var(--glass-border)] bg-[var(--glass-bg)]/80 backdrop-blur-sm lg:flex xl:w-80">
           <div className="border-b border-[var(--glass-border)] bg-gradient-to-r from-[var(--brand-primary)]/10 to-[var(--brand-primary)]/10 p-4">
             <div className="flex items-center gap-2">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-r from-[var(--brand-primary)] to-[var(--brand-primary)]">
@@ -299,7 +299,7 @@ export function UnifiedInbox() {
         </div>
 
         {/* CENTER: Message List */}
-        <div className="flex w-[380px] min-w-[320px] shrink-0 flex-col border-r border-[var(--glass-border)] bg-card/80 backdrop-blur-sm">
+        <div className="flex w-[380px] min-w-[320px] shrink-0 flex-col border-r border-[var(--glass-border)] bg-[var(--glass-bg)]/80 backdrop-blur-sm">
           {/* Header */}
           <div className="border-b border-[var(--glass-border)] bg-gradient-to-r from-[var(--brand-primary)]/10 to-[var(--brand-primary)]/10 p-4">
             <div className="mb-3 flex items-center justify-between">

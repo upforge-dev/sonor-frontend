@@ -182,7 +182,7 @@ function TaskCard({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       className={cn(
-        "p-4 rounded-xl border bg-card hover:shadow-md transition-all cursor-pointer group",
+        "p-4 rounded-xl border bg-[var(--glass-bg)] hover:shadow-md transition-all cursor-pointer group",
         task.priority === 'urgent' && "border-red-300 dark:border-red-500/30",
         task.priority === 'high' && "border-amber-300 dark:border-amber-500/30",
         isKeyboardSelected && "ring-2 ring-primary ring-offset-2",
@@ -300,7 +300,7 @@ function DecisionCard({ action, onApprove, onReject, onView, processingActionId 
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       className={cn(
-        "p-4 rounded-xl border-2 bg-card",
+        "p-4 rounded-xl border-2 bg-[var(--glass-bg)]",
         action.tier === 4 && "border-red-300 dark:border-red-500/40 bg-red-50/30 dark:bg-red-500/5",
         action.tier === 3 && "border-amber-300 dark:border-amber-500/40 bg-amber-50/30 dark:bg-amber-500/5"
       )}

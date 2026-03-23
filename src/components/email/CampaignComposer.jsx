@@ -140,7 +140,7 @@ export default function CampaignComposer({ campaign, onSave, onBack, onEditTempl
   return (
     <div className="flex flex-col h-full bg-background">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b bg-card">
+      <div className="flex items-center justify-between p-4 border-b bg-[var(--glass-bg)]">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="sm" onClick={onBack}>
             <ArrowLeft className="h-4 w-4 mr-2" />
@@ -561,7 +561,7 @@ export default function CampaignComposer({ campaign, onSave, onBack, onEditTempl
       </div>
 
       {/* Footer Navigation */}
-      <div className="border-t p-4 bg-card">
+      <div className="border-t p-4 bg-[var(--glass-bg)]">
         <div className="max-w-2xl mx-auto flex items-center justify-between">
           <Button 
             variant="outline" 

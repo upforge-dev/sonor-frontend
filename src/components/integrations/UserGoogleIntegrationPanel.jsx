@@ -243,7 +243,7 @@ export default function UserGoogleIntegrationPanel({
           {/* Feature Cards */}
           <div className="space-y-3">
             {/* Gmail */}
-            <div className="p-4 rounded-lg border bg-card">
+            <div className="p-4 rounded-lg border bg-[var(--glass-bg)]">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg bg-red-50 dark:bg-red-500/10 flex items-center justify-center">
@@ -276,7 +276,7 @@ export default function UserGoogleIntegrationPanel({
             </div>
 
             {/* Google Calendar */}
-            <div className="p-4 rounded-lg border bg-card">
+            <div className="p-4 rounded-lg border bg-[var(--glass-bg)]">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center">
@@ -322,7 +322,7 @@ export default function UserGoogleIntegrationPanel({
             </div>
 
             {/* Google Drive */}
-            <div className="p-4 rounded-lg border bg-card">
+            <div className="p-4 rounded-lg border bg-[var(--glass-bg)]">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg bg-amber-50 dark:bg-amber-500/10 flex items-center justify-center">
@@ -394,7 +394,7 @@ export default function UserGoogleIntegrationPanel({
 
           {/* Features preview */}
           <div className="space-y-3">
-            <div className="flex items-center gap-3 p-3 rounded-lg border bg-card">
+            <div className="flex items-center gap-3 p-3 rounded-lg border bg-[var(--glass-bg)]">
               <div className="w-9 h-9 rounded-lg bg-red-50 dark:bg-red-500/10 flex items-center justify-center shrink-0">
                 <Mail className="h-4.5 w-4.5 text-red-600 dark:text-red-400" />
               </div>
@@ -403,7 +403,7 @@ export default function UserGoogleIntegrationPanel({
                 <p className="text-xs text-muted-foreground">Send emails, track threads in CRM</p>
               </div>
             </div>
-            <div className="flex items-center gap-3 p-3 rounded-lg border bg-card">
+            <div className="flex items-center gap-3 p-3 rounded-lg border bg-[var(--glass-bg)]">
               <div className="w-9 h-9 rounded-lg bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center shrink-0">
                 <Calendar className="h-4.5 w-4.5 text-blue-600 dark:text-blue-400" />
               </div>
@@ -412,7 +412,7 @@ export default function UserGoogleIntegrationPanel({
                 <p className="text-xs text-muted-foreground">Two-way sync with bookings & events</p>
               </div>
             </div>
-            <div className="flex items-center gap-3 p-3 rounded-lg border bg-card">
+            <div className="flex items-center gap-3 p-3 rounded-lg border bg-[var(--glass-bg)]">
               <div className="w-9 h-9 rounded-lg bg-amber-50 dark:bg-amber-500/10 flex items-center justify-center shrink-0">
                 <FolderOpen className="h-4.5 w-4.5 text-amber-600 dark:text-amber-400" />
               </div>

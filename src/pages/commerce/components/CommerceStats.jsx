@@ -1,19 +1,20 @@
 // src/pages/commerce/components/CommerceStats.jsx
 // Stats and activity components for the Commerce module
+//
+// StatsCard now delegates to the unified StatTile component.
 
 import { cn } from '@/lib/utils'
+import { StatTile } from '@/components/ui/stat-tile'
 import {
   DollarSign,
   Calendar,
   Users,
-  ArrowUpRight,
-  ArrowDownRight,
 } from 'lucide-react'
 
 // Recent activity item component
 export function ActivityItem({ activity }) {
   const isPositive = activity.type === 'sale' || activity.type === 'booking'
-  
+
   return (
     <div className="flex items-center gap-3 py-3 border-b border-[var(--glass-border)] last:border-0">
       <div className={cn(
@@ -46,30 +47,18 @@ export function ActivityItem({ activity }) {
   )
 }
 
-// Stats Card - Glass style with optional trend
-export function StatsCard({ title, value, subtitle, icon: Icon, trend, trendValue, brandColors }) {
+// Stats Card — thin wrapper around unified StatTile (horizontal variant)
+export function StatsCard({ title, value, subtitle, icon, trend, trendValue, brandColors, color = 'brand' }) {
   return (
-    <div className="rounded-xl bg-card border border-[var(--glass-border)] p-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm text-[var(--text-secondary)]">{title}</p>
-          <p className="text-2xl font-bold mt-1 text-[var(--text-primary)]">{value}</p>
-          {subtitle && <p className="text-xs text-[var(--text-tertiary)] mt-1">{subtitle}</p>}
-          {trend && (
-            <div className={cn(
-              "flex items-center gap-1 text-xs mt-1",
-              trend === 'up' ? "text-[var(--accent-green)]" : trend === 'down' ? "text-[var(--accent-red)]" : "text-[var(--text-tertiary)]"
-            )}>
-              {trend === 'up' && <ArrowUpRight className="h-3 w-3" />}
-              {trend === 'down' && <ArrowDownRight className="h-3 w-3" />}
-              <span>{trendValue}</span>
-            </div>
-          )}
-        </div>
-        <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-primary)] flex items-center justify-center">
-          <Icon className="h-5 w-5 text-white" />
-        </div>
-      </div>
-    </div>
+    <StatTile
+      label={title}
+      value={value}
+      subtitle={subtitle}
+      icon={icon}
+      trend={trend}
+      change={trendValue}
+      color={color}
+      variant="horizontal"
+    />
   )
 }

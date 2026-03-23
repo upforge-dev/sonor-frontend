@@ -434,7 +434,7 @@ export default function SignalLearningDashboard({ projectId, className }) {
 // Stat card component
 function StatCard({ label, value, icon: Icon, color, bg }) {
   return (
-    <div className="p-4 rounded-lg border bg-card">
+    <div className="p-4 rounded-lg border bg-[var(--glass-bg)]">
       <div className="flex items-center gap-3">
         <div className={cn('flex items-center justify-center w-10 h-10 rounded-full', bg)}>
           <Icon className={cn('h-5 w-5', color)} />
@@ -483,7 +483,7 @@ function SuggestionCard({
       exit={{ opacity: 0, x: -10 }}
       className={cn(
         'p-4 rounded-lg border transition-colors cursor-pointer',
-        'bg-card hover:bg-accent/5',
+        'bg-[var(--glass-bg)] hover:bg-accent/5',
         isPending && 'border-purple-500/30'
       )}
       onClick={onPreview}

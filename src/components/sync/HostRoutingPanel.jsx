@@ -275,7 +275,7 @@ export default function HostRoutingPanel({ isOpen, onClose, bookingType, hosts, 
                           initial={{ opacity: 0, y: -10 }}
                           animate={{ opacity: 1, y: 0 }}
                           className={cn(
-                            "flex items-center gap-3 p-3 rounded-lg border bg-card",
+                            "flex items-center gap-3 p-3 rounded-lg border bg-[var(--glass-bg)]",
                             !route.is_active && "opacity-50"
                           )}
                         >

@@ -14,7 +14,7 @@ import {
 import {
   Plus, Globe, MoreVertical, CheckCircle2, XCircle, Pause, Play, Trash2,
   Loader2, Shield, AlertTriangle, Flame, Activity, RefreshCw, BarChart3,
-  Copy, ChevronDown, ChevronUp,
+  Copy, ChevronDown, ChevronUp, Link2,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { outreachApi } from '@/lib/portal-api'
@@ -32,6 +32,7 @@ export default function OutreachDomainsTab() {
   const [domains, setDomains] = useState([])
   const [loading, setLoading] = useState(true)
   const [showAdd, setShowAdd] = useState(false)
+  const [showLink, setShowLink] = useState(false)
   const [capacity, setCapacity] = useState(null)
   const [showCapacity, setShowCapacity] = useState(false)
   const [syncing, setSyncing] = useState(false)
@@ -67,6 +68,17 @@ export default function OutreachDomainsTab() {
       fetchDomains()
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to add domain')
+    }
+  }
+
+  const handleLink = async (formData) => {
+    try {
+      await outreachApi.linkDomain(formData)
+      toast.success('Domain linked — DNS and verification status loaded from Resend')
+      setShowLink(false)
+      fetchDomains()
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to link domain')
     }
   }
 
@@ -128,8 +140,26 @@ export default function OutreachDomainsTab() {
     setSyncing(true)
     try {
       const { data } = await outreachApi.syncDomains()
-      const count = data?.synced?.length || 0
-      toast.success(count > 0 ? `Synced ${count} domain(s) from Resend` : 'All domains up to date')
+      const synced = data?.synced || []
+      const errors = data?.errors || []
+      const totalLocalDomains = data?.totalLocalDomains ?? 0
+
+      if (totalLocalDomains === 0) {
+        toast.message('No domains to sync', {
+          description: 'Add a domain or use Link existing if it is already in Resend.',
+        })
+      } else {
+        if (synced.length > 0) {
+          toast.success(`${synced.length} domain(s) now verified (Resend)`)
+        } else {
+          toast.success('Refreshed DNS and status from Resend for your linked domains')
+        }
+        if (errors.length > 0) {
+          toast.warning(`${errors.length} domain(s) need attention`, {
+            description: errors.slice(0, 5).join('\n'),
+          })
+        }
+      }
       fetchDomains()
     } catch (err) {
       toast.error('Sync failed')
@@ -166,7 +196,12 @@ export default function OutreachDomainsTab() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold">Sending Domains</h2>
-          <p className="text-muted-foreground">Manage domains, warmup schedules, and deliverability health</p>
+          <p className="text-muted-foreground">
+            Manage domains, warmup schedules, and deliverability health. Sonor uses one Resend account for many customers — use{' '}
+            <span className="font-medium text-foreground">Link existing</span> when the hostname is already in Resend, or{' '}
+            <span className="font-medium text-foreground">Add Domain</span> to register a new one.{' '}
+            <span className="font-medium text-foreground">Sync Resend</span> only updates domains already linked to this organization (never imports the whole account).
+          </p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={handleSync} disabled={syncing} className="gap-2">
@@ -176,6 +211,10 @@ export default function OutreachDomainsTab() {
           <Button variant="outline" onClick={handleShowCapacity} className="gap-2">
             <BarChart3 className="h-4 w-4" />
             Capacity
+          </Button>
+          <Button variant="outline" onClick={() => setShowLink(true)} className="gap-2">
+            <Link2 className="h-4 w-4" />
+            Link existing
           </Button>
           <Button onClick={() => setShowAdd(true)} className="gap-2">
             <Plus className="h-4 w-4" />
@@ -394,7 +433,67 @@ export default function OutreachDomainsTab() {
       )}
 
       <AddDomainDialog open={showAdd} onOpenChange={setShowAdd} onSave={handleAdd} />
+      <LinkDomainDialog open={showLink} onOpenChange={setShowLink} onSave={handleLink} />
     </div>
+  )
+}
+
+function LinkDomainDialog({ open, onOpenChange, onSave }) {
+  const [domain, setDomain] = useState('')
+  const [fromName, setFromName] = useState('')
+  const [dailyLimit, setDailyLimit] = useState('50')
+  const [saving, setSaving] = useState(false)
+
+  const handleSave = async () => {
+    if (!domain.trim()) return
+    setSaving(true)
+    try {
+      await onSave({
+        domain: domain.trim(),
+        from_name: fromName.trim() || undefined,
+        daily_limit: parseInt(dailyLimit) || 50,
+      })
+      setDomain('')
+      setFromName('')
+      setDailyLimit('50')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Link existing Resend domain</DialogTitle>
+          <DialogDescription>
+            Enter the exact hostname already configured in Resend (e.g. mail.client.com). Sonor will attach it to this organization only — it does not browse or import other domains from the shared account.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div>
+            <Label>Domain</Label>
+            <Input placeholder="mail.clientdomain.com" value={domain} onChange={(e) => setDomain(e.target.value)} />
+            <p className="text-xs text-muted-foreground mt-1">Must match the domain name in Resend exactly</p>
+          </div>
+          <div>
+            <Label>From Name</Label>
+            <Input placeholder="John from Acme" value={fromName} onChange={(e) => setFromName(e.target.value)} />
+          </div>
+          <div>
+            <Label>Daily Send Limit (post-warmup)</Label>
+            <Input type="number" value={dailyLimit} onChange={(e) => setDailyLimit(e.target.value)} />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button onClick={handleSave} disabled={!domain.trim() || saving}>
+            {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+            Link domain
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
 

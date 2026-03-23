@@ -372,7 +372,7 @@ function ModuleLayoutRoot({
   return (
     <ModuleLayoutContext.Provider value={contextValue}>
       <motion.div
-        className={cn('flex flex-col flex-1 min-h-0 overflow-hidden bg-[var(--glass-bg)] backdrop-blur-xl', className)}
+        className={cn('flex flex-col flex-1 min-h-0 overflow-hidden', className)}
         role="region"
         aria-label={ariaLabel}
         initial={false}
@@ -388,7 +388,7 @@ function ModuleLayoutRoot({
                 animate={{ width: leftSidebarWidth, opacity: 1 }}
                 exit={reducedMotion ? false : { width: 0, opacity: 0 }}
                 transition={reducedMotion ? { duration: 0 } : SIDEBAR_TRANSITION}
-                className="relative hidden lg:flex flex-col shrink-0 min-h-0 min-w-0 border-r border-[var(--glass-border)] bg-[var(--glass-bg)] backdrop-blur-xl overflow-hidden"
+                className="relative hidden lg:flex flex-col shrink-0 min-h-0 min-w-0 border-r border-[var(--glass-border)] bg-[var(--glass-bg-elevated)] backdrop-blur-[var(--blur-xl)] backdrop-saturate-[1.8] overflow-hidden"
                 role="complementary"
                 aria-label="Left panel"
               >
@@ -414,7 +414,7 @@ function ModuleLayoutRoot({
                 animate={{ width: rightSidebarWidth, opacity: 1 }}
                 exit={reducedMotion ? false : { width: 0, opacity: 0 }}
                 transition={reducedMotion ? { duration: 0 } : SIDEBAR_TRANSITION}
-                className="relative hidden lg:flex flex-col shrink-0 min-h-0 min-w-0 border-l border-[var(--glass-border)] bg-[var(--glass-bg)] backdrop-blur-xl overflow-hidden"
+                className="relative hidden lg:flex flex-col shrink-0 min-h-0 min-w-0 border-l border-[var(--glass-border)] bg-[var(--glass-bg-elevated)] backdrop-blur-[var(--blur-xl)] backdrop-saturate-[1.8] overflow-hidden"
                 role="complementary"
                 aria-label="Right panel"
               >
@@ -500,7 +500,7 @@ function ModuleHeader({ title, subtitle, breadcrumbs = [], actions, icon, classN
     <TooltipProvider>
       <motion.header
         className={cn(
-          'flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 px-4 py-4 border-b border-[var(--glass-border)] bg-[var(--glass-bg)] backdrop-blur-xl shrink-0',
+          'flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 px-4 py-4 border-b border-[var(--glass-border)] bg-background shrink-0',
           className
         )}
         role="region"

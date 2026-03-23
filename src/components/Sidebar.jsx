@@ -359,7 +359,7 @@ const Sidebar = ({
     <div className="flex flex-col h-full overflow-x-hidden">
       {/* Header - Only show if not minimal mode (TopHeader handles org/project switching) */}
       {!minimal && (
-        <div className="p-4 border-b border-border/50 bg-card/50">
+        <div className="p-4 border-b border-border/50 bg-[var(--glass-bg)]/50">
           <div className="flex items-center justify-between">
             {isExpanded && (
               <div className="flex items-center space-x-3">
@@ -655,7 +655,7 @@ const Sidebar = ({
   if (isMobile) {
     return (
       <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm">
-        <div className="fixed left-0 top-0 h-full w-64 bg-card border-r border-border/50 shadow-2xl">
+        <div className="fixed left-0 top-0 h-full w-64 bg-background border-r border-border/50 shadow-2xl">
           {sidebarContent}
         </div>
       </div>
@@ -666,7 +666,7 @@ const Sidebar = ({
   // In expanded mode, takes up space; in hover mode, overlays
   return (
     <motion.div 
-      className="h-full bg-card border-r border-border/50"
+      className="h-full bg-background border-r border-border/50"
       initial={false}
       animate={{ 
         width: isExpanded ? 240 : 56,

@@ -627,7 +627,7 @@ export default function EmailTemplateEditor({ template, onSave, onBack }) {
   return (
     <div className="flex flex-col h-full bg-background">
       {/* Header Toolbar */}
-      <div className="flex items-center justify-between p-4 border-b bg-card">
+      <div className="flex items-center justify-between p-4 border-b bg-[var(--glass-bg)]">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="sm" onClick={onBack}>
             <ArrowLeft className="h-4 w-4 mr-2" />
@@ -808,7 +808,7 @@ export default function EmailTemplateEditor({ template, onSave, onBack }) {
             <div ref={editorRef} className="flex-1 h-full" />
           ) : viewMode === 'code' ? (
             <div className="h-full p-4 overflow-auto">
-              <pre className="bg-card p-4 rounded-lg text-sm overflow-auto h-full">
+              <pre className="bg-[var(--glass-bg)] p-4 rounded-lg text-sm overflow-auto h-full">
                 <code>{getCodePreview()}</code>
               </pre>
             </div>

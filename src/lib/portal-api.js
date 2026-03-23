@@ -3445,6 +3445,34 @@ export const commerceApi = {
   /** Bulk import multiple discoveries */
   bulkImportDiscoveries: (projectId, discoveryIds) =>
     portalApi.post(`/commerce/discoveries/${projectId}/bulk-import`, { discovery_ids: discoveryIds }),
+
+  // ==================== DISCOUNT CODES ====================
+
+  /** Get all discount codes for a project */
+  getDiscountCodes: (projectId, params = {}) =>
+    portalApi.get(`/commerce/discounts/${projectId}`, { params }),
+
+  /** Create a new discount code */
+  createDiscountCode: (projectId, data) =>
+    portalApi.post(`/commerce/discounts/${projectId}`, data),
+
+  /** Update a discount code */
+  updateDiscountCode: (projectId, codeId, data) =>
+    portalApi.put(`/commerce/discounts/${projectId}/${codeId}`, data),
+
+  /** Delete a discount code */
+  deleteDiscountCode: (projectId, codeId) =>
+    portalApi.delete(`/commerce/discounts/${projectId}/${codeId}`),
+
+  /** Get usage history for a discount code */
+  getDiscountUsage: (projectId, codeId, options = {}) =>
+    portalApi.get(`/commerce/discounts/${projectId}/${codeId}/usage`, {
+      params: { limit: options.limit, offset: options.offset },
+    }),
+
+  /** Validate a discount code against an order */
+  validateDiscountCode: (projectId, code, orderData = {}) =>
+    portalApi.post(`/commerce/discounts/${projectId}/validate`, { code, ...orderData }),
 }
 
 // ============================================================================
@@ -4285,6 +4313,7 @@ export const outreachApi = {
   pauseDomain: (id) => portalApi.post(`/outreach/domains/${id}/pause`),
   getCapacityReport: () => portalApi.get('/outreach/domains/capacity'),
   syncDomains: () => portalApi.post('/outreach/domains/sync'),
+  linkDomain: (data) => portalApi.post('/outreach/domains/link', data),
 
   // Sequences
   listSequences: () => portalApi.get('/outreach/sequences'),

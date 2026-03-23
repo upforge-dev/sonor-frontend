@@ -2265,7 +2265,7 @@ export function EmailEditor({
         {activeTab === 'visual' && (
           <>
             {/* Left Panel - Add Elements / Layers */}
-            <div className="w-80 border-r bg-card flex flex-col shrink-0 overflow-hidden">
+            <div className="w-80 border-r bg-[var(--glass-bg)] flex flex-col shrink-0 overflow-hidden">
               {/* Panel Tabs */}
               <div className="flex border-b shrink-0">
                 <button
@@ -2509,7 +2509,7 @@ export function EmailEditor({
             />
 
             {/* Right Panel - Style Properties */}
-            <div className="w-80 border-l bg-card flex flex-col shrink-0 overflow-hidden">
+            <div className="w-80 border-l bg-[var(--glass-bg)] flex flex-col shrink-0 overflow-hidden">
               <div className="px-4 py-3 border-b shrink-0">
                 <h3 className="text-sm font-semibold flex items-center gap-2">
                   <Palette className="h-4 w-4 text-muted-foreground" />

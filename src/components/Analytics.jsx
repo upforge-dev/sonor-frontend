@@ -34,17 +34,17 @@ function ChartLoader() {
   )
 }
 
-export default function Analytics() {
+export default function Analytics({ dateRange: parentDateRange } = {}) {
   const {
     // Project info
     projectDomain,
-    
+
     // State
     isLoading,
     isRefreshing,
     error,
     dateRange,
-    
+
     // Raw data
     overview,
     webVitals,
@@ -53,7 +53,7 @@ export default function Analytics() {
     heatmap,
     topReferrers,
     topEvents,
-    
+
     // Transformed data
     trafficData,
     deviceData,
@@ -62,21 +62,21 @@ export default function Analytics() {
     funnelData,
     engagementData,
     metrics,
-    
+
     // Realtime
     realtimeActiveVisitors,
     realtimeEvents,
-    
+
     // Handlers
     handleRefresh,
     clearError,
     fetchAllAnalytics,
-    
+
     // Formatters
     formatNumber,
     formatDuration,
     formatPercent
-  } = useAnalytics()
+  } = useAnalytics({ dateRange: parentDateRange })
 
   if (error && !overview) {
     return (

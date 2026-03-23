@@ -171,7 +171,7 @@ export function EventsPanel({
               return (
                 <div
                   key={event.id}
-                  className="p-4 rounded-lg border bg-card hover:bg-muted/50 cursor-pointer transition-colors"
+                  className="p-4 rounded-lg border bg-[var(--glass-bg)] hover:bg-muted/50 cursor-pointer transition-colors"
                   onClick={() => navigate(`/commerce/offerings/${event.id}`)}
                 >
                   <div className="flex items-start justify-between mb-2">

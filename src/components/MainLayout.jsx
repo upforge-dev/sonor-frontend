@@ -13,6 +13,7 @@ import usePageContextStore from '@/lib/page-context-store'
 import { Menu, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useTour } from '@/hooks/useTour'
+import SonicBackground from './SonicBackground'
 
 const TourOverlay = lazy(() => import('./tour/TourOverlay'))
 const EchoPill = lazy(() => import('./tour/EchoPill'))
@@ -250,7 +251,7 @@ const MainLayout = () => {
       >
         Skip to main content
       </a>
-      {/* Portal background: custom image (if set) or default background.avif + theme-aware overlay (80% light / 80% dark) */}
+      {/* Portal background: custom image (if set) or sonic wave canvas + theme-aware overlay */}
       {user?.background_image_url ? (
         <>
           <div
@@ -261,11 +262,8 @@ const MainLayout = () => {
         </>
       ) : (
         <>
-          <div
-            className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat"
-            style={{ backgroundImage: 'url(/background.avif)' }}
-          />
-          <div className="fixed inset-0 z-0 bg-white/80 dark:bg-black/80" />
+          <SonicBackground />
+          <div className="fixed inset-0 z-0 bg-white/40 dark:bg-black/50 pointer-events-none" />
         </>
       )}
       
@@ -283,7 +281,7 @@ const MainLayout = () => {
             variant="ghost"
             size="sm"
             onClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
-            className="shadow-md bg-card min-h-[44px] min-w-[44px]"
+            className="shadow-md bg-[var(--glass-bg)] min-h-[44px] min-w-[44px]"
             aria-label={isMobileSidebarOpen ? 'Close navigation menu' : 'Open navigation menu'}
           >
             {isMobileSidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -311,7 +309,7 @@ const MainLayout = () => {
               className="lg:hidden fixed inset-0 bg-black/40 backdrop-blur-sm z-[100]"
               onClick={() => setIsMobileSidebarOpen(false)}
             />
-            <aside className="lg:hidden fixed inset-y-0 left-0 w-64 bg-card border-r border-border/50 shadow-xl z-[101] overflow-y-auto" role="navigation" aria-label="Main navigation">
+            <aside className="lg:hidden fixed inset-y-0 left-0 w-64 bg-background border-r border-border/50 shadow-xl z-[101] overflow-y-auto" role="navigation" aria-label="Main navigation">
               <Sidebar
                 activeSection={activeSection}
                 onSectionChange={(section) => {

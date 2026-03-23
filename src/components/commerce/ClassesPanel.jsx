@@ -139,7 +139,7 @@ export function ClassesPanel({
               return (
                 <div 
                   key={session.id}
-                  className="p-3 rounded-lg border bg-card hover:bg-muted/50 cursor-pointer transition-colors"
+                  className="p-3 rounded-lg border bg-[var(--glass-bg)] hover:bg-muted/50 cursor-pointer transition-colors"
                   onClick={() => navigate(`/commerce/sessions/${session.id}`)}
                 >
                   <div className="flex items-center justify-between mb-2">

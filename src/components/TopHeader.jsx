@@ -108,13 +108,18 @@ function OrgSwitcherDropdown() {
     }
   }
 
-  // Build org lists based on user type
-  const isAgency = currentOrg?.org_type === 'agency'
+  // Agency user = member of an agency org OR has client orgs under management (from API).
+  // Do NOT use currentOrg.org_type: when viewing a client org, currentOrg is the client, but the
+  // same user must still see Agency + Client Organizations split everywhere.
+  const belongsToAgencyOrg = (availableOrgs || []).some((o) => o.org_type === 'agency')
+  const hasManagedClients = (managedOrgs || []).length > 0
+  const isAgencyUser = belongsToAgencyOrg || hasManagedClients
+
   const clientOrgs = managedOrgs || []
-  const clientOrgIds = new Set(clientOrgs.map(o => o.id))
-  // For agencies: exclude managed client orgs from the top section (they appear under "Client Organizations")
+  const clientOrgIds = new Set(clientOrgs.map((o) => o.id))
   const allAvailable = isSuperAdmin ? allOrgs : (availableOrgs || [])
-  const myOrgs = isAgency ? allAvailable.filter(o => !clientOrgIds.has(o.id)) : allAvailable
+  // Keep client orgs only under "Client Organizations" when user is agency-side (avoids duplicate rows)
+  const myOrgs = isAgencyUser ? allAvailable.filter((o) => !clientOrgIds.has(o.id)) : allAvailable
 
   // Filter by search
   const filterOrgs = (orgs) => {
@@ -172,7 +177,7 @@ function OrgSwitcherDropdown() {
           <DropdownMenuSeparator />
           {/* My organizations */}
           <DropdownMenuLabel className="text-xs text-muted-foreground">
-            {isAgency ? 'Agency' : 'Organizations'}
+            {isAgencyUser ? 'Agency' : 'Organizations'}
           </DropdownMenuLabel>
           {filteredMyOrgs.map((org) => (
             <DropdownMenuItem
@@ -184,8 +189,8 @@ function OrgSwitcherDropdown() {
               {currentOrg?.id === org.id && <Check className="h-4 w-4 text-primary" />}
             </DropdownMenuItem>
           ))}
-          {/* Managed client orgs (agency users) */}
-          {isAgency && filteredClientOrgs.length > 0 && (
+          {/* Managed client orgs (agency users — same list whether current org is agency or client) */}
+          {isAgencyUser && filteredClientOrgs.length > 0 && (
             <>
               <DropdownMenuSeparator />
               <DropdownMenuLabel className="text-xs text-muted-foreground">Client Organizations</DropdownMenuLabel>
@@ -566,7 +571,7 @@ export default function TopHeader({ onNavigate, onOpenSearch }) {
 
   return (
     <TooltipProvider>
-      <header className="h-12 flex items-center justify-between border-b border-border/50 bg-card backdrop-blur-sm" role="banner" aria-label="Top navigation">
+      <header className="h-12 flex items-center justify-between border-b border-border/50 bg-[var(--glass-bg-elevated)] backdrop-blur-[var(--blur-xl)] backdrop-saturate-[1.8]" role="banner" aria-label="Top navigation">
         {/* Left section: Logo + Org + Project */}
         <div className="flex items-center">
           {/* Sonor Logo - aligned with sidebar icons (56px = w-14) */}

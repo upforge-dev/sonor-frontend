@@ -206,7 +206,7 @@ export default function FormsSettingsView({ projectId }) {
         </div>
 
         {/* Notifications */}
-        <Card className="bg-card/80 backdrop-blur-sm border-border">
+        <Card className="bg-[var(--glass-bg)]/80 backdrop-blur-sm border-border">
           <CardHeader>
             <div className="flex items-center gap-2">
               <div 
@@ -297,7 +297,7 @@ export default function FormsSettingsView({ projectId }) {
         </Card>
 
         {/* Default Messages */}
-        <Card className="bg-card/80 backdrop-blur-sm border-border">
+        <Card className="bg-[var(--glass-bg)]/80 backdrop-blur-sm border-border">
           <CardHeader>
             <div className="flex items-center gap-2">
               <div 
@@ -334,7 +334,7 @@ export default function FormsSettingsView({ projectId }) {
         </Card>
 
         {/* Security & Spam Protection */}
-        <Card className="bg-card/80 backdrop-blur-sm border-border">
+        <Card className="bg-[var(--glass-bg)]/80 backdrop-blur-sm border-border">
           <CardHeader>
             <div className="flex items-center gap-2">
               <div 
@@ -392,7 +392,7 @@ export default function FormsSettingsView({ projectId }) {
         </Card>
 
         {/* Form Features */}
-        <Card className="bg-card/80 backdrop-blur-sm border-border">
+        <Card className="bg-[var(--glass-bg)]/80 backdrop-blur-sm border-border">
           <CardHeader>
             <div className="flex items-center gap-2">
               <div 

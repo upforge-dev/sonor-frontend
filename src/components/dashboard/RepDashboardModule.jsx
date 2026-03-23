@@ -25,6 +25,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
+import { StatTile } from '@/components/ui/stat-tile'
 import { GlassCard, GlassEmptyState } from '@/components/crm/ui'
 import { reportsApi } from '@/lib/portal-api'
 import useAuthStore from '@/lib/auth-store'
@@ -56,47 +57,19 @@ function formatRelativeTime(date) {
   return d.toLocaleDateString()
 }
 
-// Metric Card Component
-function MetricCard({ label, value, icon: Icon, trend, trendLabel, color = 'brand', size = 'md' }) {
-  const colorClasses = {
-    brand: 'text-[var(--brand-primary)] bg-[var(--brand-primary)]/10',
-    green: 'text-green-400 bg-green-400/10',
-    blue: 'text-blue-400 bg-blue-400/10',
-    purple: 'text-purple-400 bg-purple-400/10',
-    orange: 'text-orange-400 bg-orange-400/10'
-  }
-
+// Metric Card Component — thin wrapper around StatTile for backwards compatibility
+function MetricCard({ label, value, icon, trend, trendLabel, color = 'brand', size = 'md' }) {
   return (
-    <GlassCard padding="md" className="relative overflow-hidden">
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="text-sm text-[var(--text-tertiary)]">{label}</p>
-          <p className={cn(
-            "font-bold mt-1",
-            size === 'lg' ? 'text-3xl' : 'text-2xl'
-          )}>
-            {value}
-          </p>
-          {trend !== undefined && (
-            <div className={cn(
-              "flex items-center gap-1 mt-2 text-xs font-medium",
-              trend >= 0 ? 'text-green-400' : 'text-red-400'
-            )}>
-              {trend >= 0 ? (
-                <TrendingUp className="h-3 w-3" />
-              ) : (
-                <TrendingDown className="h-3 w-3" />
-              )}
-              <span>{trend >= 0 ? '+' : ''}{trend}%</span>
-              {trendLabel && <span className="text-[var(--text-tertiary)] font-normal">{trendLabel}</span>}
-            </div>
-          )}
-        </div>
-        <div className={cn("p-3 rounded-xl", colorClasses[color])}>
-          <Icon className="h-5 w-5" />
-        </div>
-      </div>
-    </GlassCard>
+    <StatTile
+      label={label}
+      value={value}
+      icon={icon}
+      change={trend !== undefined ? `${trend >= 0 ? '+' : ''}${trend}%` : undefined}
+      trend={trend !== undefined ? (trend >= 0 ? 'up' : 'down') : undefined}
+      subtitle={trendLabel}
+      color={color}
+      variant="horizontal"
+    />
   )
 }
 

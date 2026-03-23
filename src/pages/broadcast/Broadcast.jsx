@@ -512,7 +512,7 @@ export function Broadcast({ onNavigate }) {
               <SignalSuggestsPanel module="broadcast" className="mx-4 mt-4 mb-0" />
             )}
             {(currentView === 'posts' || currentView === 'library') && (
-              <div className="h-12 border-b flex items-center justify-between px-4 bg-card/50">
+              <div className="h-12 border-b flex items-center justify-between px-4 bg-[var(--glass-bg)]/50">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-tertiary)]" />
                   <Input

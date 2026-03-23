@@ -32,14 +32,16 @@ import { buildMetrics, buildPageMetrics } from '@/lib/analytics/metrics'
  * @param {string} [options.path] - Optional path filter for per-page analytics
  * @returns {Object} Analytics data, loading states, and handlers
  */
-export function useAnalytics({ path = null } = {}) {
+export function useAnalytics({ path = null, dateRange: externalDateRange = null } = {}) {
   const { currentOrg, currentProject } = useAuthStore()
   const projectName = currentProject?.name || 'Your Site'
   const projectDomain = currentProject?.domain
   const projectId = currentProject?.id
 
-  // Local state for date range
-  const [dateRange, setDateRange] = useState(30)
+  // Use external dateRange if provided, otherwise local state
+  const [localDateRange, setLocalDateRange] = useState(30)
+  const dateRange = externalDateRange ?? localDateRange
+  const setDateRange = setLocalDateRange
   const [isRefreshing, setIsRefreshing] = useState(false)
 
   // When path is set, all overview/charts are scoped to that page

@@ -9,15 +9,13 @@ import {
   BarChart,
   DonutChart
 } from '@tremor/react'
-import { 
-  Clock, 
+import {
+  Clock,
   Target,
   DollarSign,
   Users,
   Calendar,
   Loader2,
-  ArrowUpRight,
-  ArrowDownRight,
   Sparkles,
   PhoneCall,
   CheckCircle2,
@@ -29,6 +27,7 @@ import {
   Medal,
   Crown
 } from 'lucide-react'
+import { StatTileGrid } from '@/components/ui/stat-tile'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -62,42 +61,6 @@ const STAGE_CONFIG = {
   negotiating: { label: 'Negotiating', color: '#F97316', icon: MessageSquare },
   closed_won: { label: 'Won', color: '#22C55E', icon: CheckCheck },
   closed_lost: { label: 'Lost', color: '#EF4444', icon: XCircle }
-}
-
-// KPI Card Component
-function KPICard({ title, value, subtitle, subtitleValue, icon: Icon, color, trend }) {
-  return (
-    <div className="p-4 rounded-xl bg-[var(--glass-bg)] border border-[var(--glass-border)]">
-      <div className="flex items-start justify-between mb-3">
-        <div 
-          className="p-2.5 rounded-lg"
-          style={{ backgroundColor: `${color}15` }}
-        >
-          <Icon className="h-5 w-5" style={{ color }} />
-        </div>
-        {trend !== undefined && (
-          <Badge 
-            variant="outline" 
-            className={cn(
-              "text-xs font-medium gap-0.5",
-              trend >= 0 ? "text-green-600 border-green-200 bg-green-50" : "text-red-600 border-red-200 bg-red-50"
-            )}
-          >
-            {trend >= 0 ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
-            {Math.abs(trend)}%
-          </Badge>
-        )}
-      </div>
-      <p className="text-xs text-muted-foreground mb-1">{title}</p>
-      <p className="text-2xl font-bold text-[var(--text-primary)]">{value}</p>
-      {subtitle && (
-        <div className="flex justify-between mt-2 pt-2 border-t border-[var(--glass-border)]">
-          <span className="text-xs text-muted-foreground">{subtitle}</span>
-          <span className="text-xs font-semibold">{subtitleValue}</span>
-        </div>
-      )}
-    </div>
-  )
 }
 
 // Stage Progress Row
@@ -234,42 +197,48 @@ export default function CRMAnalyticsDashboard({ projectId, isAgency }) {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <KPICard
-          title="Total Prospects"
-          value={summary.total || 0}
-          subtitle="Active"
-          subtitleValue={summary.active || 0}
-          icon={Users}
-          color="#3B82F6"
-          trend={summary.growthRate}
-        />
-        <KPICard
-          title="Conversion Rate"
-          value={formatPercent(summary.conversionRate)}
-          subtitle="Won"
-          subtitleValue={summary.won || 0}
-          icon={Target}
-          color="#22C55E"
-          trend={summary.conversionTrend}
-        />
-        <KPICard
-          title="Avg Time to Close"
-          value={`${velocity.avgDaysToClose || 0}d`}
-          subtitle="Fastest"
-          subtitleValue={`${velocity.fastestDeal || 0}d`}
-          icon={Clock}
-          color="#F59E0B"
-        />
-        <KPICard
-          title="Pipeline Value"
-          value={formatCurrency(deals.totalValue)}
-          subtitle="Weighted"
-          subtitleValue={formatCurrency(deals.weightedValue)}
-          icon={DollarSign}
-          color="#8B5CF6"
-        />
-      </div>
+      <StatTileGrid
+        columns={4}
+        variant="horizontal"
+        metrics={[
+          {
+            key: 'total-prospects',
+            label: 'Total Prospects',
+            value: summary.total || 0,
+            subtitle: `Active: ${summary.active || 0}`,
+            change: summary.growthRate,
+            trend: summary.growthRate > 0 ? 'up' : summary.growthRate < 0 ? 'down' : 'neutral',
+            icon: Users,
+            color: 'blue',
+          },
+          {
+            key: 'conversion-rate',
+            label: 'Conversion Rate',
+            value: formatPercent(summary.conversionRate),
+            subtitle: `Won: ${summary.won || 0}`,
+            change: summary.conversionTrend,
+            trend: summary.conversionTrend > 0 ? 'up' : summary.conversionTrend < 0 ? 'down' : 'neutral',
+            icon: Target,
+            color: 'green',
+          },
+          {
+            key: 'avg-time-to-close',
+            label: 'Avg Time to Close',
+            value: `${velocity.avgDaysToClose || 0}d`,
+            subtitle: `Fastest: ${velocity.fastestDeal || 0}d`,
+            icon: Clock,
+            color: 'orange',
+          },
+          {
+            key: 'pipeline-value',
+            label: 'Pipeline Value',
+            value: formatCurrency(deals.totalValue),
+            subtitle: `Weighted: ${formatCurrency(deals.weightedValue)}`,
+            icon: DollarSign,
+            color: 'purple',
+          },
+        ]}
+      />
 
       {/* Pipeline Breakdown & Velocity */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

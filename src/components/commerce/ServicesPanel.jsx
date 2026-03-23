@@ -192,7 +192,7 @@ export function ServicesPanel({
             {displayServices.slice(0, 4).map((service) => (
               <div
                 key={service.id}
-                className="p-3 rounded-lg border bg-card hover:bg-muted/50 cursor-pointer transition-colors"
+                className="p-3 rounded-lg border bg-[var(--glass-bg)] hover:bg-muted/50 cursor-pointer transition-colors"
                 onClick={() => navigate(`/commerce/offerings/${service.id}`)}
               >
                 <p className="text-sm font-medium truncate">{service.name}</p>

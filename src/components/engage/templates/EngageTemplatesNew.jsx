@@ -741,7 +741,7 @@ function TemplateCard({ template, onSelect }) {
   return (
     <button
       onClick={() => onSelect(template)}
-      className="group relative flex flex-col bg-card rounded-xl border border-border overflow-hidden hover:shadow-lg hover:border-[var(--brand-primary)]/30 transition-all text-left"
+      className="group relative flex flex-col bg-[var(--glass-bg)] rounded-xl border border-border overflow-hidden hover:shadow-lg hover:border-[var(--brand-primary)]/30 transition-all text-left"
     >
       {/* Preview Area */}
       <div className="relative h-40 bg-muted/30 overflow-hidden">

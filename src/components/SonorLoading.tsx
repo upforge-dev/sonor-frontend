@@ -19,7 +19,7 @@ interface SonorSpinnerProps {
 
 // Mini inline frequency bars — no canvas, pure CSS.
 // Used in SonorSpinner as a sonic alternative to Loader2.
-function MiniFreqBars({ count = 5, height = 16, color = '#39bfb0' }: { count?: number; height?: number; color?: string }) {
+function MiniFreqBars({ count = 5, height = 16, color = 'var(--brand-primary, #39bfb0)' }: { count?: number; height?: number; color?: string }) {
   const amplitudes = Array.from({ length: count }, (_, i) => {
     const t = i / (count - 1)
     return 0.35 + 0.65 * Math.sin(t * Math.PI)
@@ -85,15 +85,15 @@ export default function SonorLoading() {
           top: 0;
           left: 0;
           z-index: 50;
-          background: #0a0a0f;
+          background: transparent;
         }
         @keyframes sonorBreathe {
           0%, 100% {
-            filter: drop-shadow(0 0 20px rgba(57, 191, 176, 0.15));
+            filter: drop-shadow(0 0 20px color-mix(in srgb, var(--brand-primary, #39bfb0) 25%, transparent));
             transform: scale(1);
           }
           50% {
-            filter: drop-shadow(0 0 40px rgba(57, 191, 176, 0.3));
+            filter: drop-shadow(0 0 40px color-mix(in srgb, var(--brand-primary, #39bfb0) 50%, transparent));
             transform: scale(1.02);
           }
         }
@@ -117,7 +117,7 @@ export default function SonorLoading() {
         .sonor-loader-freq-bar {
           width: 3px;
           border-radius: 1.5px;
-          background: linear-gradient(to top, rgba(57, 191, 176, 0.4), #39bfb0);
+          background: linear-gradient(to top, color-mix(in srgb, var(--brand-primary, #39bfb0) 40%, transparent), var(--brand-primary, #39bfb0));
           transform-origin: center;
           animation: loaderFreq 1.4s ease-in-out infinite;
         }

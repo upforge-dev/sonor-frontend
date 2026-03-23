@@ -22,6 +22,7 @@ import {
   AlertCircle,
   Upload,
   GripVertical,
+  Plus,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -29,7 +30,70 @@ import { cn } from '@/lib/utils'
 const MAX_FILE_SIZE = 5 * 1024 * 1024
 const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
 
-function SortableGalleryItem({ image, disabled, deletingId, onSetFeatured, onDelete }) {
+function ModelInfoEditor({ imageId, modelInfo, onChange }) {
+  const [expanded, setExpanded] = useState(!!modelInfo?.height || !!modelInfo?.weight || !!modelInfo?.wearing_size)
+
+  if (!expanded) {
+    return (
+      <button
+        type="button"
+        onClick={() => setExpanded(true)}
+        className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 mt-1"
+      >
+        <Plus className="h-3 w-3" /> Model info
+      </button>
+    )
+  }
+
+  const handleFieldChange = (field, value) => {
+    const updated = { ...(modelInfo || {}), [field]: value || undefined }
+    const hasAny = Object.values(updated).some(Boolean)
+    onChange(imageId, hasAny ? updated : null)
+  }
+
+  return (
+    <div className="mt-2 space-y-1.5 border-t pt-2">
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-medium text-muted-foreground">Model Info</span>
+        <button
+          type="button"
+          onClick={() => {
+            onChange(imageId, null)
+            setExpanded(false)
+          }}
+          className="text-xs text-muted-foreground hover:text-destructive"
+        >
+          <X className="h-3 w-3" />
+        </button>
+      </div>
+      <div className="grid grid-cols-2 gap-1.5">
+        <input
+          type="text"
+          placeholder="Height"
+          value={modelInfo?.height || ''}
+          onChange={(e) => handleFieldChange('height', e.target.value)}
+          className="h-7 text-xs px-2 rounded border bg-background"
+        />
+        <input
+          type="text"
+          placeholder="Weight"
+          value={modelInfo?.weight || ''}
+          onChange={(e) => handleFieldChange('weight', e.target.value)}
+          className="h-7 text-xs px-2 rounded border bg-background"
+        />
+      </div>
+      <input
+        type="text"
+        placeholder="Wearing size (e.g. XL)"
+        value={modelInfo?.wearing_size || ''}
+        onChange={(e) => handleFieldChange('wearing_size', e.target.value)}
+        className="h-7 text-xs px-2 rounded border bg-background w-full"
+      />
+    </div>
+  )
+}
+
+function SortableGalleryItem({ image, disabled, deletingId, onSetFeatured, onDelete, isClothing, modelInfo, onModelInfoChange }) {
   const {
     attributes,
     listeners,
@@ -49,56 +113,67 @@ function SortableGalleryItem({ image, disabled, deletingId, onSetFeatured, onDel
       ref={setNodeRef}
       style={style}
       className={cn(
-        'relative aspect-square rounded-lg overflow-hidden bg-muted border group',
+        'rounded-lg bg-muted border group',
         isDragging && 'opacity-60 shadow-lg z-10 ring-2 ring-primary'
       )}
     >
-      <img
-        src={image.url}
-        alt={image.filename || 'Gallery image'}
-        className="w-full h-full object-cover pointer-events-none"
-        draggable={false}
-      />
-      <div
-        className={cn(
-          'absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-between p-1',
-          isDragging && 'opacity-100'
-        )}
-      >
-        <button
-          {...attributes}
-          {...listeners}
+      <div className="relative aspect-square overflow-hidden rounded-t-lg">
+        <img
+          src={image.url}
+          alt={image.filename || 'Gallery image'}
+          className="w-full h-full object-cover pointer-events-none"
+          draggable={false}
+        />
+        <div
           className={cn(
-            'p-1.5 rounded-lg bg-white/20 hover:bg-white/30 text-white touch-none',
-            disabled && 'cursor-not-allowed opacity-50'
+            'absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-between p-1',
+            isDragging && 'opacity-100'
           )}
-          title="Drag to reorder"
-          onClick={(e) => e.stopPropagation()}
         >
-          <GripVertical className="h-4 w-4" />
-        </button>
-        <div className="flex items-center gap-1">
           <button
-            onClick={() => onSetFeatured(image.id)}
-            className="p-1.5 rounded-lg bg-white/20 hover:bg-white/30 text-white"
-            title="Set as featured"
-          >
-            <Star className="h-4 w-4" />
-          </button>
-          <button
-            onClick={() => onDelete(image.id)}
-            disabled={deletingId === image.id}
-            className="p-1.5 rounded-lg bg-red-500/80 hover:bg-red-600 text-white"
-            title="Delete"
-          >
-            {deletingId === image.id ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <X className="h-4 w-4" />
+            {...attributes}
+            {...listeners}
+            className={cn(
+              'p-1.5 rounded-lg bg-white/20 hover:bg-white/30 text-white touch-none',
+              disabled && 'cursor-not-allowed opacity-50'
             )}
+            title="Drag to reorder"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <GripVertical className="h-4 w-4" />
           </button>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => onSetFeatured(image.id)}
+              className="p-1.5 rounded-lg bg-white/20 hover:bg-white/30 text-white"
+              title="Set as featured"
+            >
+              <Star className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => onDelete(image.id)}
+              disabled={deletingId === image.id}
+              className="p-1.5 rounded-lg bg-red-500/80 hover:bg-red-600 text-white"
+              title="Delete"
+            >
+              {deletingId === image.id ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <X className="h-4 w-4" />
+              )}
+            </button>
+          </div>
         </div>
       </div>
+      {isClothing && onModelInfoChange && (
+        <div className="px-2 pb-2">
+          <ModelInfoEditor
+            imageId={image.id}
+            modelInfo={modelInfo}
+            onChange={onModelInfoChange}
+          />
+        </div>
+      )}
     </div>
   )
 }
@@ -111,6 +186,9 @@ export function CommerceImageUploader({
   disabled = false,
   maxImages = 10,
   className,
+  isClothing = false,
+  imageModelInfo,
+  onModelInfoChange,
 }) {
   const [uploading, setUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
@@ -316,44 +394,55 @@ export function CommerceImageUploader({
           Featured Image
         </label>
         {featuredImage ? (
-          <div
-            ref={setFeaturedDropRef}
-            className={cn(
-              'relative aspect-[16/9] rounded-xl overflow-hidden bg-muted border group transition-all',
-              isOverFeatured && 'ring-2 ring-primary ring-offset-2'
-            )}
-          >
-            {isOverFeatured && (
-              <div className="absolute inset-0 z-10 flex items-center justify-center bg-primary/20 text-primary font-medium">
-                Drop to set as featured
+          <>
+            <div
+              ref={setFeaturedDropRef}
+              className={cn(
+                'relative aspect-[16/9] rounded-xl overflow-hidden bg-muted border group transition-all',
+                isOverFeatured && 'ring-2 ring-primary ring-offset-2'
+              )}
+            >
+              {isOverFeatured && (
+                <div className="absolute inset-0 z-10 flex items-center justify-center bg-primary/20 text-primary font-medium">
+                  Drop to set as featured
+                </div>
+              )}
+              <img
+                src={featuredImage.url}
+                alt="Featured"
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => handleDelete(featuredImage.id)}
+                  disabled={deletingId === featuredImage.id}
+                  className="bg-red-500/90 hover:bg-red-600 text-white"
+                >
+                  {deletingId === featuredImage.id ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <X className="h-4 w-4" />
+                  )}
+                  Remove
+                </Button>
+              </div>
+              <Badge className="absolute top-2 left-2 bg-primary text-primary-foreground">
+                <Star className="h-3 w-3 mr-1 fill-current" />
+                Featured
+              </Badge>
+            </div>
+            {isClothing && onModelInfoChange && (
+              <div className="mt-2">
+                <ModelInfoEditor
+                  imageId={featuredImage.id}
+                  modelInfo={imageModelInfo?.[featuredImage.id]}
+                  onChange={onModelInfoChange}
+                />
               </div>
             )}
-            <img
-              src={featuredImage.url}
-              alt="Featured"
-              className="w-full h-full object-cover"
-            />
-            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => handleDelete(featuredImage.id)}
-                disabled={deletingId === featuredImage.id}
-                className="bg-red-500/90 hover:bg-red-600 text-white"
-              >
-                {deletingId === featuredImage.id ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <X className="h-4 w-4" />
-                )}
-                Remove
-              </Button>
-            </div>
-            <Badge className="absolute top-2 left-2 bg-primary text-primary-foreground">
-              <Star className="h-3 w-3 mr-1 fill-current" />
-              Featured
-            </Badge>
-          </div>
+          </>
         ) : (
           <div
             ref={setFeaturedDropRef}
@@ -430,6 +519,9 @@ export function CommerceImageUploader({
                   deletingId={deletingId}
                   onSetFeatured={handleSetFeatured}
                   onDelete={handleDelete}
+                  isClothing={isClothing}
+                  modelInfo={imageModelInfo?.[image.id]}
+                  onModelInfoChange={onModelInfoChange}
                 />
               ))}
 

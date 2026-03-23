@@ -410,7 +410,7 @@ function TaskRow({
   return (
     <div
       className={cn(
-        "group flex items-center gap-3 p-2 rounded-lg border bg-card hover:shadow-sm transition-all cursor-pointer",
+        "group flex items-center gap-3 p-2 rounded-lg border bg-[var(--glass-bg)] hover:shadow-sm transition-all cursor-pointer",
         task.status === 'completed' && "opacity-60"
       )}
       onClick={() => onSelect?.(task)}

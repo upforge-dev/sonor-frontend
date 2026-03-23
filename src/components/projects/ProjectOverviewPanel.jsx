@@ -39,7 +39,7 @@ const MODULE_ICONS = {
 // Stat card component
 function StatCard({ title, value, description, icon: Icon, trend, variant = 'default' }) {
   const variants = {
-    default: 'bg-card',
+    default: 'bg-[var(--glass-bg)]',
     primary: 'bg-primary/5 border-primary/20',
     success: 'bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800',
     warning: 'bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800',

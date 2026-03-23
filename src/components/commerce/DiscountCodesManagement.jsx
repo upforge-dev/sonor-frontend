@@ -6,7 +6,15 @@ import { useState, useEffect } from 'react'
 import useAuthStore from '@/lib/auth-store'
 import { useCommerceOfferings, useCommerceCategories, commerceKeys } from '@/lib/hooks'
 import { useQueryClient } from '@tanstack/react-query'
-import { commerceApi } from '@/lib/portal-api' // For discount code API calls
+import { commerceApi } from '@/lib/portal-api'
+
+const {
+  getDiscountCodes,
+  createDiscountCode,
+  updateDiscountCode,
+  deleteDiscountCode,
+  getDiscountUsage,
+} = commerceApi
 import {
   Dialog,
   DialogContent,
@@ -147,10 +155,12 @@ export default function DiscountCodesManagement({ open, onOpenChange }) {
 
   const loadReferenceData = async () => {
     try {
-      const [offeringsData, categoriesData] = await Promise.all([
-        getOfferings(projectId, { status: 'active', limit: 100 }),
-        getCategories(projectId),
+      const [offeringsRes, categoriesRes] = await Promise.all([
+        commerceApi.getOfferings(projectId, { status: 'active', limit: 100 }),
+        commerceApi.getCategories(projectId),
       ])
+      const offeringsData = offeringsRes?.data || offeringsRes
+      const categoriesData = categoriesRes?.data || categoriesRes
       setOfferings(offeringsData || [])
       setCategories(categoriesData || [])
     } catch (err) {

@@ -82,7 +82,7 @@ function TeamMemberCard({ member, onViewTasks, isExpanded, onToggle }) {
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="border rounded-xl bg-card overflow-hidden"
+      className="border rounded-xl bg-[var(--glass-bg)] overflow-hidden"
     >
       {/* Header */}
       <div 
@@ -192,7 +192,7 @@ function TaskRow({ task }) {
   
   return (
     <div className={cn(
-      "flex items-center gap-3 p-2 rounded-lg bg-card border text-sm",
+      "flex items-center gap-3 p-2 rounded-lg bg-[var(--glass-bg)] border text-sm",
       isOverdue && "border-red-300 dark:border-red-500/30"
     )}>
       <CheckCircle className="h-4 w-4 text-muted-foreground shrink-0" />

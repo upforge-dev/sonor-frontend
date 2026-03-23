@@ -173,7 +173,7 @@ function TemplateCard({ template, onUse, isCreating }) {
   const Icon = template.icon
   
   return (
-    <Card className="group relative overflow-hidden bg-card/80 backdrop-blur-sm border-border hover:border-[var(--brand-primary)]/50 transition-all duration-300 hover:shadow-lg">
+    <Card className="group relative overflow-hidden bg-[var(--glass-bg)]/80 backdrop-blur-sm border-border hover:border-[var(--brand-primary)]/50 transition-all duration-300 hover:shadow-lg">
       {/* Preview Header */}
       <div 
         className="h-32 relative overflow-hidden"

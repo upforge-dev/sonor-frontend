@@ -1,8 +1,9 @@
 // src/components/commerce/InventoryManagement.jsx
 // Manage product inventory levels
+// Supports both top-level inventory and per-variant (clothing) inventory
 // MIGRATED TO REACT QUERY HOOKS - Jan 29, 2026
 
-import { useState, useEffect } from 'react'
+import { useState, useMemo } from 'react'
 import useAuthStore from '@/lib/auth-store'
 import { useCommerceOfferings, useUpdateCommerceOffering, commerceKeys } from '@/lib/hooks'
 import { useQueryClient } from '@tanstack/react-query'
@@ -17,7 +18,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import {
   Table,
   TableBody,
@@ -38,72 +39,71 @@ import {
 } from 'lucide-react'
 import { toast } from '@/lib/toast'
 
+/** Get total stock for an offering (sum variants for clothing, otherwise top-level) */
+function getTotalStock(product) {
+  if (product.is_clothing && product.variants?.length > 0) {
+    return product.variants.reduce((sum, v) => sum + (v.inventory_count ?? 0), 0)
+  }
+  return product.inventory_count ?? 0
+}
+
+function getStockStatus(count) {
+  if (count <= 0) return { variant: 'destructive', label: 'Out of Stock', icon: AlertTriangle }
+  if (count <= 5) return { variant: 'secondary', label: 'Low Stock', icon: TrendingDown }
+  return { variant: 'outline', label: 'In Stock', icon: Check }
+}
+
 export default function InventoryManagement({ open, onOpenChange }) {
   const { currentProject } = useAuthStore()
-  
-  const [products, setProducts] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState({})
+  const queryClient = useQueryClient()
+  const updateMutation = useUpdateCommerceOffering()
+
+  const { data: allOfferings, isLoading, refetch } = useCommerceOfferings(
+    currentProject?.id,
+    { type: 'product', limit: 200 },
+    { enabled: !!currentProject?.id && open }
+  )
+
   const [editedQuantities, setEditedQuantities] = useState({})
+  const [saving, setSaving] = useState({})
   const [search, setSearch] = useState('')
 
-  useEffect(() => {
-    if (open && currentProject?.id) {
-      loadProducts()
-    }
-  }, [open, currentProject?.id])
+  // Include products that have track_inventory OR are clothing (variant-level tracking)
+  const products = useMemo(() => {
+    if (!allOfferings) return []
+    return allOfferings.filter(p => p.track_inventory || (p.is_clothing && p.variants?.length > 0))
+  }, [allOfferings])
 
-  const loadProducts = async () => {
-    setLoading(true)
-    try {
-      const data = await getOfferings(currentProject.id, { type: 'product', limit: 200 })
-      // Only show products with inventory tracking enabled
-      const trackedProducts = data.filter(p => p.track_inventory)
-      setProducts(trackedProducts)
-      
-      // Initialize edited quantities
-      const quantities = {}
-      trackedProducts.forEach(p => {
-        quantities[p.id] = p.inventory_count?.toString() || '0'
-      })
-      setEditedQuantities(quantities)
-    } catch (err) {
-      console.error('Failed to load products:', err)
-      toast.error('Failed to load inventory')
-    } finally {
-      setLoading(false)
-    }
-  }
+  const filteredProducts = useMemo(() => {
+    return products.filter(p =>
+      p.name.toLowerCase().includes(search.toLowerCase()) ||
+      (p.sku && p.sku.toLowerCase().includes(search.toLowerCase()))
+    )
+  }, [products, search])
+
+  // Stats
+  const outOfStock = products.filter(p => getTotalStock(p) <= 0).length
+  const lowStock = products.filter(p => { const s = getTotalStock(p); return s > 0 && s <= 5 }).length
+  const inStock = products.filter(p => getTotalStock(p) > 5).length
 
   const handleQuantityChange = (productId, value) => {
-    setEditedQuantities(prev => ({
-      ...prev,
-      [productId]: value
-    }))
+    setEditedQuantities(prev => ({ ...prev, [productId]: value }))
   }
 
   const handleSave = async (product) => {
     const newQuantity = parseInt(editedQuantities[product.id] || '0', 10)
-    
     if (isNaN(newQuantity) || newQuantity < 0) {
       toast.error('Invalid quantity')
       return
     }
-
-    if (newQuantity === product.inventory_count) {
-      // No change
-      return
-    }
+    if (newQuantity === (product.inventory_count ?? 0)) return
 
     setSaving(prev => ({ ...prev, [product.id]: true }))
     try {
-      await updateOffering(product.id, { inventory_count: newQuantity })
-      
-      // Update local state
-      setProducts(prev => prev.map(p => 
-        p.id === product.id ? { ...p, inventory_count: newQuantity } : p
-      ))
-      
+      await updateMutation.mutateAsync({
+        offeringId: product.id,
+        data: { inventory_count: newQuantity },
+      })
       toast.success(`Updated ${product.name} inventory`)
     } catch (err) {
       console.error('Failed to update inventory:', err)
@@ -114,48 +114,31 @@ export default function InventoryManagement({ open, onOpenChange }) {
   }
 
   const handleSaveAll = async () => {
-    const changedProducts = products.filter(p => {
+    const changed = products.filter(p => {
       const newQty = parseInt(editedQuantities[p.id] || '0', 10)
-      return newQty !== p.inventory_count
+      return !isNaN(newQty) && newQty !== (p.inventory_count ?? 0) && !p.is_clothing
     })
-
-    if (changedProducts.length === 0) {
+    if (changed.length === 0) {
       toast.info('No changes to save')
       return
     }
-
-    let successCount = 0
-    for (const product of changedProducts) {
+    let ok = 0
+    for (const product of changed) {
       try {
         const newQuantity = parseInt(editedQuantities[product.id] || '0', 10)
-        await updateOffering(product.id, { inventory_count: newQuantity })
-        successCount++
+        await updateMutation.mutateAsync({
+          offeringId: product.id,
+          data: { inventory_count: newQuantity },
+        })
+        ok++
       } catch (err) {
         console.error(`Failed to update ${product.name}:`, err)
       }
     }
-
-    if (successCount > 0) {
-      toast.success(`Updated ${successCount} products`)
-      loadProducts() // Refresh
+    if (ok > 0) {
+      toast.success(`Updated ${ok} products`)
+      refetch()
     }
-  }
-
-  // Filter products by search
-  const filteredProducts = products.filter(p =>
-    p.name.toLowerCase().includes(search.toLowerCase()) ||
-    (p.sku && p.sku.toLowerCase().includes(search.toLowerCase()))
-  )
-
-  // Calculate inventory stats
-  const outOfStock = products.filter(p => (p.inventory_count || 0) <= 0).length
-  const lowStock = products.filter(p => p.inventory_count > 0 && p.inventory_count <= 5).length
-  const inStock = products.filter(p => (p.inventory_count || 0) > 5).length
-
-  const getStockStatus = (count) => {
-    if (count <= 0) return { variant: 'destructive', label: 'Out of Stock', icon: AlertTriangle }
-    if (count <= 5) return { variant: 'secondary', label: 'Low Stock', icon: TrendingDown }
-    return { variant: 'outline', label: 'In Stock', icon: Check }
   }
 
   return (
@@ -213,17 +196,17 @@ export default function InventoryManagement({ open, onOpenChange }) {
               className="pl-9"
             />
           </div>
-          <Button variant="outline" size="icon" onClick={loadProducts} disabled={loading}>
-            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+          <Button variant="outline" size="icon" onClick={() => refetch()} disabled={isLoading}>
+            <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
           </Button>
-          <Button onClick={handleSaveAll} disabled={loading}>
+          <Button onClick={handleSaveAll} disabled={isLoading}>
             <Save className="h-4 w-4 mr-2" />
             Save All
           </Button>
         </div>
 
         {/* Products Table */}
-        {loading ? (
+        {isLoading ? (
           <div className="py-12 text-center">
             <Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground" />
           </div>
@@ -232,7 +215,7 @@ export default function InventoryManagement({ open, onOpenChange }) {
             <CardContent className="py-12 text-center">
               <Package className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
               <p className="text-muted-foreground">
-                {products.length === 0 
+                {products.length === 0
                   ? 'No products with inventory tracking enabled'
                   : 'No products match your search'}
               </p>
@@ -249,22 +232,28 @@ export default function InventoryManagement({ open, onOpenChange }) {
                   <TableHead>Product</TableHead>
                   <TableHead>SKU</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className="w-32">Quantity</TableHead>
+                  <TableHead className="w-48">Stock</TableHead>
                   <TableHead className="w-20"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredProducts.map(product => {
-                  const status = getStockStatus(product.inventory_count || 0)
-                  const isChanged = parseInt(editedQuantities[product.id] || '0', 10) !== product.inventory_count
-                  
+                  const totalStock = getTotalStock(product)
+                  const status = getStockStatus(totalStock)
+                  const isClothingWithVariants = product.is_clothing && product.variants?.length > 0
+
+                  // For non-clothing: editable single quantity
+                  const isChanged = !isClothingWithVariants && (
+                    parseInt(editedQuantities[product.id] || String(product.inventory_count ?? 0), 10) !== (product.inventory_count ?? 0)
+                  )
+
                   return (
                     <TableRow key={product.id}>
                       <TableCell>
                         <div className="flex items-center gap-3">
-                          {product.image_url ? (
-                            <img 
-                              src={product.image_url} 
+                          {product.featured_image_url ? (
+                            <img
+                              src={product.featured_image_url}
                               alt={product.name}
                               className="h-10 w-10 rounded object-cover"
                             />
@@ -291,27 +280,49 @@ export default function InventoryManagement({ open, onOpenChange }) {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Input
-                          type="number"
-                          min="0"
-                          value={editedQuantities[product.id] || '0'}
-                          onChange={(e) => handleQuantityChange(product.id, e.target.value)}
-                          className={`w-24 ${isChanged ? 'border-blue-500' : ''}`}
-                        />
+                        {isClothingWithVariants ? (
+                          <div className="space-y-1">
+                            <p className="text-sm font-medium">{totalStock} total</p>
+                            <div className="flex flex-wrap gap-1">
+                              {product.variants.map(v => (
+                                <span
+                                  key={v.id}
+                                  className={`text-xs px-1.5 py-0.5 rounded ${
+                                    (v.inventory_count ?? 0) <= 0
+                                      ? 'bg-red-500/10 text-red-500'
+                                      : 'bg-muted text-muted-foreground'
+                                  }`}
+                                >
+                                  {v.name}: {v.inventory_count ?? 0}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        ) : (
+                          <Input
+                            type="number"
+                            min="0"
+                            value={editedQuantities[product.id] ?? String(product.inventory_count ?? 0)}
+                            onChange={(e) => handleQuantityChange(product.id, e.target.value)}
+                            className={`w-24 ${isChanged ? 'border-blue-500' : ''}`}
+                          />
+                        )}
                       </TableCell>
                       <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleSave(product)}
-                          disabled={!isChanged || saving[product.id]}
-                        >
-                          {saving[product.id] ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Save className="h-4 w-4" />
-                          )}
-                        </Button>
+                        {!isClothingWithVariants && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleSave(product)}
+                            disabled={!isChanged || saving[product.id]}
+                          >
+                            {saving[product.id] ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Save className="h-4 w-4" />
+                            )}
+                          </Button>
+                        )}
                       </TableCell>
                     </TableRow>
                   )

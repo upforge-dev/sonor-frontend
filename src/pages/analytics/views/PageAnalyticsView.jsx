@@ -26,7 +26,7 @@ function ChartLoader() {
   )
 }
 
-export default function PageAnalyticsView({ path }) {
+export default function PageAnalyticsView({ path, dateRange: parentDateRange }) {
   const { currentProject } = useAuthStore()
   const pageName = path === '/' ? 'Home' : path.split('/').filter(Boolean).pop() || path
   const pageUrl = currentProject?.domain ? `https://${currentProject.domain}${path}` : null
@@ -49,7 +49,7 @@ export default function PageAnalyticsView({ path }) {
     formatNumber,
     formatDuration,
     formatPercent
-  } = useAnalytics({ path })
+  } = useAnalytics({ path, dateRange: parentDateRange })
 
   if (error && !overview) {
     const errorMessage = typeof error === 'string' ? error : (error?.message ?? error?.response?.data?.message ?? 'Failed to load analytics. Make sure the Portal API is running.')

@@ -21,8 +21,13 @@ import { STATUS_CONFIG, PRICE_TYPE_CONFIG } from './CommerceConstants'
 export function ProductCard({ product, brandColors, onOpen }) {
   const hasImage = product.images?.length > 0 || product.image_url || product.featured_image
   const imageUrl = product.images?.[0]?.url || product.image_url || product.featured_image
-  const lowStock = product.track_inventory && product.inventory_quantity <= 5 && product.inventory_quantity > 0
-  const outOfStock = product.track_inventory && product.inventory_quantity === 0
+  // Aggregate variant inventory for clothing, otherwise use top-level
+  const totalStock = (product.is_clothing || product.variants?.length > 0)
+    ? (product.variants?.reduce((sum, v) => sum + (v.inventory_count ?? 0), 0) ?? 0)
+    : (product.inventory_quantity ?? product.inventory_count ?? 0)
+  const hasTracking = product.track_inventory || (product.is_clothing && product.variants?.length > 0)
+  const lowStock = hasTracking && totalStock <= 5 && totalStock > 0
+  const outOfStock = hasTracking && totalStock === 0
   const isFromShopify = product._source === 'shopify_fallback' || product.shopify_product_id
 
   return (
@@ -94,12 +99,12 @@ export function ProductCard({ product, brandColors, onOpen }) {
           <p className="text-lg font-semibold mt-1 text-[var(--brand-primary)]">
             ${Number(product.price || 0).toFixed(2)}
           </p>
-          {product.track_inventory && (
+          {hasTracking && (
             <p className={cn(
               "text-sm mt-1",
               outOfStock ? "text-[var(--accent-red)]" : lowStock ? "text-[var(--accent-orange)]" : "text-[var(--text-secondary)]"
             )}>
-              {outOfStock ? 'Out of stock' : `${product.inventory_quantity || product.inventory_count || 0} in stock`}
+              {outOfStock ? 'Out of stock' : `${totalStock} in stock`}
             </p>
           )}
         </div>

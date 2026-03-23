@@ -38,7 +38,7 @@ function StatCard({ title, value, change, icon: Icon, trend }) {
   const TrendIcon = isPositive ? ArrowUp : ArrowDown;
   
   return (
-    <Card className="bg-card/80 backdrop-blur-sm">
+    <Card className="bg-[var(--glass-bg)]/80 backdrop-blur-sm">
       <CardContent className="p-6">
         <div className="flex items-center justify-between">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--surface-secondary)]">
@@ -72,7 +72,7 @@ function PlatformCard({ platform, data }) {
   ];
 
   return (
-    <Card className="bg-card/80 backdrop-blur-sm">
+    <Card className="bg-[var(--glass-bg)]/80 backdrop-blur-sm">
       <CardHeader className="pb-3">
         <div className="flex items-center gap-2">
           <PlatformIcon platform={platform} className="h-5 w-5" />
@@ -244,7 +244,7 @@ export function BroadcastAnalytics() {
       <div>
         <h3 className="mb-4 text-base font-medium text-[var(--text-primary)]">Platform Breakdown</h3>
         {platforms.length === 0 ? (
-          <Card className="bg-card/80 backdrop-blur-sm">
+          <Card className="bg-[var(--glass-bg)]/80 backdrop-blur-sm">
             <CardContent className="flex flex-col items-center justify-center py-8 text-[var(--text-tertiary)]">
               <BarChart3 className="mb-2 h-8 w-8 text-[var(--text-tertiary)]" />
               <p className="text-sm">No platform data available</p>
@@ -272,7 +272,7 @@ export function BroadcastAnalytics() {
             <RefreshCw className="h-5 w-5 animate-spin text-[var(--text-tertiary)]" />
           </div>
         ) : topPosts.length === 0 ? (
-          <Card className="bg-card/80 backdrop-blur-sm">
+          <Card className="bg-[var(--glass-bg)]/80 backdrop-blur-sm">
             <CardContent className="p-0">
               <EmptyState.Card
                 icon={TrendingUp}
@@ -299,7 +299,7 @@ export function BroadcastAnalytics() {
       {analytics?.byContentType && (
         <div>
           <h3 className="mb-4 text-base font-medium text-[var(--text-primary)]">Engagement by Content Type</h3>
-          <Card className="bg-card/80 backdrop-blur-sm">
+          <Card className="bg-[var(--glass-bg)]/80 backdrop-blur-sm">
             <CardContent className="p-6">
               <div className="space-y-4">
                 {Object.entries(analytics.byContentType).map(([type, data]) => (

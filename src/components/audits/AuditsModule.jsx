@@ -183,7 +183,7 @@ function AuditDetailRoute() {
 
   return (
     <div className="min-h-full">
-      <div className="sticky top-0 z-10 bg-card/80 backdrop-blur-sm border-b border-[var(--glass-border)] flex items-center justify-between">
+      <div className="sticky top-0 z-10 bg-[var(--glass-bg)]/80 backdrop-blur-sm border-b border-[var(--glass-border)] flex items-center justify-between">
         <Button variant="ghost" onClick={() => navigate('/audits')} className="m-3">
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to Audits

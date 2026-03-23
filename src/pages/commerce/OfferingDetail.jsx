@@ -549,7 +549,7 @@ export default function OfferingDetail({ offeringId, onBack, onEdit }) {
               </CardHeader>
               <CardContent>
                 <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
+                  <table className="w-full text-sm min-w-max">
                     <thead>
                       <tr className="border-b">
                         <th className="text-left py-2 pr-4 font-medium text-muted-foreground text-xs">Size</th>
@@ -573,6 +573,72 @@ export default function OfferingDetail({ offeringId, onBack, onEdit }) {
                       ))}
                     </tbody>
                   </table>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Product Details (care instructions, sizing notes, notices) */}
+          {currentOffering.is_clothing && currentOffering.metadata && (
+            (currentOffering.metadata.care_instructions || currentOffering.metadata.sizing_notes || currentOffering.metadata.notices?.length > 0) && (
+              <Card className="mt-4">
+                <CardHeader>
+                  <CardTitle>Product Details</CardTitle>
+                  <CardDescription>Care instructions, sizing notes, and product notices displayed on the storefront</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {currentOffering.metadata.care_instructions && (
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground mb-1">Care Instructions</p>
+                      <p className="text-sm whitespace-pre-line">{currentOffering.metadata.care_instructions}</p>
+                    </div>
+                  )}
+                  {currentOffering.metadata.sizing_notes && (
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground mb-1">Sizing Notes</p>
+                      <p className="text-sm">{currentOffering.metadata.sizing_notes}</p>
+                    </div>
+                  )}
+                  {currentOffering.metadata.notices?.length > 0 && (
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground mb-1">Notices</p>
+                      <ul className="space-y-1">
+                        {currentOffering.metadata.notices.map((notice, i) => (
+                          <li key={i} className="text-sm flex items-start gap-2">
+                            <span className="text-amber-500 mt-0.5">⚠</span>
+                            {notice}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )
+          )}
+
+          {/* Model Info */}
+          {currentOffering.is_clothing && currentOffering.metadata?.image_model_info && Object.keys(currentOffering.metadata.image_model_info).length > 0 && (
+            <Card className="mt-4">
+              <CardHeader>
+                <CardTitle>Model Information</CardTitle>
+                <CardDescription>Height, weight, and sizing details for models in product photos</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
+                  {currentOffering.images?.filter(img => currentOffering.metadata.image_model_info[img.id]).map((img) => {
+                    const info = currentOffering.metadata.image_model_info[img.id]
+                    return (
+                      <div key={img.id} className="flex items-center gap-3 p-3 rounded-lg border">
+                        <img src={img.url} alt="" className="h-16 w-16 rounded object-cover flex-shrink-0" />
+                        <div className="text-sm space-y-0.5">
+                          {info.height && <p><span className="text-muted-foreground">Height:</span> {info.height}</p>}
+                          {info.weight && <p><span className="text-muted-foreground">Weight:</span> {info.weight}</p>}
+                          {info.wearing_size && <p><span className="text-muted-foreground">Wearing:</span> {info.wearing_size}</p>}
+                        </div>
+                      </div>
+                    )
+                  })}
                 </div>
               </CardContent>
             </Card>

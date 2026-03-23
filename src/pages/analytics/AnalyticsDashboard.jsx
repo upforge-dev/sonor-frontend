@@ -473,9 +473,9 @@ export default function AnalyticsDashboard() {
             >
               <Suspense fallback={<ViewLoader />}>
                 {currentView === 'highlights' ? (
-                  <Analytics />
+                  <Analytics dateRange={dateRange} />
                 ) : currentView === 'journeys' ? (
-                  <JourneysView />
+                  <JourneysView dateRange={dateRange} />
                 ) : currentView === 'signal-alerts' ? (
                   <div className="p-6">
                     <Suspense fallback={<ViewLoader />}>
@@ -496,7 +496,7 @@ export default function AnalyticsDashboard() {
                     </Suspense>
                   </div>
                 ) : (
-                  <PageAnalyticsView path={selectedPath} />
+                  <PageAnalyticsView path={selectedPath} dateRange={dateRange} />
                 )}
               </Suspense>
             </motion.div>

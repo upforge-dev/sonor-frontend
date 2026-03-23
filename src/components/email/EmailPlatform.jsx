@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -19,6 +19,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Textarea } from '@/components/ui/textarea'
 import { Progress } from '@/components/ui/progress'
 import {
@@ -1287,13 +1288,176 @@ function TemplatesTab({ onEditTemplate, onCreateTemplate, onOpenImageLibrary, on
 // ============================================
 // SUBSCRIBERS TAB
 // ============================================
+/** Parse CSV text into { headers, rows } (handles quoted fields). */
+function parseSubscriberCsv(text) {
+  const rawLines = text.split(/\r?\n/).filter((l) => l.trim())
+  if (rawLines.length < 2) return null
+  const parseLine = (line) => {
+    const values = line.match(/(".*?"|[^,]+)/g) || []
+    return values.map((v) => v.trim().replace(/^"|"$/g, '').replace(/""/g, '"'))
+  }
+  const headers = parseLine(rawLines[0]).map((h) => h.trim().replace(/^\uFEFF/, '').toLowerCase())
+  const rows = rawLines.slice(1).map((line) => {
+    const cells = parseLine(line)
+    const obj = {}
+    headers.forEach((h, i) => {
+      obj[h] = (cells[i] ?? '').trim()
+    })
+    return obj
+  })
+  return { headers, rows }
+}
+
+function rowToSubscriber(row) {
+  const email =
+    row.email ||
+    row['e-mail'] ||
+    row['email address'] ||
+    ''
+  const firstName =
+    row.first_name ||
+    row.firstname ||
+    row['first name'] ||
+    row.firstName ||
+    ''
+  const lastName =
+    row.last_name ||
+    row.lastname ||
+    row['last name'] ||
+    row.lastName ||
+    ''
+  let tags = []
+  const tagRaw = row.tags || row.tag || ''
+  if (tagRaw) {
+    tags = tagRaw
+      .split(/[,;|]/)
+      .map((t) => t.trim())
+      .filter(Boolean)
+  }
+  return {
+    email: email.trim().toLowerCase(),
+    firstName: firstName || undefined,
+    lastName: lastName || undefined,
+    tags: tags.length ? tags : undefined,
+  }
+}
+
 function SubscribersTab({ onOpenSegmentBuilder }) {
-  const { subscribers, lists, subscribersLoading, listsLoading, fetchSubscribers, fetchLists } = useEmailPlatformStore()
+  const {
+    subscribers,
+    lists,
+    subscribersLoading,
+    listsLoading,
+    fetchSubscribers,
+    fetchLists,
+    importSubscribers,
+  } = useEmailPlatformStore()
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedList, setSelectedList] = useState('all')
   const [showImportDialog, setShowImportDialog] = useState(false)
   const [selectedSubscriber, setSelectedSubscriber] = useState(null)
   const [showAddDialog, setShowAddDialog] = useState(false)
+  const [importFileName, setImportFileName] = useState(null)
+  const [parsedSubscribers, setParsedSubscribers] = useState(null)
+  const [importDragging, setImportDragging] = useState(false)
+  const [importing, setImporting] = useState(false)
+  const [updateExistingOnImport, setUpdateExistingOnImport] = useState(true)
+  const importFileRef = useRef(null)
+
+  const resetImportState = useCallback(() => {
+    setImportFileName(null)
+    setParsedSubscribers(null)
+    setImportDragging(false)
+    if (importFileRef.current) importFileRef.current.value = ''
+  }, [])
+
+  const processCsvFile = useCallback((file) => {
+    if (!file) return
+    const lower = file.name.toLowerCase()
+    if (!lower.endsWith('.csv') && file.type !== 'text/csv') {
+      toast.error('Please use a .csv file')
+      return
+    }
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const text = String(e.target?.result || '')
+      const parsed = parseSubscriberCsv(text)
+      if (!parsed) {
+        toast.error('CSV needs a header row and at least one data row')
+        return
+      }
+      const emailKey = parsed.headers.find(
+        (h) =>
+          h === 'email' ||
+          h === 'e-mail' ||
+          h === 'email address' ||
+          h.replace(/[\s_-]/g, '') === 'email'
+      )
+      if (!emailKey) {
+        toast.error('CSV must include an "email" column')
+        return
+      }
+      const subs = []
+      const seen = new Set()
+      for (const row of parsed.rows) {
+        const s = rowToSubscriber(row)
+        if (!s.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s.email)) continue
+        if (seen.has(s.email)) continue
+        seen.add(s.email)
+        subs.push(s)
+      }
+      if (subs.length === 0) {
+        toast.error('No valid email addresses found in file')
+        return
+      }
+      setImportFileName(file.name)
+      setParsedSubscribers(subs)
+      toast.success(`${subs.length} subscriber(s) ready to import`)
+    }
+    reader.readAsText(file)
+  }, [])
+
+  const handleImportDrop = useCallback(
+    (e) => {
+      e.preventDefault()
+      e.stopPropagation()
+      setImportDragging(false)
+      const file = e.dataTransfer?.files?.[0]
+      if (file) processCsvFile(file)
+    },
+    [processCsvFile]
+  )
+
+  const handleImportSubmit = async () => {
+    if (!parsedSubscribers?.length) {
+      toast.error('Choose a CSV file first')
+      return
+    }
+    setImporting(true)
+    try {
+      const result = await importSubscribers({
+        subscribers: parsedSubscribers,
+        updateExisting: updateExistingOnImport,
+      })
+      const created = result?.created ?? 0
+      const updated = result?.updated ?? 0
+      const skipped = result?.skipped ?? 0
+      const errCount = result?.errors?.length ?? 0
+      toast.success(
+        `Import complete: ${created} added, ${updated} updated, ${skipped} skipped` +
+          (errCount ? `, ${errCount} row errors` : '')
+      )
+      if (result?.errors?.length) {
+        console.warn('[import subscribers]', result.errors)
+      }
+      setShowImportDialog(false)
+      resetImportState()
+    } catch (err) {
+      toast.error(err?.message || 'Import failed')
+    } finally {
+      setImporting(false)
+    }
+  }
 
   useEffect(() => {
     fetchSubscribers()
@@ -1568,26 +1732,98 @@ function SubscribersTab({ onOpenSegmentBuilder }) {
       </Dialog>
 
       {/* Import Dialog */}
-      <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
+      <Dialog
+        open={showImportDialog}
+        onOpenChange={(open) => {
+          setShowImportDialog(open)
+          if (!open) resetImportState()
+        }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Import Subscribers</DialogTitle>
+            <DialogDescription>
+              Upload a CSV with an <span className="font-medium">email</span> column. Optional: first_name, last_name, tags (comma-separated).
+            </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="border-2 border-dashed rounded-lg p-8 text-center">
+          <div className="space-y-4 py-2">
+            <input
+              ref={importFileRef}
+              type="file"
+              accept=".csv,text/csv"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0]
+                if (f) processCsvFile(f)
+              }}
+            />
+            <div
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  importFileRef.current?.click()
+                }
+              }}
+              onDragEnter={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                setImportDragging(true)
+              }}
+              onDragLeave={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                setImportDragging(false)
+              }}
+              onDragOver={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+              }}
+              onDrop={handleImportDrop}
+              onClick={() => importFileRef.current?.click()}
+              className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
+                importDragging ? 'border-primary bg-primary/5' : 'border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/30'
+              }`}
+            >
               <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
               <p className="text-sm text-muted-foreground mb-2">
-                Drag and drop a CSV file or click to browse
+                Drag and drop a CSV file here, or click to browse
               </p>
-              <Button variant="outline" size="sm">Choose File</Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  importFileRef.current?.click()
+                }}
+              >
+                Choose File
+              </Button>
+              {importFileName && parsedSubscribers && (
+                <p className="text-sm font-medium text-foreground mt-3">
+                  {importFileName} — {parsedSubscribers.length} row(s)
+                </p>
+              )}
             </div>
-            <p className="text-xs text-muted-foreground">
-              CSV should have columns: email, first_name, last_name (optional), tags (optional)
-            </p>
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="import-update-existing"
+                checked={updateExistingOnImport}
+                onCheckedChange={(v) => setUpdateExistingOnImport(v === true)}
+              />
+              <Label htmlFor="import-update-existing" className="text-sm font-normal cursor-pointer">
+                Update existing subscribers (merge tags / names)
+              </Label>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowImportDialog(false)}>Cancel</Button>
-            <Button>Import</Button>
+            <Button onClick={handleImportSubmit} disabled={!parsedSubscribers?.length || importing}>
+              {importing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Import
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

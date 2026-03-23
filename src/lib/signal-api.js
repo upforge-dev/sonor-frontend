@@ -521,7 +521,9 @@ export const echoApi = {
    */
   getSuggestions: async (module) => {
     const response = await signalApi.get(`/signal/suggestions/${encodeURIComponent(module)}`)
-    return response.data?.data ?? []
+    const result = response.data?.data
+    // API returns { suggestions: [...], cached, generatedAt }
+    return result?.suggestions ?? (Array.isArray(result) ? result : [])
   },
 }
 

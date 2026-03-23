@@ -109,7 +109,10 @@ export function SignalSuggestsPanel({
         className={cn('rounded-xl p-4', className)}
         style={{
           background: 'var(--glass-bg)',
+          backdropFilter: 'blur(var(--blur-md)) saturate(1.4)',
+          WebkitBackdropFilter: 'blur(var(--blur-md)) saturate(1.4)',
           border: '1px solid var(--glass-border)',
+          boxShadow: 'var(--shadow-glass)',
         }}
       >
         {/* Header */}
@@ -164,7 +167,10 @@ export function SignalSuggestsPanel({
         className={cn('rounded-xl p-4', className)}
         style={{
           background: 'var(--glass-bg)',
+          backdropFilter: 'blur(var(--blur-md)) saturate(1.4)',
+          WebkitBackdropFilter: 'blur(var(--blur-md)) saturate(1.4)',
           border: '1px solid var(--glass-border)',
+          boxShadow: 'var(--shadow-glass)',
         }}
       >
         <div className="flex items-center gap-2 mb-3">
@@ -213,7 +219,10 @@ export function SignalSuggestsPanel({
         className={cn('rounded-xl p-4', className)}
         style={{
           background: 'var(--glass-bg)',
+          backdropFilter: 'blur(var(--blur-md)) saturate(1.4)',
+          WebkitBackdropFilter: 'blur(var(--blur-md)) saturate(1.4)',
           border: '1px solid var(--glass-border)',
+          boxShadow: 'var(--shadow-glass)',
         }}
       >
         <div className="flex items-center gap-2 mb-2">
@@ -250,7 +259,10 @@ export function SignalSuggestsPanel({
         className={cn('rounded-xl p-4', className)}
         style={{
           background: 'var(--glass-bg)',
+          backdropFilter: 'blur(var(--blur-md)) saturate(1.4)',
+          WebkitBackdropFilter: 'blur(var(--blur-md)) saturate(1.4)',
           border: '1px solid var(--glass-border)',
+          boxShadow: 'var(--shadow-glass)',
         }}
       >
         <div className="flex items-center gap-2 mb-2">
@@ -275,7 +287,10 @@ export function SignalSuggestsPanel({
       className={cn('rounded-xl overflow-hidden', className)}
       style={{
         background: 'var(--glass-bg)',
+        backdropFilter: 'blur(var(--blur-xl)) saturate(1.8)',
+        WebkitBackdropFilter: 'blur(var(--blur-xl)) saturate(1.8)',
         border: '1px solid var(--glass-border)',
+        boxShadow: 'var(--shadow-glass)',
       }}
     >
       {/* Collapsible header */}

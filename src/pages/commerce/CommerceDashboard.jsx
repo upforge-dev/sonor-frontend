@@ -1358,7 +1358,7 @@ export default function CommerceDashboard({ onNavigate }) {
         <ModuleLayout.Content>
           <div>
         {/* Header */}
-        <div className="bg-card/80 backdrop-blur-sm border-b sticky top-0 z-10">
+        <div className="bg-[var(--glass-bg)]/80 backdrop-blur-sm border-b sticky top-0 z-10">
           <div className="px-6 py-4">
             <div className="flex items-center justify-between gap-4">
               {/* Title/Search based on view */}

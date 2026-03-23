@@ -15,8 +15,6 @@ import {
   Calendar,
   RefreshCw,
   Loader2,
-  ArrowUp,
-  ArrowDown,
   Minus,
   Activity,
   Target,
@@ -26,6 +24,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
+import { StatTile } from '@/components/ui/stat-tile'
 import {
   Select,
   SelectContent,
@@ -240,58 +239,52 @@ export default function SignalAnalytics({ projectId, className }) {
   )
 }
 
-// Metric card component
-function MetricCard({ 
-  title, 
-  value, 
-  subtitle, 
-  change, 
+// Metric card component — thin wrapper around the unified StatTile
+const COLOR_CLASS_MAP = {
+  'text-blue-400': 'blue',
+  'text-emerald-400': 'green',
+  'text-yellow-400': 'yellow',
+  'text-purple-400': 'purple',
+  'text-red-400': 'red',
+  'text-orange-400': 'orange',
+  'text-pink-400': 'pink',
+}
+
+function MetricCard({
+  title,
+  value,
+  subtitle,
+  change,
   invertChange,
-  icon: Icon, 
-  color, 
-  bg,
+  icon,
+  color,
   loading,
-  isStar
 }) {
-  const isPositive = invertChange ? change < 0 : change > 0
-  const isNegative = invertChange ? change > 0 : change < 0
+  // Derive trend direction from numeric change
+  const trend =
+    change !== undefined && change !== 0
+      ? change > 0
+        ? 'up'
+        : 'down'
+      : 'neutral'
+
+  // Map legacy tailwind color class → StatTile palette key
+  const paletteColor = COLOR_CLASS_MAP[color] || 'brand'
+
+  if (loading) return null // StatTileGrid handles loading; individual tiles pass through
 
   return (
-    <div className="p-4 rounded-lg border bg-card">
-      <div className="flex items-center justify-between mb-3">
-        <div className={cn('flex items-center justify-center w-8 h-8 rounded-full', bg)}>
-          <Icon className={cn('h-4 w-4', color)} />
-        </div>
-        {change !== undefined && change !== 0 && (
-          <Badge 
-            variant="secondary" 
-            className={cn(
-              'text-xs gap-0.5',
-              isPositive && 'bg-emerald-500/20 text-emerald-400',
-              isNegative && 'bg-red-500/20 text-red-400'
-            )}
-          >
-            {isPositive ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
-            {Math.abs(change)}%
-          </Badge>
-        )}
-      </div>
-
-      {loading ? (
-        <div className="space-y-2">
-          <div className="h-8 w-16 bg-muted animate-pulse rounded" />
-          <div className="h-4 w-24 bg-muted animate-pulse rounded" />
-        </div>
-      ) : (
-        <>
-          <div className="flex items-baseline gap-1">
-            <span className="text-2xl font-bold">{value}</span>
-            {isStar && <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" />}
-          </div>
-          <p className="text-sm text-muted-foreground">{subtitle || title}</p>
-        </>
-      )}
-    </div>
+    <StatTile
+      label={title}
+      value={value}
+      subtitle={subtitle}
+      change={change}
+      trend={trend}
+      invertTrend={invertChange}
+      icon={icon}
+      color={paletteColor}
+      variant="horizontal"
+    />
   )
 }
 

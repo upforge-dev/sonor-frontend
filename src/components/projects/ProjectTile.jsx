@@ -129,7 +129,7 @@ const ProjectTile = memo(function ProjectTile({
     <div
       onClick={() => onSelect?.(project)}
       className={cn(
-        "group relative bg-card border rounded-lg overflow-hidden cursor-pointer transition-all",
+        "group relative bg-[var(--glass-bg)] border rounded-lg overflow-hidden cursor-pointer transition-all",
         "hover:border-primary/50 hover:shadow-lg hover:scale-[1.02]",
         isActive && "ring-2 ring-primary border-primary shadow-lg"
       )}

@@ -388,60 +388,6 @@ export default function AccountSettingsModal() {
 
             {/* Right Column: Background & Connected Accounts */}
             <div className="space-y-6">
-              {/* Portal background */}
-              <div>
-                <Label className="text-sm font-medium text-[var(--text-secondary)]">Portal Background</Label>
-                <p className="text-xs text-muted-foreground mt-1 mb-2">
-                  Use a custom image instead of the default background. JPG, PNG, WebP, AVIF or GIF. Max 10MB.
-                </p>
-                <input
-                  ref={backgroundInputRef}
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp,image/avif,image/gif"
-                  onChange={handleBackgroundFileChange}
-                  className="hidden"
-                />
-                
-                {/* Preview - shows current or stock background */}
-                <div className="relative rounded-lg overflow-hidden border bg-muted aspect-video">
-                  <img
-                    src={user.background_image_url || '/background.avif'}
-                    alt="Portal background preview"
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center gap-2 opacity-0 hover:opacity-100 transition-opacity">
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => backgroundInputRef.current?.click()}
-                      disabled={uploadingBackground}
-                    >
-                      {uploadingBackground ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4 mr-1" />}
-                      {user.background_image_url ? 'Replace' : 'Upload Custom'}
-                    </Button>
-                    {user.background_image_url && (
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        size="sm"
-                        onClick={handleRemoveBackground}
-                      >
-                        <X className="h-4 w-4 mr-1" />
-                        Use Default
-                      </Button>
-                    )}
-                  </div>
-                </div>
-                <p className="text-xs text-muted-foreground mt-2">
-                  {user.background_image_url 
-                    ? 'Using custom background. Hover to replace or revert to default.' 
-                    : 'Using default background. Hover to upload a custom image.'}
-                </p>
-              </div>
-              
-              <Separator />
-              
               {/* Google Workspace Connection */}
               <div>
                 <Label className="text-sm font-medium text-[var(--text-secondary)]">Connected Accounts</Label>

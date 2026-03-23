@@ -494,7 +494,7 @@ function FAQCard({ faq, onEdit, onDelete, onApprove, onReject, actionLoading }) 
       exit={{ opacity: 0, x: -10 }}
       className={cn(
         'p-4 rounded-lg border transition-colors',
-        'bg-card hover:bg-accent/5',
+        'bg-[var(--glass-bg)] hover:bg-accent/5',
         isPending && 'border-yellow-500/30'
       )}
     >

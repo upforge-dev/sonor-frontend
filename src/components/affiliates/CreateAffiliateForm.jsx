@@ -188,7 +188,7 @@ export default function CreateAffiliateForm({ onCancel, onSuccess }) {
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="flex-shrink-0 px-6 py-4 border-b bg-card/50">
+      <div className="flex-shrink-0 px-6 py-4 border-b bg-[var(--glass-bg)]/50">
         <div className="flex items-center gap-3">
           <Button 
             variant="ghost" 

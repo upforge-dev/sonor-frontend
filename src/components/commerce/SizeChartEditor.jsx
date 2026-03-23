@@ -255,12 +255,12 @@ export default function SizeChartEditor({ value, onChange, existingSizes = [] })
       </div>
 
       {/* Table */}
-      <div
-        className="rounded-lg overflow-hidden border"
-        style={{ borderColor: 'var(--glass-border)', background: 'var(--glass-bg)' }}
-      >
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+      <div className="overflow-x-auto">
+        <div
+          className="rounded-lg border"
+          style={{ borderColor: 'var(--glass-border)', background: 'var(--glass-bg)', minWidth: 'fit-content' }}
+        >
+          <table className="w-full text-sm min-w-max">
             <thead>
               <tr style={{ borderBottom: '1px solid var(--glass-border)' }}>
                 {/* Size column header */}
@@ -273,7 +273,7 @@ export default function SizeChartEditor({ value, onChange, existingSizes = [] })
 
                 {/* Measurement column headers — editable */}
                 {chart.measurements.map((m, colIdx) => (
-                  <th key={colIdx} className="px-1 py-1.5 min-w-[110px]">
+                  <th key={colIdx} className="px-1 py-1.5 min-w-[80px]">
                     <div className="flex items-center gap-0.5">
                       <input
                         type="text"
@@ -382,21 +382,41 @@ export default function SizeChartEditor({ value, onChange, existingSizes = [] })
               )}
             </tbody>
           </table>
-        </div>
 
-        {/* Add row button */}
-        <div className="px-2 py-1.5" style={{ borderTop: '1px solid var(--glass-border)' }}>
-          <button
-            type="button"
-            onClick={addRow}
-            className="flex items-center gap-1 text-xs font-medium transition-colors"
-            style={{ color: 'var(--brand-primary)' }}
-          >
-            <Plus className="h-3.5 w-3.5" />
-            Add row
-          </button>
+          {/* Add row button */}
+          <div className="px-2 py-1.5" style={{ borderTop: '1px solid var(--glass-border)' }}>
+            <button
+              type="button"
+              onClick={addRow}
+              className="flex items-center gap-1 text-xs font-medium transition-colors"
+              style={{ color: 'var(--brand-primary)' }}
+            >
+              <Plus className="h-3.5 w-3.5" />
+              Add row
+            </button>
+          </div>
         </div>
       </div>
+
+      {/* Fit note */}
+      {chart && (
+        <div className="mt-3">
+          <label className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
+            Fit Note
+          </label>
+          <p className="text-xs mb-1" style={{ color: 'var(--text-secondary)', opacity: 0.7 }}>
+            Displayed as a warning on the product page (e.g. "Runs a size small — order one size up!")
+          </p>
+          <input
+            type="text"
+            value={chart.fit_note || ''}
+            onChange={(e) => emit({ ...chart, fit_note: e.target.value || undefined })}
+            placeholder="e.g. Runs a size small — order one size up!"
+            className="w-full h-8 text-sm px-3 rounded border bg-background outline-none focus:ring-1"
+            style={{ borderColor: 'var(--glass-border)' }}
+          />
+        </div>
+      )}
     </div>
   )
 }

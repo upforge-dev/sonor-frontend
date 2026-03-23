@@ -85,7 +85,7 @@ function TaskCard({ task, onToggle, onSchedule, isDragging }) {
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.95 }}
       className={cn(
-        "p-3 rounded-lg border bg-card transition-shadow group cursor-grab active:cursor-grabbing",
+        "p-3 rounded-lg border bg-[var(--glass-bg)] transition-shadow group cursor-grab active:cursor-grabbing",
         isDragging && "shadow-lg ring-2 ring-primary/20",
         isScheduled && "bg-emerald-50/50 dark:bg-emerald-500/5 border-emerald-200 dark:border-emerald-500/20"
       )}

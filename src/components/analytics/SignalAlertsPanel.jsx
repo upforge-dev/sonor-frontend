@@ -76,7 +76,7 @@ function AlertCard({ alert, onViewDetails }) {
       )}
     >
       <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
-        <div className="p-4 bg-card">
+        <div className="p-4 bg-[var(--glass-bg)]">
           <div className="flex items-start gap-3">
             {/* Icon */}
             <div className={cn(

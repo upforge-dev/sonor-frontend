@@ -94,10 +94,10 @@
   --surface-page: #f5f5f7;
   --surface-page-secondary: #ffffff;
   
-  /* Glass surfaces - 50% tint for wave background visibility */
-  --glass-bg: rgba(255, 255, 255, 0.20);
-  --glass-bg-hover: rgba(255, 255, 255, 0.60);
-  --glass-bg-elevated: rgba(255, 255, 255, 0.70);
+  /* Glass surfaces - frosted, waves visible */
+  --glass-bg: rgba(255, 255, 255, 0.12);
+  --glass-bg-hover: rgba(255, 255, 255, 0.25);
+  --glass-bg-elevated: rgba(255, 255, 255, 0.35);
   --glass-bg-inset: rgba(0, 0, 0, 0.03);
   
   /* Glass borders */
@@ -159,11 +159,11 @@
   --shadow-glass-elevated: 0 12px 40px rgba(0, 0, 0, 0.10),
                            inset 0 0 0 0.5px rgba(255, 255, 255, 0.6);
   
-  /* Blur amounts - increased for wave background */
-  --blur-sm: 12px;
-  --blur-md: 24px;
-  --blur-lg: 40px;
-  --blur-xl: 56px;
+  /* Glass blur - visible waves through frost */
+  --blur-sm: 6px;
+  --blur-md: 10px;
+  --blur-lg: 14px;
+  --blur-xl: 18px;
   
   /* Border radius */
   --radius-xs: 4px;
@@ -204,11 +204,11 @@
   --surface-page: #000000;
   --surface-page-secondary: #0a0a0a;
   
-  /* Ultra Glass surfaces - 50% tint for wave background visibility */
-  --glass-bg: rgba(0, 0, 0, 0.20);
-  --glass-bg-hover: rgba(0, 0, 0, 0.55);
-  --glass-bg-elevated: rgba(0, 0, 0, 0.60);
-  --glass-bg-inset: rgba(0, 0, 0, 0.25);
+  /* Ultra Glass surfaces - frosted, waves visible */
+  --glass-bg: rgba(0, 0, 0, 0.12);
+  --glass-bg-hover: rgba(0, 0, 0, 0.22);
+  --glass-bg-elevated: rgba(0, 0, 0, 0.30);
+  --glass-bg-inset: rgba(0, 0, 0, 0.15);
   
   /* Glass borders - crisp white edges for liquid effect */
   --glass-border: rgba(255, 255, 255, 0.18);
@@ -238,11 +238,11 @@
                            inset 0 1px 0 rgba(255, 255, 255, 0.2),
                            inset 0 -1px 0 rgba(0, 0, 0, 0.25);
   
-  /* Ultra blur for liquid glass - wave background */
-  --blur-sm: 16px;
-  --blur-md: 32px;
-  --blur-lg: 56px;
-  --blur-xl: 72px;
+  /* Glass blur - visible waves through frost */
+  --blur-sm: 8px;
+  --blur-md: 12px;
+  --blur-lg: 16px;
+  --blur-xl: 20px;
   
   /* Color scheme for native elements */
   color-scheme: dark;
