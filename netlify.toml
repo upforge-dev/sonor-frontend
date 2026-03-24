@@ -29,11 +29,6 @@
       # Enable compression (Netlify does this automatically but explicit is good)
       Cache-Control = "public, max-age=0, must-revalidate"
 
-  [[context.production.headers]]
-    for = "/mbfm"
-    [context.production.headers.values]
-      Basic-Auth = "mbfm:Revenue2025"
-
 # ── Unified API Router ─────────────────────────────────────────────────────────
 # Route all /api/* requests to the unified router function
 [[redirects]]

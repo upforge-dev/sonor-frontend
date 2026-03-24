@@ -12,6 +12,7 @@ import {
   AlertTriangle, MinusCircle, Loader2,
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { OutreachLoading } from '@/components/outreach/ui'
 import { outreachApi, adminApi, emailApi } from '@/lib/sonor-api'
 import useAuthStore from '@/lib/auth-store'
 
@@ -136,11 +137,7 @@ export default function SignatureTeamManager({ signatures = [], onCreateForMembe
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-16">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    )
+    return <OutreachLoading />
   }
 
   if (totalMembers === 0) {

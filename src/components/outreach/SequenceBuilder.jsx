@@ -1,7 +1,7 @@
-import { useState, useCallback, useMemo } from 'react'
+import { useState, useCallback, useMemo, lazy, Suspense } from 'react'
 import {
   Plus, Trash2, ArrowDown, GitBranch, Eye, MousePointer,
-  Reply, Clock, Save, AlertCircle, Shuffle
+  Reply, Clock, Save, AlertCircle, Shuffle, Monitor
 } from 'lucide-react'
 import SignalIcon from '@/components/ui/SignalIcon'
 import { Card, CardContent } from '@/components/ui/card'
@@ -13,6 +13,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
+
+const EmailClientPreview = lazy(() => import('./EmailClientPreview'))
 import { outreachApi } from '@/lib/sonor-api'
 import { outreachSkillsApi } from '@/lib/signal-api'
 
@@ -41,6 +43,7 @@ function StepNode({ step, index, steps, onUpdate, onDelete, onAddBranch }) {
   const [spamScore, setSpamScore] = useState(null)
   const [scoring, setScoring] = useState(false)
   const [spintaxPreview, setSpintaxPreview] = useState(null)
+  const [showClientPreview, setShowClientPreview] = useState(false)
 
   const triggerConfig = TRIGGER_OPTIONS.find(t => t.value === (step.trigger || 'always'))
   const TriggerIcon = triggerConfig?.icon || Clock
@@ -177,6 +180,10 @@ function StepNode({ step, index, steps, onUpdate, onDelete, onAddBranch }) {
                         <Shuffle className="h-3.5 w-3.5 mr-1.5" />
                         Preview Spintax
                       </Button>
+                      <Button variant="outline" size="sm" onClick={() => setShowClientPreview(!showClientPreview)}>
+                        <Monitor className="h-3.5 w-3.5 mr-1.5" />
+                        Client Preview
+                      </Button>
                     </div>
 
                     {spamScore && (
@@ -212,16 +219,35 @@ function StepNode({ step, index, steps, onUpdate, onDelete, onAddBranch }) {
                     )}
 
                     {spintaxPreview && (
-                      <div className="p-3 rounded-lg border bg-muted/30 space-y-2">
+                      <div className="p-3 rounded-lg border bg-muted/30 space-y-3">
                         <p className="text-xs font-medium text-muted-foreground">
-                          {spintaxPreview.subject_variations * spintaxPreview.body_variations} possible variations
+                          {(spintaxPreview.subject_variations || 1) * (spintaxPreview.body_variations || 1)} possible variations
                         </p>
-                        {spintaxPreview.subject_previews?.map((p, i) => (
-                          <div key={i} className="text-xs p-2 bg-background rounded border">
-                            <span className="font-medium">Subject:</span> {p}
+                        <div className="space-y-2">
+                          <p className="text-xs font-medium">Subject Variations:</p>
+                          {spintaxPreview.subject_previews?.map((p, i) => (
+                            <div key={`s${i}`} className="text-xs p-2 bg-background rounded border">
+                              {p}
+                            </div>
+                          ))}
+                        </div>
+                        {spintaxPreview.body_previews?.length > 0 && (
+                          <div className="space-y-2">
+                            <p className="text-xs font-medium">Body Variations:</p>
+                            {spintaxPreview.body_previews.map((p, i) => (
+                              <div key={`b${i}`} className="text-xs p-2 bg-background rounded border line-clamp-3">
+                                {p}
+                              </div>
+                            ))}
                           </div>
-                        ))}
+                        )}
                       </div>
+                    )}
+
+                    {showClientPreview && step.body_template && (
+                      <Suspense fallback={<div className="text-xs text-muted-foreground p-3">Loading preview...</div>}>
+                        <EmailClientPreview html={`<div style="font-family:Arial,sans-serif;font-size:14px;line-height:1.6;color:#333;">${step.body_template.replace(/\n/g, '<br/>')}</div>`} />
+                      </Suspense>
                     )}
                   </div>
                 </DialogContent>

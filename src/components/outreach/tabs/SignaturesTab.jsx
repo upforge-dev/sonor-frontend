@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, lazy, Suspense } from 'react'
-import { Card, CardContent } from '@/components/ui/card'
+import { GlassCard, GlassCardContent } from '@/components/ui/glass-card'
+import { OutreachEmptyState, OutreachLoading } from '@/components/outreach/ui'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -101,21 +102,13 @@ export default function SignaturesTab() {
   })
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-24">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    )
+    return <OutreachLoading />
   }
 
   // Editor view
   if (view === 'editor') {
     return (
-      <Suspense fallback={
-        <div className="flex items-center justify-center py-24">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        </div>
-      }>
+      <Suspense fallback={<OutreachLoading />}>
         <SignatureEditor
           signatureId={editingSignatureId}
           onBack={() => setView('list')}
@@ -132,12 +125,9 @@ export default function SignaturesTab() {
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold">Email Signatures</h2>
-          <p className="text-muted-foreground">
-            Create and manage professional email signatures with social links, booking CTAs, and animated options.
-          </p>
-        </div>
+        <p className="text-[var(--text-secondary)]">
+          Create and manage professional email signatures with social links, booking CTAs, and animated options.
+        </p>
         <Button onClick={handleCreate} className="gap-2">
           <PenLine className="h-4 w-4" />
           Create Signature
@@ -146,8 +136,8 @@ export default function SignaturesTab() {
 
       {/* Stale signature banner */}
       {staleSignatures.length > 0 && (
-        <Card className="border-amber-200 bg-amber-50/50">
-          <CardContent className="py-4">
+        <GlassCard className="border-amber-200 bg-amber-50/50">
+          <GlassCardContent className="py-4">
             <div className="flex items-start gap-3">
               <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5 shrink-0" />
               <div className="flex-1 space-y-1">
@@ -177,31 +167,25 @@ export default function SignaturesTab() {
                 ))}
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </GlassCardContent>
+        </GlassCard>
       )}
 
       {signatures.length === 0 ? (
         /* Empty state */
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-16">
-            <PenLine className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Create your first email signature</h3>
-            <p className="text-muted-foreground mb-6 text-center max-w-md">
-              Professional email signatures with social links, booking CTAs, and animated options
-            </p>
-            <Button onClick={handleCreate} className="gap-2">
-              <PenLine className="h-4 w-4" />
-              Create Signature
-            </Button>
-          </CardContent>
-        </Card>
+        <OutreachEmptyState
+          icon={PenLine}
+          title="Create your first email signature"
+          description="Professional email signatures with social links, booking CTAs, and animated options"
+          actionLabel="Create Signature"
+          onAction={handleCreate}
+        />
       ) : (
         /* Signature grid */
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {signatures.map((sig) => (
-            <Card key={sig.id} className="overflow-hidden">
-              <CardContent className="p-0">
+            <GlassCard hover key={sig.id} className="overflow-hidden">
+              <GlassCardContent className="p-0">
                 {/* Mini preview — centered and scaled to use the canvas (not stuck in a corner) */}
                 <div
                   className="relative h-[152px] overflow-hidden border-b bg-white"
@@ -241,7 +225,7 @@ export default function SignaturesTab() {
                     )}
                   </div>
                   {sig.config?.name && (
-                    <p className="text-xs text-muted-foreground truncate">{sig.config.name}</p>
+                    <p className="text-xs text-[var(--text-secondary)] truncate">{sig.config.name}</p>
                   )}
 
                   {/* Actions */}
@@ -285,8 +269,8 @@ export default function SignaturesTab() {
                     </Button>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+              </GlassCardContent>
+            </GlassCard>
           ))}
         </div>
       )}

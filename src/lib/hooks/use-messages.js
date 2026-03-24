@@ -9,6 +9,7 @@
  */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { messagesApi } from '../sonor-api'
+import useAuthStore from '../auth-store'
 
 // ═══════════════════════════════════════════════════════════════════════════
 // QUERY KEYS
@@ -84,15 +85,30 @@ export function useMessages(filters = {}, options = {}) {
 // ═══════════════════════════════════════════════════════════════════════════
 
 export function useUnreadMessagesCount(options = {}) {
+  const contact = useAuthStore((s) => s.contact)
+  const contactId = contact?.id
+
   return useQuery({
-    queryKey: messagesKeys.unreadCount(),
+    queryKey: [...messagesKeys.unreadCount(), contactId],
     queryFn: async () => {
-      const response = await messagesApi.getMessages({ limit: 100 })
-      const data = response?.data || response || {}
-      const messages = data.messages || data.data?.messages || []
-      return messages.filter((m) => !m.readAt && !m.read_at).length
+      try {
+        const response = await messagesApi.getMessages({ limit: 100 })
+        const data = response?.data || response || {}
+        const messages = data.messages || data.data?.messages || []
+        if (!Array.isArray(messages)) return 0
+        // Only count messages where the current user is the recipient and hasn't read
+        return messages.filter((m) => {
+          const isUnread = !m.readAt && !m.read_at
+          const isForMe = contactId ? (m.recipient_id === contactId || m.recipientId === contactId) : true
+          return isUnread && isForMe
+        }).length
+      } catch {
+        return 0
+      }
     },
-    staleTime: 1000 * 60, // 1 min
+    staleTime: 1000 * 60 * 5,
+    retry: false,
+    enabled: !!contactId, // don't fetch until we know the user
     ...options,
   })
 }

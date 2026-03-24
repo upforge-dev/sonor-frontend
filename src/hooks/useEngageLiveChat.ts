@@ -41,6 +41,8 @@ export interface EngageSessionDetails {
   messages?: EngageMessage[]
   visitorContext?: Record<string, unknown>
   previousSessions?: unknown[]
+  created_at?: string
+  updated_at?: string
 }
 
 interface EngageSession extends EngageSessionDetails {
@@ -57,7 +59,7 @@ function mapEngageSessionToThread(session: EngageSession): ChatKitThread {
     title: session.visitor_name || session.visitor_email || 'Visitor',
     last_message_at: session.messages?.length
       ? session.messages[session.messages.length - 1]?.created_at
-      : session.created_at,
+      : session.created_at ?? '',
     unread_count: 0,
     status: session.status === 'closed' ? 'closed' : 'active',
     visitor_id: session.visitor_id,
@@ -125,6 +127,7 @@ interface UseEngageLiveChatReturn {
   joinSession: (sessionId: string) => void
   retrySend: () => Promise<void>
   lastFailedMessageId: string | null
+  sessionDetails: EngageSessionDetails | null
 }
 
 export function useEngageLiveChat({
@@ -165,12 +168,19 @@ export function useEngageLiveChat({
     []
   )
 
+  const onSessionUpdate = useCallback(() => {}, [])
+  const onHandoffRequest = useCallback(() => {}, [])
+  const onAgentJoined = useCallback(() => {}, [])
+
   const { isConnected, setAgentTyping, joinSession } = useEngageChatSocket({
     enabled: enabled && !!projectId,
     projectId: projectId ?? undefined,
     orgId: orgId ?? undefined,
     onMessage,
     onVisitorTyping,
+    onSessionUpdate,
+    onHandoffRequest,
+    onAgentJoined,
   })
 
   const [sessionDetails, setSessionDetails] = useState<EngageSessionDetails | null>(null)

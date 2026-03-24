@@ -5,12 +5,13 @@ import {
   Image, RefreshCw, ExternalLink, FlaskConical, Trophy,
   Users, BarChart3,
 } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from '@/components/ui/glass-card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { StatTileGrid, TILE_BASE } from '@/components/ui/stat-tile'
+import { OutreachLoading } from '@/components/outreach/ui'
 import { outreachApi } from '@/lib/sonor-api'
 import { cn } from '@/lib/utils'
 import {
@@ -214,23 +215,16 @@ export default function SignatureAnalytics({ onViewSignature }) {
   )
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-24">
-        <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
-      </div>
-    )
+    return <OutreachLoading />
   }
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-semibold">Signature Analytics</h2>
-          <p className="text-sm text-muted-foreground">
-            Track click performance across your email signatures
-          </p>
-        </div>
+        <p className="text-sm text-[var(--text-secondary)]">
+          Track click performance across your email signatures
+        </p>
         <div className="flex items-center gap-2">
           <Select value={days} onValueChange={setDays}>
             <SelectTrigger className="w-[140px]">
@@ -255,14 +249,14 @@ export default function SignatureAnalytics({ onViewSignature }) {
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Clicks Over Time */}
-        <Card className={cn(TILE_BASE, 'lg:col-span-2 border-0')}>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+        <GlassCard className={cn(TILE_BASE, 'lg:col-span-2 border-0')}>
+          <GlassCardHeader className="pb-2">
+            <GlassCardTitle className="text-base flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 text-[var(--text-secondary)]" />
               Clicks Over Time
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+            </GlassCardTitle>
+          </GlassCardHeader>
+          <GlassCardContent>
             <div className="h-[280px]">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={timeline}>
@@ -292,18 +286,18 @@ export default function SignatureAnalytics({ onViewSignature }) {
                 </LineChart>
               </ResponsiveContainer>
             </div>
-          </CardContent>
-        </Card>
+          </GlassCardContent>
+        </GlassCard>
 
         {/* Click Breakdown by Type */}
-        <Card className={cn(TILE_BASE, 'border-0')}>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base flex items-center gap-2">
-              <BarChart3 className="h-4 w-4 text-muted-foreground" />
+        <GlassCard className={cn(TILE_BASE, 'border-0')}>
+          <GlassCardHeader className="pb-2">
+            <GlassCardTitle className="text-base flex items-center gap-2">
+              <BarChart3 className="h-4 w-4 text-[var(--text-secondary)]" />
               Clicks by Link Type
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
+            </GlassCardTitle>
+          </GlassCardHeader>
+          <GlassCardContent className="space-y-3">
             {byType.map(item => {
               const TypeIcon = LINK_TYPE_ICONS[item.link_type] || Globe
               const barColor = LINK_TYPE_COLORS[item.link_type] || 'var(--brand-primary)'
@@ -317,10 +311,10 @@ export default function SignatureAnalytics({ onViewSignature }) {
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="font-medium text-[var(--text-primary)]">{item.count}</span>
-                      <span className="text-xs text-muted-foreground w-8 text-right">{item.pct}%</span>
+                      <span className="text-xs text-[var(--text-secondary)] w-8 text-right">{item.pct}%</span>
                     </div>
                   </div>
-                  <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                  <div className="h-1.5 bg-[var(--glass-bg)] rounded-full overflow-hidden">
                     <div
                       className="h-full rounded-full transition-all"
                       style={{ width: `${Math.max(widthPct, 2)}%`, backgroundColor: barColor }}
@@ -329,28 +323,28 @@ export default function SignatureAnalytics({ onViewSignature }) {
                 </div>
               )
             })}
-          </CardContent>
-        </Card>
+          </GlassCardContent>
+        </GlassCard>
       </div>
 
       {/* Top Performing Signatures */}
-      <Card className={cn(TILE_BASE, 'border-0')}>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Trophy className="h-4 w-4 text-muted-foreground" />
+      <GlassCard className={cn(TILE_BASE, 'border-0')}>
+        <GlassCardHeader className="pb-3">
+          <GlassCardTitle className="text-base flex items-center gap-2">
+            <Trophy className="h-4 w-4 text-[var(--text-secondary)]" />
             Top Performing Signatures
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
+          </GlassCardTitle>
+        </GlassCardHeader>
+        <GlassCardContent>
           {topSignatures.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-6 text-center">
+            <p className="text-sm text-[var(--text-secondary)] py-6 text-center">
               No signature click data yet
             </p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b text-muted-foreground">
+                  <tr className="border-b text-[var(--text-secondary)]">
                     <th className="text-left py-2 pr-4 font-medium">Signature</th>
                     <th className="text-left py-2 px-2 font-medium">Template</th>
                     <th className="text-right py-2 px-2 font-medium">Total Clicks</th>
@@ -365,7 +359,7 @@ export default function SignatureAnalytics({ onViewSignature }) {
                       key={sig.id}
                       className={cn(
                         'border-b last:border-0 transition-colors',
-                        onViewSignature && 'hover:bg-muted/50 cursor-pointer'
+                        onViewSignature && 'hover:bg-[var(--glass-bg)] cursor-pointer'
                       )}
                       onClick={() => onViewSignature?.(sig.id)}
                     >
@@ -379,15 +373,15 @@ export default function SignatureAnalytics({ onViewSignature }) {
                           <span className="font-medium text-[var(--text-primary)]">{sig.name}</span>
                         </div>
                       </td>
-                      <td className="py-3 px-2 text-muted-foreground">{sig.template}</td>
+                      <td className="py-3 px-2 text-[var(--text-secondary)]">{sig.template}</td>
                       <td className="text-right py-3 px-2 font-medium">{sig.total_clicks.toLocaleString()}</td>
                       <td className="text-right py-3 px-2">
                         <span className="text-emerald-600 font-medium">{sig.booking_clicks.toLocaleString()}</span>
                       </td>
-                      <td className="text-right py-3 px-2 text-muted-foreground">{formatDate(sig.last_click)}</td>
+                      <td className="text-right py-3 px-2 text-[var(--text-secondary)]">{formatDate(sig.last_click)}</td>
                       <td className="text-right py-3 pl-2">
                         {onViewSignature && (
-                          <ExternalLink className="h-3.5 w-3.5 text-muted-foreground inline-block" />
+                          <ExternalLink className="h-3.5 w-3.5 text-[var(--text-secondary)] inline-block" />
                         )}
                       </td>
                     </tr>
@@ -396,14 +390,14 @@ export default function SignatureAnalytics({ onViewSignature }) {
               </table>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </GlassCardContent>
+      </GlassCard>
 
       {/* Team Member Stats */}
       {teamStats.length > 0 && (
         <div>
           <h3 className="text-base font-semibold mb-3 flex items-center gap-2">
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <Users className="h-4 w-4 text-[var(--text-secondary)]" />
             Team Member Stats
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -415,16 +409,16 @@ export default function SignatureAnalytics({ onViewSignature }) {
                   <div className="flex items-center gap-3 mb-3">
                     <Avatar className="h-9 w-9">
                       {member.avatar && <AvatarImage src={member.avatar} alt={member.name} />}
-                      <AvatarFallback className="text-xs bg-muted">
+                      <AvatarFallback className="text-xs bg-[var(--glass-bg)]">
                         {initials(member.name)}
                       </AvatarFallback>
                     </Avatar>
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-[var(--text-primary)] truncate">{member.name}</p>
-                      <p className="text-xs text-muted-foreground">{member.total_clicks} clicks</p>
+                      <p className="text-xs text-[var(--text-secondary)]">{member.total_clicks} clicks</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-1.5 text-xs text-[var(--text-secondary)]">
                     <TopIcon className="h-3 w-3" style={{ color: topColor }} />
                     <span>Top: {humanizeType(member.top_link_type)}</span>
                   </div>
@@ -435,27 +429,71 @@ export default function SignatureAnalytics({ onViewSignature }) {
         </div>
       )}
 
-      {/* A/B Test Results (placeholder) */}
-      <Card className={cn(TILE_BASE, 'border-0')}>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
-            <FlaskConical className="h-4 w-4 text-muted-foreground" />
+      {/* A/B Test Results */}
+      <GlassCard className={cn(TILE_BASE, 'border-0')}>
+        <GlassCardHeader className="pb-3">
+          <GlassCardTitle className="text-base flex items-center gap-2">
+            <FlaskConical className="h-4 w-4 text-[var(--text-secondary)]" />
             A/B Test Results
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col items-center justify-center py-10 text-center">
-            <div className="w-12 h-12 rounded-lg bg-muted/50 flex items-center justify-center mb-3">
-              <FlaskConical className="h-5 w-5 text-muted-foreground" />
-            </div>
-            <p className="text-sm font-medium text-[var(--text-primary)]">No A/B tests running</p>
-            <p className="text-xs text-muted-foreground mt-1 max-w-sm">
-              Create signature variants to test which layouts and CTAs drive the most clicks.
-              Results will appear here once an A/B test is active.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+          </GlassCardTitle>
+        </GlassCardHeader>
+        <GlassCardContent>
+          {(() => {
+            const abSignatures = topSignatures?.filter(s => s.config?.abTest?.enabled) || []
+            if (!abSignatures.length) {
+              return (
+                <div className="flex flex-col items-center justify-center py-10 text-center">
+                  <div className="w-12 h-12 rounded-lg bg-[var(--glass-bg)] flex items-center justify-center mb-3">
+                    <FlaskConical className="h-5 w-5 text-[var(--text-secondary)]" />
+                  </div>
+                  <p className="text-sm font-medium text-[var(--text-primary)]">No A/B tests running</p>
+                  <p className="text-xs text-[var(--text-secondary)] mt-1 max-w-sm">
+                    Enable A/B testing on a signature to compare CTA performance.
+                  </p>
+                </div>
+              )
+            }
+            return (
+              <div className="space-y-4">
+                {abSignatures.map(sig => {
+                  const a = sig.config?.abTest?.variantA
+                  const b = sig.config?.abTest?.variantB
+                  const aClicks = sig.variant_a_clicks || 0
+                  const bClicks = sig.variant_b_clicks || 0
+                  const total = aClicks + bClicks
+                  const winner = total > 20 ? (aClicks > bClicks ? 'A' : bClicks > aClicks ? 'B' : 'Tie') : null
+                  return (
+                    <div key={sig.id} className="p-3 rounded-lg border bg-background">
+                      <p className="text-sm font-medium mb-2">{sig.name || 'Unnamed Signature'}</p>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className={`p-2 rounded border ${winner === 'A' ? 'border-emerald-500/30 bg-emerald-500/10' : ''}`}>
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-xs font-medium">Variant A</span>
+                            {winner === 'A' && <Badge variant="default" className="text-[10px] bg-emerald-600">Winner</Badge>}
+                          </div>
+                          <p className="text-lg font-bold">{aClicks}</p>
+                          <p className="text-xs text-[var(--text-secondary)]">{a?.ctaLabel || 'Default CTA'}</p>
+                          {total > 0 && <p className="text-xs text-[var(--text-secondary)]">{((aClicks / total) * 100).toFixed(1)}% of clicks</p>}
+                        </div>
+                        <div className={`p-2 rounded border ${winner === 'B' ? 'border-emerald-500/30 bg-emerald-500/10' : ''}`}>
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-xs font-medium">Variant B</span>
+                            {winner === 'B' && <Badge variant="default" className="text-[10px] bg-emerald-600">Winner</Badge>}
+                          </div>
+                          <p className="text-lg font-bold">{bClicks}</p>
+                          <p className="text-xs text-[var(--text-secondary)]">{b?.ctaLabel || 'Alt CTA'}</p>
+                          {total > 0 && <p className="text-xs text-[var(--text-secondary)]">{((bClicks / total) * 100).toFixed(1)}% of clicks</p>}
+                        </div>
+                      </div>
+                      {total < 20 && <p className="text-xs text-[var(--text-secondary)] mt-2 italic">Need {20 - total} more clicks for statistical significance</p>}
+                    </div>
+                  )
+                })}
+              </div>
+            )
+          })()}
+        </GlassCardContent>
+      </GlassCard>
     </div>
   )
 }

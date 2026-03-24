@@ -1573,7 +1573,20 @@ export const seoApi = {
   
   deleteRedirect: (id) =>
     sonorApi.delete(`/seo/redirects/${id}`),
-  
+
+  fixRedirectChain: (projectId, chainId) =>
+    sonorApi.post(`/seo/projects/${projectId}/redirects/fix-chain`, { chainId }),
+
+  // ==================== RECONCILIATION ====================
+  getReconciliationReport: (projectId) =>
+    sonorApi.get(`/seo/projects/${projectId}/reconciliation`),
+
+  triggerReconciliation: (projectId) =>
+    sonorApi.post(`/seo/projects/${projectId}/reconciliation/run`),
+
+  submitUrlRemoval: (projectId, url) =>
+    sonorApi.post(`/seo/projects/${projectId}/gsc/indexing/remove`, { url }),
+
   // ==================== REPORTS ====================
   getReports: (projectId) =>
     sonorApi.get(`/seo/projects/${projectId}/reports`),
@@ -3503,7 +3516,11 @@ export const syncApi = {
     sonorApi.delete(`/sync/admin/types/${id}`),
   
   // ==================== ADMIN: HOSTS ====================
-  
+
+  /** Get eligible host candidates (org contacts with calendar status) */
+  getHostCandidates: (params = {}) =>
+    sonorApi.get('/sync/admin/host-candidates', { params }),
+
   /** Get hosts for org (pass project_id to scope to project) */
   getHosts: (params = {}) =>
     sonorApi.get('/sync/admin/hosts', { params }),
@@ -4389,6 +4406,15 @@ export const outreachApi = {
   getSignatureAnalytics: (params) => sonorApi.get('/outreach/signatures/analytics', { params }),
   getSignatureClicksByType: (params) => sonorApi.get('/outreach/signatures/analytics/by-type', { params }),
   getSignatureClicksTimeline: (params) => sonorApi.get('/outreach/signatures/analytics/timeline', { params }),
+
+  // Discovery (Bright Data lead scraping)
+  discoverLeads: (data) => sonorApi.post('/outreach/discovery/discover', data),
+  getDiscoveryResults: (params) => sonorApi.get('/outreach/discovery/results', { params }),
+
+  // Landing Pages
+  listLandingPages: () => sonorApi.get('/outreach/landing-pages'),
+  createLandingPage: (data) => sonorApi.post('/outreach/landing-pages', data),
+  getLandingPage: (id) => sonorApi.get(`/outreach/landing-pages/${id}`),
 }
 
 // ============================================================================

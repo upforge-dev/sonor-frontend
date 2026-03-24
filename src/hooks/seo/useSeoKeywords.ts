@@ -47,7 +47,11 @@ export function useSeoKeywordsSummary(projectId: string) {
 export function useSeoRankingHistory(projectId: string, keywordId?: string, options?: { limit?: number }) {
   return useQuery({
     queryKey: seoKeywordKeys.history(projectId, keywordId),
-    queryFn: () => seoApi.getRankingHistory(projectId, keywordId, options),
+    queryFn: () =>
+      seoApi.getRankingHistory(projectId, {
+        keywordId,
+        ...(options ?? {}),
+      }),
     enabled: !!projectId,
     staleTime: 10 * 60 * 1000,
   })

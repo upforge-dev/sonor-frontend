@@ -4,7 +4,7 @@
  * Manages SEO opportunities and recommendations with React Query.
  */
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query'
 import { seoApi } from '../../lib/sonor-api'
 
 // Query keys
@@ -40,7 +40,7 @@ export function useSeoOpportunities(
     queryFn: () => seoApi.getOpportunities(projectId, { page, limit, type, status, priority }),
     enabled: !!projectId,
     staleTime: 2 * 60 * 1000, // 2 minutes
-    keepPreviousData: true,
+    placeholderData: keepPreviousData,
   })
 }
 

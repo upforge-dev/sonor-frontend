@@ -10,6 +10,7 @@ import useAuthStore from '@/lib/auth-store'
 import { useUploadFile } from '@/lib/hooks/use-files'
 import { renderSignature, SIGNATURE_TEMPLATES } from '../signature-templates'
 import EmailClientPreview from '../EmailClientPreview'
+import { OutreachLoading } from '@/components/outreach/ui'
 import { toast } from 'sonner'
 import {
   ArrowLeft, Save, Copy, Mail, Loader2, Upload, Image, User,
@@ -406,11 +407,7 @@ export default function SignatureEditor({ signatureId: initialSignatureId, onBac
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-24">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    )
+    return <OutreachLoading />
   }
 
   const isStandard = config.mode === 'standard'

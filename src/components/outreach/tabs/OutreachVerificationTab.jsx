@@ -1,22 +1,23 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
-  ShieldCheck, ShieldAlert, ShieldX, AlertCircle, Upload,
+  ShieldCheck, AlertCircle, Upload,
   RefreshCw, Search, CheckCircle, XCircle, MinusCircle
 } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from '@/components/ui/glass-card'
+import { StatTileGrid } from '@/components/ui/stat-tile'
+import { OutreachStatusBadge } from '@/components/outreach/ui'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { outreachApi } from '@/lib/sonor-api'
 import { cn } from '@/lib/utils'
 
-const RISK_CONFIG = {
-  valid: { color: 'bg-emerald-100 text-emerald-700', icon: CheckCircle, label: 'Valid' },
-  risky: { color: 'bg-amber-100 text-amber-700', icon: AlertCircle, label: 'Risky' },
-  invalid: { color: 'bg-red-100 text-red-700', icon: XCircle, label: 'Invalid' },
-  unknown: { color: 'bg-gray-100 text-gray-700', icon: MinusCircle, label: 'Unknown' },
+const RISK_LABELS = {
+  valid: 'Valid',
+  risky: 'Risky',
+  invalid: 'Invalid',
+  unknown: 'Unknown',
 }
 
 export default function OutreachVerificationTab() {
@@ -86,12 +87,9 @@ export default function OutreachVerificationTab() {
   return (
     <div className="p-6 space-y-6 max-w-6xl">
       <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-semibold">Email Verification</h2>
-          <p className="text-sm text-muted-foreground">
-            Verify email addresses before sending to protect domain reputation
-          </p>
-        </div>
+        <p className="text-sm text-[var(--text-secondary)]">
+          Verify email addresses before sending to protect domain reputation
+        </p>
         <Button variant="outline" size="sm" onClick={loadData} disabled={loading}>
           <RefreshCw className={cn('h-3.5 w-3.5 mr-1.5', loading && 'animate-spin')} />
           Refresh
@@ -100,34 +98,25 @@ export default function OutreachVerificationTab() {
 
       {/* Stats Cards */}
       {stats && (
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-          {[
-            { label: 'Total Verified', value: stats.total, icon: ShieldCheck, color: 'text-blue-600' },
-            { label: 'Valid', value: stats.valid, icon: CheckCircle, color: 'text-emerald-600' },
-            { label: 'Risky', value: stats.risky, icon: AlertCircle, color: 'text-amber-600' },
-            { label: 'Invalid', value: stats.invalid, icon: XCircle, color: 'text-red-600' },
-            { label: 'Unknown', value: stats.unknown, icon: MinusCircle, color: 'text-gray-500' },
-          ].map(({ label, value, icon: Icon, color }) => (
-            <Card key={label}>
-              <CardContent className="p-3">
-                <div className="flex items-center gap-2 mb-1">
-                  <Icon className={cn('h-4 w-4', color)} />
-                  <span className="text-xs text-muted-foreground">{label}</span>
-                </div>
-                <div className="text-xl font-bold">{value?.toLocaleString() || 0}</div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        <StatTileGrid
+          columns={5}
+          metrics={[
+            { label: 'Total Verified', value: stats.total?.toLocaleString() || '0', icon: ShieldCheck, color: 'blue' },
+            { label: 'Valid', value: stats.valid?.toLocaleString() || '0', icon: CheckCircle, color: 'green' },
+            { label: 'Risky', value: stats.risky?.toLocaleString() || '0', icon: AlertCircle, color: 'orange' },
+            { label: 'Invalid', value: stats.invalid?.toLocaleString() || '0', icon: XCircle, color: 'red' },
+            { label: 'Unknown', value: stats.unknown?.toLocaleString() || '0', icon: MinusCircle, color: 'brand' },
+          ]}
+        />
       )}
 
       {/* Quick Verify + Bulk Verify */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Quick Verify</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
+        <GlassCard>
+          <GlassCardHeader className="pb-3">
+            <GlassCardTitle className="text-base">Quick Verify</GlassCardTitle>
+          </GlassCardHeader>
+          <GlassCardContent className="space-y-3">
             <div className="flex gap-2">
               <Input
                 placeholder="email@example.com"
@@ -143,9 +132,10 @@ export default function OutreachVerificationTab() {
               <div className="p-3 rounded-lg border space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">{singleResult.email}</span>
-                  <Badge className={cn('text-xs', RISK_CONFIG[singleResult.risk_level]?.color)}>
-                    {RISK_CONFIG[singleResult.risk_level]?.label || singleResult.risk_level}
-                  </Badge>
+                  <OutreachStatusBadge
+                    status={singleResult.risk_level}
+                    label={RISK_LABELS[singleResult.risk_level] || singleResult.risk_level}
+                  />
                 </div>
                 <div className="grid grid-cols-2 gap-2 text-xs">
                   <div>Score: <span className="font-medium">{singleResult.risk_score}/100</span></div>
@@ -158,14 +148,14 @@ export default function OutreachVerificationTab() {
                 </div>
               </div>
             )}
-          </CardContent>
-        </Card>
+          </GlassCardContent>
+        </GlassCard>
 
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Bulk Verify</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
+        <GlassCard>
+          <GlassCardHeader className="pb-3">
+            <GlassCardTitle className="text-base">Bulk Verify</GlassCardTitle>
+          </GlassCardHeader>
+          <GlassCardContent className="space-y-3">
             <Textarea
               placeholder="Paste emails (one per line, or comma/semicolon separated)"
               value={bulkEmails}
@@ -180,24 +170,24 @@ export default function OutreachVerificationTab() {
               )}
             </Button>
             {bulkResults && (
-              <div className="p-3 rounded-lg border bg-muted/30">
+              <div className="p-3 rounded-lg border border-[var(--glass-border)] bg-[var(--glass-bg)]">
                 <div className="grid grid-cols-4 gap-2 text-center text-xs">
                   <div><div className="text-lg font-bold">{bulkResults.stats.total}</div>Total</div>
-                  <div><div className="text-lg font-bold text-emerald-600">{bulkResults.stats.valid}</div>Valid</div>
-                  <div><div className="text-lg font-bold text-amber-600">{bulkResults.stats.risky}</div>Risky</div>
-                  <div><div className="text-lg font-bold text-red-600">{bulkResults.stats.invalid}</div>Invalid</div>
+                  <div><div className="text-lg font-bold text-emerald-500">{bulkResults.stats.valid}</div>Valid</div>
+                  <div><div className="text-lg font-bold text-orange-500">{bulkResults.stats.risky}</div>Risky</div>
+                  <div><div className="text-lg font-bold text-red-500">{bulkResults.stats.invalid}</div>Invalid</div>
                 </div>
               </div>
             )}
-          </CardContent>
-        </Card>
+          </GlassCardContent>
+        </GlassCard>
       </div>
 
       {/* Verification History */}
-      <Card>
-        <CardHeader className="pb-3">
+      <GlassCard>
+        <GlassCardHeader className="pb-3">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-base">Verification History ({totalCount})</CardTitle>
+            <GlassCardTitle className="text-base">Verification History ({totalCount})</GlassCardTitle>
             <div className="flex gap-1">
               {['', 'valid', 'risky', 'invalid'].map(level => (
                 <Button
@@ -212,15 +202,15 @@ export default function OutreachVerificationTab() {
               ))}
             </div>
           </div>
-        </CardHeader>
-        <CardContent>
+        </GlassCardHeader>
+        <GlassCardContent>
           {verifications.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-8 text-center">No verification results yet</p>
+            <p className="text-sm text-[var(--text-secondary)] py-8 text-center">No verification results yet</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b text-muted-foreground text-xs">
+                  <tr className="border-b text-[var(--text-secondary)] text-xs">
                     <th className="text-left py-2 pr-4">Email</th>
                     <th className="text-left py-2 px-2">Domain</th>
                     <th className="text-center py-2 px-2">Score</th>
@@ -232,18 +222,17 @@ export default function OutreachVerificationTab() {
                 </thead>
                 <tbody>
                   {verifications.map(v => {
-                    const cfg = RISK_CONFIG[v.risk_level] || RISK_CONFIG.unknown
                     return (
                       <tr key={v.id} className="border-b last:border-0">
                         <td className="py-2 pr-4 font-medium truncate max-w-[200px]">{v.email}</td>
-                        <td className="py-2 px-2 text-muted-foreground">{v.domain}</td>
+                        <td className="py-2 px-2 text-[var(--text-secondary)]">{v.domain}</td>
                         <td className="py-2 px-2 text-center font-medium">{v.risk_score}</td>
                         <td className="py-2 px-2 text-center">
-                          <Badge className={cn('text-xs', cfg.color)}>{cfg.label}</Badge>
+                          <OutreachStatusBadge status={v.risk_level} label={RISK_LABELS[v.risk_level] || v.risk_level} />
                         </td>
                         <td className="py-2 px-2 text-center">{v.mx_valid ? '✓' : '✗'}</td>
                         <td className="py-2 px-2 text-center">{v.smtp_valid === null ? '—' : v.smtp_valid ? '✓' : '✗'}</td>
-                        <td className="py-2 text-right text-xs text-muted-foreground">
+                        <td className="py-2 text-right text-xs text-[var(--text-secondary)]">
                           {new Date(v.verified_at).toLocaleDateString()}
                         </td>
                       </tr>
@@ -253,8 +242,8 @@ export default function OutreachVerificationTab() {
               </table>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </GlassCardContent>
+      </GlassCard>
     </div>
   )
 }

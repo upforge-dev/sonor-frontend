@@ -16,14 +16,6 @@ const BRAND_UI = {
     title: 'Sonor',
     tagline: 'Intelligence, activated.',
   },
-  row94: {
-    title: 'Row 94 — Client Portal',
-    tagline: 'Secure access to your Row 94 Whiskey project',
-  },
-  mbfm: {
-    title: 'MBFM — Client Portal',
-    tagline: 'Secure access to your MBFM project',
-  },
 }
 
 function normalizeErr(e) {

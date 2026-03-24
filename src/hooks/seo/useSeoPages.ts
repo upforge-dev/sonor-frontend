@@ -5,7 +5,13 @@
  * for SEO pages using React Query.
  */
 
-import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query'
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+  useInfiniteQuery,
+  keepPreviousData,
+} from '@tanstack/react-query'
 import { seoApi } from '../../lib/sonor-api'
 
 // Query keys
@@ -26,6 +32,8 @@ interface UseSeoPageOptions {
   /** Indexing status (indexed, not_indexed, blocked) - from Index Status filter */
   indexingStatus?: string
   search?: string
+  /** Sort field for list API */
+  sortBy?: string
 }
 
 /** Normalize API response so .pages is always an array (handles Axios response.data wrapper). */
@@ -52,20 +60,35 @@ function toPagesArray(val: any): any[] {
  * Fetch SEO pages for a project with pagination
  */
 export function useSeoPages(projectId: string, options: UseSeoPageOptions = {}) {
-  const { page = 1, limit = 50, status = 'active', indexingStatus, search } = options
+  const {
+    page = 1,
+    limit = 50,
+    status = 'active',
+    indexingStatus,
+    search,
+    sortBy,
+  } = options
 
   return useQuery({
-    queryKey: seoPageKeys.list(projectId, { page, limit, status, indexingStatus, search }),
+    queryKey: seoPageKeys.list(projectId, {
+      page,
+      limit,
+      status,
+      indexingStatus,
+      search,
+      sortBy,
+    }),
     queryFn: async () => {
       const params: Record<string, unknown> = { page, limit, search }
       if (status && status !== 'all') params.status = status
       if (indexingStatus) params.indexingStatus = indexingStatus
+      if (sortBy) params.sortBy = sortBy
       const res = await seoApi.getPages(projectId, params)
       return normalizePagesResponse(res)
     },
     enabled: !!projectId,
     staleTime: 2 * 60 * 1000, // 2 minutes
-    keepPreviousData: true, // Keep old data while fetching new page
+    placeholderData: keepPreviousData,
   })
 }
 
@@ -77,8 +100,14 @@ export function useSeoInfinitePages(projectId: string, options: Omit<UseSeoPageO
 
   return useInfiniteQuery({
     queryKey: seoPageKeys.list(projectId, { limit, status, search }),
-    queryFn: async ({ pageParam = 1 }) => {
-      const res = await seoApi.getPages(projectId, { page: pageParam, limit, status, search })
+    initialPageParam: 1,
+    queryFn: async ({ pageParam }) => {
+      const res = await seoApi.getPages(projectId, {
+        page: pageParam,
+        limit,
+        status,
+        search,
+      })
       return normalizePagesResponse(res)
     },
     enabled: !!projectId,
@@ -116,13 +145,15 @@ export function useCreateSeoPage() {
   return useMutation({
     mutationFn: ({ projectId, pageData }: { projectId: string; pageData: any }) =>
       seoApi.createPage(projectId, pageData),
-    onSuccess: (newPage, variables) => {
-      // Invalidate and refetch pages list
-      queryClient.invalidateQueries({ 
-        queryKey: seoPageKeys.lists() 
+    onSuccess: (raw, variables) => {
+      const newPage = (raw as { data?: { id?: string }; id?: string })?.data ?? raw
+      const id = newPage && typeof newPage === 'object' && 'id' in newPage ? (newPage as { id: string }).id : undefined
+      queryClient.invalidateQueries({
+        queryKey: seoPageKeys.lists(),
       })
-      // Add to cache
-      queryClient.setQueryData(seoPageKeys.detail(newPage.id), newPage)
+      if (id) {
+        queryClient.setQueryData(seoPageKeys.detail(id), newPage)
+      }
     },
   })
 }

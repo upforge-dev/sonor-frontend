@@ -38,6 +38,9 @@ import SEOTechnicalAudit from '@/components/seo/SEOTechnicalAudit'
 // Search Console (GSC coverage & indexing health)
 import SEOSearchConsole from '@/components/seo/SEOSearchConsole'
 
+// Reconciliation (site health, orphans, redirect chains, 404s)
+import SEOReconciliation from '@/components/seo/SEOReconciliation'
+
 // Content strategy
 import SEOContentDecay from '@/components/seo/SEOContentDecay'
 
@@ -181,6 +184,9 @@ export default function SEOModule() {
                   
                   {/* Search Console (GSC coverage & indexing health) */}
                   <Route path="search-console" element={<SEOSearchConsole projectId={projectId} />} />
+
+                  {/* Reconciliation (site health, orphans, redirect chains, 404s) */}
+                  <Route path="reconciliation" element={<SEOReconciliation projectId={projectId} />} />
                   
                   {/* Intelligence views */}
                   <Route path="backlinks" element={<SEOBacklinks projectId={projectId} />} />

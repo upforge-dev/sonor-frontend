@@ -1,5 +1,5 @@
 // src/components/sync/HostsPanel.jsx
-// Panel for managing booking hosts and their availability
+// Panel for managing booking hosts — add team members with Google Calendar connected
 
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -19,7 +19,13 @@ import {
   ChevronDown,
   ChevronUp,
   Link2,
-  CalendarOff
+  CalendarOff,
+  ExternalLink,
+  UserPlus,
+  Search,
+  CheckCircle2,
+  XCircle,
+  RefreshCw
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -42,14 +48,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible'
 import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
-import { syncApi } from '@/lib/sonor-api'
+import { syncApi, workspaceIntegrationsApi } from '@/lib/sonor-api'
+import { openOAuthPopup } from '@/lib/oauth-popup'
 import useAuthStore from '@/lib/auth-store'
 import { toast } from 'sonner'
 import CalendarConnectionsPanel from './CalendarConnectionsPanel'
@@ -110,15 +112,17 @@ export default function HostsPanel({ isOpen, onClose, inline = false }) {
   const [showAvailability, setShowAvailability] = useState(null)
   const [availability, setAvailability] = useState([])
   const [savingAvailability, setSavingAvailability] = useState(false)
-  
-  // New panels
+
+  // Calendar connections and exceptions panels
   const [showCalendarConnections, setShowCalendarConnections] = useState(null)
   const [showExceptions, setShowExceptions] = useState(false)
-  const [showUseExistingHost, setShowUseExistingHost] = useState(false)
-  const [orgHosts, setOrgHosts] = useState([])
-  const [selectedExistingHostId, setSelectedExistingHostId] = useState('')
-  const [useExistingLoading, setUseExistingLoading] = useState(false)
-  const [existingHostFromError, setExistingHostFromError] = useState(null)
+
+  // Add Team Member modal
+  const [showAddTeamMember, setShowAddTeamMember] = useState(false)
+  const [candidates, setCandidates] = useState([])
+  const [candidatesLoading, setCandidatesLoading] = useState(false)
+  const [candidateSearch, setCandidateSearch] = useState('')
+  const [addingHostId, setAddingHostId] = useState(null)
 
   useEffect(() => {
     if (isOpen || inline) {
@@ -141,15 +145,87 @@ export default function HostsPanel({ isOpen, onClose, inline = false }) {
     }
   }
 
-  const handleCreateHost = () => {
-    setEditingHost({
-      name: '',
-      email: '',
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      is_active: true,
-      bio: '',
-    })
+  // ==================== Add Team Member Flow ====================
+
+  const openAddTeamMember = async () => {
+    setShowAddTeamMember(true)
+    setCandidateSearch('')
+    setCandidatesLoading(true)
+    try {
+      const params = {}
+      if (currentProject?.id) params.project_id = currentProject.id
+      const { data } = await syncApi.getHostCandidates(params)
+      setCandidates(data?.candidates || data || [])
+    } catch (error) {
+      console.error('Failed to fetch host candidates:', error)
+      toast.error('Failed to load team members')
+      setCandidates([])
+    } finally {
+      setCandidatesLoading(false)
+    }
   }
+
+  const handleAddAsHost = async (candidate) => {
+    setAddingHostId(candidate.id)
+    try {
+      await syncApi.createHost({
+        contactId: candidate.id,
+        projectId: currentProject?.id,
+      })
+      toast.success(`${candidate.name} added as a booking host`)
+      fetchHosts()
+      setShowAddTeamMember(false)
+    } catch (error) {
+      const msg = error.response?.data?.message || 'Failed to add host'
+      toast.error(msg)
+    } finally {
+      setAddingHostId(null)
+    }
+  }
+
+  const handleConnectCalendar = async () => {
+    try {
+      const result = await workspaceIntegrationsApi.connectGoogle(window.location.href)
+      if (result?.authUrl) {
+        const popup = window.open(result.authUrl, 'google-workspace-oauth', 'width=600,height=700')
+        // After popup closes, refresh candidates
+        const interval = setInterval(() => {
+          if (popup?.closed) {
+            clearInterval(interval)
+            // Re-fetch candidates to get updated calendar status
+            if (showAddTeamMember) {
+              openAddTeamMember()
+            }
+          }
+        }, 500)
+      }
+    } catch (error) {
+      toast.error('Failed to initiate Google Calendar connection')
+    }
+  }
+
+  // Filter candidates — exclude those already added as hosts
+  const existingHostEmails = new Set(hosts.map(h => h.email?.toLowerCase()))
+  const existingHostContactIds = new Set(hosts.map(h => h.contact_id).filter(Boolean))
+
+  const filteredCandidates = candidates.filter(c => {
+    // Exclude already-added hosts
+    if (existingHostContactIds.has(c.id)) return false
+    if (c.email && existingHostEmails.has(c.email.toLowerCase())) return false
+    // Search filter
+    if (candidateSearch) {
+      const q = candidateSearch.toLowerCase()
+      return (
+        c.name?.toLowerCase().includes(q) ||
+        c.email?.toLowerCase().includes(q) ||
+        c.role?.toLowerCase().includes(q) ||
+        c.title?.toLowerCase().includes(q)
+      )
+    }
+    return true
+  })
+
+  // ==================== Edit Host (limited — no email editing) ====================
 
   const handleEditHost = (host) => {
     setEditingHost({ ...host })
@@ -157,49 +233,31 @@ export default function HostsPanel({ isOpen, onClose, inline = false }) {
 
   const handleSaveHost = async () => {
     try {
-      if (!editingHost.name || !editingHost.email) {
-        toast.error('Name and email are required')
-        return
+      if (!editingHost.id) return
+      // Only allow editing timezone and bio — name/email derived from contact
+      const updates = {
+        timezone: editingHost.timezone,
+        bio: editingHost.bio,
       }
-
-      // Include project_id for project scoping
-      const hostData = { ...editingHost }
-      if (currentProject?.id && !editingHost.id) {
-        hostData.projectId = currentProject.id
-      }
-
-      if (editingHost.id) {
-        await syncApi.updateHost(editingHost.id, hostData)
-        toast.success('Host updated')
-      } else {
-        await syncApi.createHost(hostData)
-        toast.success('Host created')
-      }
-      
+      await syncApi.updateHost(editingHost.id, updates)
+      toast.success('Host updated')
       setEditingHost(null)
-      setExistingHostFromError(null)
       fetchHosts()
     } catch (error) {
-      const data = error.response?.data
-      if (error.response?.status === 409 && data?.code === 'HOST_EMAIL_EXISTS') {
-        setExistingHostFromError({ host_id: data.host_id, name: data.name, email: data.email })
-        toast.error(data.message || 'A host with this email already exists. Use "Use existing host" to add them here.')
-      } else {
-        toast.error('Failed to save host')
-      }
+      toast.error('Failed to save host')
     }
   }
 
   const handleDeleteHost = async (host) => {
-    if (!confirm(`Delete host "${host.name}"?`)) return
-    
+    if (!confirm(`Remove host "${host.name}"? They will no longer receive bookings.`)) return
+
     try {
       const params = currentProject?.id ? { project_id: currentProject.id } : {}
       await syncApi.deleteHost(host.id, params)
-      toast.success('Host deleted')
+      toast.success('Host removed')
       fetchHosts()
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to delete host')
+      toast.error(error.response?.data?.message || 'Failed to remove host')
     }
   }
 
@@ -212,6 +270,8 @@ export default function HostsPanel({ isOpen, onClose, inline = false }) {
       toast.error('Failed to update host')
     }
   }
+
+  // ==================== Availability ====================
 
   const handleShowAvailability = async (host) => {
     try {
@@ -230,7 +290,7 @@ export default function HostsPanel({ isOpen, onClose, inline = false }) {
       await syncApi.updateHostAvailability(showAvailability.id, { rules: availability })
       toast.success('Availability saved')
       setShowAvailability(null)
-      fetchHosts() // refresh list so "Hours: Set" updates
+      fetchHosts()
     } catch (error) {
       toast.error('Failed to save availability')
     } finally {
@@ -248,53 +308,12 @@ export default function HostsPanel({ isOpen, onClose, inline = false }) {
   }
 
   const updateDayTime = (dayOfWeek, field, value) => {
-    setAvailability(availability.map(a => 
+    setAvailability(availability.map(a =>
       a.day_of_week === dayOfWeek ? { ...a, [field]: value } : a
     ))
   }
 
-  const openUseExistingHost = async () => {
-    setShowUseExistingHost(true)
-    setSelectedExistingHostId('')
-    try {
-      const { data } = await syncApi.getHosts({ scope: 'org' })
-      setOrgHosts(data.hosts || [])
-    } catch (e) {
-      toast.error('Failed to load hosts')
-      setOrgHosts([])
-    }
-  }
-
-  const availableExistingHosts = orgHosts.filter(h => !hosts.some(c => c.id === h.id))
-
-  const handleUseExistingHost = async () => {
-    if (!selectedExistingHostId) return
-    setUseExistingLoading(true)
-    try {
-      await syncApi.updateHost(selectedExistingHostId, { projectId: null })
-      toast.success('Host is now available for this project. Assign them to booking types in Host Routing.')
-      setShowUseExistingHost(false)
-      setSelectedExistingHostId('')
-      fetchHosts()
-    } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to add host')
-    } finally {
-      setUseExistingLoading(false)
-    }
-  }
-
-  const handleUseExistingHostFromError = async () => {
-    if (!existingHostFromError?.host_id) return
-    try {
-      await syncApi.updateHost(existingHostFromError.host_id, { projectId: null })
-      toast.success('Host is now available for this project.')
-      setEditingHost(null)
-      setExistingHostFromError(null)
-      fetchHosts()
-    } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to add host')
-    }
-  }
+  // ==================== Render ====================
 
   const content = (
     <>
@@ -308,18 +327,12 @@ export default function HostsPanel({ isOpen, onClose, inline = false }) {
               <User className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <h3 className="font-semibold mb-1">No hosts yet</h3>
               <p className="text-sm text-muted-foreground mb-4">
-                Add team members who can accept bookings
+                Add team members with Google Calendar connected to accept bookings
               </p>
-              <div className="flex items-center justify-center gap-2 flex-wrap">
-                <Button onClick={handleCreateHost}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add New Host
-                </Button>
-                <Button variant="outline" onClick={openUseExistingHost}>
-                  <User className="h-4 w-4 mr-2" />
-                  Use Existing Host
-                </Button>
-              </div>
+              <Button onClick={openAddTeamMember}>
+                <UserPlus className="h-4 w-4 mr-2" />
+                Add Team Member
+              </Button>
             </div>
           ) : (
             <div className="space-y-3 py-2">
@@ -335,10 +348,14 @@ export default function HostsPanel({ isOpen, onClose, inline = false }) {
                   )}
                 >
                   {/* Avatar */}
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shrink-0">
-                    <span className="text-white font-semibold text-lg">
-                      {host.name?.[0]?.toUpperCase() || 'H'}
-                    </span>
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shrink-0 overflow-hidden">
+                    {host.avatar_url ? (
+                      <img src={host.avatar_url} alt={host.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-white font-semibold text-lg">
+                        {host.name?.[0]?.toUpperCase() || 'H'}
+                      </span>
+                    )}
                   </div>
 
                   {/* Info */}
@@ -353,11 +370,25 @@ export default function HostsPanel({ isOpen, onClose, inline = false }) {
                       )}
                     </div>
                     <p className="text-sm text-muted-foreground truncate">{host.email}</p>
-                    <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground flex-wrap">
                       <span className="flex items-center gap-1">
                         <Clock className="h-3 w-3" />
                         {host.has_hours ? 'Hours: Set' : 'Hours: Not set'}
                       </span>
+                      {/* Calendar connection status */}
+                      {host.calendar_connected !== undefined && (
+                        host.calendar_connected ? (
+                          <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-xs font-normal">
+                            <CheckCircle2 className="h-3 w-3 mr-1" />
+                            Calendar Connected
+                          </Badge>
+                        ) : (
+                          <Badge className="bg-red-500/10 text-red-600 border-red-500/20 text-xs font-normal">
+                            <XCircle className="h-3 w-3 mr-1" />
+                            No Calendar
+                          </Badge>
+                        )
+                      )}
                     </div>
                   </div>
 
@@ -367,33 +398,45 @@ export default function HostsPanel({ isOpen, onClose, inline = false }) {
                       checked={host.is_active}
                       onCheckedChange={() => handleToggleActive(host)}
                     />
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       size="sm"
                       onClick={() => handleShowAvailability(host)}
                     >
                       <Calendar className="h-4 w-4 mr-1.5" />
                       Hours
                     </Button>
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       size="sm"
                       onClick={() => setShowCalendarConnections(host)}
                     >
                       <Link2 className="h-4 w-4 mr-1.5" />
                       Calendars
                     </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
+                    {/* Reconnect button if calendar is disconnected */}
+                    {host.calendar_connected === false && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-amber-600 border-amber-300 hover:bg-amber-50"
+                        onClick={handleConnectCalendar}
+                      >
+                        <RefreshCw className="h-4 w-4 mr-1.5" />
+                        Reconnect
+                      </Button>
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       className="h-8 w-8"
                       onClick={() => handleEditHost(host)}
                     >
                       <Edit2 className="h-4 w-4" />
                     </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       className="h-8 w-8 text-destructive hover:text-destructive"
                       onClick={() => handleDeleteHost(host)}
                     >
@@ -406,54 +449,167 @@ export default function HostsPanel({ isOpen, onClose, inline = false }) {
           )}
         </ScrollArea>
 
-        {/* Edit Host Modal */}
+        {/* Add Team Member Modal */}
+        <Dialog open={showAddTeamMember} onOpenChange={setShowAddTeamMember}>
+          <DialogContent className="sm:max-w-[560px] max-h-[85vh] overflow-hidden flex flex-col">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <UserPlus className="h-5 w-5" />
+                Add Team Member as Host
+              </DialogTitle>
+              <DialogDescription>
+                Select a team member with Google Calendar connected to accept bookings
+              </DialogDescription>
+            </DialogHeader>
+
+            {/* Search */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by name, email, or role..."
+                value={candidateSearch}
+                onChange={(e) => setCandidateSearch(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+
+            {/* Candidates list */}
+            <ScrollArea className="flex-1 -mx-6 px-6 min-h-[300px] max-h-[400px]">
+              {candidatesLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : filteredCandidates.length === 0 ? (
+                <div className="text-center py-12">
+                  <User className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+                  <p className="text-sm text-muted-foreground">
+                    {candidates.length === 0
+                      ? 'No team members found in your organization'
+                      : candidateSearch
+                        ? 'No team members match your search'
+                        : 'All team members are already added as hosts'
+                    }
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-2 py-2">
+                  {filteredCandidates.map((candidate) => (
+                    <div
+                      key={candidate.id}
+                      className={cn(
+                        "flex items-center gap-3 p-3 rounded-lg border transition-colors",
+                        "bg-[var(--glass-bg)] hover:bg-accent/50"
+                      )}
+                    >
+                      {/* Avatar */}
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shrink-0 overflow-hidden">
+                        {candidate.avatar ? (
+                          <img src={candidate.avatar} alt={candidate.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-white font-semibold">
+                            {candidate.name?.[0]?.toUpperCase() || '?'}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium text-sm truncate">{candidate.name}</p>
+                          {(candidate.role || candidate.title) && (
+                            <Badge variant="outline" className="text-xs font-normal">
+                              {candidate.title || candidate.role}
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground truncate">{candidate.email}</p>
+                      </div>
+
+                      {/* Calendar status + action */}
+                      <div className="flex items-center gap-2 shrink-0">
+                        {candidate.hasCalendar ? (
+                          <>
+                            <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-xs font-normal">
+                              <CheckCircle2 className="h-3 w-3 mr-1" />
+                              Calendar Connected
+                            </Badge>
+                            <Button
+                              size="sm"
+                              onClick={() => handleAddAsHost(candidate)}
+                              disabled={addingHostId === candidate.id}
+                            >
+                              {addingHostId === candidate.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                              ) : (
+                                <Plus className="h-4 w-4 mr-1" />
+                              )}
+                              Add as Host
+                            </Button>
+                          </>
+                        ) : (
+                          <>
+                            <Badge className="bg-red-500/10 text-red-600 border-red-500/20 text-xs font-normal">
+                              <XCircle className="h-3 w-3 mr-1" />
+                              No Calendar
+                            </Badge>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={handleConnectCalendar}
+                            >
+                              <ExternalLink className="h-4 w-4 mr-1" />
+                              Connect Calendar
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </ScrollArea>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowAddTeamMember(false)}>
+                Close
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit Host Modal (limited — timezone/bio only, no email editing) */}
         <AnimatePresence>
           {editingHost && (
-            <Dialog open={!!editingHost} onOpenChange={(open) => { if (!open) { setEditingHost(null); setExistingHostFromError(null) } }}>
+            <Dialog open={!!editingHost} onOpenChange={(open) => { if (!open) setEditingHost(null) }}>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>
-                    {editingHost.id ? 'Edit Host' : 'Add Host'}
-                  </DialogTitle>
+                  <DialogTitle>Edit Host</DialogTitle>
                 </DialogHeader>
-                
+
                 <div className="space-y-4 py-4">
-                  {existingHostFromError && !editingHost.id && (
-                    <div className="rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800 p-3 flex items-center justify-between gap-3">
-                      <p className="text-sm text-amber-800 dark:text-amber-200">
-                        <strong>{existingHostFromError.name}</strong> ({existingHostFromError.email}) is already a host in your organization.
-                      </p>
-                      <Button size="sm" onClick={handleUseExistingHostFromError}>
-                        Use this host for this project
-                      </Button>
-                    </div>
-                  )}
+                  {/* Read-only name and email */}
                   <div className="space-y-2">
-                    <Label htmlFor="name">Name</Label>
-                    <Input
-                      id="name"
-                      value={editingHost.name}
-                      onChange={(e) => setEditingHost({ ...editingHost, name: e.target.value })}
-                      placeholder="John Smith"
-                    />
+                    <Label>Name</Label>
+                    <p className="text-sm px-3 py-2 rounded-md border bg-muted/50 text-muted-foreground">
+                      {editingHost.name}
+                    </p>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={editingHost.email}
-                      onChange={(e) => setEditingHost({ ...editingHost, email: e.target.value })}
-                      placeholder="john@company.com"
-                    />
+                    <Label>Email</Label>
+                    <p className="text-sm px-3 py-2 rounded-md border bg-muted/50 text-muted-foreground">
+                      {editingHost.email}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Email is derived from Google Calendar account and cannot be edited
+                    </p>
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="timezone">Timezone</Label>
                     <Input
                       id="timezone"
-                      value={editingHost.timezone}
+                      value={editingHost.timezone || ''}
                       onChange={(e) => setEditingHost({ ...editingHost, timezone: e.target.value })}
                       placeholder="America/New_York"
                     />
@@ -483,51 +639,6 @@ export default function HostsPanel({ isOpen, onClose, inline = false }) {
           )}
         </AnimatePresence>
 
-        {/* Use Existing Host Modal */}
-        <Dialog open={showUseExistingHost} onOpenChange={setShowUseExistingHost}>
-          <DialogContent className="sm:max-w-[420px]">
-            <DialogHeader>
-              <DialogTitle>Use existing host</DialogTitle>
-              <DialogDescription>
-                Add a host that already exists in your organization (from another project or org-level) so they can accept bookings for this project.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-2">
-              <div className="space-y-2">
-                <Label>Select host</Label>
-                <Select value={selectedExistingHostId} onValueChange={setSelectedExistingHostId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Choose a host..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableExistingHosts.length === 0 ? (
-                      <SelectItem value="_none" disabled>
-                        {orgHosts.length === 0 ? 'Loading...' : 'All org hosts are already in this project'}
-                      </SelectItem>
-                    ) : (
-                      availableExistingHosts.map((h) => (
-                        <SelectItem key={h.id} value={h.id}>
-                          {h.name} ({h.email}){h.project_id ? ' — other project' : ' — org-level'}
-                        </SelectItem>
-                      ))
-                    )}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setShowUseExistingHost(false)}>Cancel</Button>
-              <Button
-                onClick={handleUseExistingHost}
-                disabled={!selectedExistingHostId || selectedExistingHostId === '_none' || useExistingLoading}
-              >
-                {useExistingLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                Add to this project
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
         {/* Availability Modal */}
         <AnimatePresence>
           {showAvailability && (
@@ -542,7 +653,7 @@ export default function HostsPanel({ isOpen, onClose, inline = false }) {
                     Set the hours when this host can accept bookings
                   </DialogDescription>
                 </DialogHeader>
-                
+
                 <div className="space-y-2 py-4">
                   {DAYS_OF_WEEK.map((day) => {
                     const dayAvail = availability.find(a => a.day_of_week === day.value)
@@ -566,7 +677,7 @@ export default function HostsPanel({ isOpen, onClose, inline = false }) {
                         )}>
                           {day.label}
                         </span>
-                        
+
                         {isAvailable ? (
                           <div className="flex items-center gap-2 flex-1">
                             <Select
@@ -624,7 +735,7 @@ export default function HostsPanel({ isOpen, onClose, inline = false }) {
             </Dialog>
           )}
         </AnimatePresence>
-        
+
         {/* Calendar Connections Panel */}
         <CalendarConnectionsPanel
           isOpen={!!showCalendarConnections}
@@ -632,7 +743,7 @@ export default function HostsPanel({ isOpen, onClose, inline = false }) {
           hostId={showCalendarConnections?.id}
           hostName={showCalendarConnections?.name}
         />
-        
+
         {/* Availability Exceptions Panel */}
         <AvailabilityExceptionsPanel
           isOpen={showExceptions}
@@ -658,13 +769,9 @@ export default function HostsPanel({ isOpen, onClose, inline = false }) {
               <CalendarOff className="h-4 w-4 mr-2" />
               PTO & Holidays
             </Button>
-            <Button variant="outline" onClick={openUseExistingHost}>
-              <User className="h-4 w-4 mr-2" />
-              Use Existing Host
-            </Button>
-            <Button onClick={handleCreateHost}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Host
+            <Button onClick={openAddTeamMember}>
+              <UserPlus className="h-4 w-4 mr-2" />
+              Add Team Member
             </Button>
           </div>
         </div>
@@ -689,8 +796,8 @@ export default function HostsPanel({ isOpen, onClose, inline = false }) {
         </DialogHeader>
         {content}
         <DialogFooter className="border-t pt-4 flex-wrap gap-2">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             className="mr-auto"
             onClick={() => setShowExceptions(true)}
           >
@@ -698,13 +805,9 @@ export default function HostsPanel({ isOpen, onClose, inline = false }) {
             PTO & Holidays
           </Button>
           <Button variant="outline" onClick={onClose}>Close</Button>
-          <Button variant="outline" onClick={openUseExistingHost}>
-            <User className="h-4 w-4 mr-2" />
-            Use Existing Host
-          </Button>
-          <Button onClick={handleCreateHost}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Host
+          <Button onClick={openAddTeamMember}>
+            <UserPlus className="h-4 w-4 mr-2" />
+            Add Team Member
           </Button>
         </DialogFooter>
       </DialogContent>

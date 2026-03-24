@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
+import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from '@/components/ui/glass-card'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import {
@@ -16,14 +15,9 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { outreachApi } from '@/lib/sonor-api'
+import { StatTile, StatTileGrid } from '@/components/ui/stat-tile'
+import { OutreachStatusBadge, OutreachEmptyState, OutreachLoading } from '@/components/outreach/ui'
 import SequenceBuilder from '../SequenceBuilder'
-
-const STATUS_CONFIG = {
-  draft: { label: 'Draft', variant: 'outline' },
-  active: { label: 'Active', variant: 'default' },
-  paused: { label: 'Paused', variant: 'secondary' },
-  archived: { label: 'Archived', variant: 'destructive' },
-}
 
 export default function OutreachSequencesTab() {
   const [sequences, setSequences] = useState([])
@@ -91,19 +85,14 @@ export default function OutreachSequencesTab() {
   )
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-24">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    )
+    return <OutreachLoading />
   }
 
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold">Cold Outreach Sequences</h2>
-          <p className="text-muted-foreground">Multi-step cold email sequences with Signal personalization</p>
+          <p className="text-[var(--text-secondary)]">Multi-step cold email sequences with Signal personalization</p>
         </div>
         <Button onClick={() => setShowCreate(true)} className="gap-2">
           <Plus className="h-4 w-4" />
@@ -112,86 +101,49 @@ export default function OutreachSequencesTab() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-blue-100"><ListOrdered className="h-5 w-5 text-blue-600" /></div>
-              <div>
-                <p className="text-2xl font-bold">{sequences.length}</p>
-                <p className="text-xs text-muted-foreground">Sequences</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-green-100"><Play className="h-5 w-5 text-green-600" /></div>
-              <div>
-                <p className="text-2xl font-bold">{sequences.filter(s => s.status === 'active').length}</p>
-                <p className="text-xs text-muted-foreground">Active</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-purple-100"><Users className="h-5 w-5 text-purple-600" /></div>
-              <div>
-                <p className="text-2xl font-bold">{sequences.reduce((s, seq) => s + (seq.total_enrolled || 0), 0)}</p>
-                <p className="text-xs text-muted-foreground">Total Enrolled</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-amber-100"><Mail className="h-5 w-5 text-amber-600" /></div>
-              <div>
-                <p className="text-2xl font-bold">{sequences.reduce((s, seq) => s + (seq.total_replied || 0), 0)}</p>
-                <p className="text-xs text-muted-foreground">Total Replies</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      <StatTileGrid
+        columns={4}
+        variant="horizontal"
+        metrics={[
+          { label: 'Sequences', value: sequences.length, icon: ListOrdered, color: 'blue' },
+          { label: 'Active', value: sequences.filter(s => s.status === 'active').length, icon: Play, color: 'green' },
+          { label: 'Total Enrolled', value: sequences.reduce((s, seq) => s + (seq.total_enrolled || 0), 0), icon: Users, color: 'purple' },
+          { label: 'Total Replies', value: sequences.reduce((s, seq) => s + (seq.total_replied || 0), 0), icon: Mail, color: 'orange' },
+        ]}
+      />
 
       <div className="relative max-w-sm">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-secondary)]" />
         <Input placeholder="Search sequences..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
       </div>
 
       {filtered.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <ListOrdered className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No sequences yet</h3>
-            <p className="text-muted-foreground mb-4">Create your first cold outreach sequence</p>
+        <OutreachEmptyState
+          icon={ListOrdered}
+          title="No sequences yet"
+          description="Create your first cold outreach sequence"
+          action={
             <Button onClick={() => setShowCreate(true)} className="gap-2">
               <Plus className="h-4 w-4" />
               Create Sequence
             </Button>
-          </CardContent>
-        </Card>
+          }
+        />
       ) : (
         <div className="space-y-3">
           {filtered.map((seq) => {
             const steps = seq.steps || []
-            const statusConfig = STATUS_CONFIG[seq.status] || STATUS_CONFIG.draft
             return (
-              <Card key={seq.id} className="hover:shadow-md transition-shadow">
-                <CardContent className="p-4">
+              <GlassCard key={seq.id} className="hover:border-[var(--glass-border-strong)] transition-all">
+                <GlassCardContent className="p-4">
                   <div className="flex items-center gap-4">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-semibold truncate">{seq.name}</h3>
-                        <Badge variant={statusConfig.variant}>{statusConfig.label}</Badge>
+                        <h3 className="font-semibold truncate text-[var(--text-primary)]">{seq.name}</h3>
+                        <OutreachStatusBadge status={seq.status} />
                       </div>
-                      {seq.description && <p className="text-sm text-muted-foreground truncate">{seq.description}</p>}
-                      <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+                      {seq.description && <p className="text-sm text-[var(--text-secondary)] truncate">{seq.description}</p>}
+                      <div className="flex items-center gap-4 mt-2 text-xs text-[var(--text-secondary)]">
                         <span className="flex items-center gap-1"><Mail className="h-3 w-3" />{steps.length} steps</span>
                         <span className="flex items-center gap-1"><Users className="h-3 w-3" />{seq.total_enrolled || 0} enrolled</span>
                         <span className="flex items-center gap-1"><CheckCircle2 className="h-3 w-3" />{seq.total_replied || 0} replies</span>
@@ -221,8 +173,8 @@ export default function OutreachSequencesTab() {
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
-                </CardContent>
-              </Card>
+                </GlassCardContent>
+              </GlassCard>
             )
           })}
         </div>

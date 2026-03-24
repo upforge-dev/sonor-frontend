@@ -26,6 +26,7 @@ import {
   Settings,
   Sparkles,
   Shield,
+  ShieldCheck,
   MapPin,
   Code,
   ChevronDown,
@@ -80,6 +81,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'local-seo', label: 'Local SEO', icon: MapPin, description: 'GBP, citations & local rankings' },
   { id: 'technical', label: 'Technical', icon: Shield, description: 'Site audit, indexing & health' },
   { id: 'search-console', label: 'Search Console', icon: Globe, description: 'GSC coverage & indexing health' },
+  { id: 'reconciliation', label: 'Reconciliation', icon: ShieldCheck, description: 'Site health, orphans & redirect chains', signal: true },
   
   // Intelligence (Signal features)
   { id: 'backlinks', label: 'Backlinks', icon: Link2, description: 'Link monitoring & authority', signal: true },

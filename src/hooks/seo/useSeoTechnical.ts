@@ -109,7 +109,7 @@ export function useRequestIndexing() {
 
   return useMutation({
     mutationFn: ({ projectId, url }: { projectId: string; url: string }) =>
-      seoApi.requestIndexing(projectId, url),
+      seoApi.submitUrlForIndexing(projectId, url),
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ 
         queryKey: seoTechnicalKeys.indexing(variables.projectId) 

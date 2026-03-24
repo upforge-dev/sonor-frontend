@@ -23,6 +23,7 @@ import { cn } from '@/lib/utils'
 import { useSignalAccess } from '@/hooks/useSignalAccess'
 import EmailPlatform from '@/components/email/EmailPlatform'
 import AudienceTab from './AudienceTab'
+import { TAB_HEADERS, OutreachLoading } from './ui'
 
 const OutreachSequencesTab = lazy(() => import('./tabs/OutreachSequencesTab'))
 const OutreachInboxTab = lazy(() => import('./tabs/OutreachInboxTab'))
@@ -33,6 +34,7 @@ const OutreachAnalyticsTab = lazy(() => import('./tabs/OutreachAnalyticsTab'))
 const OutreachVerificationTab = lazy(() => import('./tabs/OutreachVerificationTab'))
 const SignaturesTab = lazy(() => import('./tabs/SignaturesTab'))
 const SignatureAnalytics = lazy(() => import('./tabs/SignatureAnalytics'))
+const OutreachLandingPagesTab = lazy(() => import('./tabs/OutreachLandingPagesTab'))
 
 const SIDEBAR_SECTIONS = [
   {
@@ -55,6 +57,7 @@ const SIDEBAR_SECTIONS = [
       { value: 'discovery', label: 'Lead Discovery', icon: SearchCode },
       { value: 'outreach-analytics', label: 'Analytics', icon: BarChart3 },
       { value: 'verification', label: 'Verification', icon: ShieldCheck },
+      { value: 'landing-pages', label: 'Landing Pages', icon: FileText },
     ],
   },
   {
@@ -100,7 +103,7 @@ export default function OutreachModule() {
 
         return (
           <div key={section.id}>
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70 mb-1.5 px-2">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] mb-1.5 px-2">
               {section.label}
             </p>
             <div className="space-y-0.5">
@@ -111,10 +114,10 @@ export default function OutreachModule() {
                     key={item.value}
                     onClick={() => handleTabChange(item.value)}
                     className={cn(
-                      'w-full text-left px-2.5 py-1.5 rounded-md flex items-center gap-2.5 transition-colors text-sm',
+                      'w-full text-left px-2.5 py-1.5 rounded-lg flex items-center gap-2.5 transition-all duration-150 text-sm',
                       isActive
-                        ? 'bg-primary/10 text-primary font-medium'
-                        : 'hover:bg-muted text-foreground/80'
+                        ? 'bg-[var(--brand-primary)]/10 text-[var(--brand-primary)] font-medium'
+                        : 'hover:bg-[var(--glass-bg-hover)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                     )}
                     {...(item.value === 'campaigns' ? { 'data-tour': 'outreach-campaigns' } : {})}
                     {...(item.value === 'sequences' ? { 'data-tour': 'outreach-sequences' } : {})}
@@ -131,12 +134,12 @@ export default function OutreachModule() {
       })}
 
       {!hasCurrentProjectSignal && (
-        <div className="px-2 py-3 rounded-lg bg-muted/50 border border-dashed">
-          <div className="flex items-center gap-2 text-muted-foreground mb-1">
+        <div className="px-2 py-3 rounded-lg bg-[var(--glass-bg)] border border-[var(--glass-border)]">
+          <div className="flex items-center gap-2 text-[var(--text-secondary)] mb-1">
             <Lock className="h-3.5 w-3.5" />
             <span className="text-xs font-medium">Cold Outreach</span>
           </div>
-          <p className="text-[11px] text-muted-foreground/70 leading-relaxed">
+          <p className="text-[11px] text-[var(--text-tertiary)] leading-relaxed">
             Upgrade to a Signal AI plan to unlock cold outreach sequences, unified inbox, and lead discovery.
           </p>
         </div>
@@ -144,11 +147,7 @@ export default function OutreachModule() {
     </div>
   )
 
-  const lazyFallback = (
-    <div className="flex items-center justify-center py-24">
-      <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-    </div>
-  )
+  const lazyFallback = <OutreachLoading />
 
   const renderContent = () => {
     if (activeTab === 'audience') {
@@ -174,6 +173,7 @@ export default function OutreachModule() {
     if (activeTab === 'verification') return <Suspense fallback={lazyFallback}><OutreachVerificationTab /></Suspense>
     if (activeTab === 'signatures') return <Suspense fallback={lazyFallback}><SignaturesTab /></Suspense>
     if (activeTab === 'signature-analytics') return <Suspense fallback={lazyFallback}><SignatureAnalytics onViewSignature={() => setActiveTab('signatures')} /></Suspense>
+    if (activeTab === 'landing-pages') return <Suspense fallback={lazyFallback}><OutreachLandingPagesTab /></Suspense>
 
     return (
       <EmailPlatform
@@ -196,7 +196,8 @@ export default function OutreachModule() {
       defaultLeftSidebarOpen
     >
       <ModuleLayout.Header
-        title="Outreach"
+        title={TAB_HEADERS[activeTab]?.title || 'Outreach'}
+        subtitle={TAB_HEADERS[activeTab]?.subtitle}
         icon={MODULE_ICONS.outreach}
         data-tour="outreach-header"
       />
