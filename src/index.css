@@ -1,6 +1,4 @@
-/* Google Fonts - must be at top */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-
+/* Google Fonts moved to index.html <link> to avoid render-blocking @import */
 @import "tailwindcss";
 
 /* Print styles for PDF export */

@@ -426,6 +426,8 @@ export default function LoginPage() {
             <img
               src="/sonor-logo-full-length.svg"
               alt="Sonor"
+              width={200}
+              height={56}
               className="h-14 login-logo-glow"
               style={{ filter: 'brightness(0) invert(1)' }}
             />

@@ -21,9 +21,12 @@ const queryClient = new QueryClient({
   },
 })
 
-// Eager load critical routes (login, dashboard)
+// Eager load login (the only route unauthenticated users see)
 import LoginPage from './pages/LoginPage'
-import Dashboard from './pages/Dashboard'
+
+// Lazy load dashboard — the auth check preloads it after success (line 86)
+// so authenticated users never see a loading state
+const Dashboard = lazy(() => import('./pages/Dashboard'))
 
 // Lazy load less critical routes for code splitting
 const MagicLogin = lazy(() => import('./pages/MagicLogin'))
