@@ -10,7 +10,7 @@ import { Loader2, CheckCircle2, XCircle, Mail, Lock, Eye, EyeOff } from 'lucide-
 import { supabase, signInWithGoogle, signUp, signInWithPassword, getCurrentUser } from '../lib/supabase-auth'
 import useAuthStore from '../lib/auth-store'
 import axios from 'axios'
-import { authApi } from '../lib/portal-api'
+import { authApi } from '../lib/sonor-api'
 
 export default function AccountSetup() {
   const navigate = useNavigate()

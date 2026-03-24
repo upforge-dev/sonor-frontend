@@ -5,7 +5,7 @@
  * Replaces files-store.js with automatic caching, deduplication, and background refresh.
  */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { filesApi } from '../portal-api'
+import { filesApi } from '../sonor-api'
 import { supabase } from '../supabase'
 
 // ═══════════════════════════════════════════════════════════════════════════

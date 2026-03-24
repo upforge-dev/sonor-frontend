@@ -44,7 +44,7 @@ import {
 import { Checkbox } from '@/components/ui/checkbox'
 import { cn } from '@/lib/utils'
 import { format, addDays, isSameDay, startOfDay, addHours } from 'date-fns'
-import { syncApi, portalApi } from '@/lib/portal-api'
+import { syncApi, portalApi } from '@/lib/sonor-api'
 import { syncApi as signalSyncApi, crmSkillsApi } from '@/lib/signal-api'
 import { toast } from 'sonner'
 import SignalIcon from '@/components/ui/SignalIcon'

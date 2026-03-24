@@ -26,7 +26,7 @@ import {
   Loader2,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { filesApi, commerceApi } from '@/lib/portal-api'
+import { filesApi, commerceApi } from '@/lib/sonor-api'
 import SignalIcon from '@/components/ui/SignalIcon'
 
 // Element blocks

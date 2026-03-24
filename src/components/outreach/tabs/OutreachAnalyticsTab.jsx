@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { outreachApi } from '@/lib/portal-api'
+import { outreachApi } from '@/lib/sonor-api'
 import { cn } from '@/lib/utils'
 
 function MetricCard({ label, value, format = 'number', change, icon: Icon }) {

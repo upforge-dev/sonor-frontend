@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { analyticsApi } from './portal-api'
+import { analyticsApi } from './sonor-api'
 
 /**
  * Analytics Module Store - Zustand store for the Analytics module UI

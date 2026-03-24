@@ -62,7 +62,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu'
-import { crmApi, syncApi } from '@/lib/portal-api'
+import { crmApi, syncApi } from '@/lib/sonor-api'
 import { toast } from '@/lib/toast'
 import { format, isPast, isToday, isTomorrow } from 'date-fns'
 

@@ -28,7 +28,7 @@ import {
 import OrganizationUsersPanel from './OrganizationUsersPanel'
 import RolesPermissionsPanel from './RolesPermissionsPanel'
 import useAuthStore from '@/lib/auth-store'
-import { adminApi } from '@/lib/portal-api'
+import { adminApi } from '@/lib/sonor-api'
 import { toast } from 'sonner'
 import { ModuleLayout } from '@/components/ModuleLayout'
 import { MODULE_ICONS } from '@/lib/module-icons'

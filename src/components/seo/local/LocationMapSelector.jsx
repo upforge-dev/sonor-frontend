@@ -1,7 +1,7 @@
 // src/components/seo/local/LocationMapSelector.jsx
 // Interactive map for selecting counties with Census demographics overlay
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
-import { locationPagesApi } from '@/lib/portal-api'
+import { locationPagesApi } from '@/lib/sonor-api'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'

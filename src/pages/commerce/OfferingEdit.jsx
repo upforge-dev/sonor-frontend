@@ -47,7 +47,7 @@ import {
   X,
   Info,
 } from 'lucide-react'
-import CommerceImageUploader from '@/components/commerce/CommerceImageUploader'
+import CommerceImageUploader, { extractImageModelInfoMap } from '@/components/commerce/CommerceImageUploader'
 import ClothingSizesModal from '@/components/commerce/ClothingSizesModal'
 import VariantsManagement from '@/components/commerce/VariantsManagement'
 import SizeChartEditor from '@/components/commerce/SizeChartEditor'
@@ -78,6 +78,33 @@ const typeConfig = {
     label: 'Event',
     fields: ['capacity', 'schedule', 'deposit'],
   },
+}
+
+/** Parse metadata / image_model_info when API returns stringified JSON (jsonb edge cases). */
+function cloneMetadataForForm(raw) {
+  let md = raw
+  if (md == null) return {}
+  if (typeof md === 'string') {
+    try {
+      md = JSON.parse(md)
+    } catch {
+      return {}
+    }
+  }
+  if (typeof md !== 'object' || Array.isArray(md)) return {}
+  const next = { ...md }
+  let imi = next.image_model_info ?? next.imageModelInfo
+  if (typeof imi === 'string') {
+    try {
+      imi = JSON.parse(imi)
+    } catch {
+      imi = {}
+    }
+  }
+  if (imi && typeof imi === 'object' && !Array.isArray(imi)) {
+    next.image_model_info = { ...imi }
+  }
+  return next
 }
 
 export default function OfferingEdit({ offeringId, onBack }) {
@@ -143,15 +170,17 @@ export default function OfferingEdit({ offeringId, onBack }) {
         deposit_amount: currentOffering.deposit_amount?.toString() || '',
         deposit_auto_charge: currentOffering.auto_charge_remaining ?? true,
         // Metadata (care instructions, sizing notes, notices, model info)
-        metadata: currentOffering.metadata || {},
+        metadata: cloneMetadataForForm(currentOffering.metadata),
       })
 
       // Build images array from featured + gallery
       const imgs = []
-      if (currentOffering.featured_image_id && currentOffering.featured_image) {
+      const featuredUrl =
+        currentOffering.featured_image || currentOffering.featured_image_data?.url || null
+      if (currentOffering.featured_image_id && featuredUrl) {
         imgs.push({
           id: currentOffering.featured_image_id,
-          url: currentOffering.featured_image,
+          url: featuredUrl,
           is_featured: true,
         })
       }
@@ -375,14 +404,21 @@ export default function OfferingEdit({ offeringId, onBack }) {
               featuredImageId={currentOffering.featured_image_id}
               onImagesChange={handleImagesChange}
               isClothing={formData?.is_clothing}
-              imageModelInfo={formData?.metadata?.image_model_info}
+              imageModelInfo={{
+                ...extractImageModelInfoMap(currentOffering?.metadata),
+                ...extractImageModelInfoMap(formData?.metadata),
+              }}
               onModelInfoChange={(imageId, info) => {
-                const current = formData.metadata?.image_model_info || {}
+                const key = String(imageId)
+                const current = {
+                  ...extractImageModelInfoMap(currentOffering?.metadata),
+                  ...extractImageModelInfoMap(formData.metadata),
+                }
                 const updated = { ...current }
                 if (info) {
-                  updated[imageId] = info
+                  updated[key] = info
                 } else {
-                  delete updated[imageId]
+                  delete updated[key]
                 }
                 handleChange('metadata', {
                   ...formData.metadata,

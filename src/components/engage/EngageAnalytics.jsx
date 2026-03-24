@@ -26,7 +26,7 @@ import {
 } from 'lucide-react'
 
 // API base URL - use Portal API for analytics
-const PORTAL_API_URL = import.meta.env.VITE_PORTAL_API_URL || ''
+const PORTAL_API_URL = (import.meta.env.VITE_SONOR_API_URL || import.meta.env.VITE_PORTAL_API_URL) || ''
 
 export default function EngageAnalytics({ projectId }) {
   const [loading, setLoading] = useState(true)

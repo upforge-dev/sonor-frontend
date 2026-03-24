@@ -43,7 +43,7 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useEmailPlatformStore } from '@/lib/email-platform-store' // Keep for complex email state
-import { formsApi } from '@/lib/portal-api'
+import { formsApi } from '@/lib/sonor-api'
 import useAuthStore from '@/lib/auth-store'
 import { useCommerceSettings, commerceKeys } from '@/lib/hooks'
 import { useQueryClient } from '@tanstack/react-query'

@@ -6,7 +6,7 @@
  */
 
 import { useState, useCallback, useEffect, useRef } from 'react'
-import { engageApi, portalApi } from '@/lib/portal-api'
+import { engageApi, portalApi } from '@/lib/sonor-api'
 import { useEngageChatSocket } from '@/lib/useEngageChatSocket'
 import type { ChatKitThread, ChatKitItem, TypingUser } from '@/components/chat/types'
 

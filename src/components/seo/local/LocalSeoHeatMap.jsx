@@ -3,7 +3,7 @@
 // MIGRATED TO REACT QUERY - Jan 29, 2026
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useSeoHeatmap, useSeoLocalGrids, useSeoHeatMapData, seoLocalKeys } from '@/hooks/seo'
-import { seoApi } from '@/lib/portal-api'
+import { seoApi } from '@/lib/sonor-api'
 import { useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase-auth'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -94,7 +94,7 @@ export default function LocalSeoHeatMap({ projectId }) {
         }
 
         // Fetch API key from backend (more secure than env var)
-        const apiUrl = import.meta.env.VITE_PORTAL_API_URL || 'https://api.sonor.io'
+        const apiUrl = (import.meta.env.VITE_SONOR_API_URL || import.meta.env.VITE_PORTAL_API_URL) || 'https://api.sonor.io'
         const response = await fetch(`${apiUrl}/seo/config/maps-api-key`, {
           headers: {
             'Authorization': `Bearer ${session.access_token}`

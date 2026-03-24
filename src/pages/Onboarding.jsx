@@ -20,7 +20,7 @@ import {
 } from 'lucide-react'
 import LogoSvg from '@/assets/logo.svg?react'
 import useAuthStore from '@/lib/auth-store'
-import { projectsApi } from '@/lib/portal-api'
+import { projectsApi } from '@/lib/sonor-api'
 import { useActivateProject } from '@/lib/hooks/use-billing'
 import PlanSelector from '@/components/billing/PlanSelector'
 

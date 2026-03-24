@@ -66,8 +66,10 @@ const COLOR_CYCLE = ['brand', 'blue', 'purple', 'green', 'orange', 'pink']
 const TILE_BASE = [
   'rounded-2xl',
   'bg-[var(--glass-bg)]',
-  'backdrop-blur-[var(--blur-xl)]',
-  'backdrop-saturate-[1.8]',
+  'backdrop-blur-[var(--blur-lg)]',
+  'dark:backdrop-blur-[var(--blur-md)]',
+  'backdrop-saturate-[1.5]',
+  'dark:backdrop-saturate-[1.3]',
   'border border-[var(--glass-border)]',
   'shadow-[var(--shadow-glass)]',
   'hover:border-[var(--glass-border-strong)]',

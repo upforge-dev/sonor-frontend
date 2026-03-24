@@ -56,7 +56,7 @@ import {
 } from '@/components/ui/table'
 import { Checkbox } from '@/components/ui/checkbox'
 import { toast } from '@/lib/toast'
-import { crmApi } from '@/lib/portal-api'
+import { crmApi } from '@/lib/sonor-api'
 import { UptradeSpinner } from '@/components/UptradeLoading'
 
 // ─────────────────────────────────────────────────────────────────────────────

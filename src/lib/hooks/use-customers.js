@@ -2,12 +2,12 @@
  * Customers Query Hooks
  * 
  * TanStack Query hooks for Commerce customers (used by Commerce module, not standalone Customers).
- * Backend: commerce/customers (portal-api-nestjs).
+ * Backend: commerce/customers (sonor-api-nestjs).
  * 
  * Customers = people who have purchased (post-sale). Auto-created from commerce_sales.
  */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import portalApi from '../portal-api'
+import portalApi from '../sonor-api'
 
 const CUSTOMERS_BASE = '/commerce/customers'
 

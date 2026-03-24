@@ -4,7 +4,7 @@
  */
 import { useState, useEffect } from 'react'
 import { ExternalLink } from 'lucide-react'
-import { chatkitApi } from '@/lib/portal-api'
+import { chatkitApi } from '@/lib/sonor-api'
 import { cn } from '@/lib/utils'
 
 const URL_REGEX = /https?:\/\/[^\s"'<>)\]]+/gi

@@ -5,7 +5,7 @@
  * Replaces drive-store.js with automatic caching.
  */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { driveApi } from '../portal-api'
+import { driveApi } from '../sonor-api'
 
 // ═══════════════════════════════════════════════════════════════════════════
 // QUERY KEYS

@@ -33,7 +33,7 @@ import {
   Globe,
   Calendar,
 } from 'lucide-react'
-import { portalApi } from '@/lib/portal-api'
+import { portalApi } from '@/lib/sonor-api'
 
 const PAGE_TYPE_ICONS = {
   home: Home,

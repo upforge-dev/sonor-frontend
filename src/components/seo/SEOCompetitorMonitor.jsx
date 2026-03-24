@@ -55,7 +55,7 @@ import {
 import { cn } from '@/lib/utils'
 import { formatDistanceToNow, format } from 'date-fns'
 import { signalSeoApi } from '@/lib/signal-api'
-import { seoApi } from '@/lib/portal-api'
+import { seoApi } from '@/lib/sonor-api'
 import { useSignalAccess } from '@/lib/signal-access'
 
 // Animated radar effect for monitoring

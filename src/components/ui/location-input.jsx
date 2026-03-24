@@ -4,7 +4,7 @@
 import { useRef, useEffect, useState } from 'react'
 import { MapPin } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import portalApi from '@/lib/portal-api'
+import portalApi from '@/lib/sonor-api'
 
 const SCRIPT_URL = 'https://maps.googleapis.com/maps/api/js'
 

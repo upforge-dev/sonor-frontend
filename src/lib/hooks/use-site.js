@@ -6,7 +6,7 @@
  * Handles pages, images, redirects, FAQs, content, links, scripts, and schema.
  */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { portalApi } from '../portal-api'
+import { portalApi } from '../sonor-api'
 
 // View types (exported for components)
 export const SITE_VIEWS = {

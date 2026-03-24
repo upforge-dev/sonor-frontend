@@ -6,7 +6,7 @@ import { useState, useRef } from 'react'
 import useAuthStore from '@/lib/auth-store'
 import { useCreateCustomer, customersKeys } from '@/lib/hooks'
 import { useQueryClient } from '@tanstack/react-query'
-import portalApi from '@/lib/portal-api'
+import portalApi from '@/lib/sonor-api'
 import {
   Dialog,
   DialogContent,

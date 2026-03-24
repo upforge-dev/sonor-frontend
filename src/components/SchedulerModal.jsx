@@ -22,7 +22,7 @@ import {
 } from 'lucide-react'
 
 // Portal API base URL for availability and booking
-const API_BASE = import.meta.env.VITE_PORTAL_API_URL || 'https://api.sonor.io'
+const API_BASE = (import.meta.env.VITE_SONOR_API_URL || import.meta.env.VITE_PORTAL_API_URL) || 'https://api.sonor.io'
 
 // Time slots available for booking (Eastern Time)
 const TIME_SLOTS = [

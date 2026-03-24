@@ -15,7 +15,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
 import { toast } from '@/lib/toast'
 import { cn } from '@/lib/utils'
-import { engageApi } from '@/lib/portal-api'
+import { engageApi } from '@/lib/sonor-api'
 import {
   Sparkles,
   Plus,

@@ -51,7 +51,7 @@ import {
 } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 import { format, addDays } from 'date-fns'
-import { syncApi, portalApi } from '@/lib/portal-api'
+import { syncApi, portalApi } from '@/lib/sonor-api'
 import { toast } from 'sonner'
 import useAuthStore from '@/lib/auth-store'
 

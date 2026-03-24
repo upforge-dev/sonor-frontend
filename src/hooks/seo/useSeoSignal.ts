@@ -9,7 +9,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { signalSeoApi } from '../../lib/signal-api'
-import { seoApi } from '../../lib/portal-api'
+import { seoApi } from '../../lib/sonor-api'
 
 // ============================================
 // Query Keys

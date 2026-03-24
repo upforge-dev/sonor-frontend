@@ -44,6 +44,9 @@ const OnboardingFlow = lazy(() => import('./pages/OnboardingFlow'))
 // Sync OAuth Callback (standalone route; main sync UI is in MainLayout via components/sync)
 const SyncOAuthCallback = lazy(() => import('./pages/sync/SyncOAuthCallback'))
 
+// Public signature install page (no auth)
+const SignatureInstall = lazy(() => import('./pages/public/SignatureInstall'))
+
 export default function App() {
   const { isAuthenticated, checkAuth, isLoading } = useAuthStore()
   const [initialized, setInitialized] = useState(false)
@@ -127,6 +130,7 @@ export default function App() {
               <Route path="/p/:slug" element={<ProposalGate />} />
               <Route path="/audit/:id" element={<AuditGate />} />
               <Route path="/pay/:token" element={<InvoicePayment />} />
+              <Route path="/sig/:slug" element={<SignatureInstall />} />
               
               {/* Onboarding — full-screen Echo-guided, no sidebar/header */}
               <Route path="/onboarding" element={<Protected><OnboardingFlow /></Protected>} />

@@ -57,7 +57,7 @@ import {
   getSystemEmailById,
   getSystemEmailCategories 
 } from './system-emails-registry'
-import { emailApi } from '@/lib/portal-api'
+import { emailApi } from '@/lib/sonor-api'
 import usePageContextStore from '@/lib/page-context-store'
 
 // Icon mapping for categories

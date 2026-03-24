@@ -45,7 +45,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useProjects, useCreateProject, projectsKeys } from '@/lib/hooks'
 import { useActivateProject } from '@/lib/hooks/use-billing'
 import { useQueryClient } from '@tanstack/react-query'
-import portalApi, { adminApi, agenciesApi } from '@/lib/portal-api'
+import portalApi, { adminApi, agenciesApi } from '@/lib/sonor-api'
 import useAuthStore from '@/lib/auth-store'
 import PlanSelector from '@/components/billing/PlanSelector'
 

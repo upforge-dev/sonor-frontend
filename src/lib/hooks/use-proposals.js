@@ -5,7 +5,7 @@
  * Replaces proposals-store.js with automatic caching, deduplication, and background refresh.
  */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { proposalsApi } from '../portal-api'
+import { proposalsApi } from '../sonor-api'
 
 // ═══════════════════════════════════════════════════════════════════════════
 // QUERY KEYS

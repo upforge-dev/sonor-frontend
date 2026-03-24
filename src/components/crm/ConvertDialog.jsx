@@ -16,7 +16,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import { Loader2, UserCheck, Mail, Sparkles, ArrowRight, Shield } from 'lucide-react'
 import { GlassCard, GlassAvatar } from './ui'
-import { crmApi } from '@/lib/portal-api'
+import { crmApi } from '@/lib/sonor-api'
 import { toast } from '@/lib/toast'
 
 export default function ConvertDialog({ open, onOpenChange, prospect, onSuccess }) {

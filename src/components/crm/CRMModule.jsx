@@ -88,7 +88,7 @@ import { toast } from '@/lib/toast'
 import useAuthStore from '@/lib/auth-store'
 import useDebounce from '@/hooks/useDebounce'
 import { useBrandColors } from '@/hooks/useBrandColors'
-import { crmApi, workspaceIntegrationsApi } from '@/lib/portal-api'
+import { crmApi, workspaceIntegrationsApi } from '@/lib/sonor-api'
 import { useSignalAccess } from '@/lib/signal-access'
 import SignalIcon from '@/components/ui/SignalIcon'
 import { ModuleLayout } from '@/components/ModuleLayout'
@@ -625,14 +625,19 @@ export default function CRMDashboard() {
   // Filter prospects for display
   const filteredProspects = useMemo(() => {
     let result = prospects
-    
+
+    // Filter by selected stages (client-side, in addition to API filter)
+    if (stageFilters.length > 0) {
+      result = result.filter(p => stageFilters.includes(p.pipeline_stage))
+    }
+
     // Filter out closed if not showing
     if (!showClosedDeals) {
       result = result.filter(p => ACTIVE_STAGES.includes(p.pipeline_stage))
     }
-    
+
     return result
-  }, [prospects, showClosedDeals])
+  }, [prospects, stageFilters, showClosedDeals])
 
   // Group prospects by stage for pipeline view
   const prospectsByStage = useMemo(() => {
@@ -754,23 +759,49 @@ export default function CRMDashboard() {
                     <div className="space-y-2">
                       <p className="uppercase tracking-wider text-muted-foreground">Stages</p>
                       <div className="space-y-1">
+                        {/* All Stages option */}
+                        <button
+                          onClick={() => setStageFilters([])}
+                          className={cn(
+                            'w-full flex items-center justify-between px-3 py-2 rounded-md transition-colors',
+                            stageFilters.length === 0
+                              ? 'bg-[var(--brand-primary)]/10 text-[var(--brand-primary)] font-medium'
+                              : 'hover:bg-muted'
+                          )}
+                        >
+                          <span>All Stages</span>
+                          <Badge variant="secondary" className="h-5 min-w-5 justify-center">
+                            {stats.total || prospects.length}
+                          </Badge>
+                        </button>
                         {Object.entries(pipelineStages).map(([key, config]) => {
                           const count = stats.byStage[key] || 0
                           const isHidden = !showClosedDeals && (key === 'closed_won' || key === 'closed_lost')
-                          
+                          const isActive = stageFilters.includes(key)
+
                           if (isHidden) return null
-                          
+
                           return (
                             <button
                               key={key}
                               onClick={() => {
-                                setViewMode('pipeline')
-                                setStageFilters([key])
+                                if (isActive) {
+                                  // Deselect → back to all
+                                  setStageFilters([])
+                                } else {
+                                  setStageFilters([key])
+                                }
                               }}
-                              className="w-full flex items-center justify-between px-3 py-2 rounded-md hover:bg-muted transition-colors"
+                              className={cn(
+                                'w-full flex items-center justify-between px-3 py-2 rounded-md transition-colors',
+                                isActive
+                                  ? 'bg-[var(--brand-primary)]/10 font-medium'
+                                  : 'hover:bg-muted'
+                              )}
+                              style={isActive ? { color: config.color } : undefined}
                             >
                               <div className="flex items-center gap-2">
-                                <div 
+                                <div
                                   className="w-2 h-2 rounded-full"
                                   style={{ backgroundColor: config.color }}
                                 />
@@ -1093,9 +1124,9 @@ export default function CRMDashboard() {
           subtitle={subtitle}
           actions={headerActions}
         />
-        <ModuleLayout.Content>
-          <div>
-            <SignalSuggestsPanel module="crm" className="mb-4 mx-4 mt-4" />
+        <ModuleLayout.Content className="flex flex-col">
+          <div className="flex flex-col flex-1 min-h-0">
+            <SignalSuggestsPanel module="crm" className="mb-4 mx-4 mt-4 shrink-0" />
             {isLoading ? (
               <div className="flex items-center justify-center py-24">
                 <div className="flex flex-col items-center gap-3">
@@ -1193,13 +1224,14 @@ export default function CRMDashboard() {
               <SalesModule title="Prospecting" fetchParams={{ source: 'extension' }} />
             ) : viewMode === 'pipeline' ? (
               // Pipeline/Kanban View - Fill vertical space
-              <div className="p-4">
+              <div className="p-4 flex-1 min-h-0 flex flex-col">
                 <PipelineKanban
                   pipelineStages={pipelineStages}
                   prospects={filteredProspects}
                   selectedProspects={selectedProspects}
                   isLoading={isLoading}
                   showClosedDeals={showClosedDeals}
+                  focusedStages={stageFilters}
                   onToggleClosedDeals={() => setShowClosedDeals(!showClosedDeals)}
                   onSelectProspect={(id) => {
                     if (selectedProspects.includes(id)) {

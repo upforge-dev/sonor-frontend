@@ -30,7 +30,7 @@ import {
   AlertDialogTrigger
 } from '../ui/alert-dialog'
 
-import { configApi } from '../../lib/portal-api'
+import { configApi } from '../../lib/sonor-api'
 
 const ProjectIntegrationsDialog = ({ open, onOpenChange, project }) => {
   // Square OAuth state

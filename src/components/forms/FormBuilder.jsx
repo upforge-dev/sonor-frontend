@@ -103,7 +103,7 @@ import {
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import { useCommerceOfferings } from '@/lib/hooks'
-import portalApi, { engageApi } from '@/lib/portal-api'
+import portalApi, { engageApi } from '@/lib/sonor-api'
 import useAuthStore from '@/lib/auth-store'
 
 // =============================================================================

@@ -5,7 +5,7 @@
  * Replaces users-store.js with automatic caching.
  */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { adminApi } from '../portal-api'
+import { adminApi } from '../sonor-api'
 
 // ═══════════════════════════════════════════════════════════════════════════
 // QUERY KEYS

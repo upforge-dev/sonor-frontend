@@ -1,6 +1,6 @@
 import { useParams } from 'react-router-dom'
 import { useEffect, useState, useRef } from 'react'
-import { proposalsApi, getPortalApiUrl } from '@/lib/portal-api'
+import { proposalsApi, getPortalApiUrl } from '@/lib/sonor-api'
 import UptradeLoading from './UptradeLoading'
 import ProposalTemplate from './proposals/ProposalTemplate'
 

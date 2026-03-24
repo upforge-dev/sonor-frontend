@@ -13,7 +13,7 @@ import { Lock, Mail, User, Eye, EyeOff, Loader2, ChevronRight, CheckCircle, Arro
 import LogoSvg from '@/assets/logo.svg?react'
 import useAuthStore from '@/lib/auth-store'
 import { signInWithGoogle } from '@/lib/supabase-auth'
-import { authApi } from '@/lib/portal-api'
+import { authApi } from '@/lib/sonor-api'
 import PlanSelector from '@/components/billing/PlanSelector'
 
 const STEPS = [

@@ -15,7 +15,7 @@ import {
   Loader2, CheckCircle2, Mail, Clock, ArrowRight, GitBranch,
 } from 'lucide-react'
 import { toast } from 'sonner'
-import { outreachApi } from '@/lib/portal-api'
+import { outreachApi } from '@/lib/sonor-api'
 import SequenceBuilder from '../SequenceBuilder'
 
 const STATUS_CONFIG = {

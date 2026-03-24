@@ -51,7 +51,7 @@ import {
 } from 'lucide-react'
 import { AreaChart, BarChart, DonutChart } from '@tremor/react'
 import useAuthStore from '@/lib/auth-store'
-import { adminApi } from '@/lib/portal-api'
+import { adminApi } from '@/lib/sonor-api'
 import {
   useUnreadMessagesCount,
   useOverdueInvoices,

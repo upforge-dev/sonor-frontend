@@ -63,7 +63,7 @@ export default function OnboardingFlow() {
 
     const fetchState = async () => {
       try {
-        const portalApiUrl = import.meta.env.VITE_PORTAL_API_URL || ''
+        const portalApiUrl = (import.meta.env.VITE_SONOR_API_URL || import.meta.env.VITE_PORTAL_API_URL) || ''
         const res = await fetch(`${portalApiUrl}/onboarding/${projectId}`, {
           credentials: 'include',
         })
@@ -158,7 +158,7 @@ export default function OnboardingFlow() {
       return
     }
 
-    const portalApiUrl = import.meta.env.VITE_PORTAL_API_URL || ''
+    const portalApiUrl = (import.meta.env.VITE_SONOR_API_URL || import.meta.env.VITE_PORTAL_API_URL) || ''
     const defaultModules: Record<string, string> = {
       google: 'seo,seo_gbp,reputation,analytics',
       facebook: 'social',
@@ -206,7 +206,7 @@ export default function OnboardingFlow() {
   const handleDismiss = useCallback(async () => {
     if (projectId) {
       try {
-        const portalApiUrl = import.meta.env.VITE_PORTAL_API_URL || ''
+        const portalApiUrl = (import.meta.env.VITE_SONOR_API_URL || import.meta.env.VITE_PORTAL_API_URL) || ''
         await fetch(`${portalApiUrl}/onboarding/${projectId}/dismiss`, {
           method: 'POST',
           credentials: 'include',
@@ -221,7 +221,7 @@ export default function OnboardingFlow() {
   // Migration context — provides auth + project info to DataMigrationWizard blocks
   const migrationContext = useMemo(() => {
     if (!projectId || !currentOrg?.id) return undefined
-    const portalApiUrl = import.meta.env.VITE_PORTAL_API_URL || ''
+    const portalApiUrl = (import.meta.env.VITE_SONOR_API_URL || import.meta.env.VITE_PORTAL_API_URL) || ''
     return {
       apiUrl: portalApiUrl,
       authToken: '', // Will be resolved per-request via getSession() inside the wizard

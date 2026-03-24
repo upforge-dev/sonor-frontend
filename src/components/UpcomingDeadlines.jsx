@@ -3,7 +3,7 @@ import { format, formatDistance } from 'date-fns'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Loader2, Calendar, Clock, AlertCircle } from 'lucide-react'
-import { reportsApi } from '@/lib/portal-api'
+import { reportsApi } from '@/lib/sonor-api'
 
 /* Dark theme + liquid glass: use glass/surface tokens and accent for status tint only */
 const priorityConfig = {

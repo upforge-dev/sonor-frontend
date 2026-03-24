@@ -25,7 +25,7 @@ import {
   Link2Off,
   RefreshCw
 } from 'lucide-react'
-import { emailApi } from '@/lib/portal-api'
+import { emailApi } from '@/lib/sonor-api'
 import useAuthStore from '@/lib/auth-store'
 import { toast } from 'sonner'
 

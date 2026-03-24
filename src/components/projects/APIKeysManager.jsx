@@ -22,7 +22,7 @@ import {
   AlertDescription,
 } from '@/components/ui/alert'
 
-import { portalApi } from '@/lib/portal-api'
+import { portalApi } from '@/lib/sonor-api'
 
 export default function APIKeysManager({ projectId, isAdmin }) {
   const [keys, setKeys] = useState([])

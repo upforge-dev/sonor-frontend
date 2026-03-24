@@ -8,7 +8,7 @@ import { useState, useEffect } from 'react'
 import { Search, CheckCircle2, AlertCircle, Loader2, Globe } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
-import { portalApi } from '@/lib/portal-api'
+import { portalApi } from '@/lib/sonor-api'
 
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'

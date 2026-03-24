@@ -6,7 +6,7 @@
  */
 
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query'
-import { seoApi } from '../../lib/portal-api'
+import { seoApi } from '../../lib/sonor-api'
 
 // Query keys
 export const seoPageKeys = {

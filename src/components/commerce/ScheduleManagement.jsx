@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react'
 import useAuthStore from '@/lib/auth-store'
-import portalApi from '@/lib/portal-api'
+import portalApi from '@/lib/sonor-api'
 import {
   Dialog,
   DialogContent,

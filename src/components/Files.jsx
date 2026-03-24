@@ -47,7 +47,7 @@ import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuSeparator,
 import { useFiles, useFolders, useUploadFile, useCreateFolder, useDeleteFile, useFileCategories, useUpdateFile, useUploadMultipleFiles, filesKeys, useProjects, projectsKeys } from '@/lib/hooks'
 import { useQueryClient } from '@tanstack/react-query'
 import useAuthStore from '@/lib/auth-store'
-import { adminApi } from '@/lib/portal-api'
+import { adminApi } from '@/lib/sonor-api'
 
 // Utility: Format file size
 function formatFileSize(bytes) {

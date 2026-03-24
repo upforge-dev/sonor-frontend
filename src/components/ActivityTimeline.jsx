@@ -3,7 +3,7 @@ import { format, formatDistanceToNow } from 'date-fns'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Loader2 } from 'lucide-react'
-import { reportsApi } from '@/lib/portal-api'
+import { reportsApi } from '@/lib/sonor-api'
 
 const activityTypeConfig = {
   project: { icon: '📁', color: 'bg-[var(--brand-primary)]/20', textColor: 'text-[var(--brand-primary)]' },

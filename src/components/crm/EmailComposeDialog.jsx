@@ -46,7 +46,7 @@ import {
 } from 'lucide-react'
 import { Switch } from '@/components/ui/switch'
 import { toast } from '@/lib/toast'
-import { emailApi } from '@/lib/portal-api'
+import { emailApi } from '@/lib/sonor-api'
 import useAuthStore from '@/lib/auth-store'
 
 // Available "from" mailboxes - Gmail/Google Workspace accounts

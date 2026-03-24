@@ -10,7 +10,7 @@ import { io, Socket } from 'socket.io-client'
 import { supabase } from '@/lib/supabase-auth'
 import type { ChatKitItem, ChatSocketEvents } from '@/components/chat/types'
 
-const PORTAL_API_URL = import.meta.env.VITE_PORTAL_API_URL || 'https://api.sonor.io'
+const PORTAL_API_URL = (import.meta.env.VITE_SONOR_API_URL || import.meta.env.VITE_PORTAL_API_URL) || 'https://api.sonor.io'
 
 interface UseChatSocketOptions {
   /** Enable/disable the socket connection */

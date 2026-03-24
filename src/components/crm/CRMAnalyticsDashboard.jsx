@@ -31,7 +31,7 @@ import { StatTileGrid } from '@/components/ui/stat-tile'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { crmApi } from '@/lib/portal-api'
+import { crmApi } from '@/lib/sonor-api'
 import { useBrandColors } from '@/hooks/useBrandColors'
 import { toast } from '@/lib/toast'
 

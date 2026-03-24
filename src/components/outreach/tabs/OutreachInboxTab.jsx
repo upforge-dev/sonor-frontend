@@ -8,7 +8,7 @@ import {
   AlertTriangle, ArrowLeft, User, Building, Mail, MessageSquare,
 } from 'lucide-react'
 import { toast } from 'sonner'
-import { outreachApi } from '@/lib/portal-api'
+import { outreachApi } from '@/lib/sonor-api'
 
 const SENTIMENT_CONFIG = {
   positive: { label: 'Positive', icon: ThumbsUp, color: 'text-green-600', bg: 'bg-green-100' },

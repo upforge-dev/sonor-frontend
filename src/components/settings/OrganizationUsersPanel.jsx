@@ -62,7 +62,7 @@ import {
 } from '@/components/ui/command'
 import { toast } from '@/lib/toast'
 import { useOrgMembers, useInviteOrgMember, useRemoveOrgMember, useResendOrgMemberInvite, useUpdateOrgMemberRole, useSeatInfo } from '@/lib/hooks'
-import { adminApi } from '@/lib/portal-api'
+import { adminApi } from '@/lib/sonor-api'
 import useAuthStore from '@/lib/auth-store'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 

@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react'
 import useAuthStore from '@/lib/auth-store'
 import { useCommerceOfferings, useCommerceCategories, commerceKeys } from '@/lib/hooks'
 import { useQueryClient } from '@tanstack/react-query'
-import { commerceApi } from '@/lib/portal-api'
+import { commerceApi } from '@/lib/sonor-api'
 
 const {
   getDiscountCodes,

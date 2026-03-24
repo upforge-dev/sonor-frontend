@@ -31,7 +31,7 @@ import {
   CheckCheck
 } from 'lucide-react'
 import { toast } from '@/lib/toast'
-import { crmApi } from '@/lib/portal-api'
+import { crmApi } from '@/lib/sonor-api'
 import { useBrandColors } from '@/hooks/useBrandColors'
 
 // Default icon options

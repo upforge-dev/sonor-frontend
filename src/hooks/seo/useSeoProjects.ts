@@ -6,7 +6,7 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { seoApi } from '../../lib/portal-api'
+import { seoApi } from '../../lib/sonor-api'
 
 // Query keys for cache management
 export const seoProjectKeys = {

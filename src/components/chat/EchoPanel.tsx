@@ -131,7 +131,7 @@ export function EchoPanel({
       return
     }
 
-    const portalApiUrl = import.meta.env.VITE_PORTAL_API_URL || ''
+    const portalApiUrl = (import.meta.env.VITE_SONOR_API_URL || import.meta.env.VITE_PORTAL_API_URL) || ''
     const defaultModules: Record<string, string> = {
       google: 'seo,seo_gbp,reputation,analytics',
       facebook: 'social',

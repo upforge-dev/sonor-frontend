@@ -44,7 +44,7 @@ import useAuthStore from '@/lib/auth-store'
 import { useSignalAccess } from '@/lib/signal-access'
 
 // API
-import { portalApi } from '@/lib/portal-api'
+import { portalApi } from '@/lib/sonor-api'
 
 // Commerce setup dialogs
 import StripeSetupDialog from '@/components/commerce/StripeSetupDialog'
@@ -1406,7 +1406,7 @@ export default function ProjectSettingsPanel({ project, isAdmin, onProjectUpdate
                         size="sm"
                         onClick={async () => {
                           try {
-                            const { portalApi } = await import('@/lib/portal-api')
+                            const { portalApi } = await import('@/lib/sonor-api')
                             await portalApi.post(`/integrations/shopify/disconnect`, { projectId: project.id })
                             handleChange('shopify_connected', false)
                             toast.success('Shopify disconnected')
@@ -1425,7 +1425,7 @@ export default function ProjectSettingsPanel({ project, isAdmin, onProjectUpdate
                       variant="outline"
                       onClick={async () => {
                         try {
-                          const { portalApi } = await import('@/lib/portal-api')
+                          const { portalApi } = await import('@/lib/sonor-api')
                           const { data } = await portalApi.post('/integrations/shopify/connect', { projectId: project.id })
                           if (data.authUrl) {
                             window.location.href = data.authUrl

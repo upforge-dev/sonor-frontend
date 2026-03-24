@@ -17,7 +17,7 @@ import {
   DollarSign
 } from 'lucide-react'
 import { GlassCard, GlassEmptyState, GlassMetric } from './ui'
-import { commerceApi } from '@/lib/portal-api'
+import { commerceApi } from '@/lib/sonor-api'
 import useAuthStore from '@/lib/auth-store'
 
 // ─── Helpers ────────────────────────────────────────────────────────────────

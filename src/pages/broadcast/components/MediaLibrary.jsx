@@ -39,7 +39,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useBroadcastStore } from '@/stores/broadcastStore';
 import useAuthStore from '@/lib/auth-store';
-import { filesApi } from '@/lib/portal-api';
+import { filesApi } from '@/lib/sonor-api';
 import { TemplatesGrid } from './TemplatesGrid';
 import { HashtagSets } from './HashtagSets';
 import { toast } from 'sonner';

@@ -9,7 +9,7 @@ import { useState, useEffect } from 'react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { AlertCircle, Mail, ExternalLink, Loader2, CheckCircle2 } from 'lucide-react'
-import { emailApi } from '@/lib/portal-api'
+import { emailApi } from '@/lib/sonor-api'
 import useAuthStore from '@/lib/auth-store'
 
 export default function EmailConfigWarning({ className = '' }) {

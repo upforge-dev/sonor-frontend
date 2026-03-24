@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { emailApi } from './portal-api'
+import { emailApi } from './sonor-api'
 import useAuthStore from './auth-store'
 
 /**
@@ -258,18 +258,27 @@ export const useEmailPlatformStore = create((set, get) => ({
     set({ subscribersLoading: true, subscribersError: null })
     try {
       const { currentProject } = useAuthStore.getState()
-      const params = { ...filters }
+      const params = { limit: 500, ...filters }
       if (currentProject?.id && !params.projectId) {
         params.projectId = currentProject.id
       }
       const res = await emailApi.listSubscribers(params)
       const data = res.data || res
-      set({ 
-        subscribers: data.subscribers || [], 
-        subscribersPagination: data.pagination || { page: 1, limit: 50, total: (data.subscribers || []).length },
-        subscribersLoading: false 
+      const subs = data.subscribers || []
+      const total = typeof data.total === 'number' ? data.total : subs.length
+      const limit = typeof data.limit === 'number' ? data.limit : params.limit
+      const offset = typeof data.offset === 'number' ? data.offset : 0
+      set({
+        subscribers: subs,
+        subscribersPagination: {
+          total,
+          limit,
+          offset,
+          page: limit > 0 ? Math.floor(offset / limit) + 1 : 1,
+        },
+        subscribersLoading: false,
       })
-      return data.subscribers || []
+      return subs
     } catch (error) {
       set({ subscribersError: error.response?.data?.error || error.message, subscribersLoading: false })
       return []
@@ -278,7 +287,12 @@ export const useEmailPlatformStore = create((set, get) => ({
 
   createSubscriber: async (subscriberData) => {
     try {
-      const res = await emailApi.createSubscriber(subscriberData)
+      const { currentProject } = useAuthStore.getState()
+      const body = { ...subscriberData }
+      if (currentProject?.id && !body.projectId) {
+        body.projectId = currentProject.id
+      }
+      const res = await emailApi.createSubscriber(body)
       const data = res.data || res
       const { subscriber, created } = data
       if (created) {
@@ -296,7 +310,12 @@ export const useEmailPlatformStore = create((set, get) => ({
 
   importSubscribers: async (csvData, options = {}) => {
     try {
-      const res = await emailApi.importSubscribers(csvData, options)
+      const { currentProject } = useAuthStore.getState()
+      const body = { ...csvData, ...options }
+      if (currentProject?.id && !body.projectId) {
+        body.projectId = currentProject.id
+      }
+      const res = await emailApi.importSubscribers(body)
       // Refresh subscribers and lists after import
       get().fetchSubscribers()
       get().fetchLists()

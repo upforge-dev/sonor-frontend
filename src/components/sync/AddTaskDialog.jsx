@@ -38,7 +38,7 @@ import {
   RefreshCw,
   AlertCircle,
 } from 'lucide-react'
-import { syncApi, projectsApi, crmApi } from '@/lib/portal-api'
+import { syncApi, projectsApi, crmApi } from '@/lib/sonor-api'
 import useAuthStore from '@/lib/auth-store'
 import { toast } from 'sonner'
 

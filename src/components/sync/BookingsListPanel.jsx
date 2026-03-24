@@ -62,7 +62,7 @@ import {
   TabsTrigger,
 } from '@/components/ui/tabs'
 import { cn } from '@/lib/utils'
-import { syncApi } from '@/lib/portal-api'
+import { syncApi } from '@/lib/sonor-api'
 import useAuthStore from '@/lib/auth-store'
 import { toast } from 'sonner'
 import { format, formatDistanceToNow, isPast, isToday, isTomorrow } from 'date-fns'

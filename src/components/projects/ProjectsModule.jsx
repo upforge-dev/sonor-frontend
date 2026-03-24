@@ -70,7 +70,7 @@ import {
   PROJECT_STATUS_CONFIG,
 } from '@/lib/hooks'
 import { useQueryClient } from '@tanstack/react-query'
-import { adminApi, agenciesApi, portalApi } from '@/lib/portal-api'
+import { adminApi, agenciesApi, portalApi } from '@/lib/sonor-api'
 import {
   useUptradeTasks,
   useUptradeTasksStats,
@@ -105,7 +105,7 @@ function getScreenshotApiUrl(domain, width = 280, height = 180) {
   // Clean domain
   const cleanDomain = domain.replace(/^https?:\/\//, '').replace(/\/$/, '')
   // Use Portal API screenshot endpoint
-  const apiUrl = import.meta.env.VITE_PORTAL_API_URL || 'https://api.sonor.io'
+  const apiUrl = (import.meta.env.VITE_SONOR_API_URL || import.meta.env.VITE_PORTAL_API_URL) || 'https://api.sonor.io'
   return `${apiUrl}/screenshots?domain=${encodeURIComponent(cleanDomain)}&width=${width}&height=${height}`
 }
 
@@ -124,7 +124,7 @@ function useScreenshotUrl(domain, width = 280, height = 180) {
 
     // Clean domain
     const cleanDomain = domain.replace(/^https?:\/\//, '').replace(/\/$/, '')
-    const apiUrl = import.meta.env.VITE_PORTAL_API_URL || 'https://api.sonor.io'
+    const apiUrl = (import.meta.env.VITE_SONOR_API_URL || import.meta.env.VITE_PORTAL_API_URL) || 'https://api.sonor.io'
     const fullUrl = `${apiUrl}/screenshots?domain=${encodeURIComponent(cleanDomain)}&width=${width}&height=${height}${force ? '&force=true' : ''}`
 
     setLoading(true)

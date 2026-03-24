@@ -123,7 +123,7 @@ const MainLayout = () => {
       const currentProject = useAuthStore.getState().currentProject
       if (!currentProject?.id) return
 
-      const portalApiUrl = import.meta.env.VITE_PORTAL_API_URL || ''
+      const portalApiUrl = (import.meta.env.VITE_SONOR_API_URL || import.meta.env.VITE_PORTAL_API_URL) || ''
       const res = await fetch(`${portalApiUrl}/onboarding/${currentProject.id}`, {
         credentials: 'include',
       })
@@ -258,12 +258,13 @@ const MainLayout = () => {
             className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat"
             style={{ backgroundImage: `url(${user.background_image_url})` }}
           />
-          <div className="fixed inset-0 z-0 bg-white/80 dark:bg-black/80" />
+          {/* Tint only behind main content — never stack wash over the top chrome (h-12 header) */}
+          <div className="fixed inset-x-0 top-12 bottom-0 z-0 bg-white/80 dark:bg-black/80 pointer-events-none" />
         </>
       ) : (
         <>
           <SonicBackground />
-          <div className="fixed inset-0 z-0 bg-white/40 dark:bg-black/50 pointer-events-none" />
+          <div className="fixed inset-x-0 top-12 bottom-0 z-0 bg-white/40 dark:bg-black/50 pointer-events-none" />
         </>
       )}
       
@@ -271,7 +272,7 @@ const MainLayout = () => {
       <TopHeader 
         onNavigate={navigateTo}
         onOpenSearch={() => setCommandPaletteOpen(true)}
-        className="relative z-10"
+        className="relative z-[60]"
       />
 
       <div className="flex flex-1 overflow-hidden relative z-10">
@@ -291,7 +292,7 @@ const MainLayout = () => {
         {/* Desktop Sidebar - Always persistent */}
         <div className="hidden lg:block relative">
           <div className="h-full flex-shrink-0 transition-all duration-150" style={{ width: sidebarWidth }} />
-          <aside className="absolute inset-y-0 left-0 z-20" role="navigation" aria-label="Main navigation">
+          <aside className="absolute inset-y-0 left-0 z-[55]" role="navigation" aria-label="Main navigation">
             <Sidebar
               activeSection={activeSection}
               onSectionChange={handleSectionChange}
@@ -309,7 +310,11 @@ const MainLayout = () => {
               className="lg:hidden fixed inset-0 bg-black/40 backdrop-blur-sm z-[100]"
               onClick={() => setIsMobileSidebarOpen(false)}
             />
-            <aside className="lg:hidden fixed inset-y-0 left-0 w-64 bg-background border-r border-border/50 shadow-xl z-[101] overflow-y-auto" role="navigation" aria-label="Main navigation">
+            <aside
+              className="lg:hidden fixed inset-y-0 left-0 z-[101] w-64 overflow-y-auto border-r border-border/50 bg-background text-foreground shadow-xl [backdrop-filter:none] [-webkit-backdrop-filter:none] dark:bg-black dark:text-white dark:[&_.text-muted-foreground]:!text-zinc-400 dark:[&_.text-muted-foreground\\/50]:!text-zinc-500 dark:[&_.text-muted-foreground\\/30]:!text-zinc-500 dark:[&_.text-foreground]:!text-white"
+              role="navigation"
+              aria-label="Main navigation"
+            >
               <Sidebar
                 activeSection={activeSection}
                 onSectionChange={(section) => {

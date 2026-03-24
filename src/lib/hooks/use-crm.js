@@ -5,7 +5,7 @@
  * Replaces crm-store.js with automatic caching, deduplication, and background refresh.
  */
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query'
-import { crmApi } from '../portal-api'
+import { crmApi } from '../sonor-api'
 
 // ═══════════════════════════════════════════════════════════════════════════
 // QUERY KEYS

@@ -5,7 +5,7 @@
  * Replaces seo-store.js + seo/*.js with automatic caching, deduplication, and background refresh.
  */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { seoApi } from '../portal-api'
+import { seoApi } from '../sonor-api'
 import { signalSeoApi } from '../signal-api'
 
 // ═══════════════════════════════════════════════════════════════════════════

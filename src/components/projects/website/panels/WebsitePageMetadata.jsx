@@ -11,7 +11,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from 'sonner'
 import { useSeoPage, useUpdateSeoPage } from '@/hooks/seo'
-import { seoApi } from '@/lib/portal-api'
+import { seoApi } from '@/lib/sonor-api'
 import { useQueryClient } from '@tanstack/react-query'
 import { seoPageKeys } from '@/hooks/seo/useSeoPages'
 

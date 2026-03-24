@@ -22,7 +22,7 @@ import {
 } from '@/components/ui/dialog'
 import { Separator } from '@/components/ui/separator'
 import { toast } from 'sonner'
-import { adminApi } from '@/lib/portal-api'
+import { adminApi } from '@/lib/sonor-api'
 import useAuthStore from '@/lib/auth-store'
 
 const DEFAULT_BRAND_COLOR_1 = '#4bbf39'

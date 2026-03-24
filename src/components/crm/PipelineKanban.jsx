@@ -14,10 +14,10 @@ import { DEFAULT_PIPELINE_STAGES } from './pipelineStages'
 const CLOSED_STAGES = ['closed_won', 'closed_lost']
 
 // Pipeline Column Component
-function PipelineColumn({ 
-  stage, 
-  config, 
-  prospects, 
+function PipelineColumn({
+  stage,
+  config,
+  prospects,
   selectedProspects,
   onSelectProspect,
   onProspectClick,
@@ -29,7 +29,8 @@ function PipelineColumn({
   onDrop,
   draggingProspectId,
   onDragStart,
-  isLast = false
+  isLast = false,
+  isFocused = false
 }) {
   const StageIcon = config.icon
   const [isDragOver, setIsDragOver] = useState(false)
@@ -106,7 +107,12 @@ function PipelineColumn({
         )}
         style={{ borderColor: config.borderColor, scrollbarWidth: 'none' }}
       >
-        <div className="p-2 space-y-2">
+        <div className={cn(
+          'p-2',
+          isFocused
+            ? 'grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-2'
+            : 'space-y-2'
+        )}>
           {prospects.length === 0 ? (
             <GlassEmptyState
               icon={StageIcon}
@@ -241,6 +247,7 @@ export default function PipelineKanban({
   selectedProspects = [],
   isLoading = false,
   showClosedDeals = false,
+  focusedStages = [],
   onToggleClosedDeals,
   onSelectProspect,
   onProspectClick,
@@ -260,8 +267,15 @@ export default function PipelineKanban({
 
   // Active stage keys (exclude closed) from current config
   const activeStageKeys = useMemo(() => {
-    return Object.keys(pipelineStages).filter(k => !CLOSED_STAGES.includes(k))
-  }, [pipelineStages])
+    const allActive = Object.keys(pipelineStages).filter(k => !CLOSED_STAGES.includes(k))
+    // If specific stages are focused, only show those columns
+    if (focusedStages.length > 0) {
+      return allActive.filter(k => focusedStages.includes(k))
+    }
+    return allActive
+  }, [pipelineStages, focusedStages])
+
+  const isFocused = focusedStages.length > 0
 
   // Group prospects by stage
   const prospectsByStage = useMemo(() => {
@@ -366,7 +380,7 @@ export default function PipelineKanban({
   }
 
   return (
-    <div data-sonor-help="crm/pipeline-kanban" className={cn('flex flex-col h-full', className)} onDragEnd={handleDragEnd}>
+    <div data-sonor-help="crm/pipeline-kanban" className={cn('flex flex-col flex-1 min-h-0', className)} onDragEnd={handleDragEnd}>
       {/* Kanban Board — relative wrapper gives the absolutely-positioned
           scroll container a real pixel height so columns can scroll. */}
       <div className="flex-1 min-h-0 relative">
@@ -383,10 +397,10 @@ export default function PipelineKanban({
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseUp}
         >
-          {/* Flex row — each column is a fixed-width flex child at full height */}
-          <div 
-            className="flex gap-4 h-full"
-            style={{ minWidth: `${activeStageKeys.length * 300}px` }}
+          {/* Flex row — columns fill space when focused, fixed-width otherwise */}
+          <div
+            className={cn('flex gap-4 h-full', isFocused && 'w-full')}
+            style={isFocused ? undefined : { minWidth: `${activeStageKeys.length * 300}px` }}
           >
             {activeStageKeys.map((stage, index) => (
               <PipelineColumn
@@ -406,6 +420,7 @@ export default function PipelineKanban({
                 onDragStart={handleDragStart}
                 draggingProspectId={draggingProspectId}
                 isLast={index === activeStageKeys.length - 1}
+                isFocused={isFocused}
               />
             ))}
           </div>

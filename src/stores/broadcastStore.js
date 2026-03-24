@@ -1,7 +1,7 @@
 // src/stores/broadcastStore.js
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
-import portalApi from '@/lib/portal-api';
+import portalApi from '@/lib/sonor-api';
 
 // ============================================================================
 // TYPES

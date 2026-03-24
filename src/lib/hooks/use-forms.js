@@ -5,7 +5,7 @@
  * Replaces forms-store.js with automatic caching, deduplication, and background refresh.
  */
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query'
-import { formsApi } from '../portal-api'
+import { formsApi } from '../sonor-api'
 
 // ═══════════════════════════════════════════════════════════════════════════
 // QUERY KEYS

@@ -55,7 +55,7 @@ import {
 import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase-auth'
 import useAuthStore from '@/lib/auth-store'
-import { adminApi } from '@/lib/portal-api'
+import { adminApi } from '@/lib/sonor-api'
 import { UptradeSpinner } from '@/components/UptradeLoading'
 
 // Permission labels for display

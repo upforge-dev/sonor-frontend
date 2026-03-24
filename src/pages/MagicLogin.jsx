@@ -7,7 +7,7 @@ import { Loader2, CheckCircle2, XCircle } from 'lucide-react'
 import { Button } from '../components/ui/button'
 import { supabase, getCurrentUser } from '../lib/supabase-auth'
 import useAuthStore from '../lib/auth-store'
-import { authApi } from '../lib/portal-api'
+import { authApi } from '../lib/sonor-api'
 
 export default function MagicLogin() {
   const navigate = useNavigate()

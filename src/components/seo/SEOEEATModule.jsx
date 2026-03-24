@@ -59,7 +59,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { signalSeoApi } from '@/lib/signal-api'
-import { blogApi } from '@/lib/portal-api'
+import { blogApi } from '@/lib/sonor-api'
 import { useSignalAccess } from '@/lib/signal-access'
 import SignalIcon from '@/components/ui/SignalIcon'
 import { Label } from '@/components/ui/label'

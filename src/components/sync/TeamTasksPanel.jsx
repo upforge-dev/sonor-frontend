@@ -32,7 +32,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
-import { syncApi } from '@/lib/portal-api'
+import { syncApi } from '@/lib/sonor-api'
 import { toast } from 'sonner'
 
 // ============================================================================

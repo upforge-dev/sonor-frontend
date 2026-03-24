@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import useAuthStore from '@/lib/auth-store'
-import { projectsApi } from '@/lib/portal-api'
+import { projectsApi } from '@/lib/sonor-api'
 
 // Reputation dashboard (pages/reputation/ReputationModule.jsx)
 import ReputationModule from '@/pages/reputation/ReputationModule'

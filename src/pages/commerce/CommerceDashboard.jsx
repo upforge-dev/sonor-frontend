@@ -10,7 +10,7 @@ import { supabase } from '@/lib/supabase'
 import { useBrandColors } from '@/hooks/useBrandColors'
 import { useCommerceSettings, useCommerceDashboard, getCommerceDashboard, useCommerceOfferings, useCommerceOffering, commerceKeys } from '@/lib/hooks'
 import { useQueryClient } from '@tanstack/react-query'
-import portalApi, { commerceApi, proposalsApi } from '@/lib/portal-api'
+import portalApi, { commerceApi, proposalsApi } from '@/lib/sonor-api'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -501,7 +501,7 @@ export default function CommerceDashboard({ onNavigate }) {
         setInvoices(invoiceData.map(inv => ({ ...inv, _isBillingInvoice: true })))
       } else {
         // Other orgs: Use Commerce invoices API (project-level invoices)
-        const { commerceApi } = await import('@/lib/portal-api')
+        const { commerceApi } = await import('@/lib/sonor-api')
         const res = await commerceApi.getInvoices(projectId, { params: { limit: 50 } })
         const invoiceData = res?.data ?? res ?? []
         setInvoices(Array.isArray(invoiceData) ? invoiceData : [])
@@ -521,7 +521,7 @@ export default function CommerceDashboard({ onNavigate }) {
     setTransactionsError(null)
     
     try {
-      const { commerceApi } = await import('@/lib/portal-api')
+      const { commerceApi } = await import('@/lib/sonor-api')
       const response = await commerceApi.getSales(projectId, { params: { limit: 10 } })
       const salesData = response?.data?.sales ?? response?.data?.data ?? response?.data ?? []
       setTransactions(Array.isArray(salesData) ? salesData : [])

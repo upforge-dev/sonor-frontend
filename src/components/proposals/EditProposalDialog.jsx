@@ -42,7 +42,7 @@ import {
   AlertTriangle,
   User
 } from 'lucide-react'
-import { adminApi, filesApi, proposalsApi } from '@/lib/portal-api'
+import { adminApi, filesApi, proposalsApi } from '@/lib/sonor-api'
 import { cn } from '@/lib/utils'
 import { EchoGenerateButton } from '@/components/ai/EchoGenerateButton'
 import { EchoTextActions } from '@/components/ai/EchoTextActions'

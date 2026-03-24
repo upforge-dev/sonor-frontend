@@ -5,7 +5,7 @@
  * Replaces affiliates-store.js with automatic caching.
  */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { portalApi } from '../portal-api'
+import { portalApi } from '../sonor-api'
 
 // ═══════════════════════════════════════════════════════════════════════════
 // QUERY KEYS

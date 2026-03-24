@@ -29,7 +29,7 @@ import {
   Folder,
 } from 'lucide-react'
 import { useSeoPages, seoPageKeys } from '@/hooks/seo'
-import { seoApi } from '@/lib/portal-api'
+import { seoApi } from '@/lib/sonor-api'
 import SEOBulkEditModal from './SEOBulkEditModal'
 import { NaturalLanguageFilter } from '@/components/ai/NaturalLanguageFilter'
 import { cn } from '@/lib/utils'

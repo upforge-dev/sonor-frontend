@@ -278,6 +278,17 @@ h1, h2, h3, h4, h5, h6 {
   height: 100%;
 }
 
+/* Sidebar (dark): full white label + icon on hover — beats ghost/tw-merge grey text */
+.dark .sonor-sidebar-chrome button:not([data-sidebar-active]):hover,
+.dark .sonor-sidebar-chrome button:not([data-sidebar-active]):hover span {
+  color: #ffffff !important;
+}
+
+.dark .sonor-sidebar-chrome button:not([data-sidebar-active]):hover svg {
+  color: #ffffff !important;
+  stroke: #ffffff !important;
+}
+
 /* ------------------------------------------------
    GLASS UTILITIES - Ultra Glassmorphism
    ------------------------------------------------ */

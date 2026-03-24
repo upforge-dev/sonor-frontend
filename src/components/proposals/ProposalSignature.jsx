@@ -5,7 +5,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { CheckCircle, X, Pen, Loader2, Mail, Calendar, User } from 'lucide-react'
-import { proposalsApi } from '@/lib/portal-api'
+import { proposalsApi } from '@/lib/sonor-api'
 import { supabase } from '@/lib/supabase'
 import ProposalDepositPayment from './ProposalDepositPayment'
 

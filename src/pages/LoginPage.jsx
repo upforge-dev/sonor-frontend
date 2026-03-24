@@ -8,7 +8,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom'
 import { Lock, Mail, Eye, EyeOff, ShieldCheck, Loader2, HelpCircle, ChevronRight } from 'lucide-react'
 import useAuthStore from '../lib/auth-store'
 import { signInWithGoogle, resetPasswordForEmail } from '../lib/supabase-auth'
-import { authApi } from '../lib/portal-api'
+import { authApi } from '../lib/sonor-api'
 
 // purely visual; server enforces access
 const BRAND_UI = {

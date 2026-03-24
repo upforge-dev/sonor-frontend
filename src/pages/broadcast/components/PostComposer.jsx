@@ -21,7 +21,7 @@ import { useBroadcastStore } from '@/stores/broadcastStore';
 import useAuthStore from '@/lib/auth-store';
 import { PlatformIcon, PlatformSelector } from './PlatformIcon';
 import { AiImageGenerator } from './AiImageGenerator';
-import portalApi from '@/lib/portal-api';
+import portalApi from '@/lib/sonor-api';
 
 // Platform-specific colors for preview borders
 const PLATFORM_COLORS = {

@@ -17,7 +17,7 @@ import {
   Copy, ChevronDown, ChevronUp, Link2,
 } from 'lucide-react'
 import { toast } from 'sonner'
-import { outreachApi } from '@/lib/portal-api'
+import { outreachApi } from '@/lib/sonor-api'
 
 const STATUS_CONFIG = {
   pending: { label: 'Pending', variant: 'outline', icon: null },

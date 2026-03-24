@@ -8,7 +8,7 @@
  * These hooks support Sidebar badge and the /messages API.
  */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { messagesApi } from '../portal-api'
+import { messagesApi } from '../sonor-api'
 
 // ═══════════════════════════════════════════════════════════════════════════
 // QUERY KEYS

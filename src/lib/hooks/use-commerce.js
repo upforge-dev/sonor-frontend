@@ -5,7 +5,7 @@
  * Replaces commerce-store.js with automatic caching, deduplication, and background refresh.
  */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import portalApi from '../portal-api'
+import portalApi from '../sonor-api'
 import { supabase } from '../supabase'
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -152,7 +152,22 @@ export function useUpdateOffering() {
       return response.data
     },
     onSuccess: (data, { offeringId }) => {
-      queryClient.setQueryData(commerceKeys.offeringDetail(offeringId), data)
+      // updateOffering returns a raw DB row — merge so we keep getOfferingById extras
+      // (images[], featured_image URL) and avoid breaking image id ↔ metadata.image_model_info lookup.
+      queryClient.setQueryData(commerceKeys.offeringDetail(offeringId), (prev) => {
+        if (!prev) return data
+        const merged = { ...prev, ...data }
+        const nextImages = data?.images
+        merged.images =
+          Array.isArray(nextImages) && nextImages.length > 0 ? nextImages : prev.images
+        if (data?.featured_image == null && prev.featured_image != null) {
+          merged.featured_image = prev.featured_image
+        }
+        if (data?.featured_image_data == null && prev.featured_image_data != null) {
+          merged.featured_image_data = prev.featured_image_data
+        }
+        return merged
+      })
       queryClient.invalidateQueries({ queryKey: commerceKeys.offerings() })
     },
   })

@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 // No loading spinner — seamless dark void matching boot sequence aesthetic
 import useAuthStore from '../lib/auth-store'
-import { authApi, contactsApi } from '../lib/portal-api'
+import { authApi, contactsApi } from '../lib/sonor-api'
 import { supabase, getCurrentUser } from '../lib/supabase-auth'
 import { uploadGoogleAvatarToStorage } from '../lib/avatar-utils'
 

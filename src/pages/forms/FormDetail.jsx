@@ -69,7 +69,7 @@ import { format, formatDistanceToNow, isValid } from 'date-fns'
 import { toast } from 'sonner'
 import FormPreview from '@/components/forms/FormPreview'
 import FormAnalytics from '@/components/forms/FormAnalytics'
-import { formsApi } from '@/lib/portal-api'
+import { formsApi } from '@/lib/sonor-api'
 
 // Helpers for submissions (match FormsManager behavior)
 const safeFormatDistance = (dateStr) => {

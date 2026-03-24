@@ -6,7 +6,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useSeoPages } from '@/lib/hooks'
 import useAuthStore from '@/lib/auth-store'
-import { portalApi } from '@/lib/portal-api'
+import { portalApi } from '@/lib/sonor-api'
 import {
   Dialog,
   DialogContent,

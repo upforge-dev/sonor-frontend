@@ -18,7 +18,7 @@ import { Switch } from '@/components/ui/switch'
 import RichTextEditor from '@/components/ui/RichTextEditor'
 import { ContactSelector } from '@/components/ContactSelector'
 import { Loader2, FileSignature, Save, Send } from 'lucide-react'
-import { proposalsApi } from '@/lib/portal-api'
+import { proposalsApi } from '@/lib/sonor-api'
 import { toast } from '@/lib/toast'
 
 /**

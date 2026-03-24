@@ -2,7 +2,7 @@
  * Broadcast API Client
  * Handles all social media broadcast operations
  */
-import portalApi from '../portal-api'
+import portalApi from '../sonor-api'
 
 const BASE_PATH = '/broadcast'
 

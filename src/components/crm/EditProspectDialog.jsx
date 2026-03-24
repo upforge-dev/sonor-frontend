@@ -22,7 +22,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { toast } from '@/lib/toast'
-import { adminApi } from '@/lib/portal-api'
+import { adminApi } from '@/lib/sonor-api'
 
 const SOURCES = [
   { value: 'website', label: 'Website' },

@@ -19,7 +19,7 @@ import {
   useSeoGSCOverview, useSeoGSCQueries, seoProjectKeys, seoGSCKeys,
   useSeoGscHealth,
 } from '@/hooks/seo'
-import { seoApi, oauthApi } from '@/lib/portal-api'
+import { seoApi, oauthApi } from '@/lib/sonor-api'
 import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import useAuthStore from '@/lib/auth-store'

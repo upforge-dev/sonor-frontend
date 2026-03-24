@@ -5,7 +5,7 @@
  * Only accessible to platform admins (isPlatformAdmin / isSuperAdmin).
  */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import portalApi from '@/lib/portal-api'
+import portalApi from '@/lib/sonor-api'
 
 // ═══════════════════════════════════════════════════════════════════════════
 // QUERY KEYS

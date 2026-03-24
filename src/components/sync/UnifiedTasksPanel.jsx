@@ -45,7 +45,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
-import { syncApi } from '@/lib/portal-api'
+import { syncApi } from '@/lib/sonor-api'
 import { budgetApi } from '@/lib/signal-api'
 import useAuthStore from '@/lib/auth-store'
 import { toast } from 'sonner'

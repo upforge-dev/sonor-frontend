@@ -25,7 +25,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import SignalIcon from '@/components/ui/SignalIcon'
-import { engageApi } from '@/lib/portal-api'
+import { engageApi } from '@/lib/sonor-api'
 import { toast } from 'sonner'
 
 // ============================================================================

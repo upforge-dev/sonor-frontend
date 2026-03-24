@@ -5,7 +5,7 @@
  * Handles CMS enablement, pages, sections, publish/unpublish, and assets.
  */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { cmsApi } from '../portal-api'
+import { cmsApi } from '../sonor-api'
 import { siteKeys } from './use-site'
 
 // ═══════════════════════════════════════════════════════════════════════════

@@ -86,7 +86,7 @@ import {
 import { Label } from '@/components/ui/label'
 import { toast } from '@/lib/toast'
 import { useBrandColors } from '@/hooks/useBrandColors'
-import { crmApi, syncApi, auditsApi, emailApi } from '@/lib/portal-api'
+import { crmApi, syncApi, auditsApi, emailApi } from '@/lib/sonor-api'
 import { PIPELINE_STAGES } from '../crm/pipelineStages'
 import useAuthStore from '@/lib/auth-store'
 import EmailComposeDialog from '../crm/EmailComposeDialog'

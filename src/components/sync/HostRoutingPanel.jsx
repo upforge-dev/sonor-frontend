@@ -45,7 +45,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
-import { syncApi } from '@/lib/portal-api'
+import { syncApi } from '@/lib/sonor-api'
 import { toast } from 'sonner'
 
 const ROUTING_STRATEGIES = {

@@ -43,7 +43,7 @@ import {
   UserCircle,
   AlertCircle
 } from 'lucide-react'
-import { commerceApi } from '../lib/portal-api'
+import { commerceApi } from '../lib/sonor-api'
 import { cn } from '../lib/utils'
 
 // Format price for display

@@ -25,7 +25,7 @@ import {
   HelpCircle,
   Code,
 } from 'lucide-react'
-import { portalApi } from '@/lib/portal-api'
+import { portalApi } from '@/lib/sonor-api'
 import { RoutePlanView } from './RoutePlanView'
 import { ScrapedFAQsView } from './ScrapedFAQsView'
 import { IntegrationCodeView } from '@uptrade/site-kit/setup'

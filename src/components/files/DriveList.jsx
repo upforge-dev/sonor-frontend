@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { toast } from '@/lib/toast'
 import { useDriveFiles, useUploadDriveFile, useCreateDriveFolder, useDeleteDriveFile } from '@/lib/hooks'
-import { driveApi } from '@/lib/portal-api'
+import { driveApi } from '@/lib/sonor-api'
 import {
   FolderOpen,
   Folder,

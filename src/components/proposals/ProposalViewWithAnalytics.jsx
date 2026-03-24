@@ -30,7 +30,7 @@ import {
 } from 'lucide-react'
 import ProposalView from './ProposalView'
 import SendProposalDialog from './SendProposalDialog'
-import { proposalsApi } from '@/lib/portal-api'
+import { proposalsApi } from '@/lib/sonor-api'
 import { cn } from '@/lib/utils'
 
 // Analytics Summary Card

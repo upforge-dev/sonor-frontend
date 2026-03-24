@@ -3,7 +3,7 @@
 // MIGRATED TO REACT QUERY - Jan 29, 2026
 import { useState } from 'react'
 import { useSeoBacklinks, seoTechnicalKeys } from '@/hooks/seo'
-import { seoApi } from '@/lib/portal-api'
+import { seoApi } from '@/lib/sonor-api'
 import { useQueryClient } from '@tanstack/react-query'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'

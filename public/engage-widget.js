@@ -9,7 +9,7 @@
 (function() {
   'use strict';
 
-  // Configuration (overridable via script data attributes: data-portal-url, data-portal-api-url, data-signal-url)
+  // Configuration (overridable: data-portal-url, data-portal-api-url or data-sonor-api-url, data-signal-url)
   let PORTAL_URL = 'https://app.sonor.io';
   let PORTAL_API_URL = 'https://api.sonor.io';
   let SIGNAL_URL = 'https://signal.sonor.io';
@@ -243,8 +243,12 @@
   }
   if (scriptTag.getAttribute('data-signal-url')) SIGNAL_URL = scriptTag.getAttribute('data-signal-url');
   if (scriptTag.getAttribute('data-portal-url')) PORTAL_URL = scriptTag.getAttribute('data-portal-url');
-  if (scriptTag.getAttribute('data-portal-api-url')) PORTAL_API_URL = scriptTag.getAttribute('data-portal-api-url');
-  // Never use .netlify/functions — use Portal API (api.sonor.io) only
+  if (scriptTag.getAttribute('data-sonor-api-url')) {
+    PORTAL_API_URL = scriptTag.getAttribute('data-sonor-api-url');
+  } else if (scriptTag.getAttribute('data-portal-api-url')) {
+    PORTAL_API_URL = scriptTag.getAttribute('data-portal-api-url');
+  }
+  // Never use .netlify/functions — use Sonor API (api.sonor.io) only
   if (PORTAL_API_URL && PORTAL_API_URL.indexOf('.netlify/functions') !== -1) PORTAL_API_URL = 'https://api.sonor.io';
 
   const WIDGET_ORIGIN = scriptTag.src ? new URL(scriptTag.src).origin : PORTAL_URL;

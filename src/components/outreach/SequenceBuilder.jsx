@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
-import { outreachApi } from '@/lib/portal-api'
+import { outreachApi } from '@/lib/sonor-api'
 import { outreachSkillsApi } from '@/lib/signal-api'
 
 const TRIGGER_OPTIONS = [

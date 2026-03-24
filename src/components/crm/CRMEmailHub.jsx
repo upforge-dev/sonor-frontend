@@ -66,7 +66,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { toast } from '@/lib/toast'
 import useAuthStore from '@/lib/auth-store'
-import { crmApi } from '@/lib/portal-api'
+import { crmApi } from '@/lib/sonor-api'
 import { crmAiApi } from '@/lib/signal-api'
 import { GmailConnectCard } from '../email/GmailConnectCard'
 import EmailComposeDialog from './EmailComposeDialog'

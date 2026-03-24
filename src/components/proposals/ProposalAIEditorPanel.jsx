@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Bot, Send, Loader2 } from 'lucide-react'
-import { commerceApi, proposalsApi } from '@/lib/portal-api'
+import { commerceApi, proposalsApi } from '@/lib/sonor-api'
 import useAuthStore from '@/lib/auth-store'
 import { cn } from '@/lib/utils'
 

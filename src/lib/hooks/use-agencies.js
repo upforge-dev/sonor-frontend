@@ -4,7 +4,7 @@
  * TanStack Query hooks for agency dashboard — managing client orgs.
  */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { agenciesApi } from '../portal-api'
+import { agenciesApi } from '../sonor-api'
 
 // ═══════════════════════════════════════════════════════════════════════════
 // QUERY KEYS

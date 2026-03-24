@@ -49,7 +49,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
-import { proposalsApi, adminApi } from '@/lib/portal-api'
+import { proposalsApi, adminApi } from '@/lib/sonor-api'
 import SendProposalDialog from './SendProposalDialog'
 import ProposalView from './ProposalView'
 import EditProposalDialog from './EditProposalDialog'

@@ -327,7 +327,7 @@ function OAuthFlowDialog({
 
     try {
       // Use popup-based OAuth via Portal API
-      const portalApiUrl = import.meta.env.VITE_PORTAL_API_URL || ''
+      const portalApiUrl = (import.meta.env.VITE_SONOR_API_URL || import.meta.env.VITE_PORTAL_API_URL) || ''
       const modulesParam = config.modules.join(',')
       const connectionType = config.connectionType || 'business'
       
@@ -382,7 +382,7 @@ function OAuthFlowDialog({
 
     try {
       // Save the selected property to the project connection
-      const portalApiUrl = import.meta.env.VITE_PORTAL_API_URL || ''
+      const portalApiUrl = (import.meta.env.VITE_SONOR_API_URL || import.meta.env.VITE_PORTAL_API_URL) || ''
       const response = await fetch(`${portalApiUrl}/projects/${projectId}/connections/${platform}/property`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -654,7 +654,7 @@ export default function ConnectionWizard({
     }
 
     try {
-      const portalApiUrl = import.meta.env.VITE_PORTAL_API_URL || ''
+      const portalApiUrl = (import.meta.env.VITE_SONOR_API_URL || import.meta.env.VITE_PORTAL_API_URL) || ''
       const response = await fetch(`${portalApiUrl}/projects/${projectId}/connections/${platform}`, {
         method: 'DELETE',
         credentials: 'include',
@@ -672,7 +672,7 @@ export default function ConnectionWizard({
 
   const handleRefresh = useCallback(async (platform) => {
     try {
-      const portalApiUrl = import.meta.env.VITE_PORTAL_API_URL || ''
+      const portalApiUrl = (import.meta.env.VITE_SONOR_API_URL || import.meta.env.VITE_PORTAL_API_URL) || ''
       const response = await fetch(`${portalApiUrl}/projects/${projectId}/connections/${platform}/sync`, {
         method: 'POST',
         credentials: 'include',

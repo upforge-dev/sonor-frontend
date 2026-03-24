@@ -23,7 +23,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Loader2, UserPlus, Building2, Mail, Phone, Globe, Tag, FileText } from 'lucide-react'
-import { crmApi } from '@/lib/portal-api'
+import { crmApi } from '@/lib/sonor-api'
 import { toast } from '@/lib/toast'
 import { useBrandColors } from '@/hooks/useBrandColors'
 

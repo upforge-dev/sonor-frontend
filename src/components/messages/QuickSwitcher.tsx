@@ -17,7 +17,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { cn } from '@/lib/utils'
 import type { ChatKitThread } from '@/components/chat/types'
-import { messagesApi, chatkitApi } from '@/lib/portal-api'
+import { messagesApi, chatkitApi } from '@/lib/sonor-api'
 import { echoApi } from '@/lib/signal-api'
 import { useBrandColors } from '@/hooks/useBrandColors'
 

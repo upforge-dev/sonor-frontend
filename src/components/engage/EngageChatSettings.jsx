@@ -16,7 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Checkbox } from '@/components/ui/checkbox'
 import { toast } from '@/lib/toast'
 import { cn } from '@/lib/utils'
-import { engageApi, adminApi } from '@/lib/portal-api'
+import { engageApi, adminApi } from '@/lib/sonor-api'
 import {
   MessageCircle,
   Settings,

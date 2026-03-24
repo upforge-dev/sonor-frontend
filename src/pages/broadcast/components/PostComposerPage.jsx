@@ -76,7 +76,7 @@ import useAuthStore from '@/lib/auth-store';
 import { useBroadcastInsights, transformInsightsForComponent } from '@/hooks/useBroadcastInsights';
 import { PlatformIcon, PlatformSelector } from './PlatformIcon';
 import { AiImageGenerator } from './AiImageGenerator';
-import portalApi from '@/lib/portal-api';
+import portalApi from '@/lib/sonor-api';
 import { toast } from 'sonner';
 import { EchoGenerateButton } from '@/components/ai/EchoGenerateButton';
 import { EchoTextActions } from '@/components/ai/EchoTextActions';

@@ -62,7 +62,7 @@ import AccountSettingsModal from '@/components/settings/AccountSettingsModal'
 import useAuthStore from '@/lib/auth-store'
 import useThemeStore from '@/lib/theme-store'
 import { useAccountSettingsStore } from '@/lib/account-settings-store'
-import { authApi } from '@/lib/portal-api'
+import { authApi } from '@/lib/sonor-api'
 import { cn } from '@/lib/utils'
 
 // Detect if user is on Windows
@@ -566,12 +566,19 @@ function BugReportDialog({ open, onOpenChange }) {
 // ============================================================================
 // MAIN TOP HEADER COMPONENT
 // ============================================================================
-export default function TopHeader({ onNavigate, onOpenSearch }) {
+export default function TopHeader({ onNavigate, onOpenSearch, className }) {
   const [bugReportOpen, setBugReportOpen] = useState(false)
 
   return (
     <TooltipProvider>
-      <header className="h-12 flex items-center justify-between border-b border-border/50 bg-[var(--glass-bg-elevated)] backdrop-blur-[var(--blur-xl)] backdrop-saturate-[1.8]" role="banner" aria-label="Top navigation">
+      <header
+        className={cn(
+          'relative z-[60] flex h-12 items-center justify-between border-b border-border/50 bg-background text-foreground dark:bg-black dark:text-white dark:[&_.text-muted-foreground]:!text-zinc-400 dark:[&_.text-muted-foreground\\/50]:!text-zinc-500 dark:[&_.text-muted-foreground\\/30]:!text-zinc-500 dark:[&_.text-foreground]:!text-white [backdrop-filter:none] [-webkit-backdrop-filter:none]',
+          className
+        )}
+        role="banner"
+        aria-label="Top navigation"
+      >
         {/* Left section: Logo + Org + Project */}
         <div className="flex items-center">
           {/* Sonor Logo - aligned with sidebar icons (56px = w-14) */}

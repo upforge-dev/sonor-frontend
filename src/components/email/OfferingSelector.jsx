@@ -34,7 +34,7 @@ import {
   Loader2,
   ExternalLink,
 } from 'lucide-react'
-import portalApi from '@/lib/portal-api'
+import portalApi from '@/lib/sonor-api'
 import useAuthStore from '@/lib/auth-store'
 
 // Type configuration

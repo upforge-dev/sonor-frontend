@@ -6,7 +6,7 @@
  * Handles reviews, campaigns, health score, and settings.
  */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import portalApi from '../portal-api'
+import portalApi from '../sonor-api'
 import { signalApi } from '../signal-api'
 
 // Types

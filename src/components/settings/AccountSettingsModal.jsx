@@ -16,13 +16,13 @@ import ContactAvatar from '@/components/ui/ContactAvatar'
 import { useAccountSettingsStore } from '@/lib/account-settings-store'
 import useAuthStore from '@/lib/auth-store'
 import { getSession } from '@/lib/supabase-auth'
-import { authApi, contactsApi, portalApi } from '@/lib/portal-api'
+import { authApi, contactsApi, portalApi } from '@/lib/sonor-api'
 import { uploadAvatarFileToStorage, uploadBackgroundFileToStorage, deleteBackgroundFromStorage } from '@/lib/avatar-utils'
 import { openOAuthPopup } from '@/lib/oauth-popup'
 
 const MAX_AVATAR_SIZE = 5 * 1024 * 1024 // 5MB
 const MAX_BACKGROUND_SIZE = 10 * 1024 * 1024 // 10MB
-const PORTAL_API_URL = import.meta.env.VITE_PORTAL_API_URL || ''
+const PORTAL_API_URL = (import.meta.env.VITE_SONOR_API_URL || import.meta.env.VITE_PORTAL_API_URL) || ''
 
 export default function AccountSettingsModal() {
   const { open, closeModal } = useAccountSettingsStore()

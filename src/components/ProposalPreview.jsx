@@ -35,7 +35,7 @@ import {
   Minimize2,
   Maximize2
 } from 'lucide-react'
-import { proposalsApi } from '../lib/portal-api'
+import { proposalsApi } from '../lib/sonor-api'
 import { cn } from '../lib/utils'
 
 export default function ProposalPreview({

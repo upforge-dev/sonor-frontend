@@ -12,7 +12,7 @@ import { Separator } from '@/components/ui/separator'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { toast } from '@/lib/toast'
 import { cn } from '@/lib/utils'
-import { engageApi } from '@/lib/portal-api'
+import { engageApi } from '@/lib/sonor-api'
 import useEngageChatSocket from '@/lib/useEngageChatSocket'
 import {
   MessageCircle,

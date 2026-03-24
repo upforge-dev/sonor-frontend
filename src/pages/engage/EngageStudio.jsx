@@ -107,7 +107,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
-import { engageApi, commerceApi, syncApi, formsApi, filesApi, screenshotsApi } from '@/lib/portal-api'
+import { engageApi, commerceApi, syncApi, formsApi, filesApi, screenshotsApi } from '@/lib/sonor-api'
 import { echoApi } from '@/lib/signal-api'
 import useAuthStore from '@/lib/auth-store'
 import { supabase } from '@/lib/supabase-auth'

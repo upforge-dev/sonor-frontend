@@ -46,7 +46,7 @@ import {
 } from 'lucide-react'
 import useAuthStore from '@/lib/auth-store'
 import { useBrandColors } from '@/hooks/useBrandColors'
-import portalApi from '@/lib/portal-api'
+import portalApi from '@/lib/sonor-api'
 import { cn } from '@/lib/utils'
 
 // Status indicators for project health
@@ -571,7 +571,7 @@ export default function OrgDashboard({ onNavigate }) {
       isRefresh ? setIsRefreshing(true) : setIsLoading(true)
       setError(null)
       
-      const { portalApi } = await import('@/lib/portal-api')
+      const { portalApi } = await import('@/lib/sonor-api')
       
       const projectStats = await Promise.all(
         (availableProjects || []).map(async (project, index) => {

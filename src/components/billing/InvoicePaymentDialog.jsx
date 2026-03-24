@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { CreditCard, CheckCircle, Loader2, Lock, Shield, Receipt } from 'lucide-react'
-import { billingApi, configApi } from '@/lib/portal-api'
+import { billingApi, configApi } from '@/lib/sonor-api'
 
 export default function InvoicePaymentDialog({
   invoice,

@@ -50,7 +50,7 @@ import {
 import { cn } from '@/lib/utils'
 import { useBrandColors } from '@/hooks/useBrandColors'
 import useAuthStore from '@/lib/auth-store'
-import { portalApi } from '@/lib/portal-api'
+import { portalApi } from '@/lib/sonor-api'
 
 // ============================================
 // Types

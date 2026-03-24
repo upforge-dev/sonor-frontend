@@ -8,7 +8,7 @@ import { supabase } from '../lib/supabase'
 import UptradeLoading from './UptradeLoading'
 import AuditPublicView from './AuditPublicView'
 import { AlertTriangle, RefreshCw } from 'lucide-react'
-import { auditsApi } from '@/lib/portal-api'
+import { auditsApi } from '@/lib/sonor-api'
 
 // Error messages for better UX
 const errorMessages = {

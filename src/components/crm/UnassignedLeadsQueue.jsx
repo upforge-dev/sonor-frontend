@@ -45,7 +45,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { toast } from '@/lib/toast'
-import { crmApi } from '@/lib/portal-api'
+import { crmApi } from '@/lib/sonor-api'
 import { useBrandColors } from '@/hooks/useBrandColors'
 import { useTeamMembers, teamKeys } from '@/lib/hooks'
 import { useQueryClient } from '@tanstack/react-query'

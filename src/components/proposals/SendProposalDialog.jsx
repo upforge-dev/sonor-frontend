@@ -44,7 +44,7 @@ import {
   Users
 } from 'lucide-react'
 import { toast } from 'sonner'
-import { proposalsApi } from '@/lib/portal-api'
+import { proposalsApi } from '@/lib/sonor-api'
 import { cn } from '@/lib/utils'
 
 export default function SendProposalDialog({

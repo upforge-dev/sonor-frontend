@@ -6,7 +6,7 @@
  * Images are stored in Files module under Commerce/{type}s/{slug}/
  * MIGRATED TO REACT QUERY HOOKS - Jan 29, 2026
  */
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import { DndContext, closestCenter, useDroppable } from '@dnd-kit/core'
 import { SortableContext, rectSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
@@ -30,8 +30,106 @@ import { cn } from '@/lib/utils'
 const MAX_FILE_SIZE = 5 * 1024 * 1024
 const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
 
+/** Normalize stored model info (snake_case / camelCase / minor key drift). */
+function normalizeModelInfo(raw) {
+  if (!raw || typeof raw !== 'object') return null
+  const height = raw.height ?? raw.Height
+  const weight = raw.weight ?? raw.Weight
+  const wearing_size = raw.wearing_size ?? raw.wearingSize ?? raw.size
+  const model_name = raw.model_name ?? raw.modelName
+  const out = {}
+  if (height != null && String(height).trim() !== '') out.height = String(height).trim()
+  if (weight != null && String(weight).trim() !== '') out.weight = String(weight).trim()
+  if (wearing_size != null && String(wearing_size).trim() !== '') out.wearing_size = String(wearing_size).trim()
+  if (model_name != null && String(model_name).trim() !== '') out.model_name = String(model_name).trim()
+  return Object.keys(out).length ? out : null
+}
+
+function uuidKeyNorm(s) {
+  return String(s).replace(/-/g, '').toLowerCase()
+}
+
+/**
+ * Pull image_model_info record from offering.metadata (jsonb string, camelCase alias, nested JSON string).
+ * Exported for edit screen merge with form state.
+ */
+export function extractImageModelInfoMap(metadata) {
+  if (metadata == null) return {}
+  let meta = metadata
+  if (typeof meta === 'string') {
+    try {
+      meta = JSON.parse(meta)
+    } catch {
+      return {}
+    }
+  }
+  if (typeof meta !== 'object' || meta === null || Array.isArray(meta)) return {}
+
+  let raw = meta.image_model_info ?? meta.imageModelInfo
+  if (raw == null) return {}
+  if (typeof raw === 'string') {
+    try {
+      raw = JSON.parse(raw)
+    } catch {
+      return {}
+    }
+  }
+  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return {}
+  return { ...raw }
+}
+
+function urlKeyMatches(imageUrl, key) {
+  if (!imageUrl || typeof key !== 'string') return false
+  if (key === imageUrl) return true
+  if (key.startsWith('http') || key.startsWith('//')) {
+    return imageUrl.includes(key) || key.includes(imageUrl)
+  }
+  try {
+    const path = new URL(imageUrl, 'https://placeholder.local').pathname
+    return key === path || path.endsWith(key) || key.endsWith(path)
+  } catch {
+    return imageUrl.includes(key)
+  }
+}
+
+/** Resolve model info for a file id (UUID dash/case drift, optional URL-shaped keys). */
+function resolveImageModelInfo(imageModelInfo, imageId, imageUrl) {
+  if (!imageModelInfo || imageId == null || imageId === '') return undefined
+  const sid = String(imageId)
+  const keys = Object.keys(imageModelInfo)
+  const targetNorm = uuidKeyNorm(sid)
+
+  for (const k of keys) {
+    if (k === sid || String(k).toLowerCase() === sid.toLowerCase()) {
+      return normalizeModelInfo(imageModelInfo[k]) ?? undefined
+    }
+  }
+  for (const k of keys) {
+    if (uuidKeyNorm(k) === targetNorm) {
+      return normalizeModelInfo(imageModelInfo[k]) ?? undefined
+    }
+  }
+  if (imageUrl) {
+    for (const k of keys) {
+      if (urlKeyMatches(imageUrl, k)) {
+        return normalizeModelInfo(imageModelInfo[k]) ?? undefined
+      }
+    }
+  }
+  return undefined
+}
+
 function ModelInfoEditor({ imageId, modelInfo, onChange }) {
-  const [expanded, setExpanded] = useState(!!modelInfo?.height || !!modelInfo?.weight || !!modelInfo?.wearing_size)
+  const hasSavedData = !!(
+    modelInfo?.height ||
+    modelInfo?.weight ||
+    modelInfo?.wearing_size ||
+    modelInfo?.model_name
+  )
+  const [expanded, setExpanded] = useState(hasSavedData)
+  useEffect(() => {
+    if (hasSavedData) setExpanded(true)
+  }, [hasSavedData])
 
   if (!expanded) {
     return (
@@ -46,9 +144,9 @@ function ModelInfoEditor({ imageId, modelInfo, onChange }) {
   }
 
   const handleFieldChange = (field, value) => {
-    const updated = { ...(modelInfo || {}), [field]: value || undefined }
-    const hasAny = Object.values(updated).some(Boolean)
-    onChange(imageId, hasAny ? updated : null)
+    const next = { ...(modelInfo || {}), [field]: value?.trim() ? value.trim() : undefined }
+    const normalized = normalizeModelInfo(next)
+    onChange(imageId, normalized)
   }
 
   return (
@@ -437,7 +535,7 @@ export function CommerceImageUploader({
               <div className="mt-2">
                 <ModelInfoEditor
                   imageId={featuredImage.id}
-                  modelInfo={imageModelInfo?.[featuredImage.id]}
+                  modelInfo={resolveImageModelInfo(imageModelInfo, featuredImage.id, featuredImage.url)}
                   onChange={onModelInfoChange}
                 />
               </div>
@@ -520,7 +618,7 @@ export function CommerceImageUploader({
                   onSetFeatured={handleSetFeatured}
                   onDelete={handleDelete}
                   isClothing={isClothing}
-                  modelInfo={imageModelInfo?.[image.id]}
+                  modelInfo={resolveImageModelInfo(imageModelInfo, image.id, image.url)}
                   onModelInfoChange={onModelInfoChange}
                 />
               ))}

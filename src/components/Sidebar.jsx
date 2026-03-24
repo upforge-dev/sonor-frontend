@@ -57,6 +57,10 @@ import { useOverdueInvoices, useProposals, useNewLeadsCount, useAllAudits, useUn
 import { useBrandColors } from '@/hooks/useBrandColors'
 import { getStaggerListVariants } from '@/lib/animation-variants'
 
+/** Dark chrome + hook class for index.css hover (ghost/tw-merge otherwise keeps labels grey on hover). */
+const SIDEBAR_DARK_CHROME =
+  'sonor-sidebar-chrome dark:bg-black dark:text-white dark:[&_.text-muted-foreground]:!text-zinc-400 dark:[&_.text-muted-foreground\\/50]:!text-zinc-500 dark:[&_.text-muted-foreground\\/30]:!text-zinc-500 dark:[&_.text-foreground]:!text-white'
+
 // Custom Signal icon based on signalicon.svg design - uses currentColor like lucide icons
 const SignalIcon = ({ className }) => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className={className}>
@@ -380,7 +384,7 @@ const Sidebar = ({
                 variant="ghost"
                 size="sm"
                 onClick={toggleCollapse}
-                className="p-1 text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                className="p-1 text-muted-foreground hover:text-foreground hover:bg-muted/50 dark:hover:!text-white"
                 aria-label={isExpanded ? 'Collapse sidebar' : 'Expand sidebar'}
               >
                 {!isExpanded ? <Menu className="h-4 w-4" /> : <X className="h-4 w-4" />}
@@ -492,7 +496,7 @@ const Sidebar = ({
                 <CollapsibleTrigger asChild>
                   <Button
                     variant="ghost"
-                    className={`w-full justify-start px-3 text-muted-foreground hover:text-foreground hover:bg-muted/50 ${hasActiveChild ? 'text-primary' : ''}`}
+                    className={`w-full justify-start px-3 text-muted-foreground hover:text-foreground hover:bg-muted/50 dark:hover:!text-white ${hasActiveChild ? 'text-primary' : ''}`}
                   >
                     <SectionIcon className="h-4 w-4 mr-3" />
                     <span className="flex-1 text-left text-sm">{item.label}</span>
@@ -516,10 +520,11 @@ const Sidebar = ({
                       <Button
                         key={child.id}
                         variant={isChildActive ? "secondary" : "ghost"}
+                        data-sidebar-active={isChildActive ? '' : undefined}
                         className={`w-full justify-start px-3 ${
                           isChildActive 
                             ? '' 
-                            : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                            : 'text-muted-foreground hover:text-foreground hover:bg-muted/50 dark:hover:!text-white'
                         }`}
                         style={isChildActive ? {
                           backgroundColor: rgba.primary10,
@@ -554,10 +559,11 @@ const Sidebar = ({
             <motion.div key={item.id} variants={staggerVariants.item}>
             <Button
               variant={isActive ? "secondary" : "ghost"}
+              data-sidebar-active={isActive ? '' : undefined}
               className={`w-full h-10 min-h-[44px] justify-start px-0 ${
                 isActive 
                   ? '' 
-                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/50 dark:hover:!text-white'
               }`}
               style={isActive ? {
                 backgroundColor: rgba.primary10,
@@ -603,8 +609,8 @@ const Sidebar = ({
             variant="ghost"
             className={`w-full h-10 justify-start px-0 ${
               location.pathname === '/organization'
-                ? 'text-foreground bg-muted/80'
-                : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                ? 'text-foreground bg-muted/80 dark:hover:!text-white'
+                : 'text-muted-foreground hover:text-foreground hover:bg-muted/50 dark:hover:!text-white'
             }`}
             onClick={() => navigate('/organization')}
             aria-label="Organization settings"
@@ -623,7 +629,7 @@ const Sidebar = ({
           <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"
-              className="w-full h-10 justify-start px-0 text-muted-foreground hover:text-foreground hover:bg-muted/50"
+              className="w-full h-10 justify-start px-0 text-muted-foreground hover:text-foreground hover:bg-muted/50 dark:hover:!text-white"
               aria-label="Sidebar control"
             >
               <span className="flex items-center justify-center w-14 flex-shrink-0">
@@ -655,7 +661,9 @@ const Sidebar = ({
   if (isMobile) {
     return (
       <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm">
-        <div className="fixed left-0 top-0 h-full w-64 bg-background border-r border-border/50 shadow-2xl">
+        <div
+          className={`fixed left-0 top-0 h-full w-64 border-r border-border/50 bg-background text-foreground shadow-2xl [backdrop-filter:none] [-webkit-backdrop-filter:none] ${SIDEBAR_DARK_CHROME}`}
+        >
           {sidebarContent}
         </div>
       </div>
@@ -666,7 +674,7 @@ const Sidebar = ({
   // In expanded mode, takes up space; in hover mode, overlays
   return (
     <motion.div 
-      className="h-full bg-background border-r border-border/50"
+      className={`h-full border-r border-border/50 bg-background text-foreground [backdrop-filter:none] [-webkit-backdrop-filter:none] ${SIDEBAR_DARK_CHROME}`}
       initial={false}
       animate={{ 
         width: isExpanded ? 240 : 56,

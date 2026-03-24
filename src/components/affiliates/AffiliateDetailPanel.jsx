@@ -173,7 +173,7 @@ function OverviewTab({ affiliate }) {
 
 function OffersTab({ affiliate, offers }) {
   const { currentProject } = useAuthStore()
-  const apiBaseUrl = import.meta.env.VITE_PORTAL_API_URL || 'https://api.sonor.io'
+  const apiBaseUrl = (import.meta.env.VITE_SONOR_API_URL || import.meta.env.VITE_PORTAL_API_URL) || 'https://api.sonor.io'
 
   const copyToClipboard = (text) => {
     navigator.clipboard.writeText(text)

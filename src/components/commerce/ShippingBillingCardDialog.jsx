@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Loader2, AlertCircle } from 'lucide-react'
-import { commerceApi } from '@/lib/portal-api'
+import { commerceApi } from '@/lib/sonor-api'
 import { toast } from 'sonner'
 
 function CardForm({ projectId, clientSecret, onSuccess, onCancel }) {

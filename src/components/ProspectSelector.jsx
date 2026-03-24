@@ -16,7 +16,7 @@ import {
   X,
   Loader2
 } from 'lucide-react'
-import { crmApi, adminApi } from '@/lib/portal-api'
+import { crmApi, adminApi } from '@/lib/sonor-api'
 import { cn } from '../lib/utils'
 
 const STAGE_LABELS = {

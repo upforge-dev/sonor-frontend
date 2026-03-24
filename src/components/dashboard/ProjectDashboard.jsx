@@ -65,7 +65,7 @@ import { useBrandColors } from '@/hooks/useBrandColors'
 import { useSiteAnalyticsOverview, useSiteTopPages, usePageViewsByDay } from '@/lib/hooks'
 import { useCommerceDashboard, getCommerceDashboard, useCommerceOfferings, commerceKeys } from '@/lib/hooks'
 import { useQueryClient } from '@tanstack/react-query'
-import { seoApi, syncApi } from '@/lib/portal-api'
+import { seoApi, syncApi, projectsApi } from '@/lib/sonor-api'
 import { cn } from '@/lib/utils'
 import { format, subDays, formatDistanceToNow } from 'date-fns'
 import { EmptyState } from '@/components/EmptyState'
@@ -748,7 +748,7 @@ const MODULE_CONFIG = {
 }
 
 export default function ProjectDashboard({ onNavigate }) {
-  const { currentOrg, currentProject } = useAuthStore()
+  const { currentOrg, currentProject, availableProjects } = useAuthStore()
   const brandColors = useBrandColors()
   
   // Data states (non-analytics data)
@@ -757,10 +757,42 @@ export default function ProjectDashboard({ onNavigate }) {
   const [commerceData, setCommerceData] = useState(null)
   const [recentActivity, setRecentActivity] = useState([])
   const [upcomingBookings, setUpcomingBookings] = useState([])
+  /** Loaded from GET /projects/:id — auth/me project lists omit logo until API includes it */
+  const [fetchedProjectLogoUrl, setFetchedProjectLogoUrl] = useState(null)
   
   const projectId = currentProject?.id
   const projectName = currentProject?.name || currentOrg?.name || 'Your Project'
   const projectDomain = currentProject?.domain || currentOrg?.domain
+  const projectLogoUrl = useMemo(() => {
+    const fromContext =
+      currentProject?.logo_url ||
+      currentProject?.theme?.logoUrl ||
+      null
+    if (fromContext) return fromContext
+    if (!projectId || !Array.isArray(availableProjects)) return fetchedProjectLogoUrl
+    const row = availableProjects.find((p) => p.id === projectId)
+    return row?.logo_url || row?.logoUrl || fetchedProjectLogoUrl || null
+  }, [currentProject, availableProjects, projectId, fetchedProjectLogoUrl])
+
+  useEffect(() => {
+    if (!projectId) {
+      setFetchedProjectLogoUrl(null)
+      return
+    }
+    setFetchedProjectLogoUrl(null)
+    let cancelled = false
+    projectsApi
+      .get(projectId)
+      .then((res) => {
+        const p = res.data?.data ?? res.data
+        const url = p?.logo_url || p?.logoUrl
+        if (!cancelled && url) setFetchedProjectLogoUrl(url)
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [projectId])
   
   // Get enabled features - memoized
   const enabledFeatures = useMemo(() => {
@@ -892,14 +924,31 @@ export default function ProjectDashboard({ onNavigate }) {
       <DashboardReveal shouldAnimate={shouldReveal.current}>
       <div className="space-y-6">
       {/* Project Header */}
-      <div className="bg-gradient-to-br from-[var(--glass-bg)] to-[var(--surface-secondary)] backdrop-blur-xl rounded-2xl p-6 border border-[var(--glass-border)] shadow-[var(--shadow-lg)]">
+      <div className="rounded-2xl border border-border/50 bg-background p-6 shadow-sm [backdrop-filter:none] [-webkit-backdrop-filter:none]">
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div className="flex items-center gap-4">
-            <div 
-              className="w-14 h-14 rounded-xl flex items-center justify-center shadow-lg"
-              style={{ background: `linear-gradient(135deg, ${brandColors.primary}, ${brandColors.secondary})` }}
+            <div
+              className={cn(
+                'w-14 h-14 rounded-xl shadow-lg overflow-hidden shrink-0 border border-[var(--glass-border)]',
+                projectLogoUrl
+                  ? 'bg-white dark:bg-zinc-950'
+                  : 'flex items-center justify-center'
+              )}
+              style={
+                projectLogoUrl
+                  ? undefined
+                  : { background: `linear-gradient(135deg, ${brandColors.primary}, ${brandColors.secondary})` }
+              }
             >
-              <Building2 className="w-7 h-7 text-white" />
+              {projectLogoUrl ? (
+                <img
+                  src={projectLogoUrl}
+                  alt=""
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <Building2 className="w-7 h-7 text-white" aria-hidden />
+              )}
             </div>
             <div>
               <h1 className="text-2xl font-bold text-[var(--text-primary)]">{projectName}</h1>

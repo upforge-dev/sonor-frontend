@@ -27,7 +27,7 @@ import {
   AlertCircle,
   ExternalLink,
 } from 'lucide-react'
-import { portalApi } from '@/lib/portal-api'
+import { portalApi } from '@/lib/sonor-api'
 import { ScrapeProgressView } from './ScrapeProgressView'
 import { ScrapedPagesView } from './ScrapedPagesView'
 import { ScrapedImagesGallery } from './ScrapedImagesGallery'

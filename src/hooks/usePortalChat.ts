@@ -8,10 +8,10 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabase-auth'
 import { useChatSocket } from './useChatSocket'
-import { chatkitApi } from '@/lib/portal-api'
+import { chatkitApi } from '@/lib/sonor-api'
 import type { ChatKitThread, ChatKitItem, TypingUser, PresenceStatus, MessageContent } from '@/components/chat/types'
 
-const PORTAL_API_URL = import.meta.env.VITE_PORTAL_API_URL || 'https://api.sonor.io'
+const PORTAL_API_URL = (import.meta.env.VITE_SONOR_API_URL || import.meta.env.VITE_PORTAL_API_URL) || 'https://api.sonor.io'
 const SEND_QUEUE_KEY = 'messages-send-queue'
 
 function genClientMessageId(): string {

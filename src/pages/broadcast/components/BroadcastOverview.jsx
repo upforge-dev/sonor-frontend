@@ -23,7 +23,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { EmptyState } from '@/components/EmptyState';
-import { trendsApi } from '@/lib/portal-api';
+import { trendsApi } from '@/lib/sonor-api';
 import useAuthStore from '@/lib/auth-store';
 import { useBroadcastPosts, useBroadcastConnections } from '@/lib/hooks';
 import { PlatformIcon } from './PlatformIcon';

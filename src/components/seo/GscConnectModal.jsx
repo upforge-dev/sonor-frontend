@@ -10,7 +10,7 @@ import { toast } from 'sonner'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { oauthApi } from '@/lib/portal-api'
+import { oauthApi } from '@/lib/sonor-api'
 
 const POPUP_WIDTH = 520
 const POPUP_HEIGHT = 600
@@ -108,7 +108,7 @@ export default function GscConnectModal({ open, onOpenChange, projectId, onSucce
       const url = res?.url
       if (!url || typeof url !== 'string' || !url.startsWith('https://accounts.google.com')) {
         setErrorMessage(
-          'Could not get Google sign-in URL. The Portal API may be unreachable or OAuth is not configured. Check VITE_PORTAL_API_URL and that the API is running.'
+          'Could not get Google sign-in URL. The Sonor API may be unreachable or OAuth is not configured. Check VITE_SONOR_API_URL (or VITE_PORTAL_API_URL) and that the API is running.'
         )
         setStatus('error')
         toast.error('Failed to start GSC connection')

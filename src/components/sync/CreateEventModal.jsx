@@ -46,7 +46,7 @@ import {
 } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
-import { workspaceIntegrationsApi } from '@/lib/portal-api'
+import { workspaceIntegrationsApi } from '@/lib/sonor-api'
 import useAuthStore from '@/lib/auth-store'
 
 const EVENT_TYPES = [

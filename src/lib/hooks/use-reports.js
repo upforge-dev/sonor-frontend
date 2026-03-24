@@ -5,7 +5,7 @@
  * Replaces reports-store.js with automatic caching.
  */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { reportsApi } from '../portal-api'
+import { reportsApi } from '../sonor-api'
 
 // ═══════════════════════════════════════════════════════════════════════════
 // QUERY KEYS

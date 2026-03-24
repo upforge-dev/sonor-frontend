@@ -114,7 +114,7 @@ export function useSeoPageData(projectId: string, pageId: string) {
  * Useful for preloading data on hover or route transition
  */
 import { useQueryClient } from '@tanstack/react-query'
-import { seoApi } from '../../lib/portal-api'
+import { seoApi } from '../../lib/sonor-api'
 
 export function usePrefetchSeoDashboard() {
   const queryClient = useQueryClient()

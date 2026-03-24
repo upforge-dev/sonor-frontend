@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react'
 import useAuthStore from '@/lib/auth-store'
-import { portalApi, commerceApi, billingApi } from '@/lib/portal-api'
+import { portalApi, commerceApi, billingApi } from '@/lib/sonor-api'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'

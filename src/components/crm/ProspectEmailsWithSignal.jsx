@@ -44,7 +44,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { GlassCard, GlassEmptyState, SentimentBadge, StatusBadge } from './ui'
 import SignalIcon from '@/components/ui/SignalIcon'
-import portalApi from '@/lib/portal-api'
+import portalApi from '@/lib/sonor-api'
 import { crmAiApi } from '@/lib/signal-api'
 import { toast } from 'sonner'
 

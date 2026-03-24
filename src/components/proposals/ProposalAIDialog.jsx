@@ -67,7 +67,7 @@ import {
   getProposalTypesList, 
   getProposalTypeColors
 } from '@/proposals/types'
-import { proposalsApi, auditsApi, filesApi, commerceApi } from '@/lib/portal-api'
+import { proposalsApi, auditsApi, filesApi, commerceApi } from '@/lib/sonor-api'
 import ProposalPreview from '@/components/ProposalPreview'
 import SendProposalDialog from './SendProposalDialog'
 import AddProspectDialog from '@/components/crm/AddProspectDialog'

@@ -21,7 +21,7 @@ import {
   RefreshCw, CheckCircle2, AlertCircle, ExternalLink, Save, Trash2, Copy,
   MessageSquare, ArrowRight, Clock, FileText, Star, ChevronDown
 } from 'lucide-react'
-import { portfolioApi } from '@/lib/portal-api'
+import { portfolioApi } from '@/lib/sonor-api'
 import { cn } from '@/lib/utils'
 
 // ===== Constants =====

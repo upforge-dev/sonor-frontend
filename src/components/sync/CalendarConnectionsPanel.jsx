@@ -47,7 +47,7 @@ import {
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
-import { syncApi, portalApi } from '@/lib/portal-api'
+import { syncApi, portalApi } from '@/lib/sonor-api'
 import { toast } from 'sonner'
 import { formatDistanceToNow } from 'date-fns'
 

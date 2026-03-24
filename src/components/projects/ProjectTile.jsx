@@ -31,7 +31,7 @@ const getScreenshotApiUrl = (domain, width = 1280, height = 800) => {
   const cleanDomain = domain.replace(/^https?:\/\//, '').replace(/\/$/, '')
   
   // Use Portal API screenshot endpoint
-  const apiUrl = import.meta.env.VITE_PORTAL_API_URL || 'https://api.sonor.io'
+  const apiUrl = (import.meta.env.VITE_SONOR_API_URL || import.meta.env.VITE_PORTAL_API_URL) || 'https://api.sonor.io'
   return `${apiUrl}/screenshots?domain=${encodeURIComponent(cleanDomain)}&width=${width}&height=${height}`
 }
 

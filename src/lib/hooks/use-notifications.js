@@ -5,7 +5,7 @@
  * Replaces notification-store.js with automatic caching and background refresh.
  */
 import { useQuery } from '@tanstack/react-query'
-import { crmApi } from '../portal-api'
+import { crmApi } from '../sonor-api'
 
 // ═══════════════════════════════════════════════════════════════════════════
 // QUERY KEYS

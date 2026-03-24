@@ -7,7 +7,7 @@
 import { useState } from 'react'
 import { useNavigate, useLocation, Routes, Route, Navigate } from 'react-router-dom'
 import { useSeoProject, useSeoPages, seoPageKeys } from '@/hooks/seo'
-import { seoApi } from '@/lib/portal-api'
+import { seoApi } from '@/lib/sonor-api'
 import { useQueryClient } from '@tanstack/react-query'
 import useAuthStore from '@/lib/auth-store'
 import { Button } from '@/components/ui/button'

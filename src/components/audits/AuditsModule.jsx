@@ -52,7 +52,7 @@ import {
 import { useProjects, projectsKeys, useAllAudits, useAudit, useRequestAudit, useDeleteAudit, getAuditStatusBadge, reportsKeys } from '@/lib/hooks'
 import { useQueryClient } from '@tanstack/react-query'
 import useAuthStore from '@/lib/auth-store'
-import { auditsApi } from '@/lib/portal-api'
+import { auditsApi } from '@/lib/sonor-api'
 import { toast } from '@/lib/toast'
 import AuditPublicView from '@/components/AuditPublicView'
 import ProposalAIDialog from '@/components/proposals/ProposalAIDialog'

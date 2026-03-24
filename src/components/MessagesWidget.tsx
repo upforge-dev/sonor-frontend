@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button'
 import useAuthStore from '@/lib/auth-store'
 import usePageContextStore from '@/lib/page-context-store'
 import { useBrandColors } from '@/hooks/useBrandColors'
-import { portalApi } from '@/lib/portal-api'
+import { portalApi } from '@/lib/sonor-api'
 import MessagesModuleV2 from '@/components/messages/MessagesModuleV2'
 import MessagesIcon from '@/components/MessagesIcon'
 

@@ -6,7 +6,7 @@
  * Handles all contact types: prospects, leads, clients, customers, team.
  */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { contactsApi } from '../portal-api'
+import { contactsApi } from '../sonor-api'
 
 // Contact type constants
 export const ContactType = {

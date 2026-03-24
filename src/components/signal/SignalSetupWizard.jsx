@@ -66,7 +66,7 @@ import { Progress } from '@/components/ui/progress'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
-import { seoApi, projectsApi, commerceApi } from '@/lib/portal-api'
+import { seoApi, projectsApi, commerceApi } from '@/lib/sonor-api'
 import { signalSeoApi, faqsApi, knowledgeApi, profileApi, setupApi, configApi, echoApi } from '@/lib/signal-api'
 import SignalSEOLogo from '@/components/seo/SignalSEOLogo'
 

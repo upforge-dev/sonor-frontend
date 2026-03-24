@@ -15,6 +15,7 @@ import {
   ListOrdered,
   Lock,
   Loader2,
+  PenLine,
 } from 'lucide-react'
 import { ModuleLayout } from '@/components/ModuleLayout'
 import { MODULE_ICONS } from '@/lib/module-icons'
@@ -30,6 +31,8 @@ const OutreachDomainsTab = lazy(() => import('./tabs/OutreachDomainsTab'))
 const OutreachComplianceTab = lazy(() => import('./tabs/OutreachComplianceTab'))
 const OutreachAnalyticsTab = lazy(() => import('./tabs/OutreachAnalyticsTab'))
 const OutreachVerificationTab = lazy(() => import('./tabs/OutreachVerificationTab'))
+const SignaturesTab = lazy(() => import('./tabs/SignaturesTab'))
+const SignatureAnalytics = lazy(() => import('./tabs/SignatureAnalytics'))
 
 const SIDEBAR_SECTIONS = [
   {
@@ -59,6 +62,8 @@ const SIDEBAR_SECTIONS = [
     label: 'Shared Tools',
     items: [
       { value: 'templates', label: 'Templates', icon: FileText },
+      { value: 'signatures', label: 'Signatures', icon: PenLine },
+      { value: 'signature-analytics', label: 'Sig Analytics', icon: BarChart3 },
       { value: 'testing', label: 'A/B Tests', icon: Target },
       { value: 'audience', label: 'Audience', icon: Users },
     ],
@@ -167,6 +172,8 @@ export default function OutreachModule() {
     if (activeTab === 'compliance') return <Suspense fallback={lazyFallback}><OutreachComplianceTab /></Suspense>
     if (activeTab === 'outreach-analytics') return <Suspense fallback={lazyFallback}><OutreachAnalyticsTab /></Suspense>
     if (activeTab === 'verification') return <Suspense fallback={lazyFallback}><OutreachVerificationTab /></Suspense>
+    if (activeTab === 'signatures') return <Suspense fallback={lazyFallback}><SignaturesTab /></Suspense>
+    if (activeTab === 'signature-analytics') return <Suspense fallback={lazyFallback}><SignatureAnalytics onViewSignature={() => setActiveTab('signatures')} /></Suspense>
 
     return (
       <EmailPlatform

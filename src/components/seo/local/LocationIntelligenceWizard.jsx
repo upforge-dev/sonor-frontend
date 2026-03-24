@@ -2,7 +2,7 @@
 // Premium location intelligence wizard for generating SEO-optimized location pages
 // This is the flagship feature that combines census data, map selection, streaming generation
 import { useState, useEffect, useCallback } from 'react'
-import { locationPagesApi } from '@/lib/portal-api'
+import { locationPagesApi } from '@/lib/sonor-api'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'

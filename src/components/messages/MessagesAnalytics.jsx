@@ -11,7 +11,7 @@ import { useState, useEffect } from 'react'
 import { BarChart3, TrendingUp, MessageSquare, Clock, Users } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { chatkitApi } from '@/lib/portal-api'
+import { chatkitApi } from '@/lib/sonor-api'
 import { cn } from '@/lib/utils'
 
 export function MessagesAnalytics() {

@@ -17,7 +17,7 @@ import {
   Download
 } from 'lucide-react'
 import api from '@/lib/api'
-import { billingApi, configApi } from '@/lib/portal-api'
+import { billingApi, configApi } from '@/lib/sonor-api'
 
 function formatCurrency(amount) {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount || 0)

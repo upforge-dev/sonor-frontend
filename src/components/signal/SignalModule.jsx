@@ -28,7 +28,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
 import useAuthStore from '@/lib/auth-store'
-import { projectsApi } from '@/lib/portal-api'
+import { projectsApi } from '@/lib/sonor-api'
 import { useSignalStore } from '@/lib/signal-store' // Keep for streaming UI state
 import { useSignalConfig, useKnowledge, signalKeys } from '@/lib/hooks'
 import { useQueryClient } from '@tanstack/react-query'

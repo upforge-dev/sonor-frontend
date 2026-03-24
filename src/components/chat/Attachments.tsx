@@ -23,7 +23,7 @@ import {
 } from 'lucide-react'
 import { UptradeSpinner } from '@/components/UptradeLoading'
 import { cn } from '@/lib/utils'
-import { messagesApi } from '@/lib/portal-api'
+import { messagesApi } from '@/lib/sonor-api'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types

@@ -13,7 +13,7 @@ import {
   Sparkles, BarChart3
 } from 'lucide-react'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { portfolioApi } from '@/lib/portal-api'
+import { portfolioApi } from '@/lib/sonor-api'
 import useAuthStore from '@/lib/auth-store'
 import PortfolioAIDialog from './PortfolioAIDialog'
 

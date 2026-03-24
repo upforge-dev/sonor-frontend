@@ -14,7 +14,7 @@ import {
   Eye, EyeOff, CheckCircle2, XCircle,
 } from 'lucide-react'
 import { toast } from 'sonner'
-import { outreachApi } from '@/lib/portal-api'
+import { outreachApi } from '@/lib/sonor-api'
 
 export default function OutreachComplianceTab() {
   const [settings, setSettings] = useState(null)

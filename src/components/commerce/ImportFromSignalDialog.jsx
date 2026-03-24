@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Skeleton } from '@/components/ui/skeleton'
-import { commerceApi } from '@/lib/portal-api'
+import { commerceApi } from '@/lib/sonor-api'
 import { cn } from '@/lib/utils'
 import { 
   Package, 

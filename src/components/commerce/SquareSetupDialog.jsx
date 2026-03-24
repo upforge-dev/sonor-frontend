@@ -13,7 +13,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Loader2, AlertCircle, ExternalLink } from 'lucide-react'
-import { portalApi } from '@/lib/portal-api'
+import { portalApi } from '@/lib/sonor-api'
 import { toast } from 'sonner'
 
 export default function SquareSetupDialog({ open, onOpenChange, projectId, onSuccess }) {

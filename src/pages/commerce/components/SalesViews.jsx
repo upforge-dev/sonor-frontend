@@ -57,7 +57,7 @@ import {
 } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
 import { formatDistanceToNow, format } from 'date-fns'
-import { commerceApi, billingApi } from '@/lib/portal-api'
+import { commerceApi, billingApi } from '@/lib/sonor-api'
 import { useInvoice, useSendInvoice, useMarkInvoicePaid, useToggleRecurringPause } from '@/lib/hooks/use-billing'
 import { toast } from '@/lib/toast'
 

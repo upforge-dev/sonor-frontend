@@ -5,7 +5,7 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { seoApi } from '../../lib/portal-api'
+import { seoApi } from '../../lib/sonor-api'
 
 export const seoAlertKeys = {
   all: ['seo', 'alerts'] as const,

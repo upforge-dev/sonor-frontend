@@ -5,7 +5,7 @@
  * Replaces email-platform-store.js with automatic caching, deduplication, and background refresh.
  */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { emailApi } from '../portal-api'
+import { emailApi } from '../sonor-api'
 
 // ═══════════════════════════════════════════════════════════════════════════
 // QUERY KEYS
@@ -292,12 +292,21 @@ export function useEmailSubscribers(projectId, filters = {}, options = {}) {
   return useQuery({
     queryKey: emailKeys.subscribersList(projectId, filters),
     queryFn: async () => {
-      const response = await emailApi.listSubscribers(projectId, filters)
-      const data = response.data
+      const response = await emailApi.listSubscribers({
+        projectId,
+        limit: 500,
+        ...filters,
+      })
+      const data = response.data || {}
+      const subscribers = data.subscribers || []
       return {
-        subscribers: data.subscribers || data || [],
-        total: data.total || 0,
-        pagination: data.pagination,
+        subscribers,
+        total: typeof data.total === 'number' ? data.total : subscribers.length,
+        pagination: {
+          total: data.total,
+          limit: data.limit,
+          offset: data.offset,
+        },
       }
     },
     enabled: !!projectId,
@@ -313,7 +322,7 @@ export function useCreateEmailSubscriber() {
   
   return useMutation({
     mutationFn: async ({ projectId, data }) => {
-      const response = await emailApi.createSubscriber(projectId, data)
+      const response = await emailApi.createSubscriber({ ...data, ...(projectId ? { projectId } : {}) })
       return response.data?.subscriber || response.data
     },
     onSuccess: (_, { projectId }) => {

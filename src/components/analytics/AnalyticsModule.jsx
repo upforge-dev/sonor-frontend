@@ -6,7 +6,7 @@ import { useEffect } from 'react'
 import useAuthStore from '@/lib/auth-store'
 import useAnalyticsStore from '@/lib/analytics-store'
 import { useSiteTopPages } from '@/lib/hooks/use-site-analytics'
-import { seoApi } from '@/lib/portal-api'
+import { seoApi } from '@/lib/sonor-api'
 import AnalyticsDashboard from '@/pages/analytics/AnalyticsDashboard'
 
 export default function AnalyticsModuleWrapper({ onNavigate }) {

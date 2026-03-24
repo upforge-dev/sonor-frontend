@@ -15,7 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { Plus, Trash2, Loader2, Send, Eye } from 'lucide-react'
-import { emailApi } from '@/lib/portal-api'
+import { emailApi } from '@/lib/sonor-api'
 import { toast } from 'sonner'
 
 export default function OneOffComposer() {

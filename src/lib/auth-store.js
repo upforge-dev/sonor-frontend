@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { supabase, getCurrentUser, getSession, signOut, signInWithPassword, signUp as supabaseSignUp } from './supabase-auth'
 import axios from 'axios'
-import { authApi, adminApi } from './portal-api'
+import { authApi, adminApi } from './sonor-api'
 
 // Global flag to prevent multiple simultaneous auth checks
 let isCheckingAuth = false
@@ -242,7 +242,7 @@ const useAuthStore = create(
                 throw new Error('stale_cache') // Jump to catch → skip setting stale context
               }
 
-              // Build project context
+              // Build project context (logo lives on project.logo_url from settings, not theme)
               const projectContext = {
                 id: project.id,
                 name: project.title,
@@ -250,9 +250,10 @@ const useAuthStore = create(
                 plan: project.plan || 'standard',
                 features: project.features || [],
                 brand_primary: project.brand_primary,
+                logo_url: project.logo_url ?? null,
                 theme: {
                   primaryColor: project.brand_primary || project.theme?.primaryColor || '#4bbf39',
-                  logoUrl: project.theme?.logoUrl,
+                  logoUrl: project.logo_url || project.theme?.logoUrl,
                   faviconUrl: project.favicon_url || project.theme?.faviconUrl
                 },
                 isProjectTenant: true,
@@ -346,17 +347,31 @@ const useAuthStore = create(
             // Update localStorage with merged data
             localStorage.setItem('currentOrganization', JSON.stringify(mergedOrg))
 
-            // If a project is already selected (from cache), refresh its plan from the fresh API data.
-            // This handles the case where plan was changed in DB (e.g. upgraded to full_signal)
-            // but the cached currentProject still has the old plan.
+            // If a project is already selected (from cache), refresh plan / logo from fresh API list.
             const selectedProject = get().currentProject
             if (selectedProject?.id && projects?.length) {
               const freshProject = projects.find((p) => p.id === selectedProject.id)
-              if (freshProject && freshProject.plan && freshProject.plan !== selectedProject.plan) {
-                console.log('[AuthStore] Refreshing stale project plan:', selectedProject.plan, '->', freshProject.plan)
-                const updatedProject = { ...selectedProject, plan: freshProject.plan }
-                set({ currentProject: updatedProject })
-                localStorage.setItem('currentTenantProject', JSON.stringify({ ...freshProject }))
+              if (freshProject) {
+                const planChanged =
+                  freshProject.plan && freshProject.plan !== selectedProject.plan
+                const logoChanged =
+                  (freshProject.logo_url || null) !== (selectedProject.logo_url ?? selectedProject.theme?.logoUrl ?? null)
+                if (planChanged || logoChanged) {
+                  if (planChanged) {
+                    console.log('[AuthStore] Refreshing stale project plan:', selectedProject.plan, '->', freshProject.plan)
+                  }
+                  const updatedProject = {
+                    ...selectedProject,
+                    plan: freshProject.plan || selectedProject.plan,
+                    logo_url: freshProject.logo_url ?? selectedProject.logo_url,
+                    theme: {
+                      ...selectedProject.theme,
+                      logoUrl: freshProject.logo_url || selectedProject.theme?.logoUrl,
+                    },
+                  }
+                  set({ currentProject: updatedProject })
+                  localStorage.setItem('currentTenantProject', JSON.stringify({ ...freshProject }))
+                }
               }
             }
             
@@ -389,9 +404,10 @@ const useAuthStore = create(
                   plan: firstProject.plan || 'standard',
                   features: firstProject.features || [],
                   brand_primary: firstProject.brand_primary,
+                  logo_url: firstProject.logo_url ?? null,
                   theme: {
                     primaryColor: firstProject.brand_primary || '#4bbf39',
-                    logoUrl: firstProject.logo_url
+                    logoUrl: firstProject.logo_url || firstProject.theme?.logoUrl
                   },
                   isProjectTenant: true,
                   org_id: organization.id
@@ -480,9 +496,10 @@ const useAuthStore = create(
             plan: project.plan || 'standard',
             features: project.features || [],
             brand_primary: project.brand_primary,
+            logo_url: project.logo_url ?? null,
             theme: {
               primaryColor: project.brand_primary || '#4bbf39',
-              logoUrl: project.logo_url,
+              logoUrl: project.logo_url || project.theme?.logoUrl,
               faviconUrl: project.favicon_url
             },
             isProjectTenant: true,

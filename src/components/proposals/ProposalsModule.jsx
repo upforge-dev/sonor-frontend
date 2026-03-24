@@ -32,7 +32,7 @@ import {
   Plus
 } from 'lucide-react'
 import useAuthStore from '@/lib/auth-store'
-import { adminApi, proposalsApi, crmApi } from '@/lib/portal-api'
+import { adminApi, proposalsApi, crmApi } from '@/lib/sonor-api'
 import { SignalSuggestsPanel } from '@/components/ai/SignalSuggestsPanel'
 import ProposalAIDialog from './ProposalAIDialog'
 import EditProposalDialog from './EditProposalDialog'

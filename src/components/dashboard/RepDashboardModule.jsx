@@ -27,7 +27,7 @@ import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { StatTile } from '@/components/ui/stat-tile'
 import { GlassCard, GlassEmptyState } from '@/components/crm/ui'
-import { reportsApi } from '@/lib/portal-api'
+import { reportsApi } from '@/lib/sonor-api'
 import useAuthStore from '@/lib/auth-store'
 
 // Format currency

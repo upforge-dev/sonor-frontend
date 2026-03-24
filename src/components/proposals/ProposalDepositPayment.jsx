@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { CreditCard, CheckCircle, Loader2, Lock, Shield } from 'lucide-react'
-import { proposalsApi, configApi } from '@/lib/portal-api'
+import { proposalsApi, configApi } from '@/lib/sonor-api'
 
 export default function ProposalDepositPayment({
   proposalId,

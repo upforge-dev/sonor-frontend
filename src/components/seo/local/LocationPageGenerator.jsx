@@ -1,7 +1,7 @@
 // src/components/seo/local/LocationPageGenerator.jsx
 // Modal for generating location pages with Signal
 import { useState, useEffect } from 'react'
-import { locationPagesApi } from '@/lib/portal-api'
+import { locationPagesApi } from '@/lib/sonor-api'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'

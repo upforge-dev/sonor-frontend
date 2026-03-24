@@ -25,7 +25,7 @@ import { useSignalStore } from '@/lib/signal-store' // Keep for streaming UI sta
 import { useSignalConfig, signalKeys } from '@/lib/hooks'
 import { useQueryClient } from '@tanstack/react-query'
 import useAuthStore from '@/lib/auth-store'
-import { projectsApi } from '@/lib/portal-api'
+import { projectsApi } from '@/lib/sonor-api'
 import { cn } from '@/lib/utils'
 
 // Sub-components

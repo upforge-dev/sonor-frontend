@@ -24,7 +24,7 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
-import portalApi from '@/lib/portal-api'
+import portalApi from '@/lib/sonor-api'
 
 export default function FormsSettingsView({ projectId }) {
   const [isSaving, setIsSaving] = useState(false)

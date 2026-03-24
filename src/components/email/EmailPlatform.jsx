@@ -89,6 +89,7 @@ import {
   PanelLeft
 } from 'lucide-react'
 import { toast } from 'sonner'
+// Browser-compatible CSV parser (csv-parse/sync uses Node.js Buffer)
 import { useLocation, useNavigate } from 'react-router-dom'
 import { lazy, Suspense } from 'react'
 import useAuthStore from '@/lib/auth-store'
@@ -1288,24 +1289,96 @@ function TemplatesTab({ onEditTemplate, onCreateTemplate, onOpenImageLibrary, on
 // ============================================
 // SUBSCRIBERS TAB
 // ============================================
-/** Parse CSV text into { headers, rows } (handles quoted fields). */
+/**
+ * Parse CSV — browser-compatible implementation.
+ * Handles quoted fields, commas inside quotes, CRLF, and BOM.
+ */
 function parseSubscriberCsv(text) {
-  const rawLines = text.split(/\r?\n/).filter((l) => l.trim())
-  if (rawLines.length < 2) return null
-  const parseLine = (line) => {
-    const values = line.match(/(".*?"|[^,]+)/g) || []
-    return values.map((v) => v.trim().replace(/^"|"$/g, '').replace(/""/g, '"'))
-  }
-  const headers = parseLine(rawLines[0]).map((h) => h.trim().replace(/^\uFEFF/, '').toLowerCase())
-  const rows = rawLines.slice(1).map((line) => {
-    const cells = parseLine(line)
-    const obj = {}
-    headers.forEach((h, i) => {
-      obj[h] = (cells[i] ?? '').trim()
+  try {
+    const cleaned = text.replace(/^\uFEFF/, '') // strip BOM
+    const lines = []
+    let current = ''
+    let inQuotes = false
+
+    for (let i = 0; i < cleaned.length; i++) {
+      const ch = cleaned[i]
+      if (ch === '"') {
+        if (inQuotes && cleaned[i + 1] === '"') {
+          current += '"'
+          i++ // skip escaped quote
+        } else {
+          inQuotes = !inQuotes
+        }
+      } else if (ch === ',' && !inQuotes) {
+        lines.push(current.trim())
+        current = ''
+      } else if ((ch === '\n' || ch === '\r') && !inQuotes) {
+        if (ch === '\r' && cleaned[i + 1] === '\n') i++ // skip CRLF
+        lines.push(current.trim())
+        current = ''
+        if (lines.length > 0) {
+          // End of a row — we need to split lines into rows
+        }
+      } else {
+        current += ch
+      }
+    }
+    if (current.trim()) lines.push(current.trim())
+
+    // Re-parse properly as rows of fields
+    const rows = []
+    let fields = []
+    current = ''
+    inQuotes = false
+
+    for (let i = 0; i < cleaned.length; i++) {
+      const ch = cleaned[i]
+      if (ch === '"') {
+        if (inQuotes && cleaned[i + 1] === '"') {
+          current += '"'
+          i++
+        } else {
+          inQuotes = !inQuotes
+        }
+      } else if (ch === ',' && !inQuotes) {
+        fields.push(current.trim())
+        current = ''
+      } else if ((ch === '\n' || (ch === '\r')) && !inQuotes) {
+        if (ch === '\r' && cleaned[i + 1] === '\n') i++
+        fields.push(current.trim())
+        current = ''
+        if (fields.some(f => f !== '')) rows.push(fields)
+        fields = []
+      } else {
+        current += ch
+      }
+    }
+    fields.push(current.trim())
+    if (fields.some(f => f !== '')) rows.push(fields)
+
+    if (rows.length < 2) return null
+
+    const headers = rows[0].map(h => h.toLowerCase().replace(/^["']|["']$/g, ''))
+    const dataRows = rows.slice(1).map(row => {
+      const obj = {}
+      headers.forEach((h, i) => { obj[h] = row[i] || '' })
+      return obj
     })
-    return obj
-  })
-  return { headers, rows }
+
+    return { headers, rows: dataRows }
+  } catch {
+    return null
+  }
+}
+
+/** Skip obvious garbage only; API @IsEmail() rejects the rest and reports in import errors. */
+function isLikelySubscriberEmail(email) {
+  const e = email.trim().toLowerCase()
+  if (e.length < 3 || e.length > 254) return false
+  const at = e.lastIndexOf('@')
+  if (at <= 0 || at === e.length - 1) return false
+  const domain = e.slice(at + 1)
+  return domain.includes('.')
 }
 
 function rowToSubscriber(row) {
@@ -1345,6 +1418,7 @@ function rowToSubscriber(row) {
 function SubscribersTab({ onOpenSegmentBuilder }) {
   const {
     subscribers,
+    subscribersPagination,
     lists,
     subscribersLoading,
     listsLoading,
@@ -1363,11 +1437,13 @@ function SubscribersTab({ onOpenSegmentBuilder }) {
   const [importing, setImporting] = useState(false)
   const [updateExistingOnImport, setUpdateExistingOnImport] = useState(true)
   const importFileRef = useRef(null)
+  const importDragDepthRef = useRef(0)
 
   const resetImportState = useCallback(() => {
     setImportFileName(null)
     setParsedSubscribers(null)
     setImportDragging(false)
+    importDragDepthRef.current = 0
     if (importFileRef.current) importFileRef.current.value = ''
   }, [])
 
@@ -1399,10 +1475,23 @@ function SubscribersTab({ onOpenSegmentBuilder }) {
       }
       const subs = []
       const seen = new Set()
+      let duplicateInFile = 0
+      let invalidInFile = 0
+      const dataRows = parsed.rows.length
       for (const row of parsed.rows) {
         const s = rowToSubscriber(row)
-        if (!s.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s.email)) continue
-        if (seen.has(s.email)) continue
+        if (!s.email) {
+          invalidInFile += 1
+          continue
+        }
+        if (!isLikelySubscriberEmail(s.email)) {
+          invalidInFile += 1
+          continue
+        }
+        if (seen.has(s.email)) {
+          duplicateInFile += 1
+          continue
+        }
         seen.add(s.email)
         subs.push(s)
       }
@@ -1412,7 +1501,11 @@ function SubscribersTab({ onOpenSegmentBuilder }) {
       }
       setImportFileName(file.name)
       setParsedSubscribers(subs)
-      toast.success(`${subs.length} subscriber(s) ready to import`)
+      const notes = []
+      if (duplicateInFile) notes.push(`${duplicateInFile} duplicate row(s)`)
+      if (invalidInFile) notes.push(`${invalidInFile} empty or bad email row(s)`)
+      const suffix = notes.length ? ` (${dataRows} data rows: ${notes.join('; ')})` : ''
+      toast.success(`${subs.length} unique subscriber(s) ready to import${suffix}`)
     }
     reader.readAsText(file)
   }, [])
@@ -1421,12 +1514,39 @@ function SubscribersTab({ onOpenSegmentBuilder }) {
     (e) => {
       e.preventDefault()
       e.stopPropagation()
+      importDragDepthRef.current = 0
       setImportDragging(false)
       const file = e.dataTransfer?.files?.[0]
       if (file) processCsvFile(file)
     },
     [processCsvFile]
   )
+
+  const handleImportDragEnter = useCallback((e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    importDragDepthRef.current += 1
+    setImportDragging(true)
+  }, [])
+
+  const handleImportDragLeave = useCallback((e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    importDragDepthRef.current = Math.max(0, importDragDepthRef.current - 1)
+    if (importDragDepthRef.current === 0) {
+      setImportDragging(false)
+    }
+  }, [])
+
+  const handleImportDragOver = useCallback((e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    try {
+      e.dataTransfer.dropEffect = 'copy'
+    } catch {
+      /* ignore */
+    }
+  }, [])
 
   const handleImportSubmit = async () => {
     if (!parsedSubscribers?.length) {
@@ -1443,10 +1563,13 @@ function SubscribersTab({ onOpenSegmentBuilder }) {
       const updated = result?.updated ?? 0
       const skipped = result?.skipped ?? 0
       const errCount = result?.errors?.length ?? 0
-      toast.success(
-        `Import complete: ${created} added, ${updated} updated, ${skipped} skipped` +
-          (errCount ? `, ${errCount} row errors` : '')
-      )
+      const parts = [
+        `${created} added`,
+        updated ? `${updated} updated` : null,
+        skipped ? `${skipped} skipped (already in this project)` : null,
+        errCount ? `${errCount} failed (see console)` : null,
+      ].filter(Boolean)
+      toast.success(`Import complete: ${parts.join(', ')}`)
       if (result?.errors?.length) {
         console.warn('[import subscribers]', result.errors)
       }
@@ -1465,7 +1588,7 @@ function SubscribersTab({ onOpenSegmentBuilder }) {
   }, [fetchSubscribers, fetchLists])
 
   const isLoading = subscribersLoading || listsLoading
-  const totalSubscribers = subscribers.length
+  const totalSubscribers = subscribersPagination?.total ?? subscribers.length
   const activeSubscribers = subscribers.filter(s => s.status === 'subscribed' || s.status === 'active').length
 
   // Calculate engagement score (mock calculation based on available data)
@@ -1498,11 +1621,11 @@ function SubscribersTab({ onOpenSegmentBuilder }) {
             Create Segment
           </Button>
           <Button variant="outline" onClick={() => setShowImportDialog(true)} className="gap-2">
-            <Upload className="h-4 w-4" />
+            <Download className="h-4 w-4" />
             Import
           </Button>
           <Button variant="outline" className="gap-2">
-            <Download className="h-4 w-4" />
+            <Upload className="h-4 w-4" />
             Export
           </Button>
           <Button className="gap-2" onClick={() => setShowAddDialog(true)}>
@@ -1749,64 +1872,41 @@ function SubscribersTab({ onOpenSegmentBuilder }) {
           <div className="space-y-4 py-2">
             <input
               ref={importFileRef}
+              id="import-subscribers-csv-input"
               type="file"
               accept=".csv,text/csv"
-              className="hidden"
+              className="sr-only"
               onChange={(e) => {
                 const f = e.target.files?.[0]
                 if (f) processCsvFile(f)
               }}
             />
-            <div
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault()
-                  importFileRef.current?.click()
-                }
-              }}
-              onDragEnter={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
-                setImportDragging(true)
-              }}
-              onDragLeave={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
-                setImportDragging(false)
-              }}
-              onDragOver={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
-              }}
+            <label
+              htmlFor="import-subscribers-csv-input"
+              onDragEnter={handleImportDragEnter}
+              onDragLeave={handleImportDragLeave}
+              onDragOver={handleImportDragOver}
               onDrop={handleImportDrop}
-              onClick={() => importFileRef.current?.click()}
-              className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
+              className={`flex min-h-[220px] w-full cursor-pointer flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed p-8 text-center transition-colors ${
                 importDragging ? 'border-primary bg-primary/5' : 'border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/30'
               }`}
             >
-              <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-              <p className="text-sm text-muted-foreground mb-2">
-                Drag and drop a CSV file here, or click to browse
-              </p>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  importFileRef.current?.click()
-                }}
-              >
-                Choose File
-              </Button>
-              {importFileName && parsedSubscribers && (
-                <p className="text-sm font-medium text-foreground mt-3">
-                  {importFileName} — {parsedSubscribers.length} row(s)
+              {/* pointer-events-none so drag events hit the label, not nested text nodes */}
+              <span className="pointer-events-none flex w-full flex-col items-center justify-center gap-3">
+                <Download className="h-8 w-8 shrink-0 text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">
+                  Drag and drop a CSV file anywhere in this box, or click to browse
                 </p>
-              )}
-            </div>
+                <span className="inline-flex h-9 shrink-0 items-center justify-center rounded-md border border-input bg-background px-4 text-sm font-medium">
+                  Choose File
+                </span>
+                {importFileName && parsedSubscribers && (
+                  <p className="text-sm font-medium text-foreground">
+                    {importFileName} — {parsedSubscribers.length} row(s)
+                  </p>
+                )}
+              </span>
+            </label>
             <div className="flex items-center space-x-2">
               <Checkbox
                 id="import-update-existing"

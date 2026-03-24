@@ -25,7 +25,7 @@ import {
   Linkedin,
   Youtube,
 } from 'lucide-react'
-import { portalApi } from '@/lib/portal-api'
+import { portalApi } from '@/lib/sonor-api'
 
 const SOCIAL_ICONS = {
   facebook: Facebook,

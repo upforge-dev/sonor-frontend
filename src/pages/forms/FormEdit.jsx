@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import useAuthStore from '@/lib/auth-store'
-import { formsApi } from '@/lib/portal-api'
+import { formsApi } from '@/lib/sonor-api'
 import UptradeLoading from '@/components/UptradeLoading'
 import FormBuilder from '@/components/forms/FormBuilder'
 import { toast } from 'sonner'

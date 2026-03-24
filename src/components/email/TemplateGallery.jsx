@@ -24,7 +24,7 @@ import {
   Loader2
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { emailApi } from '@/lib/portal-api'
+import { emailApi } from '@/lib/sonor-api'
 
 // Category icons
 const categoryIcons = {

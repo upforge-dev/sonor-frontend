@@ -41,7 +41,7 @@ import {
   ArrowLeft
 } from 'lucide-react'
 import useAuthStore from '@/lib/auth-store'
-import { portalApi, commerceApi, proposalsApi, adminApi, crmApi } from '@/lib/portal-api'
+import { portalApi, commerceApi, proposalsApi, adminApi, crmApi } from '@/lib/sonor-api'
 import ContractAIDialog from '@/components/ContractAIDialog'
 import ProposalAIDialog from '@/components/proposals/ProposalAIDialog'
 import EditProposalDialog from '@/components/proposals/EditProposalDialog'

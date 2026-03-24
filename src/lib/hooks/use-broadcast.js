@@ -5,7 +5,7 @@
  * Replaces broadcastStore.js with automatic caching, deduplication, and background refresh.
  */
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query'
-import portalApi from '../portal-api'
+import portalApi from '../sonor-api'
 
 // ═══════════════════════════════════════════════════════════════════════════
 // QUERY KEYS

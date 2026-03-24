@@ -9,7 +9,7 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { useForms, formsKeys } from '@/lib/hooks'
 import { useQueryClient } from '@tanstack/react-query'
-import { formsApi } from '@/lib/portal-api'
+import { formsApi } from '@/lib/sonor-api'
 import FormsListView from '@/pages/forms/components/FormsListView'
 import {
   Dialog,

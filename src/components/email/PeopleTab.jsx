@@ -62,7 +62,7 @@ import {
   AlertCircle,
 } from 'lucide-react'
 import { toast } from 'sonner'
-import { crmApi, emailApi } from '@/lib/portal-api'
+import { crmApi, emailApi } from '@/lib/sonor-api'
 import { useEmailPlatformStore } from '@/lib/email-platform-store'
 import { formatDistanceToNow } from 'date-fns'
 

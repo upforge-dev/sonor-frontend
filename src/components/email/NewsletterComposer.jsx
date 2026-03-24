@@ -15,7 +15,7 @@ import { Badge } from '@/components/ui/badge'
 import { Loader2, Send, Eye, AlertCircle } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { emailApi } from '@/lib/portal-api'
+import { emailApi } from '@/lib/sonor-api'
 import { toast } from 'sonner'
 
 export default function NewsletterComposer() {

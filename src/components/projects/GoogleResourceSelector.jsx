@@ -11,7 +11,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { Search, MapPin, CheckCircle2, AlertCircle, Loader2, Globe, ArrowRight, Building2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
-import { portalApi } from '@/lib/portal-api'
+import { portalApi } from '@/lib/sonor-api'
 
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'

@@ -34,7 +34,7 @@ import {
 import { cn } from '@/lib/utils'
 import { format, parseISO } from 'date-fns'
 import { syncApi as signalSyncApi } from '@/lib/signal-api'
-import { syncApi as portalSyncApi } from '@/lib/portal-api'
+import { syncApi as portalSyncApi } from '@/lib/sonor-api'
 import { toast } from 'sonner'
 import SignalIcon from '@/components/ui/SignalIcon'
 
