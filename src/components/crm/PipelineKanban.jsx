@@ -25,6 +25,8 @@ function PipelineColumn({
   onEmail,
   onCall,
   onViewWebsite,
+  onSendGatedLink,
+  onSendContract,
   onArchive,
   onDrop,
   draggingProspectId,
@@ -135,6 +137,8 @@ function PipelineColumn({
                 onEmail={() => onEmail?.(prospect)}
                 onCall={() => onCall?.(prospect)}
                 onViewWebsite={() => onViewWebsite?.(prospect)}
+                onSendGatedLink={() => onSendGatedLink?.(prospect)}
+                onSendContract={() => onSendContract?.(prospect)}
                 onArchive={() => onArchive?.(prospect)}
                 onViewDetails={onProspectClick}
               />
@@ -255,6 +259,8 @@ export default function PipelineKanban({
   onEmail,
   onCall,
   onViewWebsite,
+  onSendGatedLink,
+  onSendContract,
   onArchive,
   className
 }) {
@@ -415,6 +421,8 @@ export default function PipelineKanban({
                 onEmail={onEmail}
                 onCall={onCall}
                 onViewWebsite={onViewWebsite}
+                onSendGatedLink={onSendGatedLink}
+                onSendContract={onSendContract}
                 onArchive={onArchive}
                 onDrop={handleDrop}
                 onDragStart={handleDragStart}

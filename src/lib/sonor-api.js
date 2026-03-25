@@ -4454,6 +4454,21 @@ export const outreachApi = {
 }
 
 // ============================================================================
+// Gates API (Gated Page Tokens)
+// ============================================================================
+
+export const gatesApi = {
+  createToken: (data) =>
+    sonorApi.post('/gates/tokens', data),
+
+  listTokens: (contactId) =>
+    sonorApi.get('/gates/tokens', { params: { contactId } }),
+
+  revokeToken: (id) =>
+    sonorApi.delete(`/gates/tokens/${id}`),
+}
+
+// ============================================================================
 // Default Export
 // ============================================================================
 

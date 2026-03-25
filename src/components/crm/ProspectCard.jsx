@@ -5,13 +5,15 @@
 import { memo } from 'react'
 import { cn } from '@/lib/utils'
 import { 
-  Mail, 
-  Phone, 
-  Building2, 
-  Clock, 
+  Mail,
+  Phone,
+  Building2,
+  Clock,
   ArrowRight,
   MoreHorizontal,
-  Globe
+  Globe,
+  Link2,
+  FileText
 } from 'lucide-react'
 import { LeadQualityBadge } from './ui'
 import { Button } from '@/components/ui/button'
@@ -57,6 +59,8 @@ const ProspectCard = memo(function ProspectCard({
   onCall,
   onViewWebsite,
   onViewDetails,
+  onSendGatedLink,
+  onSendContract,
   onArchive,
   onDragStart,
   isDragging = false,
@@ -74,6 +78,7 @@ const ProspectCard = memo(function ProspectCard({
   }
 
   const lastActivity = prospect.last_call?.created_at || prospect.updated_at || prospect.created_at
+  const hasQuoteReady = !!prospect.quote_submitted_at
 
   return (
     <div
@@ -83,6 +88,7 @@ const ProspectCard = memo(function ProspectCard({
         'group relative px-2.5 py-2 cursor-grab select-none rounded-lg transition-colors duration-150',
         'bg-[var(--glass-bg)] border border-[var(--glass-border)]',
         'hover:border-[var(--text-tertiary)]',
+        hasQuoteReady && 'border-amber-500/40 bg-amber-500/5',
         isDragging && 'opacity-50 scale-95',
         isSelected && 'ring-2 ring-offset-1 ring-offset-[var(--bg-primary)]',
         className
@@ -124,6 +130,14 @@ const ProspectCard = memo(function ProspectCard({
                 Open Website
               </DropdownMenuItem>
             )}
+            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onSendGatedLink?.(prospect) }}>
+              <Link2 className="h-4 w-4 mr-2" />
+              Send Gated Link
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onSendContract?.(prospect) }}>
+              <FileText className="h-4 w-4 mr-2" />
+              Send Contract
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem 
               className="text-red-600"
@@ -152,6 +166,16 @@ const ProspectCard = memo(function ProspectCard({
           </span>
         )}
       </div>
+
+      {/* Quote ready badge */}
+      {hasQuoteReady && (
+        <div className="flex items-center gap-1 mt-1">
+          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-medium bg-amber-500/10 text-amber-600 border border-amber-500/20">
+            <FileText className="h-2.5 w-2.5" />
+            Quote Ready
+          </span>
+        </div>
+      )}
 
       {/* Row 3: Quick actions - always visible */}
       <div className="flex items-center gap-0.5 mt-1.5 -ml-0.5">

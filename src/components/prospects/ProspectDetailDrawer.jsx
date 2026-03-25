@@ -90,6 +90,7 @@ import { crmApi, syncApi, auditsApi, emailApi } from '@/lib/sonor-api'
 import { PIPELINE_STAGES } from '../crm/pipelineStages'
 import useAuthStore from '@/lib/auth-store'
 import EmailComposeDialog from '../crm/EmailComposeDialog'
+import SendGatedLinkDialog from '../crm/SendGatedLinkDialog'
 import { GmailConnectCompact } from '../email/GmailConnectCard'
 
 // Format relative time
@@ -2068,6 +2069,32 @@ export default function ProspectDetailDrawer({
   const [isModalMode, setIsModalMode] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [showEmailCompose, setShowEmailCompose] = useState(false)
+  const [showGatedLinkDialog, setShowGatedLinkDialog] = useState(false)
+
+  // Send Contract — fetch quote data and open Echo with contract context
+  const handleSendContract = useCallback(async () => {
+    let quoteContext = `Name: ${prospect.name || [prospect.first_name, prospect.last_name].filter(Boolean).join(' ')}\nEmail: ${prospect.email || 'N/A'}\nCompany: ${prospect.company || 'N/A'}`
+
+    if (prospect.form_submission_id) {
+      try {
+        const response = await crmApi.getProspectFormSubmission(prospect.id)
+        const submission = response.data
+        const quoteDetails = submission?.data?.quote_details
+        if (quoteDetails) {
+          const parsed = typeof quoteDetails === 'string' ? JSON.parse(quoteDetails) : quoteDetails
+          quoteContext = JSON.stringify(parsed, null, 2)
+        }
+      } catch (err) {
+        console.warn('Could not fetch form submission for contract:', err)
+      }
+    }
+
+    window.dispatchEvent(
+      new CustomEvent('open-echo', {
+        detail: { context: `contract:${quoteContext}` },
+      })
+    )
+  }, [prospect])
   const stageConfig = pipelineStages[prospect.pipeline_stage || 'new_lead']
   const StageIcon = stageConfig?.icon || Sparkles
 
@@ -2237,8 +2264,8 @@ export default function ProspectDetailDrawer({
               <Mail className="h-3 w-3" />
               Email
             </Button>
-            <Button 
-              variant="secondary" 
+            <Button
+              variant="secondary"
               size="sm"
               className="h-7 text-xs gap-1 px-2"
               onClick={() => setShowScheduleModal(true)}
@@ -2246,7 +2273,26 @@ export default function ProspectDetailDrawer({
               <Calendar className="h-3 w-3" />
               Schedule
             </Button>
-            <Badge 
+            <Button
+              variant="secondary"
+              size="sm"
+              className="h-7 text-xs gap-1 px-2"
+              onClick={() => setShowGatedLinkDialog(true)}
+              disabled={!prospect.email}
+            >
+              <Link2 className="h-3 w-3" />
+              Gated Link
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              className="h-7 text-xs gap-1 px-2"
+              onClick={handleSendContract}
+            >
+              <FileText className="h-3 w-3" />
+              Contract
+            </Button>
+            <Badge
               className="text-xs h-6 gap-1 px-2 ml-auto"
               style={{ 
                 backgroundColor: stageConfig?.bgLight,
@@ -2500,6 +2546,16 @@ export default function ProspectDetailDrawer({
         onOpenChange={setShowEmailCompose}
         contact={prospect}
         projectId={currentProject?.id}
+      />
+
+      {/* Send Gated Link Dialog */}
+      <SendGatedLinkDialog
+        open={showGatedLinkDialog}
+        onOpenChange={setShowGatedLinkDialog}
+        contact={prospect}
+        projectId={currentProject?.id}
+        gatedPageConfigs={currentProject?.settings?.gated_pages || []}
+        onSuccess={() => setShowGatedLinkDialog(false)}
       />
 
       {isModalMode ? (

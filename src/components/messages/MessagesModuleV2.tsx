@@ -605,6 +605,9 @@ export function MessagesModuleV2({
     } else if (contextParam.startsWith('error-help:')) {
       const errorMsg = contextParam.replace('error-help:', '')
       autoMessage = `I got an error: "${errorMsg}". What went wrong and how do I fix it?`
+    } else if (contextParam.startsWith('contract:')) {
+      const contractData = contextParam.replace('contract:', '')
+      autoMessage = `I need to create a contract for this prospect. Here's their quote data:\n\n${contractData}\n\nPlease review this quote, confirm the details look correct, and help me draft a contract. Check date/time availability and include all menu items, pricing, vessel details, and standard legal terms.`
     }
 
     if (autoMessage) {

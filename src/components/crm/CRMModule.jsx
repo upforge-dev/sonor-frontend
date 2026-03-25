@@ -110,6 +110,7 @@ import SalesModule from '@/components/sales/SalesModule'
 import UnassignedLeadsQueue from './UnassignedLeadsQueue'
 import ClientsView from './ClientsView'
 import EmailComposeDialog from './EmailComposeDialog'
+import SendGatedLinkDialog from './SendGatedLinkDialog'
 import UserGoogleIntegrationPanel from '../integrations/UserGoogleIntegrationPanel'
 import {
   DEFAULT_PIPELINE_STAGES,
@@ -453,6 +454,8 @@ export default function CRMDashboard() {
   const [isPipelineSettingsOpen, setIsPipelineSettingsOpen] = useState(false)
   const [isEmailComposeOpen, setIsEmailComposeOpen] = useState(false)
   const [emailComposeContact, setEmailComposeContact] = useState(null)
+  const [isGatedLinkOpen, setIsGatedLinkOpen] = useState(false)
+  const [gatedLinkContact, setGatedLinkContact] = useState(null)
   const [pipelineStages, setPipelineStages] = useState(DEFAULT_PIPELINE_STAGES)
   
   // Gmail connection status for sidebar indicator
@@ -608,6 +611,32 @@ export default function CRMDashboard() {
       const errorMsg = err.response?.data?.message || 'Failed to update stage'
       toast.error(errorMsg)
     }
+  }
+
+  // Handle "Send Contract" — fetch quote data and open Echo with contract context
+  const handleSendContract = async (prospect) => {
+    let quoteContext = `Name: ${prospect.name || 'Unknown'}\nEmail: ${prospect.email || 'N/A'}\nCompany: ${prospect.company || 'N/A'}`
+
+    // Try to fetch quote_details from form submission
+    if (prospect.form_submission_id) {
+      try {
+        const response = await crmApi.getProspectFormSubmission(prospect.id)
+        const submission = response.data
+        const quoteDetails = submission?.data?.quote_details
+        if (quoteDetails) {
+          const parsed = typeof quoteDetails === 'string' ? JSON.parse(quoteDetails) : quoteDetails
+          quoteContext = JSON.stringify(parsed, null, 2)
+        }
+      } catch (err) {
+        console.warn('Could not fetch form submission for contract:', err)
+      }
+    }
+
+    window.dispatchEvent(
+      new CustomEvent('open-echo', {
+        detail: { context: `contract:${quoteContext}` },
+      })
+    )
   }
 
   // Handle prospect click
@@ -1254,6 +1283,11 @@ export default function CRMDashboard() {
                   onViewWebsite={(prospect) => {
                     if (prospect.website) window.open(prospect.website, '_blank', 'noopener')
                   }}
+                  onSendGatedLink={(prospect) => {
+                    setGatedLinkContact(prospect)
+                    setIsGatedLinkOpen(true)
+                  }}
+                  onSendContract={handleSendContract}
                   onArchive={(prospect) => {
                     handleUpdateStage(prospect.id, 'closed_lost')
                   }}
@@ -1301,6 +1335,19 @@ export default function CRMDashboard() {
           projectId={currentProject?.id}
           onSent={() => {
             toast.success('Email sent successfully')
+          }}
+        />
+
+        {/* Send Gated Link Dialog */}
+        <SendGatedLinkDialog
+          open={isGatedLinkOpen}
+          onOpenChange={setIsGatedLinkOpen}
+          contact={gatedLinkContact}
+          projectId={currentProject?.id}
+          gatedPageConfigs={currentProject?.settings?.gated_pages || []}
+          onSuccess={() => {
+            setIsGatedLinkOpen(false)
+            toast.success('Gated link sent')
           }}
         />
     </TooltipProvider>
