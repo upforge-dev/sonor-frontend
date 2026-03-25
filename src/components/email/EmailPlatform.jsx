@@ -24,7 +24,6 @@ import {
   Tag, Target, Settings, PanelLeft, PanelLeftClose,
 } from 'lucide-react'
 import { toast } from 'sonner'
-import useAuthStore from '@/lib/auth-store'
 import { useEmailPlatformStore } from '@/lib/email-platform-store'
 import { OutreachLoading } from '@/components/outreach/ui'
 
@@ -59,7 +58,6 @@ export default function EmailPlatform({
 }) {
   const location = useLocation()
   const navigate = useNavigate()
-  const { currentOrg } = useAuthStore()
   const { createTemplate, updateTemplate, fetchTemplates, createAutomation, fetchAutomations, createCampaign, fetchCampaigns } = useEmailPlatformStore()
 
   const [internalTab, setInternalTab] = useState('overview')
@@ -127,12 +125,28 @@ export default function EmailPlatform({
     setShowAutomationBuilder(false)
   }
 
-  const handleCreateCampaign = () => { setEditingCampaign(null); setShowCampaignComposer(true) }
+  const handleCreateCampaign = (prefillData) => {
+    // prefillData may contain { html, subject, previewText } from SignalCompose
+    setEditingCampaign(prefillData ? { _prefill: prefillData } : null)
+    setShowCampaignComposer(true)
+  }
   const handleEditCampaign = (c) => { setEditingCampaign(c); setShowCampaignComposer(true) }
   const handleSaveCampaign = async (data) => {
     await createCampaign(data)
     fetchCampaigns()
     setShowCampaignComposer(false)
+  }
+
+  const handleOpenInEditor = (data) => {
+    // Open the template editor pre-filled with Signal-generated HTML
+    setEditingTemplate({
+      id: null,
+      name: data.subject || 'Signal Generated Email',
+      html: data.html || '',
+      subject: data.subject || '',
+      category: 'custom',
+    })
+    setShowTemplateEditor(true)
   }
 
   const handleViewCampaignAnalytics = (c) => { setViewingCampaign(c); setShowCampaignAnalytics(true) }
@@ -172,7 +186,7 @@ export default function EmailPlatform({
   const renderTab = () => {
     switch (activeTab) {
       case 'overview':
-        return <Suspense fallback={lazyFallback}><EmailOverviewTab onNavigate={setActiveTab} onNewCampaign={handleCreateCampaign} onViewCampaignAnalytics={handleViewCampaignAnalytics} /></Suspense>
+        return <Suspense fallback={lazyFallback}><EmailOverviewTab onNavigate={setActiveTab} onNewCampaign={handleCreateCampaign} onViewCampaignAnalytics={handleViewCampaignAnalytics} onOpenInEditor={handleOpenInEditor} /></Suspense>
       case 'campaigns':
         return <Suspense fallback={lazyFallback}><EmailCampaignsTab onCreateCampaign={handleCreateCampaign} onEditCampaign={handleEditCampaign} onViewAnalytics={handleViewCampaignAnalytics} /></Suspense>
       case 'automations':

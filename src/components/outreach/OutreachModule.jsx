@@ -1,4 +1,5 @@
-import { useState, lazy, Suspense } from 'react'
+import { useState, useEffect, lazy, Suspense } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import {
   BarChart3,
   Send,
@@ -14,8 +15,8 @@ import {
   SearchCode,
   ListOrdered,
   Lock,
-  Loader2,
   PenLine,
+  Mail,
 } from 'lucide-react'
 import { ModuleLayout } from '@/components/ModuleLayout'
 import { MODULE_ICONS } from '@/lib/module-icons'
@@ -35,6 +36,7 @@ const OutreachVerificationTab = lazy(() => import('./tabs/OutreachVerificationTa
 const SignaturesTab = lazy(() => import('./tabs/SignaturesTab'))
 const SignatureAnalytics = lazy(() => import('./tabs/SignatureAnalytics'))
 const OutreachLandingPagesTab = lazy(() => import('./tabs/OutreachLandingPagesTab'))
+const DomainSetup = lazy(() => import('@/components/email/DomainSetup'))
 
 const SIDEBAR_SECTIONS = [
   {
@@ -75,7 +77,8 @@ const SIDEBAR_SECTIONS = [
     id: 'infrastructure',
     label: 'Infrastructure',
     items: [
-      { value: 'domains', label: 'Domains', icon: Globe },
+      { value: 'domain-setup', label: 'Domain Setup', icon: Mail },
+      { value: 'domains', label: 'Outreach Fleet', icon: Globe },
       { value: 'compliance', label: 'Compliance', icon: ShieldCheck },
       { value: 'settings', label: 'Settings', icon: Settings },
     ],
@@ -88,12 +91,24 @@ const EMAIL_PLATFORM_TABS = new Set([
 ])
 
 export default function OutreachModule() {
-  const [activeTab, setActiveTab] = useState('overview')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const initialTab = searchParams.get('tab') || 'overview'
+  const [activeTab, setActiveTab] = useState(initialTab)
   const [showLeftSidebar, setShowLeftSidebar] = useState(true)
   const { hasCurrentProjectSignal } = useSignalAccess()
 
+  // Sync tab from URL params on mount and when params change
+  useEffect(() => {
+    const tabParam = searchParams.get('tab')
+    if (tabParam && tabParam !== activeTab) {
+      setActiveTab(tabParam)
+    }
+  }, [searchParams])
+
   const handleTabChange = (tab) => {
     setActiveTab(tab)
+    // Update URL without navigation
+    setSearchParams(tab === 'overview' ? {} : { tab }, { replace: true })
   }
 
   const leftSidebarContent = (
@@ -167,6 +182,7 @@ export default function OutreachModule() {
     if (activeTab === 'sequences') return <Suspense fallback={lazyFallback}><OutreachSequencesTab /></Suspense>
     if (activeTab === 'inbox') return <Suspense fallback={lazyFallback}><OutreachInboxTab /></Suspense>
     if (activeTab === 'discovery') return <Suspense fallback={lazyFallback}><OutreachDiscoveryTab /></Suspense>
+    if (activeTab === 'domain-setup') return <Suspense fallback={lazyFallback}><DomainSetup /></Suspense>
     if (activeTab === 'domains') return <Suspense fallback={lazyFallback}><OutreachDomainsTab /></Suspense>
     if (activeTab === 'compliance') return <Suspense fallback={lazyFallback}><OutreachComplianceTab /></Suspense>
     if (activeTab === 'outreach-analytics') return <Suspense fallback={lazyFallback}><OutreachAnalyticsTab /></Suspense>

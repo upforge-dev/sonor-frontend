@@ -44,11 +44,15 @@ export default function CampaignComposer({ campaign, onSave, onBack, onEditTempl
   const { templates, lists, fetchTemplates, fetchLists, settings } = useEmailPlatformStore()
   const [currentStep, setCurrentStep] = useState(0)
   const [isSaving, setIsSaving] = useState(false)
-  
+
+  // Signal Compose prefill — when user creates a campaign from SignalCompose,
+  // the campaign object has a _prefill key with { html, subject, previewText }
+  const prefill = campaign?._prefill || null
+
   const [formData, setFormData] = useState({
     name: campaign?.name || '',
-    subject: campaign?.subject || '',
-    preview_text: campaign?.preview_text || '',
+    subject: prefill?.subject || campaign?.subject || '',
+    preview_text: prefill?.previewText || campaign?.preview_text || '',
     from_name: campaign?.from_name || settings?.default_from_name || '',
     from_email: campaign?.from_email || settings?.default_from_email || '',
     reply_to: campaign?.reply_to || settings?.default_reply_to || '',
@@ -58,13 +62,22 @@ export default function CampaignComposer({ campaign, onSave, onBack, onEditTempl
     scheduled_for: '',
     // Commerce integration
     offering_id: campaign?.offering_id || null,
-    offering_snapshot: campaign?.offering_snapshot || null
+    offering_snapshot: campaign?.offering_snapshot || null,
+    // Signal-generated HTML (bypasses template selection)
+    signal_html: prefill?.html || null,
   })
 
   useEffect(() => {
     fetchTemplates()
     fetchLists()
   }, [fetchTemplates, fetchLists])
+
+  // If pre-filled from Signal, skip to audience selection (step 2)
+  useEffect(() => {
+    if (prefill?.html && currentStep === 0) {
+      setCurrentStep(1) // Jump to audience selection — content already ready
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (settings && !formData.from_name) {
@@ -102,7 +115,7 @@ export default function CampaignComposer({ campaign, onSave, onBack, onEditTempl
       case 1: // Audience
         return formData.list_ids.length > 0
       case 2: // Content
-        return formData.template_id
+        return formData.template_id || formData.signal_html
       case 3: // Review
         return true
       default:
@@ -500,7 +513,7 @@ export default function CampaignComposer({ campaign, onSave, onBack, onEditTempl
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground">Template</p>
-                      <p className="font-medium">{selectedTemplate?.name || 'None selected'}</p>
+                      <p className="font-medium">{selectedTemplate?.name || (formData.signal_html ? '✨ Created with Signal' : 'None selected')}</p>
                     </div>
                   </div>
                 </CardContent>

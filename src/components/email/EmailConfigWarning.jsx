@@ -68,7 +68,7 @@ export default function EmailConfigWarning({ className = '' }) {
           <li className="flex items-start gap-2">
             <ExternalLink className="h-4 w-4 mt-0.5 text-amber-600 dark:text-amber-400" />
             <span>
-              <strong>Request a custom domain</strong> — Contact Sonor to set up a branded email domain (e.g., mail.yourdomain.com)
+              <strong>Set up a custom domain</strong> — Add and verify your own sending domain (e.g., mail.yourdomain.com)
             </span>
           </li>
         </ul>
@@ -85,16 +85,17 @@ export default function EmailConfigWarning({ className = '' }) {
             <Mail className="h-4 w-4 mr-2" />
             Connect Gmail
           </Button>
-          <Button 
-            variant="ghost" 
+          <Button
+            variant="ghost"
             size="sm"
             className="text-amber-700 hover:text-amber-800 hover:bg-amber-100 dark:text-amber-300 dark:hover:text-amber-200 dark:hover:bg-amber-900/50"
             onClick={() => {
-              // Open contact form or email
-              window.open('mailto:support@sonor.io?subject=Custom Email Domain Request', '_blank')
+              // Navigate to domain setup in Outreach module
+              window.location.href = `/outreach?tab=domain-setup`
             }}
           >
-            Contact Sonor
+            <ExternalLink className="h-4 w-4 mr-2" />
+            Set Up Domain
           </Button>
         </div>
       </AlertDescription>
@@ -140,7 +141,7 @@ export function EmailConfigWarningCompact({ className = '' }) {
       <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
       <span className="text-amber-700 dark:text-amber-300">
         Email sending requires Gmail or custom domain.{' '}
-        <a href="/settings?tab=email" className="underline font-medium">Configure now</a>
+        <a href="/outreach?tab=domain-setup" className="underline font-medium">Configure now</a>
       </span>
     </div>
   )

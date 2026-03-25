@@ -41,7 +41,8 @@ export const TAB_HEADERS = {
   testing:              { title: 'A/B Tests',           subtitle: 'Test email variants for performance' },
   audience:             { title: 'Audience',            subtitle: 'Subscriber lists and segments' },
   // Infrastructure
-  domains:              { title: 'Domains',             subtitle: 'Sending domain management' },
+  'domain-setup':       { title: 'Domain Setup',        subtitle: 'Configure primary and outreach sending domains' },
+  domains:              { title: 'Outreach Fleet',      subtitle: 'Cold outreach domain fleet management' },
   compliance:           { title: 'Compliance',          subtitle: 'CAN-SPAM, GDPR, and deliverability' },
   settings:             { title: 'Settings',            subtitle: 'Outreach configuration' },
 }

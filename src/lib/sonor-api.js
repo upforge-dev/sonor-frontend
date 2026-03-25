@@ -2472,6 +2472,9 @@ export const emailApi = {
   sendTest: (data) =>
     sonorApi.post('/email/test', data),
   
+  composeWithSignal: (data) =>
+    sonorApi.post('/email/compose-with-signal', data),
+
   composeOneOff: (data) =>
     sonorApi.post('/email/compose/one-off', data),
   
@@ -2520,6 +2523,39 @@ export const emailApi = {
   // Gmail Signature
   setGmailSignature: (html, projectId) =>
     sonorApi.put(`/email/gmail/signature${projectId ? `?project_id=${projectId}` : ''}`, { html }),
+
+  // Insights & Activity (Overview dashboard)
+  getInsights: (projectId) =>
+    sonorApi.get('/email/insights', { params: { project_id: projectId } }),
+
+  getActivity: (projectId, limit = 10) =>
+    sonorApi.get('/email/activity', { params: { project_id: projectId, limit } }),
+
+  // Domain Management — Primary Sending Domain
+  setupPrimaryDomain: (domain, projectId) =>
+    sonorApi.post('/email/domains/primary', { domain, projectId }),
+
+  getPrimaryDomain: (projectId) =>
+    sonorApi.get('/email/domains/primary', { params: { project_id: projectId } }),
+
+  verifyPrimaryDomain: (projectId) =>
+    sonorApi.post('/email/domains/primary/verify', {}, { params: { project_id: projectId } }),
+
+  removePrimaryDomain: (projectId) =>
+    sonorApi.delete('/email/domains/primary', { params: { project_id: projectId } }),
+
+  // Domain Management — Cold Outreach Domains
+  addOutreachDomain: (domain, projectId) =>
+    sonorApi.post('/email/domains/outreach', { domain, projectId }),
+
+  getOutreachDomains: (projectId) =>
+    sonorApi.get('/email/domains/outreach', { params: { project_id: projectId } }),
+
+  verifyOutreachDomain: (resendId, projectId) =>
+    sonorApi.post(`/email/domains/outreach/${resendId}/verify`, {}, { params: { project_id: projectId } }),
+
+  removeOutreachDomain: (resendId, projectId) =>
+    sonorApi.delete(`/email/domains/outreach/${resendId}`, { params: { project_id: projectId } }),
 }
 
 // ============================================================================
