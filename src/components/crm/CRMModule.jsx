@@ -790,10 +790,10 @@ export default function CRMDashboard() {
                       <div className="space-y-1">
                         {/* All Stages option */}
                         <button
-                          onClick={() => setStageFilters([])}
+                          onClick={() => { setStageFilters([]); setViewMode('pipeline') }}
                           className={cn(
                             'w-full flex items-center justify-between px-3 py-2 rounded-md transition-colors',
-                            stageFilters.length === 0
+                            stageFilters.length === 0 && viewMode === 'pipeline'
                               ? 'bg-[var(--brand-primary)]/10 text-[var(--brand-primary)] font-medium'
                               : 'hover:bg-muted'
                           )}
@@ -814,20 +814,21 @@ export default function CRMDashboard() {
                             <button
                               key={key}
                               onClick={() => {
-                                if (isActive) {
+                                if (isActive && viewMode === 'pipeline') {
                                   // Deselect → back to all
                                   setStageFilters([])
                                 } else {
                                   setStageFilters([key])
+                                  setViewMode('pipeline')
                                 }
                               }}
                               className={cn(
                                 'w-full flex items-center justify-between px-3 py-2 rounded-md transition-colors',
-                                isActive
+                                isActive && viewMode === 'pipeline'
                                   ? 'bg-[var(--brand-primary)]/10 font-medium'
                                   : 'hover:bg-muted'
                               )}
-                              style={isActive ? { color: config.color } : undefined}
+                              style={isActive && viewMode === 'pipeline' ? { color: config.color } : undefined}
                             >
                               <div className="flex items-center gap-2">
                                 <div

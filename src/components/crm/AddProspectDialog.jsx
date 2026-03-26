@@ -25,6 +25,7 @@ import {
 import { Loader2, UserPlus, Building2, Mail, Phone, Globe, Tag, FileText } from 'lucide-react'
 import { crmApi } from '@/lib/sonor-api'
 import { toast } from '@/lib/toast'
+import { useBrandColors } from '@/hooks/useBrandColors'
 
 const LEAD_SOURCES = [
   { value: 'outreach', label: 'Outreach', description: 'Cold outreach' },
@@ -34,7 +35,8 @@ const LEAD_SOURCES = [
   { value: 'event', label: 'Event', description: 'Trade show / event' },
 ]
 
-export default function AddProspectDialog({ open, onOpenChange, onSuccess }) {
+export default function AddProspectDialog({ open, onOpenChange, onSuccess, onProspectAdded }) {
+  const { primary, primaryHover, rgba } = useBrandColors()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [formData, setFormData] = useState({
     name: '',
@@ -91,6 +93,7 @@ export default function AddProspectDialog({ open, onOpenChange, onSuccess }) {
       })
       onOpenChange(false)
       onSuccess?.(newProspect)
+      onProspectAdded?.(newProspect)
     } catch (err) {
       console.error('Failed to add prospect:', err)
       const errData = err.response?.data?.error
@@ -113,8 +116,8 @@ export default function AddProspectDialog({ open, onOpenChange, onSuccess }) {
       <DialogContent className="max-w-lg glass border-[var(--glass-border)]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <div className="p-2 rounded-xl bg-gradient-to-br from-[#4bbf39]/20 to-[#39bfb0]/20">
-              <UserPlus className="h-5 w-5 text-[#4bbf39]" />
+            <div className="p-2 rounded-xl" style={{ background: `linear-gradient(to bottom right, ${rgba.primary20}, ${rgba.primary10})` }}>
+              <UserPlus className="h-5 w-5" style={{ color: primary }} />
             </div>
             Add New Prospect
           </DialogTitle>
@@ -260,7 +263,8 @@ export default function AddProspectDialog({ open, onOpenChange, onSuccess }) {
             <Button 
               type="submit" 
               disabled={isSubmitting}
-              className="bg-gradient-to-r from-[#4bbf39] to-[#39bfb0] hover:from-[#43ab33] hover:to-[#33aba0] text-white"
+              style={{ backgroundColor: primary, color: 'white' }}
+              className="hover:opacity-90 text-white"
             >
               {isSubmitting ? (
                 <>

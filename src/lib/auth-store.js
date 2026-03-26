@@ -249,6 +249,7 @@ const useAuthStore = create(
                 domain: project.domain,
                 plan: project.plan || 'standard',
                 features: project.features || [],
+                settings: project.settings || {},
                 brand_primary: project.brand_primary,
                 logo_url: project.logo_url ?? null,
                 theme: {
@@ -356,7 +357,8 @@ const useAuthStore = create(
                   freshProject.plan && freshProject.plan !== selectedProject.plan
                 const logoChanged =
                   (freshProject.logo_url || null) !== (selectedProject.logo_url ?? selectedProject.theme?.logoUrl ?? null)
-                if (planChanged || logoChanged) {
+                const settingsChanged = JSON.stringify(freshProject.settings) !== JSON.stringify(selectedProject.settings)
+                if (planChanged || logoChanged || settingsChanged) {
                   if (planChanged) {
                     console.log('[AuthStore] Refreshing stale project plan:', selectedProject.plan, '->', freshProject.plan)
                   }
@@ -364,6 +366,7 @@ const useAuthStore = create(
                     ...selectedProject,
                     plan: freshProject.plan || selectedProject.plan,
                     logo_url: freshProject.logo_url ?? selectedProject.logo_url,
+                    settings: freshProject.settings || selectedProject.settings || {},
                     theme: {
                       ...selectedProject.theme,
                       logoUrl: freshProject.logo_url || selectedProject.theme?.logoUrl,
@@ -403,6 +406,7 @@ const useAuthStore = create(
                   domain: firstProject.domain,
                   plan: firstProject.plan || 'standard',
                   features: firstProject.features || [],
+                  settings: firstProject.settings || {},
                   brand_primary: firstProject.brand_primary,
                   logo_url: firstProject.logo_url ?? null,
                   theme: {
@@ -495,6 +499,7 @@ const useAuthStore = create(
             domain: project.domain,
             plan: project.plan || 'standard',
             features: project.features || [],
+            settings: project.settings || {},
             brand_primary: project.brand_primary,
             logo_url: project.logo_url ?? null,
             theme: {

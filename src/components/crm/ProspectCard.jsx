@@ -85,9 +85,11 @@ const ProspectCard = memo(function ProspectCard({
       draggable
       onDragStart={handleDragStart}
       className={cn(
-        'group relative px-2.5 py-2 cursor-grab select-none rounded-lg transition-colors duration-150',
-        'bg-[var(--glass-bg)] border border-[var(--glass-border)]',
-        'hover:border-[var(--text-tertiary)]',
+        'group relative px-2.5 py-2 cursor-grab select-none rounded-xl transition-all duration-200',
+        'bg-[var(--glass-bg)] backdrop-blur-md border border-[var(--glass-border)]',
+        'shadow-[0_1px_3px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.06)]',
+        'hover:border-[var(--text-tertiary)] hover:shadow-[0_4px_12px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.08)]',
+        'hover:-translate-y-[1px]',
         hasQuoteReady && 'border-amber-500/40 bg-amber-500/5',
         isDragging && 'opacity-50 scale-95',
         isSelected && 'ring-2 ring-offset-1 ring-offset-[var(--bg-primary)]',

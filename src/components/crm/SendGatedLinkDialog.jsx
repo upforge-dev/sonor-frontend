@@ -179,6 +179,19 @@ export default function SendGatedLinkDialog({
             </div>
           </div>
 
+          {/* No pages configured */}
+          {gatedPageConfigs.length === 0 && (
+            <div className="flex flex-col items-center gap-2 py-6 text-center">
+              <div className="p-3 rounded-xl bg-muted/50">
+                <Link2 className="h-5 w-5 text-muted-foreground" />
+              </div>
+              <p className="text-sm font-medium">No gated pages configured</p>
+              <p className="text-xs text-muted-foreground max-w-xs">
+                Go to Project Settings → Gated Pages to add a page URL and metadata fields.
+              </p>
+            </div>
+          )}
+
           {/* Page selector */}
           {gatedPageConfigs.length > 0 && (
             <div className="space-y-1.5">

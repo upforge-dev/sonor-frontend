@@ -55,6 +55,7 @@ import APIKeysManager from '@/components/projects/APIKeysManager'
 
 // Shared components
 import BusinessProfileCard from '@/components/shared/BusinessProfileCard'
+import GatedPagesSettings from '@/components/projects/GatedPagesSettings'
 
 // Constants
 import { INDUSTRY_CATEGORIES } from '@/lib/constants/industries'
@@ -194,6 +195,7 @@ export default function ProjectSettingsPanel({ project, isAdmin, onProjectUpdate
     commerce_types: project?.settings?.commerce_types || ['product', 'service'],
     payment_processor: project?.settings?.payment_processor || 'stripe', // 'stripe' or 'square'
     shopify_connected: project?.settings?.shopify_connected || false,
+    gated_pages: project?.settings?.gated_pages || [],
     // Business Profile fields - Universal source of truth for location/industry
     city: project?.city || '',
     state_code: project?.state_code || '',
@@ -244,6 +246,7 @@ export default function ProjectSettingsPanel({ project, isAdmin, onProjectUpdate
         commerce_types: Array.isArray(project.settings?.commerce_types) ? project.settings.commerce_types : [],
         payment_processor: project.settings?.payment_processor || null,
         shopify_connected: project.settings?.shopify_connected || false,
+        gated_pages: project.settings?.gated_pages || [],
         // Business Profile fields
         city: project.city || '',
         state_code: project.state_code || '',
@@ -412,6 +415,7 @@ export default function ProjectSettingsPanel({ project, isAdmin, onProjectUpdate
         resend_domain: formData.resend_domain || null,
         resend_from_name: formData.resend_from_name || null,
         notification_recipients: formData.notification_recipients || [],
+        gated_pages: formData.gated_pages || [],
       }
       
       console.log('Saving project with data:', {
@@ -494,6 +498,7 @@ export default function ProjectSettingsPanel({ project, isAdmin, onProjectUpdate
           commerce_types: Array.isArray(updatedProject.settings?.commerce_types) ? updatedProject.settings.commerce_types : [],
           payment_processor: updatedProject.settings?.payment_processor || null,
           shopify_connected: updatedProject.settings?.shopify_connected || false,
+          gated_pages: updatedProject.settings?.gated_pages || [],
           // Business Profile fields
           city: updatedProject.city || '',
           state_code: updatedProject.state_code || '',
@@ -1211,6 +1216,16 @@ export default function ProjectSettingsPanel({ project, isAdmin, onProjectUpdate
           </CardContent>
         </Card>
         
+        {/* Gated Pages - Configure external gated page URLs */}
+        <GatedPagesSettings
+          gatedPages={formData.gated_pages}
+          onChange={(pages) => {
+            setFormData(prev => ({ ...prev, gated_pages: pages }))
+            setHasChanges(true)
+          }}
+          isAdmin={isAdmin}
+        />
+
         {/* Commerce Options - Only visible when Commerce module is enabled */}
         {(formData.features.includes('commerce') || formData.features.includes('ecommerce')) && (
           <Card>

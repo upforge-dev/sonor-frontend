@@ -68,7 +68,7 @@ function PipelineColumn({
     >
       {/* Column Header - Fully rounded, separated */}
       <div 
-        className="flex-shrink-0 rounded-xl p-3 mb-2 bg-[var(--glass-bg)] border"
+        className="flex-shrink-0 rounded-xl p-3 mb-2 bg-[var(--glass-bg)] backdrop-blur-md border shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]"
         style={{ borderColor: config.borderColor }}
       >
         <div className="flex items-center justify-between">
@@ -101,7 +101,7 @@ function PipelineColumn({
       <div
         data-column-scroll
         className={cn(
-          'flex-1 min-h-0 overflow-y-auto rounded-xl border bg-[var(--glass-bg)]/50',
+          'flex-1 min-h-0 overflow-y-auto rounded-xl border bg-[var(--glass-bg)]/50 backdrop-blur-sm',
           'transition-all duration-200',
           // Hide scrollbar across browsers
           'scrollbar-none [&::-webkit-scrollbar]:hidden',

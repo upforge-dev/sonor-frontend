@@ -42,27 +42,23 @@ import {
   X,
   CalendarClock,
   Bell,
-  CalendarDays
+  CalendarDays,
+  AlertCircle
 } from 'lucide-react'
 import { Switch } from '@/components/ui/switch'
 import { toast } from '@/lib/toast'
-import { emailApi } from '@/lib/sonor-api'
+import { emailApi, workspaceIntegrationsApi } from '@/lib/sonor-api'
 import useAuthStore from '@/lib/auth-store'
 
-// Available "from" mailboxes - Gmail/Google Workspace accounts
-// All composed emails go through Gmail API for proper threading & replies
-const MAILBOXES = [
-  { id: 'ramsey', email: 'hello@sonor.io', name: 'Ramsey Deal' },
-  { id: 'hello', email: 'hello@sonor.io', name: 'Sonor' },
-]
-
-// Quick templates for common emails
-const TEMPLATES = [
-  {
-    id: 'follow_up',
-    name: 'Follow-Up After Call',
-    subject: 'Great chatting with you!',
-    body: `Hi {{firstName}},
+// Template factory — uses dynamic user name (no hardcoded signatures)
+function getTemplates(senderName, isAgency) {
+  const signOff = senderName || 'Best'
+  const templates = [
+    {
+      id: 'follow_up',
+      name: 'Follow-Up After Call',
+      subject: 'Great chatting with you!',
+      body: `Hi {{firstName}},
 
 Great speaking with you today! As promised, I wanted to follow up with some more information.
 
@@ -71,28 +67,13 @@ Great speaking with you today! As promised, I wanted to follow up with some more
 Let me know if you have any questions - happy to hop on another call anytime.
 
 Best,
-Ramsey`
-  },
-  {
-    id: 'audit_send',
-    name: 'Send Audit Results',
-    subject: 'Your Website Audit Results',
-    body: `Hi {{firstName}},
-
-Thanks for taking the time to chat. As discussed, I've put together a comprehensive audit of {{companyName}}'s website.
-
-{{customContent}}
-
-I'd love to walk you through the findings and discuss how we can improve your site's performance. Would you have 15-20 minutes this week?
-
-Best,
-Ramsey`
-  },
-  {
-    id: 'proposal_send',
-    name: 'Proposal Follow-Up',
-    subject: 'Proposal for {{companyName}}',
-    body: `Hi {{firstName}},
+${signOff}`
+    },
+    {
+      id: 'proposal_send',
+      name: 'Proposal Follow-Up',
+      subject: 'Proposal for {{companyName}}',
+      body: `Hi {{firstName}},
 
 Following our conversation, I've prepared a proposal outlining how we can help {{companyName}} achieve your goals.
 
@@ -103,13 +84,39 @@ Let me know if you have any questions or if you'd like to discuss any aspects in
 Looking forward to working together!
 
 Best,
-Ramsey`
-  },
-  {
-    id: 'schedule_call',
-    name: 'Schedule Consultation',
-    subject: 'Let\'s chat about {{companyName}}\'s growth',
-    body: `Hi {{firstName}},
+${signOff}`
+    },
+    {
+      id: 'blank',
+      name: 'Blank Email',
+      subject: '',
+      body: ''
+    }
+  ]
+
+  // Agency-only templates
+  if (isAgency) {
+    templates.splice(1, 0, {
+      id: 'audit_send',
+      name: 'Send Audit Results',
+      subject: 'Your Website Audit Results',
+      body: `Hi {{firstName}},
+
+Thanks for taking the time to chat. As discussed, I've put together a comprehensive audit of {{companyName}}'s website.
+
+{{customContent}}
+
+I'd love to walk you through the findings and discuss how we can improve your site's performance. Would you have 15-20 minutes this week?
+
+Best,
+${signOff}`
+    })
+
+    templates.splice(-1, 0, {
+      id: 'schedule_call',
+      name: 'Schedule Consultation',
+      subject: 'Let\'s chat about {{companyName}}\'s growth',
+      body: `Hi {{firstName}},
 
 I'd love to learn more about {{companyName}} and discuss how we might be able to help you achieve your goals.
 
@@ -120,15 +127,12 @@ I've included a link below to book a time that works for you:
 Looking forward to connecting!
 
 Best,
-Ramsey`
-  },
-  {
-    id: 'blank',
-    name: 'Blank Email',
-    subject: '',
-    body: ''
+${signOff}`
+    })
   }
-]
+
+  return templates
+}
 
 export default function EmailComposeDialog({
   open,
@@ -142,20 +146,40 @@ export default function EmailComposeDialog({
   onSent
 }) {
   const { currentOrg, currentProject } = useAuthStore()
-  
+
   // Use passed projectId or fall back to current project
   const effectiveProjectId = projectId || currentProject?.id
-  
-  // Schedule Consultation is agency-only feature
+
   const isAgencyOrg = currentOrg?.org_type === 'agency'
 
-  // Filter templates based on org type
-  const availableTemplates = isAgencyOrg
-    ? TEMPLATES
-    : TEMPLATES.filter(t => t.id !== 'schedule_call')
+  // User's connected Gmail account
+  const [gmailAccount, setGmailAccount] = useState(null)
+  const [loadingGmail, setLoadingGmail] = useState(false)
+
+  // Fetch Gmail account on open
+  useEffect(() => {
+    if (open && !gmailAccount) {
+      setLoadingGmail(true)
+      workspaceIntegrationsApi.getGoogleStatus()
+        .then((status) => {
+          if (status?.connected && status.gmail?.connected) {
+            setGmailAccount({
+              email: status.accountEmail,
+              name: status.accountName || status.accountEmail?.split('@')[0],
+            })
+          }
+        })
+        .catch(() => {})
+        .finally(() => setLoadingGmail(false))
+    }
+  }, [open])
+
+  // Dynamic templates based on user name and org type
+  const senderFirstName = gmailAccount?.name?.split(' ')[0] || ''
+  const availableTemplates = getTemplates(senderFirstName, isAgencyOrg)
 
   const [activeTab, setActiveTab] = useState('compose')
-  const [selectedMailbox, setSelectedMailbox] = useState('ramsey')
+  const [selectedMailbox, setSelectedMailbox] = useState('gmail')
   const [selectedTemplate, setSelectedTemplate] = useState('blank')
   const [to, setTo] = useState('')
   const [subject, setSubject] = useState(defaultSubject)
@@ -216,7 +240,7 @@ Just wanted to follow up on my previous email. I know things get busy, so I want
 Let me know if you have any questions or if there's a better time to connect.
 
 Best,
-Ramsey`
+${senderFirstName}`
       },
       {
         subject: `Quick check-in - ${subject}`,
@@ -227,7 +251,7 @@ I hope you're doing well! I wanted to check in one more time regarding my previo
 If you're interested in chatting, I'd love to find a time that works for you. If not, no worries at all - just let me know either way.
 
 Thanks!
-Ramsey`
+${senderFirstName}`
       },
       {
         subject: `Last follow-up: ${subject}`,
@@ -238,7 +262,7 @@ I wanted to reach out one final time. I understand if now isn't the right time, 
 If you'd like to revisit this in the future, my door is always open. Feel free to reach out anytime.
 
 All the best,
-Ramsey`
+${senderFirstName}`
       }
     ]
     
@@ -263,7 +287,7 @@ Ramsey`
   // Apply template and auto-select relevant attachments
   const applyTemplate = (templateId) => {
     setSelectedTemplate(templateId)
-    const template = TEMPLATES.find(t => t.id === templateId)
+    const template = availableTemplates.find(t => t.id === templateId)
     if (!template) return
 
     // Replace variables
@@ -356,20 +380,19 @@ Ramsey`
       return
     }
 
-    const mailbox = MAILBOXES.find(m => m.id === selectedMailbox)
-    if (!mailbox) {
-      toast.error('Please select a mailbox')
+    if (!gmailAccount?.email) {
+      toast.error('Connect your Google account in CRM → Integrations first')
       return
     }
 
     setIsSending(true)
     try {
-      // Use Gmail API for all composed emails
+      // Use Gmail API for all composed emails — always from user's connected Gmail
       const response = await emailApi.sendGmail({
-        projectId: effectiveProjectId, // For Gmail OAuth lookup
+        projectId: effectiveProjectId,
         contactId: contact?.id,
         to,
-        fromEmail: mailbox.email,
+        fromEmail: gmailAccount.email,
         subject,
         content: body,
         auditId: selectedAudit?.id || null, // Include audit magic link if selected
@@ -414,18 +437,18 @@ Ramsey`
 
   // Build audit link section for preview
   const auditLinkHtml = selectedAudit ? `
-    <div style="margin: 24px 0; padding: 16px; background: linear-gradient(135deg, #4bbf39 0%, #39bfb0 100%); border-radius: 12px;">
+    <div style="margin: 24px 0; padding: 16px; background: var(--brand-primary, #3B82F6); border-radius: 12px;">
       <p style="margin: 0 0 12px 0; color: white; font-weight: 600;">📊 Your Website Audit Results</p>
-      <a href="[Magic Link]" style="display: inline-block; padding: 10px 20px; background: white; color: #4bbf39; text-decoration: none; border-radius: 8px; font-weight: 600;">View Full Audit Report →</a>
+      <a href="[Magic Link]" style="display: inline-block; padding: 10px 20px; background: white; color: #333; text-decoration: none; border-radius: 8px; font-weight: 600;">View Full Audit Report →</a>
     </div>
   ` : ''
 
   // Build proposal link section for preview
   const proposalLinkHtml = selectedProposal ? `
-    <div style="margin: 24px 0; padding: 16px; background: linear-gradient(135deg, #39bfb0 0%, #4bbf39 100%); border-radius: 12px;">
+    <div style="margin: 24px 0; padding: 16px; background: var(--brand-primary, #3B82F6); border-radius: 12px;">
       <p style="margin: 0 0 12px 0; color: white; font-weight: 600;">📄 Your Custom Proposal</p>
       <p style="margin: 0 0 12px 0; color: rgba(255,255,255,0.9); font-size: 14px;">${selectedProposal.title || 'Project Proposal'}</p>
-      <a href="[Magic Link]" style="display: inline-block; padding: 10px 20px; background: white; color: #39bfb0; text-decoration: none; border-radius: 8px; font-weight: 600;">Review Proposal →</a>
+      <a href="[Magic Link]" style="display: inline-block; padding: 10px 20px; background: white; color: #333; text-decoration: none; border-radius: 8px; font-weight: 600;">Review Proposal →</a>
     </div>
   ` : ''
 
@@ -442,7 +465,7 @@ Ramsey`
   const previewHtml = `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #1a1a1a;">
       <div style="color: #666; font-size: 12px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #e0e0e0;">
-        <strong>From:</strong> ${MAILBOXES.find(m => m.id === selectedMailbox)?.name} &lt;${MAILBOXES.find(m => m.id === selectedMailbox)?.email}&gt;<br>
+        <strong>From:</strong> ${gmailAccount?.name || 'You'} &lt;${gmailAccount?.email || 'Not connected'}&gt;<br>
         <strong>To:</strong> ${contact?.name || 'Recipient'} &lt;${to}&gt;<br>
         <strong>Subject:</strong> ${subject}
       </div>
@@ -482,19 +505,22 @@ Ramsey`
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>From</Label>
-                <Select value={selectedMailbox} onValueChange={setSelectedMailbox}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {MAILBOXES.map(mailbox => (
-                      <SelectItem key={mailbox.id} value={mailbox.id}>
-                        <span className="font-medium">{mailbox.name}</span>
-                        <span className="text-[var(--text-tertiary)] ml-2">&lt;{mailbox.email}&gt;</span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {loadingGmail ? (
+                  <div className="flex items-center gap-2 h-10 px-3 rounded-md border bg-muted/30">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">Loading...</span>
+                  </div>
+                ) : gmailAccount ? (
+                  <div className="flex items-center gap-2 h-10 px-3 rounded-md border bg-muted/30">
+                    <span className="font-medium text-sm">{gmailAccount.name}</span>
+                    <span className="text-xs text-[var(--text-tertiary)]">&lt;{gmailAccount.email}&gt;</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 h-10 px-3 rounded-md border border-amber-500/30 bg-amber-500/5">
+                    <AlertCircle className="h-3.5 w-3.5 text-amber-500" />
+                    <span className="text-xs text-amber-600">Connect Google in Integrations</span>
+                  </div>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -807,7 +833,7 @@ Ramsey`
                   )}
                   
                   <p className="text-xs text-amber-600 bg-amber-50 dark:bg-amber-950/30 p-2 rounded">
-                    ⏰ All follow-ups will be sent from {MAILBOXES.find(m => m.id === selectedMailbox)?.email} and cancelled automatically if {contact?.name?.split(' ')[0] || 'they'} replies to any email in this thread.
+                    ⏰ All follow-ups will be sent from {gmailAccount?.email || 'your Gmail'} and cancelled automatically if {contact?.name?.split(' ')[0] || 'they'} replies to any email in this thread.
                   </p>
                 </div>
               )}
