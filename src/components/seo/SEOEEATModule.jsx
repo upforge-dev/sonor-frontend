@@ -2,7 +2,7 @@
 // E-E-A-T Module - Experience, Expertise, Authoritativeness, Trustworthiness
 // Author attribution, citations, and trust signal management
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -56,14 +56,80 @@ import {
   Eye,
   Target,
   Zap,
+  Upload,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { signalSeoApi } from '@/lib/signal-api'
 import { blogApi } from '@/lib/sonor-api'
 import { useSignalAccess } from '@/lib/signal-access'
+import useAuthStore from '@/lib/auth-store'
+import { getSession } from '@/lib/supabase-auth'
+import { uploadBlogAuthorAvatarToStorage } from '@/lib/avatar-utils'
 import SignalIcon from '@/components/ui/SignalIcon'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
+
+const MAX_AUTHOR_AVATAR_BYTES = 5 * 1024 * 1024
+
+function authorPhotoInitials(name) {
+  const parts = (name || '').trim().split(/\s+/).filter(Boolean)
+  if (parts.length >= 2) {
+    return `${parts[0][0] || ''}${parts[parts.length - 1][0] || ''}`.toUpperCase() || '?'
+  }
+  if (parts.length === 1 && parts[0].length >= 2) return parts[0].slice(0, 2).toUpperCase()
+  if (parts.length === 1) return (parts[0][0] || '?').toUpperCase()
+  return '?'
+}
+
+function normalizeEeatScore(value) {
+  const v = Number(value)
+  if (!Number.isFinite(v) || v < 0) return 0
+  if (v <= 10) return Math.min(100, Math.round(v * 10))
+  return Math.min(100, Math.round(v))
+}
+
+const EMPTY_EEAT_UI_STATE = {
+  scores: { experience: 0, expertise: 0, authority: 0, trust: 0 },
+  citations: [],
+  contentIssues: [],
+}
+
+/**
+ * Signal GET /skills/seo/eeat/:projectId returns `seo_eeat` table rows (an array).
+ * Blog authors are stored in Sonor (`blog_authors`) — never use this payload for `authors`.
+ */
+function parseEeatAnalysisResponse(data) {
+  if (data && typeof data === 'object' && !Array.isArray(data) && data.scores) {
+    return {
+      scores: {
+        experience: Number(data.scores.experience) || 0,
+        expertise: Number(data.scores.expertise) || 0,
+        authority: Number(data.scores.authority) || 0,
+        trust: Number(data.scores.trust) || 0,
+      },
+      citations: Array.isArray(data.citations) ? data.citations : [],
+      contentIssues: Array.isArray(data.contentIssues)
+        ? data.contentIssues
+        : Array.isArray(data.content_with_issues)
+          ? data.content_with_issues
+          : [],
+    }
+  }
+  const rows = Array.isArray(data) ? data : []
+  const latest = rows[0]
+  if (!latest) return { ...EMPTY_EEAT_UI_STATE }
+
+  return {
+    scores: {
+      experience: normalizeEeatScore(latest.experience_score),
+      expertise: normalizeEeatScore(latest.expertise_score),
+      authority: normalizeEeatScore(latest.authoritativeness_score),
+      trust: normalizeEeatScore(latest.trustworthiness_score),
+    },
+    citations: Array.isArray(latest.suggested_citations) ? latest.suggested_citations : [],
+    contentIssues: [],
+  }
+}
 
 // E-E-A-T Score visualization
 function EEATScoreRing({ score, label, color = 'brand-primary', size = 'default' }) {
@@ -381,6 +447,7 @@ function ContentEEATCard({ content, onFix }) {
 // Main component
 export default function SEOEEATModule({ projectId }) {
   const { hasAccess: hasSignalAccess } = useSignalAccess()
+  const { user } = useAuthStore()
   
   const [authors, setAuthors] = useState([])
   const [citations, setCitations] = useState([])
@@ -394,6 +461,9 @@ export default function SEOEEATModule({ projectId }) {
   const [isAuthorDialogOpen, setIsAuthorDialogOpen] = useState(false)
   const [editingAuthor, setEditingAuthor] = useState(null)
   const [isSavingAuthor, setIsSavingAuthor] = useState(false)
+  const authorAvatarInputRef = useRef(null)
+  const [authorAvatarUploading, setAuthorAvatarUploading] = useState(false)
+  const [authorAvatarDragActive, setAuthorAvatarDragActive] = useState(false)
   const [authorForm, setAuthorForm] = useState({
     name: '',
     title: '',
@@ -410,7 +480,50 @@ export default function SEOEEATModule({ projectId }) {
     years_experience: '',
     is_default: false,
   })
-  
+
+  const processAuthorAvatarFile = useCallback(
+    async (file) => {
+      if (!file?.type?.startsWith('image/')) {
+        toast.error('Please choose an image file (PNG, JPG, WebP, or GIF).')
+        return
+      }
+      if (file.size > MAX_AUTHOR_AVATAR_BYTES) {
+        toast.error('Image is too large. Maximum size is 5MB.')
+        return
+      }
+      const {
+        data: { session },
+      } = await getSession()
+      if (!session?.user?.id) {
+        toast.error('You must be signed in to upload.')
+        return
+      }
+      if (!projectId) {
+        toast.error('No project selected.')
+        return
+      }
+      setAuthorAvatarUploading(true)
+      try {
+        const url = await uploadBlogAuthorAvatarToStorage(file, session.user.id, projectId)
+        if (!url) {
+          toast.error('Upload failed. Check Storage permissions for the avatars bucket.')
+          return
+        }
+        setAuthorForm((prev) => ({ ...prev, avatar_url: url }))
+        toast.success('Photo uploaded')
+      } finally {
+        setAuthorAvatarUploading(false)
+        if (authorAvatarInputRef.current) authorAvatarInputRef.current.value = ''
+      }
+    },
+    [projectId],
+  )
+
+  const onAuthorAvatarInputChange = (e) => {
+    const file = e.target.files?.[0]
+    if (file) void processAuthorAvatarFile(file)
+  }
+
   // Open author dialog for creating/editing
   const openAuthorDialog = (author = null) => {
     if (author) {
@@ -433,6 +546,8 @@ export default function SEOEEATModule({ projectId }) {
       })
     } else {
       setEditingAuthor(null)
+      const sonorAvatar =
+        typeof user?.avatar === 'string' && user.avatar.trim() ? user.avatar.trim() : ''
       setAuthorForm({
         name: '',
         title: '',
@@ -440,7 +555,7 @@ export default function SEOEEATModule({ projectId }) {
         bio: '',
         short_bio: '',
         email: '',
-        avatar_url: '',
+        avatar_url: sonorAvatar,
         linkedin_url: '',
         twitter_url: '',
         website_url: '',
@@ -520,46 +635,35 @@ export default function SEOEEATModule({ projectId }) {
     setAuthorForm(prev => ({ ...prev, credentials: value }))
   }
   
-  // Fetch E-E-A-T data
+  // Fetch E-E-A-T data (scores/citations from Signal; authors from Sonor blog API)
   useEffect(() => {
     const loadData = async () => {
       if (!projectId) return
       setIsLoading(true)
-      
+
+      let eeatUi = { ...EMPTY_EEAT_UI_STATE }
       try {
-        // Fetch E-E-A-T analysis from Signal API
-        const data = await signalSeoApi.getEEATAnalysis(projectId)
-        
-        // Set overall scores
-        if (data?.scores) {
-          setOverallScore({
-            experience: data.scores.experience || 0,
-            expertise: data.scores.expertise || 0,
-            authority: data.scores.authority || 0,
-            trust: data.scores.trust || 0,
-          })
-        }
-        
-        // Set authors
-        setAuthors(data?.authors || [])
-        
-        // Set citations
-        setCitations(data?.citations || [])
-        
-        // Set content with issues
-        setContentWithIssues(data?.contentIssues || data?.content_with_issues || [])
+        const eeatRaw = await signalSeoApi.getEEATAnalysis(projectId)
+        eeatUi = parseEeatAnalysisResponse(eeatRaw)
       } catch (error) {
-        console.error('Failed to load E-E-A-T data:', error)
-        // Set empty defaults on error
-        setOverallScore({ experience: 0, expertise: 0, authority: 0, trust: 0 })
-        setAuthors([])
-        setCitations([])
-        setContentWithIssues([])
-      } finally {
-        setIsLoading(false)
+        console.error('Failed to load E-E-A-T analysis from Signal:', error)
       }
+
+      let authorList = []
+      try {
+        const authorsPayload = await blogApi.listAuthors(projectId)
+        authorList = authorsPayload?.authors ?? []
+      } catch (error) {
+        console.error('Failed to load blog authors:', error)
+      }
+
+      setOverallScore(eeatUi.scores)
+      setAuthors(authorList)
+      setCitations(eeatUi.citations)
+      setContentWithIssues(eeatUi.contentIssues)
+      setIsLoading(false)
     }
-    
+
     loadData()
   }, [projectId])
   
@@ -919,15 +1023,114 @@ export default function SEOEEATModule({ projectId }) {
               </div>
             </div>
             
-            {/* Avatar */}
-            <div className="space-y-2">
-              <Label htmlFor="avatar_url">Avatar URL</Label>
-              <Input
-                id="avatar_url"
-                value={authorForm.avatar_url}
-                onChange={(e) => setAuthorForm(prev => ({ ...prev, avatar_url: e.target.value }))}
-                placeholder="https://example.com/avatar.jpg"
-              />
+            {/* Author photo — preview + drag-drop upload (Supabase Storage) */}
+            <div className="space-y-3">
+              <Label>Author photo</Label>
+              <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-start">
+                <div className="flex justify-center sm:justify-start shrink-0">
+                  <Avatar className="h-28 w-28 rounded-2xl border-2 border-[var(--glass-border)] shadow-sm">
+                    <AvatarImage
+                      src={authorForm.avatar_url || undefined}
+                      alt=""
+                      className="object-cover"
+                    />
+                    <AvatarFallback className="rounded-2xl text-2xl font-semibold bg-[var(--glass-bg)] text-[var(--text-secondary)]">
+                      {authorPhotoInitials(authorForm.name)}
+                    </AvatarFallback>
+                  </Avatar>
+                </div>
+                <div className="flex-1 min-w-0 space-y-3 w-full">
+                  <input
+                    ref={authorAvatarInputRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/jpg,image/webp,image/gif"
+                    className="sr-only"
+                    aria-hidden
+                    tabIndex={-1}
+                    onChange={onAuthorAvatarInputChange}
+                  />
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => {
+                      if (!authorAvatarUploading) authorAvatarInputRef.current?.click()
+                    }}
+                    onKeyDown={(e) => {
+                      if (authorAvatarUploading) return
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault()
+                        authorAvatarInputRef.current?.click()
+                      }
+                    }}
+                    onDragOver={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      setAuthorAvatarDragActive(true)
+                    }}
+                    onDragLeave={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      setAuthorAvatarDragActive(false)
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      setAuthorAvatarDragActive(false)
+                      const file = e.dataTransfer?.files?.[0]
+                      if (file) void processAuthorAvatarFile(file)
+                    }}
+                    className={cn(
+                      'rounded-xl border-2 border-dashed px-4 py-6 text-center transition-colors outline-none',
+                      'border-[var(--glass-border)] bg-[var(--glass-bg)]/40',
+                      'hover:border-[var(--brand-primary)]/50 hover:bg-[var(--glass-bg)]/70',
+                      'focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)]/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--glass-bg)]',
+                      authorAvatarDragActive && 'border-[var(--brand-primary)] bg-[var(--brand-primary)]/10',
+                      authorAvatarUploading && 'pointer-events-none opacity-70',
+                    )}
+                  >
+                    {authorAvatarUploading ? (
+                      <div className="flex flex-col items-center gap-2">
+                        <Loader2 className="h-8 w-8 animate-spin text-[var(--brand-primary)]" />
+                        <span className="text-sm text-[var(--text-secondary)]">Uploading…</span>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center gap-1">
+                        <Upload className="h-8 w-8 text-[var(--text-tertiary)]" aria-hidden />
+                        <p className="text-sm font-medium text-[var(--text-primary)]">
+                          Drop an image here or click to upload
+                        </p>
+                        <p className="text-xs text-[var(--text-tertiary)]">
+                          Saved to your project in Supabase · PNG, JPG, WebP, GIF · max 5MB
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="avatar_url" className="text-[var(--text-tertiary)] text-xs font-normal">
+                      Or paste image URL
+                    </Label>
+                    <Input
+                      id="avatar_url"
+                      value={authorForm.avatar_url}
+                      onChange={(e) =>
+                        setAuthorForm((prev) => ({ ...prev, avatar_url: e.target.value }))
+                      }
+                      placeholder="https://example.com/avatar.jpg"
+                    />
+                  </div>
+                  {authorForm.avatar_url ? (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="text-[var(--text-tertiary)] h-8"
+                      onClick={() => setAuthorForm((prev) => ({ ...prev, avatar_url: '' }))}
+                    >
+                      Remove photo
+                    </Button>
+                  ) : null}
+                </div>
+              </div>
             </div>
             
             {/* Bio */}

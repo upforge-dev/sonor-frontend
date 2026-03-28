@@ -289,8 +289,11 @@ function FixStatus({ status }: FixStatusProps) {
 // ISSUE CATEGORY SECTION
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+const ISSUES_PER_PAGE = 20
+
 function IssueCategory({ type, issues, projectId, hasSignal }: IssueCategoryProps) {
   const [isOpen, setIsOpen] = useState<boolean>(false)
+  const [page, setPage] = useState(0)
   const config = ISSUE_TYPES[type] || ISSUE_TYPES.not_indexed
   const Icon = config.icon
   const inspectUrl = useSeoInspectUrl()
@@ -334,7 +337,7 @@ function IssueCategory({ type, issues, projectId, hasSignal }: IssueCategoryProp
               </tr>
             </thead>
             <tbody>
-              {issues.slice(0, 20).map((issue, idx) => (
+              {issues.slice(page * ISSUES_PER_PAGE, (page + 1) * ISSUES_PER_PAGE).map((issue, idx) => (
                 <tr key={issue.id || idx} className="border-t border-border/50 hover:bg-muted/20">
                   <td className="p-2 pl-3 max-w-[200px]">
                     <span className="text-xs font-mono truncate block" title={issue.url}>
@@ -396,9 +399,31 @@ function IssueCategory({ type, issues, projectId, hasSignal }: IssueCategoryProp
               ))}
             </tbody>
           </table>
-          {issues.length > 20 && (
-            <div className="p-2 text-center text-xs text-muted-foreground border-t">
-              Showing 20 of {issues.length} issues
+          {issues.length > ISSUES_PER_PAGE && (
+            <div className="flex items-center justify-between p-2 border-t text-xs text-muted-foreground">
+              <span>
+                Showing {page * ISSUES_PER_PAGE + 1}–{Math.min((page + 1) * ISSUES_PER_PAGE, issues.length)} of {issues.length}
+              </span>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 px-2 text-xs"
+                  disabled={page === 0}
+                  onClick={() => setPage(page - 1)}
+                >
+                  Previous
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 px-2 text-xs"
+                  disabled={(page + 1) * ISSUES_PER_PAGE >= issues.length}
+                  onClick={() => setPage(page + 1)}
+                >
+                  Next
+                </Button>
+              </div>
             </div>
           )}
         </div>

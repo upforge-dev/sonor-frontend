@@ -57,6 +57,51 @@ export async function uploadAvatarFileToStorage(file, authUserId) {
   }
 }
 
+const BLOG_AUTHOR_MIME_EXT = {
+  'image/png': 'png',
+  'image/jpeg': 'jpg',
+  'image/jpg': 'jpg',
+  'image/webp': 'webp',
+  'image/gif': 'gif',
+}
+
+/**
+ * Upload a blog / E-E-A-T author avatar to Supabase Storage.
+ * Uses a project-scoped path so it does not overwrite the user's profile avatar ({authUserId}.ext).
+ */
+export async function uploadBlogAuthorAvatarToStorage(file, authUserId, projectId) {
+  if (!file?.type?.startsWith('image/')) return null
+  if (!authUserId || !projectId) return null
+  try {
+    let ext = BLOG_AUTHOR_MIME_EXT[file.type]
+    if (!ext) {
+      const fromName = file.name?.split('.').pop()?.toLowerCase()
+      if (['png', 'jpg', 'jpeg', 'webp', 'gif'].includes(fromName)) {
+        ext = fromName === 'jpeg' ? 'jpg' : fromName
+      }
+    }
+    if (!ext) ext = 'jpg'
+    const unique =
+      typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`
+    const path = `${authUserId}/blog-authors/${projectId}/${unique}.${ext}`
+    const { error } = await supabase.storage.from(AVATARS_BUCKET).upload(path, file, {
+      contentType: file.type,
+      upsert: true,
+    })
+    if (error) {
+      console.warn('[avatar-utils] Blog author avatar upload failed:', error.message)
+      return null
+    }
+    const { data } = supabase.storage.from(AVATARS_BUCKET).getPublicUrl(path)
+    return data?.publicUrl ?? null
+  } catch (e) {
+    console.warn('[avatar-utils] Blog author avatar upload failed:', e)
+    return null
+  }
+}
+
 const MAX_BACKGROUND_SIZE = 10 * 1024 * 1024 // 10MB
 
 /**

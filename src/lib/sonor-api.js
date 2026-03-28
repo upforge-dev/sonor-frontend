@@ -2749,7 +2749,16 @@ export const blogApi = {
   // Categories
   getCategories: (projectId) =>
     sonorApi.get(`/blog/categories/${projectId}`),
-  
+
+  createCategory: (projectId, data) =>
+    sonorApi.post(`/blog/categories/${projectId}`, data),
+
+  updateCategory: (projectId, categoryId, data) =>
+    sonorApi.put(`/blog/categories/${projectId}/${categoryId}`, data),
+
+  deleteCategory: (projectId, categoryId) =>
+    sonorApi.delete(`/blog/categories/${projectId}/${categoryId}`),
+
   // AI Generation
   createAI: (data) =>
     sonorApi.post('/blog/ai/generate', data),
@@ -2775,6 +2784,10 @@ export const blogApi = {
   
   deleteAuthor: (authorId) =>
     sonorApi.delete(`/blog/authors/${authorId}`),
+
+  // Post Analytics
+  getPostAnalytics: (postId) =>
+    sonorApi.get(`/blog/posts/${postId}/analytics`).then(res => res.data),
 }
 
 // ============================================================================
@@ -2782,29 +2795,68 @@ export const blogApi = {
 // ============================================================================
 
 export const portfolioApi = {
-  listItems: (params = {}) => 
+  // ── List & CRUD ──
+  listItems: (params = {}) =>
     sonorApi.get('/portfolio', { params }),
-  
-  getItem: (id) => 
+
+  getItem: (id) =>
     sonorApi.get(`/portfolio/${id}`),
-  
-  createItem: (data) => 
+
+  createItem: (data) =>
     sonorApi.post('/portfolio', data),
-  
-  updateItem: (id, data) => 
+
+  updateItem: (id, data) =>
     sonorApi.put(`/portfolio/${id}`, data),
-  
-  deleteItem: (id) => 
+
+  deleteItem: (id) =>
     sonorApi.delete(`/portfolio/${id}`),
-  
-  reorder: (items) => 
+
+  reorder: (items) =>
     sonorApi.put('/portfolio/reorder', { items }),
-  
-  publishItem: (id) => 
+
+  publishItem: (id) =>
     sonorApi.post(`/portfolio/${id}/publish`),
-  
-  // AI generation
-  generateAI: (data) => 
+
+  unpublishItem: (id) =>
+    sonorApi.post(`/portfolio/${id}/unpublish`),
+
+  // ── AI Generation (new Phase 3 endpoints) ──
+  generateFromProject: (data) =>
+    sonorApi.post('/portfolio/generate-from-project', data),
+
+  getEligibleProjects: () =>
+    sonorApi.get('/portfolio/eligible-projects'),
+
+  regenerateSection: (portfolioId, data) =>
+    sonorApi.post(`/portfolio/${portfolioId}/regenerate-section`, data),
+
+  refreshMetrics: (portfolioId) =>
+    sonorApi.post(`/portfolio/${portfolioId}/refresh-metrics`),
+
+  resetGeneration: (portfolioId) =>
+    sonorApi.post(`/portfolio/${portfolioId}/reset-generation`),
+
+  getMetricsDelta: (portfolioId) =>
+    sonorApi.get(`/portfolio/${portfolioId}/metrics-delta`),
+
+  // ── Section Management ──
+  getSections: (portfolioId) =>
+    sonorApi.get(`/portfolio/${portfolioId}/sections`),
+
+  addSection: (sanityPageId, data) =>
+    sonorApi.post(`/cms/pages/${sanityPageId}/sections`, data),
+
+  updateSection: (sanityPageId, sectionId, data) =>
+    sonorApi.put(`/cms/pages/${sanityPageId}/sections/${sectionId}`, data),
+
+  deleteSection: (sanityPageId, sectionId) =>
+    sonorApi.delete(`/cms/pages/${sanityPageId}/sections/${sectionId}`),
+
+  reorderSections: (sanityPageId, sectionIds) =>
+    sonorApi.put(`/cms/pages/${sanityPageId}/sections/reorder`, { sectionIds }),
+
+  // ── Legacy AI generation ──
+  generateAI: (data) =>
     sonorApi.post('/portfolio/ai/generate', data),
 }
 

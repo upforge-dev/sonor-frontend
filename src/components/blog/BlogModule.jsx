@@ -26,6 +26,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Label } from '@/components/ui/label'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Textarea } from '@/components/ui/textarea'
+import MarkdownEditor from '@/components/ui/MarkdownEditor'
 import {
   Collapsible,
   CollapsibleContent,
@@ -119,7 +120,9 @@ const SIDEBAR_SECTIONS = {
       { id: 'all', label: 'All Posts', icon: FileText },
       { id: 'published', label: 'Published', icon: CheckCircle },
       { id: 'draft', label: 'Drafts', icon: Clock },
+      { id: 'scheduled', label: 'Scheduled', icon: Calendar },
       { id: 'featured', label: 'Featured', icon: Star },
+      { id: 'categories', label: 'Categories', icon: Tag },
     ],
   },
   signalBrain: {
@@ -149,6 +152,7 @@ const SIDEBAR_SECTIONS = {
 const statusColors = {
   published: 'border-[var(--brand-primary)]/30 text-[var(--brand-primary)] bg-[var(--brand-primary)]/10',
   draft: 'border-amber-500/30 text-amber-500 bg-amber-500/10',
+  scheduled: 'border-blue-500/30 text-blue-500 bg-blue-500/10',
   archived: 'border-[var(--text-tertiary)]/30 text-[var(--text-tertiary)] bg-[var(--glass-bg)]'
 }
 
@@ -1126,6 +1130,158 @@ function TopicClustersView({ posts }) {
 }
 
 // ============================================================================
+// CATEGORY MANAGER VIEW
+// ============================================================================
+
+function CategoryManagerView({ projectId, blogCategories = [], onCategoriesChange }) {
+  const [categories, setCategories] = useState(blogCategories)
+  const [newName, setNewName] = useState('')
+  const [editingId, setEditingId] = useState(null)
+  const [editName, setEditName] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => { setCategories(blogCategories) }, [blogCategories])
+
+  const handleCreate = async () => {
+    if (!newName.trim()) return
+    setSaving(true)
+    try {
+      const slug = newName.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+      await blogApi.createCategory(projectId, { name: newName.trim(), slug })
+      setNewName('')
+      onCategoriesChange?.()
+      toast.success('Category created')
+    } catch (err) {
+      toast.error(err?.message || 'Failed to create category')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleUpdate = async (categoryId) => {
+    if (!editName.trim()) return
+    setSaving(true)
+    try {
+      await blogApi.updateCategory(projectId, categoryId, { name: editName.trim() })
+      setEditingId(null)
+      setEditName('')
+      onCategoriesChange?.()
+      toast.success('Category updated')
+    } catch (err) {
+      toast.error(err?.message || 'Failed to update category')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleDelete = async (categoryId, name) => {
+    if (!confirm(`Delete category "${name}"? Posts using this category will not be deleted.`)) return
+    try {
+      await blogApi.deleteCategory(projectId, categoryId)
+      onCategoriesChange?.()
+      toast.success('Category deleted')
+    } catch (err) {
+      toast.error(err?.message || 'Failed to delete category')
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      <Card className="bg-[var(--glass-bg)] border-[var(--glass-border)]">
+        <CardHeader>
+          <CardTitle className="text-[var(--text-primary)]">Categories</CardTitle>
+          <CardDescription className="text-[var(--text-secondary)]">
+            Manage blog categories for this project
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Add new category */}
+          <div className="flex gap-2">
+            <Input
+              placeholder="New category name..."
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
+              className="flex-1"
+            />
+            <Button
+              onClick={handleCreate}
+              disabled={saving || !newName.trim()}
+              size="sm"
+              style={{ backgroundColor: 'var(--brand-primary)', color: 'white' }}
+            >
+              <Plus className="w-4 h-4 mr-1" />
+              Add
+            </Button>
+          </div>
+
+          {/* Category list */}
+          <div className="space-y-2">
+            {categories.length === 0 ? (
+              <p className="text-sm text-[var(--text-tertiary)] text-center py-6">
+                No categories yet. Add one above.
+              </p>
+            ) : (
+              categories.map(cat => (
+                <div
+                  key={cat.id || cat.slug}
+                  className="flex items-center gap-3 p-3 rounded-lg border border-[var(--glass-border)] bg-[var(--glass-bg)]/50 group"
+                >
+                  <Tag className="w-4 h-4 text-[var(--text-tertiary)] shrink-0" />
+                  {editingId === cat.id ? (
+                    <div className="flex-1 flex gap-2">
+                      <Input
+                        value={editName}
+                        onChange={(e) => setEditName(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleUpdate(cat.id)}
+                        className="flex-1 h-8 text-sm"
+                        autoFocus
+                      />
+                      <Button size="sm" variant="ghost" onClick={() => handleUpdate(cat.id)} className="h-8">
+                        <CheckCircle className="w-3.5 h-3.5" />
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => setEditingId(null)} className="h-8">
+                        <X className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <>
+                      <span className="flex-1 text-sm text-[var(--text-primary)]">{cat.name}</span>
+                      <span className="text-xs text-[var(--text-tertiary)]">{cat.slug}</span>
+                      {cat.post_count != null && (
+                        <Badge variant="secondary" className="text-xs">{cat.post_count} posts</Badge>
+                      )}
+                      <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 w-7 p-0"
+                          onClick={() => { setEditingId(cat.id); setEditName(cat.name) }}
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 w-7 p-0 text-red-400 hover:text-red-300"
+                          onClick={() => handleDelete(cat.id, cat.name)}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+// ============================================================================
 // STATS OVERVIEW
 // ============================================================================
 
@@ -1181,6 +1337,7 @@ function EditPostDialog({ open, onOpenChange, post, onSave, onRegenerateImage, b
   const [excerpt, setExcerpt] = useState('')
   const [category, setCategory] = useState('')
   const [status, setStatus] = useState('draft')
+  const [scheduledFor, setScheduledFor] = useState('')
   const [content, setContent] = useState('')
   const [featuredImage, setFeaturedImage] = useState('')
   const [isSaving, setIsSaving] = useState(false)
@@ -1234,6 +1391,7 @@ function EditPostDialog({ open, onOpenChange, post, onSave, onRegenerateImage, b
       const defaultCategory = categoryOptions[0]?.value || ''
       setCategory(post.category || defaultCategory)
       setStatus(post.status || 'draft')
+      setScheduledFor(post.scheduledFor || post.scheduled_for || '')
       setContent(extractTextContent(post.content) || '')
       setFeaturedImage(post.featuredImage || '')
     }
@@ -1249,7 +1407,8 @@ function EditPostDialog({ open, onOpenChange, post, onSave, onRegenerateImage, b
         status,
         content,
         featuredImage: featuredImage || undefined,
-        ...(status === 'published' && !post?.publishedAt && { publishedAt: new Date().toISOString() })
+        ...(status === 'published' && !post?.publishedAt && { publishedAt: new Date().toISOString() }),
+        ...(status === 'scheduled' && scheduledFor && { scheduledFor }),
       })
     } finally {
       setIsSaving(false)
@@ -1421,31 +1580,39 @@ function EditPostDialog({ open, onOpenChange, post, onSave, onRegenerateImage, b
                 <SelectContent>
                   <SelectItem value="draft">Draft</SelectItem>
                   <SelectItem value="published">Published</SelectItem>
+                  <SelectItem value="scheduled">Scheduled</SelectItem>
                   <SelectItem value="archived">Archived</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
 
-          {/* Content */}
-          <div className="space-y-2">
-            <Label htmlFor="edit-content">Content (Markdown)</Label>
-            <div ref={contentRef} className="relative">
-              <Textarea
-                id="edit-content"
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                placeholder="Blog post content in Markdown..."
-                rows={12}
-                className="font-mono text-sm w-full"
+          {/* Scheduled Date/Time Picker */}
+          {status === 'scheduled' && (
+            <div className="space-y-2">
+              <Label htmlFor="scheduled-for">Publish Date & Time</Label>
+              <Input
+                id="scheduled-for"
+                type="datetime-local"
+                value={scheduledFor ? new Date(scheduledFor).toISOString().slice(0, 16) : ''}
+                onChange={(e) => setScheduledFor(e.target.value ? new Date(e.target.value).toISOString() : '')}
+                min={new Date().toISOString().slice(0, 16)}
+                className="w-full"
               />
-              <EchoTextActions
-                containerRef={contentRef}
-                onReplace={(newText, { start, end }) =>
-                  setContent((prev) => prev.slice(0, start) + newText + prev.slice(end))
-                }
-                entityType="blog_post"
-                entityId={post?.id}
+              <p className="text-xs text-[var(--text-tertiary)]">
+                Post will auto-publish at this time
+              </p>
+            </div>
+          )}
+
+          {/* Content — Rich Markdown Editor */}
+          <div className="space-y-2">
+            <Label>Content</Label>
+            <div className="min-h-[300px] border border-[var(--glass-border)] rounded-lg overflow-hidden">
+              <MarkdownEditor
+                value={content}
+                onChange={setContent}
+                placeholder="Start writing your blog post..."
               />
             </div>
           </div>
@@ -1686,6 +1853,9 @@ export default function BlogDashboard() {
       case 'draft':
         result = result.filter(p => p.status === 'draft')
         break
+      case 'scheduled':
+        result = result.filter(p => p.status === 'scheduled')
+        break
       case 'featured':
         result = result.filter(p => p.featured)
         break
@@ -1734,6 +1904,7 @@ export default function BlogDashboard() {
     all: posts.length,
     published: posts.filter(p => p.status === 'published').length,
     draft: posts.filter(p => p.status === 'draft').length,
+    scheduled: posts.filter(p => p.status === 'scheduled').length,
     featured: posts.filter(p => p.featured).length,
   }), [posts])
 
@@ -1778,7 +1949,12 @@ export default function BlogDashboard() {
         return <TopicClustersView posts={posts} />
     }
 
-    // Posts list views (all, published, draft, featured)
+    // Categories management view
+    if (currentView === 'categories') {
+      return <CategoryManagerView projectId={projectId} blogCategories={blogCategories} onCategoriesChange={fetchCategories} />
+    }
+
+    // Posts list views (all, published, draft, scheduled, featured)
     return (
       <div className="space-y-6">
         <StatsOverview posts={posts} />

@@ -414,11 +414,13 @@ function ModuleLayoutRoot({
 
   let headerChild: React.ReactElement | null = null
   let contentChild: React.ReactElement | null = null
+  const extraChildren: React.ReactNode[] = []
   React.Children.forEach(children, (child) => {
     if (!React.isValidElement(child)) return
     const t = child.type as { displayName?: string }
     if (t === ModuleHeader || t?.displayName === 'ModuleHeader') headerChild = child
     else if (t === ModuleContent || t?.displayName === 'ModuleContent') contentChild = child
+    else extraChildren.push(child)
   })
 
   const showLeftDesktop = hasLeftSidebar && leftOpen && isLg
@@ -512,6 +514,8 @@ function ModuleLayoutRoot({
           </Sheet>
         )}
       </motion.div>
+      {/* Pass through non-Header/non-Content children (Dialogs, portals, etc.) */}
+      {extraChildren.length > 0 && extraChildren}
     </ModuleLayoutContext.Provider>
   )
 }
