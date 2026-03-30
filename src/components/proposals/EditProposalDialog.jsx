@@ -481,7 +481,7 @@ export default function EditProposalDialog({
 
                 <div className="space-y-2">
                   <Label className="flex items-center gap-2 text-[var(--text-secondary)]">
-                    <Calendar className="w-4 h-4 text-purple-500" />
+                    <Calendar className="w-4 h-4" style={{ color: 'var(--brand-primary)' }} />
                     Valid Until
                   </Label>
                   <Input

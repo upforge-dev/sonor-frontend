@@ -223,10 +223,10 @@ export default function ProposalEditor({ proposalId, onBack }) {
               services: p.sections?.map(s => s.title).join(', '),
               totalValue: p.totalValue || p.total_value || p.total_amount,
               description: `Proposal for ${p.contact?.name || p.contactName || 'client'}`,
-              // Include MDX content so Echo can make edits
               mdxContent: p.mdxContent || p.mdx_content,
-              // Editing instructions
-              editingContext: 'You are viewing the proposal editor. The user can ask you to edit sections of this proposal. Use the proposal edit API to make changes to the MDX content.'
+              sectionsJson: p.sectionsJson || p.sections_json,
+              editingContext:
+                'You are viewing the proposal editor. Proposals use JSON sections (sections_json); legacy ones use MDX. Use the proposal edit API to apply changes.',
             }
           })
         } else {

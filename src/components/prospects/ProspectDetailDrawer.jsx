@@ -91,6 +91,7 @@ import { PIPELINE_STAGES } from '../crm/pipelineStages'
 import useAuthStore from '@/lib/auth-store'
 import EmailComposeDialog from '../crm/EmailComposeDialog'
 import SendGatedLinkDialog from '../crm/SendGatedLinkDialog'
+import EditProspectDialog from '../crm/EditProspectDialog'
 import { GmailConnectCompact } from '../email/GmailConnectCard'
 
 // Format relative time
@@ -108,6 +109,45 @@ function formatRelativeTime(date) {
   if (hours < 24) return `${hours}h ago`
   if (days < 7) return `${days}d ago`
   return d.toLocaleDateString()
+}
+
+/** Normalize DB date / ISO string for <input type="date" /> (YYYY-MM-DD) */
+function toDateInputValue(isoOrDate) {
+  if (isoOrDate == null || isoOrDate === '') return ''
+  const s = String(isoOrDate).trim()
+  if (s.length >= 10 && /^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10)
+  const d = new Date(s)
+  if (Number.isNaN(d.getTime())) return ''
+  return d.toISOString().slice(0, 10)
+}
+
+/** CRM notes: v1 JSON thread in contacts.notes, or legacy plain text — always returns entries[] */
+function parseProspectNotesDoc(raw) {
+  if (!raw || typeof raw !== 'string') return []
+  const t = raw.trim()
+  if (t.startsWith('{')) {
+    try {
+      const o = JSON.parse(t)
+      if (o?.v === 1 && Array.isArray(o.entries)) {
+        return o.entries.filter((e) => e && typeof e.text === 'string')
+      }
+    } catch (_) {
+      /* fall through to legacy */
+    }
+  }
+  return t
+    ? [{ id: 'legacy', at: null, authorName: null, authorId: null, text: t }]
+    : []
+}
+
+function serializeProspectNotesDoc(entries) {
+  return JSON.stringify({ v: 1, entries })
+}
+
+function getProspectNotesPreview(raw) {
+  const entries = parseProspectNotesDoc(raw)
+  const last = entries[entries.length - 1]
+  return (last?.text || '').trim()
 }
 
 // Schedule Meeting Modal - Integrates with Sync module
@@ -615,9 +655,32 @@ function ProposalsList({ prospectId, brandColors }) {
 function OverviewTab({ prospect, brandColors, onStageChange, onConvert, isConverting, isAgency, onUpdate, onTabChange, isModalMode, pipelineStages = PIPELINE_STAGES }) {
   const [customFields, setCustomFields] = useState([])
   const [isLoadingFields, setIsLoadingFields] = useState(true)
-  
+  /** Range inputs fire onChange on every pixel while dragging — keep local value and persist on release */
+  const [probabilityLocal, setProbabilityLocal] = useState(() => prospect.probability ?? 50)
+  /** Avoid PUT + parent refresh on every keystroke — commit deal value / close date on blur */
+  const [dealValueLocal, setDealValueLocal] = useState(() =>
+    prospect.deal_value != null && prospect.deal_value !== '' ? String(prospect.deal_value) : '',
+  )
+  const [expectedCloseLocal, setExpectedCloseLocal] = useState(() =>
+    toDateInputValue(prospect.expected_close_date),
+  )
+
   const stageConfig = pipelineStages[prospect.pipeline_stage || 'new_lead']
   const StageIcon = stageConfig?.icon || Sparkles
+
+  useEffect(() => {
+    setProbabilityLocal(prospect.probability ?? 50)
+  }, [prospect.id, prospect.probability])
+
+  useEffect(() => {
+    setDealValueLocal(
+      prospect.deal_value != null && prospect.deal_value !== '' ? String(prospect.deal_value) : '',
+    )
+  }, [prospect.id, prospect.deal_value])
+
+  useEffect(() => {
+    setExpectedCloseLocal(toDateInputValue(prospect.expected_close_date))
+  }, [prospect.id, prospect.expected_close_date])
 
   useEffect(() => {
     const fetchCustomFields = async () => {
@@ -856,12 +919,19 @@ function OverviewTab({ prospect, brandColors, onStageChange, onConvert, isConver
               <Input
                 type="number"
                 placeholder="0.00"
-                value={prospect.deal_value || ''}
-                onChange={(e) => {
-                  handleFieldUpdate('deal_value', parseFloat(e.target.value) || null)
-                }}
-                onBlur={(e) => {
-                  handleFieldUpdate('deal_value', parseFloat(e.target.value) || null)
+                value={dealValueLocal}
+                onChange={(e) => setDealValueLocal(e.target.value)}
+                onBlur={() => {
+                  const raw = dealValueLocal.trim()
+                  const num = raw === '' ? null : parseFloat(raw)
+                  const next = raw === '' || Number.isNaN(num) ? null : num
+                  const prev =
+                    prospect.deal_value != null && prospect.deal_value !== ''
+                      ? Number(prospect.deal_value)
+                      : null
+                  if (next !== prev) {
+                    handleFieldUpdate('deal_value', next)
+                  }
                 }}
                 className="flex-1"
               />
@@ -879,35 +949,57 @@ function OverviewTab({ prospect, brandColors, onStageChange, onConvert, isConver
                   min="0"
                   max="100"
                   step="5"
-                  value={prospect.probability || 50}
+                  value={probabilityLocal}
                   onChange={(e) => {
-                    handleFieldUpdate('probability', parseInt(e.target.value))
+                    setProbabilityLocal(parseInt(e.target.value, 10))
+                  }}
+                  onPointerUp={(e) => {
+                    const v = parseInt(e.target.value, 10)
+                    const prev = prospect.probability ?? 50
+                    if (v !== prev) {
+                      handleFieldUpdate('probability', v)
+                    }
+                  }}
+                  onBlur={(e) => {
+                    const v = parseInt(e.target.value, 10)
+                    const prev = prospect.probability ?? 50
+                    if (v !== prev) {
+                      handleFieldUpdate('probability', v)
+                    }
                   }}
                   className="flex-1"
                 />
                 <span className="text-sm font-medium w-12 text-right">
-                  {prospect.probability || 50}%
+                  {probabilityLocal}%
                 </span>
               </div>
               
               {/* Weighted Value */}
-              {prospect.deal_value && (
-                <div 
-                  className="p-3 rounded-lg"
-                  style={{ 
-                    backgroundColor: brandColors.rgba.primary10,
-                    borderLeft: `3px solid ${brandColors.primary}`
-                  }}
-                >
-                  <p className="text-xs text-[var(--text-tertiary)]">Weighted Pipeline Value</p>
-                  <p className="text-lg font-bold" style={{ color: brandColors.primary }}>
-                    ${((prospect.deal_value * (prospect.probability || 50)) / 100).toLocaleString('en-US', {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2
-                    })}
-                  </p>
-                </div>
-              )}
+              {(() => {
+                const parsed = parseFloat(dealValueLocal)
+                const dealNum =
+                  dealValueLocal.trim() !== '' && !Number.isNaN(parsed)
+                    ? parsed
+                    : Number(prospect.deal_value) || 0
+                if (!dealNum) return null
+                return (
+                  <div
+                    className="p-3 rounded-lg"
+                    style={{
+                      backgroundColor: brandColors.rgba.primary10,
+                      borderLeft: `3px solid ${brandColors.primary}`,
+                    }}
+                  >
+                    <p className="text-xs text-[var(--text-tertiary)]">Weighted Pipeline Value</p>
+                    <p className="text-lg font-bold" style={{ color: brandColors.primary }}>
+                      ${((dealNum * probabilityLocal) / 100).toLocaleString('en-US', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
+                    </p>
+                  </div>
+                )
+              })()}
             </div>
           </div>
 
@@ -921,9 +1013,15 @@ function OverviewTab({ prospect, brandColors, onStageChange, onConvert, isConver
               </div>
               <Input
                 type="date"
-                value={prospect.expected_close_date || ''}
-                onChange={(e) => {
-                  handleFieldUpdate('expected_close_date', e.target.value || null)
+                value={expectedCloseLocal}
+                onChange={(e) => setExpectedCloseLocal(e.target.value)}
+                onBlur={() => {
+                  const next = expectedCloseLocal.trim() || null
+                  const prevRaw = toDateInputValue(prospect.expected_close_date)
+                  const prev = prevRaw || null
+                  if (next !== prev) {
+                    handleFieldUpdate('expected_close_date', next)
+                  }
                 }}
                 className="flex-1"
               />
@@ -1006,9 +1104,9 @@ function OverviewTab({ prospect, brandColors, onStageChange, onConvert, isConver
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {prospect.notes ? (
+          {getProspectNotesPreview(prospect.notes) ? (
             <p className="text-sm text-[var(--text-secondary)] whitespace-pre-wrap line-clamp-3">
-              {prospect.notes}
+              {getProspectNotesPreview(prospect.notes)}
             </p>
           ) : (
             <p className="text-sm text-[var(--text-tertiary)] italic">Click to add notes</p>
@@ -1871,17 +1969,41 @@ function MeetingsTab({ prospect, brandColors, onSchedule }) {
   )
 }
 
-// Notes Tab
+// Notes Tab — threaded notes with author + timestamp (stored as JSON v1 in contacts.notes)
 function NotesTab({ prospect, brandColors, onUpdate }) {
-  const [notes, setNotes] = useState(prospect.notes || '')
+  const user = useAuthStore((s) => s.user)
+  const [entries, setEntries] = useState(() => parseProspectNotesDoc(prospect.notes))
+  const [draft, setDraft] = useState('')
   const [isSaving, setIsSaving] = useState(false)
 
-  const handleSaveNotes = async () => {
+  useEffect(() => {
+    setEntries(parseProspectNotesDoc(prospect.notes))
+  }, [prospect.id, prospect.notes])
+
+  const handleAddNote = async () => {
+    const text = draft.trim()
+    if (!text) return
+
     setIsSaving(true)
+    const newEntry = {
+      id:
+        typeof crypto !== 'undefined' && crypto.randomUUID
+          ? crypto.randomUUID()
+          : `note-${Date.now()}`,
+      at: new Date().toISOString(),
+      authorId: user?.id ?? null,
+      authorName: (user?.name || user?.email || 'Team member').trim(),
+      text,
+    }
+    const next = [...entries, newEntry]
+    const payload = serializeProspectNotesDoc(next)
+
     try {
-      const response = await crmApi.updateProspect(prospect.id, { notes })
+      const response = await crmApi.updateProspect(prospect.id, { notes: payload })
       if (response.data) {
-        toast.success('Notes saved')
+        toast.success('Note added')
+        setDraft('')
+        setEntries(parseProspectNotesDoc(response.data.notes))
         onUpdate?.(response.data)
       }
     } catch (err) {
@@ -1892,38 +2014,97 @@ function NotesTab({ prospect, brandColors, onUpdate }) {
     }
   }
 
+  const formatNoteWhen = (iso) => {
+    if (!iso) return 'Earlier note'
+    try {
+      const d = new Date(iso)
+      if (Number.isNaN(d.getTime())) return ''
+      return d.toLocaleString(undefined, {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+      })
+    } catch {
+      return ''
+    }
+  }
+
   return (
-    <div className="p-4 space-y-4">
-      <div className="flex items-center justify-between mb-3">
-        <div>
-          <h3 className="font-semibold text-[var(--text-primary)]">Notes</h3>
-          <p className="text-xs text-muted-foreground">Keep track of important information</p>
-        </div>
-        <Button
-          onClick={handleSaveNotes}
-          disabled={isSaving}
-          size="sm"
-          style={{ backgroundColor: brandColors.primary, color: 'white' }}
-        >
-          {isSaving ? (
-            <>
-              <UptradeSpinner size="sm" className="mr-1.5 [&_p]:hidden [&_svg]:!h-3 [&_svg]:!w-3" />
-              Saving...
-            </>
-          ) : (
-            <>
-              <Check className="h-3 w-3 mr-1.5" />
-              Save
-            </>
-          )}
-        </Button>
+    <div className="p-4 flex flex-col gap-4 h-full min-h-0">
+      <div>
+        <h3 className="font-semibold text-[var(--text-primary)]">Notes</h3>
+        <p className="text-xs text-muted-foreground">
+          Each save adds a dated entry with your name — builds a thread over time.
+        </p>
       </div>
-      <Textarea
-        value={notes}
-        onChange={(e) => setNotes(e.target.value)}
-        placeholder="Add notes about this prospect..."
-        className="min-h-[300px] resize-none"
-      />
+
+      <ScrollArea className="flex-1 min-h-[200px] max-h-[45vh] rounded-xl border border-[var(--glass-border)] bg-[var(--glass-bg-inset)]/30">
+        <div className="p-3 space-y-3">
+          {entries.length === 0 ? (
+            <p className="text-sm text-[var(--text-tertiary)] italic py-6 text-center">
+              No notes yet. Add one below.
+            </p>
+          ) : (
+            entries.map((entry) => (
+              <div
+                key={entry.id}
+                className="rounded-xl border border-[var(--glass-border)] bg-[var(--glass-bg)] p-3 space-y-2"
+              >
+                <div className="flex flex-wrap items-baseline justify-between gap-2">
+                  <span className="text-sm font-medium text-[var(--text-primary)]">
+                    {entry.authorName || 'Note'}
+                  </span>
+                  <span className="text-xs text-[var(--text-tertiary)] tabular-nums">
+                    {formatNoteWhen(entry.at)}
+                  </span>
+                </div>
+                <p className="text-sm text-[var(--text-secondary)] whitespace-pre-wrap">{entry.text}</p>
+              </div>
+            ))
+          )}
+        </div>
+      </ScrollArea>
+
+      <div className="space-y-2 flex-shrink-0">
+        <label className="text-xs text-[var(--text-tertiary)]">Add a note</label>
+        <Textarea
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          placeholder="Type a note…"
+          className="min-h-[100px] resize-none"
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+              e.preventDefault()
+              handleAddNote()
+            }
+          }}
+        />
+        <div className="flex justify-end">
+          <Button
+            onClick={handleAddNote}
+            disabled={isSaving || !draft.trim()}
+            size="sm"
+            style={{ backgroundColor: brandColors.primary, color: 'white' }}
+          >
+            {isSaving ? (
+              <>
+                <UptradeSpinner size="sm" className="mr-1.5 [&_p]:hidden [&_svg]:!h-3 [&_svg]:!w-3" />
+                Saving…
+              </>
+            ) : (
+              <>
+                <Check className="h-3 w-3 mr-1.5" />
+                Save note
+              </>
+            )}
+          </Button>
+        </div>
+        <p className="text-[10px] text-[var(--text-tertiary)]">
+          {typeof navigator !== 'undefined' && navigator.platform?.includes('Mac')
+            ? '⌘'
+            : 'Ctrl'}
+          +Enter to save
+        </p>
+      </div>
     </div>
   )
 }
@@ -2067,7 +2248,7 @@ export default function ProspectDetailDrawer({
   const [isConverting, setIsConverting] = useState(false)
   const [showScheduleModal, setShowScheduleModal] = useState(false)
   const [isModalMode, setIsModalMode] = useState(false)
-  const [isEditing, setIsEditing] = useState(false)
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [showEmailCompose, setShowEmailCompose] = useState(false)
   const [showGatedLinkDialog, setShowGatedLinkDialog] = useState(false)
 
@@ -2205,7 +2386,7 @@ export default function ProspectDetailDrawer({
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => setIsEditing(true)}>
+                  <DropdownMenuItem onClick={() => setIsEditDialogOpen(true)}>
                     <Pencil className="h-4 w-4 mr-2" />
                     Edit Details
                   </DropdownMenuItem>
@@ -2222,7 +2403,7 @@ export default function ProspectDetailDrawer({
                     variant="ghost" 
                     size="icon" 
                     className="h-7 w-7"
-                    onClick={() => setIsEditing(!isEditing)}
+                    onClick={() => setIsEditDialogOpen(true)}
                   >
                     <Pencil className="h-4 w-4" />
                   </Button>
@@ -2532,6 +2713,13 @@ export default function ProspectDetailDrawer({
 
   return (
     <TooltipProvider>
+      <EditProspectDialog
+        prospect={prospect}
+        isOpen={isEditDialogOpen}
+        onClose={() => setIsEditDialogOpen(false)}
+        onSave={(updated) => onUpdate?.(updated)}
+      />
+
       {/* Schedule Meeting Modal */}
       <ScheduleMeetingModal
         open={showScheduleModal}

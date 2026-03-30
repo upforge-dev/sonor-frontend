@@ -22,7 +22,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { toast } from '@/lib/toast'
-import { adminApi } from '@/lib/sonor-api'
+import { crmApi } from '@/lib/sonor-api'
 
 const SOURCES = [
   { value: 'website', label: 'Website' },
@@ -75,15 +75,16 @@ export default function EditProspectDialog({
 
     setIsSaving(true)
     try {
-      const response = await adminApi.updateClient(prospect.id, formData)
+      // CRM prospects must use /crm/prospects — admin/clients only maps name/company/phone/status
+      // and omits email, website, source entirely.
+      const { data: updated } = await crmApi.updateProspect(prospect.id, formData)
 
       toast.success('Contact updated successfully')
-      
-      // Call onSave with updated data
-      if (onSave) {
-        onSave({ ...prospect, ...formData })
+
+      if (onSave && updated) {
+        onSave(updated)
       }
-      
+
       onClose()
     } catch (error) {
       console.error('Failed to update contact:', error)
@@ -192,7 +193,8 @@ export default function EditProspectDialog({
             <Button 
               type="submit" 
               disabled={isSaving || !formData.name}
-              className="bg-gradient-to-r from-[#4bbf39] to-[#39bfb0] hover:from-[#43ab33] hover:to-[#33aba0] text-white"
+              className="border-0 text-white shadow-sm hover:opacity-90 disabled:opacity-50"
+              style={{ backgroundColor: 'var(--brand-primary)' }}
             >
               {isSaving ? (
                 <>

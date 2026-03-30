@@ -482,7 +482,7 @@ function ModuleLayoutRoot({
                 {resizableSidebars && (
                   <ResizeHandle side="right" onMouseDown={rightResize.handleMouseDown} />
                 )}
-                <div className={cn('flex flex-col w-full min-w-0 min-h-0 flex-1 overflow-hidden', MODULE_SIDEBAR_TYPOGRAPHY)}>
+                <div className={cn('flex flex-col w-full min-w-0 max-w-full min-h-0 flex-1 overflow-x-hidden overflow-y-hidden', MODULE_SIDEBAR_TYPOGRAPHY)}>
                   {renderRightContent ? rightSidebar : null}
                 </div>
               </motion.aside>
@@ -509,7 +509,7 @@ function ModuleLayoutRoot({
               <SheetHeader className="border-b border-[var(--glass-border)] px-4 py-3 pr-12 shrink-0">
                 <SheetTitle className="text-base">{rightSidebarTitle}</SheetTitle>
               </SheetHeader>
-              <div className={cn('flex-1 overflow-auto p-4', MODULE_SIDEBAR_TYPOGRAPHY)}>{rightSidebar}</div>
+              <div className={cn('flex-1 min-w-0 max-w-full overflow-x-hidden overflow-y-auto p-4', MODULE_SIDEBAR_TYPOGRAPHY)}>{rightSidebar}</div>
             </SheetContent>
           </Sheet>
         )}

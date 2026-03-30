@@ -73,7 +73,10 @@ export default function ProposalEditorMain({
                 variant="outline"
                 size="sm"
                 onClick={onToggleAnalytics}
-                className={cn(showAnalytics && 'bg-purple-500/10 border-purple-500')}
+                className={cn(
+                  showAnalytics &&
+                    'border-[var(--brand-primary)] bg-[color-mix(in_srgb,var(--brand-primary)_10%,transparent)]',
+                )}
               >
                 <BarChart2 className="w-4 h-4 mr-2" />
                 {showAnalytics ? 'Hide' : 'Show'} Analytics
