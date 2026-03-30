@@ -43,25 +43,51 @@ export default function ProposalSignature({
   const [showPayment, setShowPayment] = useState(false)
   const [paymentInfo, setPaymentInfo] = useState(null)
   const [paymentComplete, setPaymentComplete] = useState(false)
+  const depositScrollDoneRef = useRef(false)
 
-  // Debug log
-  console.log('[ProposalSignature] Mounted with proposalId:', proposalId, 'status:', status)
+  useEffect(() => {
+    depositScrollDoneRef.current = false
+  }, [proposalId])
 
-  // Check if proposal is already signed on mount
+  // Re-open proposal link: show deposit payment when already signed but unpaid
   useEffect(() => {
     if (clientSignature || clientSignedAt) {
       setSigned(true)
       setSignatureData(clientSignature)
-      setPrintedName(clientSignedBy || '')
+      setPrintedName(clientSignedBy || initialClientName || '')
       setSignedDate(clientSignedAt)
-      // Check if deposit is already paid
       if (depositPaidAt) {
         setPaymentComplete(true)
+        setShowPayment(false)
+      } else if (depositAmount != null && Number(depositAmount) > 0) {
+        setPaymentInfo({
+          depositAmount: Number(depositAmount),
+          totalAmount: totalAmount != null ? Number(totalAmount) : undefined,
+        })
+        setShowPayment(true)
       }
     } else {
       checkSignatureStatus()
     }
-  }, [proposalId, clientSignature, clientSignedAt, depositPaidAt])
+  }, [
+    proposalId,
+    clientSignature,
+    clientSignedAt,
+    depositPaidAt,
+    depositAmount,
+    totalAmount,
+    clientSignedBy,
+    initialClientName,
+  ])
+
+  useEffect(() => {
+    if (!signed || !showPayment || paymentComplete || !paymentInfo || depositScrollDoneRef.current) return
+    depositScrollDoneRef.current = true
+    const t = window.setTimeout(() => {
+      document.getElementById('deposit-payment')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 400)
+    return () => clearTimeout(t)
+  }, [signed, showPayment, paymentComplete, paymentInfo])
 
   const checkSignatureStatus = async () => {
     if (!proposalId) return
@@ -147,6 +173,7 @@ export default function ProposalSignature({
       const response = await proposalsApi.sign(proposalId, {
         signatureUrl: publicUrl,
         signerName: printedName.trim(),
+        ...(clientEmail ? { signerEmail: clientEmail } : {}),
       })
 
       const data = response.data
@@ -274,14 +301,16 @@ export default function ProposalSignature({
 
         {/* Payment Section */}
         {showPayment && paymentInfo && !paymentComplete && (
-          <ProposalDepositPayment
-            proposalId={proposalId}
-            proposalTitle={proposalTitle}
-            depositAmount={paymentInfo.depositAmount}
-            depositPercentage={depositPercentage || 50}
-            totalAmount={paymentInfo.totalAmount}
-            onPaymentSuccess={handlePaymentComplete}
-          />
+          <div id="deposit-payment" className="scroll-mt-24">
+            <ProposalDepositPayment
+              proposalId={proposalId}
+              proposalTitle={proposalTitle}
+              depositAmount={paymentInfo.depositAmount}
+              depositPercentage={depositPercentage || 50}
+              totalAmount={paymentInfo.totalAmount}
+              onPaymentSuccess={handlePaymentComplete}
+            />
+          </div>
         )}
 
         {/* Payment Complete Confirmation */}

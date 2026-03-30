@@ -81,6 +81,19 @@ export default function ProposalView({
 
   const timeline = formatTimeline(rawTimeline)
 
+  const clientEmail =
+    proposal.contact?.email ||
+    proposal.recipient_email ||
+    proposal.recipientEmail ||
+    null
+  const clientSignedAtNorm =
+    proposal.clientSignedAt || proposal.client_signed_at || proposal.signedAt || proposal.signed_at
+  const clientSignatureNorm =
+    proposal.clientSignatureUrl ||
+    proposal.client_signature_url ||
+    proposal.clientSignature ||
+    proposal.client_signature
+
   const hasContent = Array.isArray(sectionsJson) && sectionsJson.length > 0
   const isGenerating = !hasContent && proposal.status === 'draft'
 
@@ -153,11 +166,11 @@ export default function ProposalView({
             proposalId={proposal.id}
             proposalSlug={proposal.slug}
             proposalTitle={proposal.title}
-            clientName={proposal.contact?.name}
-            clientEmail={proposal.contact?.email}
-            clientSignature={proposal.clientSignatureUrl || proposal.clientSignature}
-            clientSignedBy={proposal.clientSignedBy}
-            clientSignedAt={proposal.clientSignedAt || proposal.signedAt}
+            clientName={proposal.contact?.name || proposal.recipient_name || proposal.recipientName}
+            clientEmail={clientEmail}
+            clientSignature={clientSignatureNorm}
+            clientSignedBy={proposal.clientSignedBy || proposal.client_signed_by}
+            clientSignedAt={clientSignedAtNorm}
             status={proposal.status}
             depositPercentage={depositPercentage}
             depositAmount={depositAmount}
