@@ -7,28 +7,16 @@ import { Label } from '@/components/ui/label'
 import { CheckCircle, X, Pen, Loader2, Mail, Calendar, User } from 'lucide-react'
 import { proposalsApi } from '@/lib/sonor-api'
 import { supabase } from '@/lib/supabase'
-import ProposalDepositPayment from './ProposalDepositPayment'
 
-export default function ProposalSignature({ 
-  proposalId, 
-  proposalSlug,
-  proposalTitle, 
-  clientName: initialClientName, 
-  clientEmail, 
+export default function ProposalSignature({
+  proposalId,
+  proposalTitle,
+  clientName: initialClientName,
+  clientEmail,
   onSignatureStarted,
-  // For displaying already-signed proposals (from ProposalView)
   clientSignature,
   clientSignedBy,
   clientSignedAt,
-  adminSignature,
-  adminSignedBy,
-  adminSignedAt,
-  status,
-  // Payment info
-  depositPercentage,
-  depositAmount,
-  totalAmount,
-  depositPaidAt
 }) {
   const sigPad = useRef(null)
   const [signed, setSigned] = useState(false)
@@ -39,88 +27,26 @@ export default function ProposalSignature({
   const [printedName, setPrintedName] = useState(initialClientName || '')
   const [signatureData, setSignatureData] = useState(null)
   const [signedDate, setSignedDate] = useState(null)
-  // Payment state
-  const [showPayment, setShowPayment] = useState(false)
-  const [paymentInfo, setPaymentInfo] = useState(null)
-  const [paymentComplete, setPaymentComplete] = useState(false)
-  const depositScrollDoneRef = useRef(false)
 
-  useEffect(() => {
-    depositScrollDoneRef.current = false
-  }, [proposalId])
-
-  // Re-open proposal link: show deposit payment when already signed but unpaid
   useEffect(() => {
     if (clientSignature || clientSignedAt) {
       setSigned(true)
       setSignatureData(clientSignature)
       setPrintedName(clientSignedBy || initialClientName || '')
       setSignedDate(clientSignedAt)
-      if (depositPaidAt) {
-        setPaymentComplete(true)
-        setShowPayment(false)
-      } else if (depositAmount != null && Number(depositAmount) > 0) {
-        setPaymentInfo({
-          depositAmount: Number(depositAmount),
-          totalAmount: totalAmount != null ? Number(totalAmount) : undefined,
-        })
-        setShowPayment(true)
-      }
     } else {
-      checkSignatureStatus()
+      setSigned(false)
+      setSignatureData(null)
+      setPrintedName(initialClientName || '')
+      setSignedDate(null)
     }
   }, [
     proposalId,
     clientSignature,
     clientSignedAt,
-    depositPaidAt,
-    depositAmount,
-    totalAmount,
     clientSignedBy,
     initialClientName,
   ])
-
-  useEffect(() => {
-    if (!signed || !showPayment || paymentComplete || !paymentInfo || depositScrollDoneRef.current) return
-    depositScrollDoneRef.current = true
-    const t = window.setTimeout(() => {
-      document.getElementById('deposit-payment')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    }, 400)
-    return () => clearTimeout(t)
-  }, [signed, showPayment, paymentComplete, paymentInfo])
-
-  const checkSignatureStatus = async () => {
-    if (!proposalId) return
-    
-    try {
-      const response = await proposalsApi.get(proposalId)
-      const proposal = response.data?.proposal
-      
-      if (proposal) {
-        // Check if proposal has signature data
-        if (proposal?.signed_at || proposal?.client_signed_at || proposal?.client_signature || proposal?.client_signature_url) {
-          setSigned(true)
-          setSignatureData(proposal.client_signature_url || proposal.client_signature)
-          setPrintedName(proposal.client_signed_by || initialClientName || '')
-          setSignedDate(proposal.client_signed_at || proposal.signed_at)
-          
-          // Check deposit status
-          if (proposal?.deposit_paid_at) {
-            setPaymentComplete(true)
-          } else if (proposal?.deposit_amount) {
-            // Proposal is signed but deposit not paid - show payment
-            setPaymentInfo({
-              depositAmount: proposal.deposit_amount,
-              totalAmount: proposal.total_amount
-            })
-            setShowPayment(true)
-          }
-        }
-      }
-    } catch (err) {
-      console.error('Error checking signature status:', err)
-    }
-  }
 
   const handleClear = () => {
     sigPad.current?.clear()
@@ -131,8 +57,7 @@ export default function ProposalSignature({
   const handleBegin = () => {
     setIsEmpty(false)
     setError('')
-    
-    // Track signature started (only once)
+
     if (!hasTriggeredStart && onSignatureStarted) {
       setHasTriggeredStart(true)
       onSignatureStarted()
@@ -154,9 +79,8 @@ export default function ProposalSignature({
     setError('')
 
     try {
-      // Convert canvas to PNG blob and upload to Supabase Storage
       const canvas = sigPad.current.getCanvas()
-      const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'))
+      const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'))
       const fileName = `${proposalId}/${Date.now()}.png`
 
       const { data: uploadData, error: uploadError } = await supabase.storage
@@ -169,7 +93,6 @@ export default function ProposalSignature({
         .from('proposal-signatures')
         .getPublicUrl(uploadData.path)
 
-      // Call the sign endpoint with the Storage URL
       const response = await proposalsApi.sign(proposalId, {
         signatureUrl: publicUrl,
         signerName: printedName.trim(),
@@ -178,27 +101,30 @@ export default function ProposalSignature({
 
       const data = response.data
       const signedAt = data.signed_at || new Date().toISOString()
+      const payment = data.payment
+
+      if (payment?.paymentUrl) {
+        window.location.href = payment.paymentUrl
+        return
+      }
+
+      if (payment?.paymentToken && payment?.depositAmount > 0) {
+        window.location.href = `${window.location.origin}/pay/${payment.paymentToken}`
+        return
+      }
+
+      if (payment?.depositAmount > 0) {
+        setError(
+          'Your invoice is ready. Open this proposal link again from your email to go to payment, or contact us for help.',
+        )
+        setSigning(false)
+        return
+      }
 
       setSignatureData(publicUrl)
       setSignedDate(signedAt)
       setSigned(true)
       setSigning(false)
-      
-      // Check if there's a deposit invoice to pay
-      const payment = data.payment
-      if (payment?.paymentToken && payment.depositAmount > 0) {
-        window.location.href = payment.paymentUrl
-        return
-      } else if (payment?.depositAmount && payment.depositAmount > 0) {
-        setPaymentInfo({
-          depositAmount: payment.depositAmount,
-          totalAmount: payment.totalAmount
-        })
-        setShowPayment(true)
-      } else {
-        setPaymentComplete(true)
-      }
-      
     } catch (err) {
       console.error('Signature error:', err)
       setError(err.response?.data?.message || err.message || 'Failed to process signature. Please try again.')
@@ -208,28 +134,21 @@ export default function ProposalSignature({
 
   const formatDate = (dateString) => {
     if (!dateString) return ''
-    return new Date(dateString).toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'long', 
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
       day: 'numeric',
       hour: 'numeric',
-      minute: '2-digit'
+      minute: '2-digit',
     })
   }
 
-  // Handle payment completion
-  const handlePaymentComplete = () => {
-    setPaymentComplete(true)
-    setShowPayment(false)
-  }
+  const glassBase =
+    'relative bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-xl border border-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.2)] rounded-3xl'
 
-  const glassBase = 'relative bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-xl border border-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.2)] rounded-3xl'
-
-  // Show inline signature block if already signed
   if (signed) {
     return (
       <div id="signature" className="space-y-6 scroll-mt-24 my-10">
-        {/* Client Signature Block */}
         <div className={`${glassBase} p-8 md:p-10`}>
           <div className="relative z-10">
             <div className="flex items-center gap-3 mb-6">
@@ -243,7 +162,6 @@ export default function ProposalSignature({
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Signature Image */}
               <div className="bg-white rounded-2xl border border-white/20 p-6">
                 {signatureData ? (
                   <img
@@ -258,7 +176,6 @@ export default function ProposalSignature({
                 )}
               </div>
 
-              {/* Signature Details */}
               <div className="space-y-4">
                 <div className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/10">
                   <User className="h-4 w-4 text-[#39bfb0]" />
@@ -298,51 +215,15 @@ export default function ProposalSignature({
             </p>
           </div>
         </div>
-
-        {/* Payment Section */}
-        {showPayment && paymentInfo && !paymentComplete && (
-          <div id="deposit-payment" className="scroll-mt-24">
-            <ProposalDepositPayment
-              proposalId={proposalId}
-              proposalTitle={proposalTitle}
-              depositAmount={paymentInfo.depositAmount}
-              depositPercentage={depositPercentage || 50}
-              totalAmount={paymentInfo.totalAmount}
-              onPaymentSuccess={handlePaymentComplete}
-            />
-          </div>
-        )}
-
-        {/* Payment Complete Confirmation */}
-        {paymentComplete && (
-          <div className={`${glassBase} p-8`}>
-            <div className="relative z-10 flex items-start gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-[#39bfb0]/20 border border-[#39bfb0]/30 flex items-center justify-center flex-shrink-0">
-                <CheckCircle className="w-6 h-6 text-[#39bfb0]" />
-              </div>
-              <div>
-                <h3 className="text-xl font-bold text-[#39bfb0] mb-1">Thank You!</h3>
-                <p className="text-sm text-[var(--text-secondary)]">
-                  Your contract has been signed and your deposit payment has been received.
-                  We're excited to get started on your project! Check your email for next steps
-                  and project timeline details.
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     )
   }
 
-  // Show signature form
   return (
     <div id="signature" className={`${glassBase} overflow-hidden my-10 scroll-mt-24 border-[#39bfb0]/40`}>
-      {/* Subtle brand glow */}
       <div className="absolute -top-10 -right-10 w-40 h-40 bg-[#39bfb0]/15 rounded-full blur-3xl" />
 
       <div className="relative z-10">
-        {/* Header */}
         <div className="p-8 pb-0">
           <div className="flex items-center gap-3 mb-2">
             <div className="w-12 h-12 rounded-2xl bg-[#39bfb0]/20 border border-[#39bfb0]/30 flex items-center justify-center">
@@ -365,7 +246,6 @@ export default function ProposalSignature({
             </Alert>
           )}
 
-          {/* Legal Notice */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="flex items-start gap-3 p-4 rounded-2xl bg-white/5 border border-white/10">
               <CheckCircle className="h-5 w-5 text-[#39bfb0] mt-0.5 flex-shrink-0" />
@@ -383,7 +263,6 @@ export default function ProposalSignature({
             </div>
           </div>
 
-          {/* Printed Name Field */}
           <div className="space-y-2">
             <Label htmlFor="printedName" className="text-[var(--text-primary)]">
               Your Full Legal Name <span className="text-red-400">*</span>
@@ -399,7 +278,6 @@ export default function ProposalSignature({
             />
           </div>
 
-          {/* Signature Canvas */}
           <div className="space-y-2">
             <Label className="text-[var(--text-primary)]">
               Your Signature <span className="text-red-400">*</span>
@@ -410,7 +288,7 @@ export default function ProposalSignature({
                 onBegin={handleBegin}
                 canvasProps={{
                   className: 'w-full h-40 cursor-crosshair',
-                  style: { touchAction: 'none' }
+                  style: { touchAction: 'none' },
                 }}
                 backgroundColor="rgb(255, 255, 255)"
               />
@@ -420,7 +298,6 @@ export default function ProposalSignature({
             </p>
           </div>
 
-          {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row gap-3">
             <Button
               variant="outline"
@@ -450,14 +327,13 @@ export default function ProposalSignature({
             </Button>
           </div>
 
-          {/* Signature Details Preview */}
           <div className="pt-4 border-t border-white/10 text-xs text-[var(--text-tertiary)] space-y-1">
             <p><strong>Proposal:</strong> {proposalTitle}</p>
             {clientEmail && <p><strong>Email:</strong> {clientEmail}</p>}
             <p><strong>Date:</strong> {new Date().toLocaleDateString('en-US', {
               year: 'numeric',
               month: 'long',
-              day: 'numeric'
+              day: 'numeric',
             })}</p>
           </div>
         </div>

@@ -13,7 +13,6 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Loader2, ArrowLeft } from 'lucide-react'
 import ProposalSignature from './ProposalSignature'
-import ProposalTerms from './ProposalTerms'
 
 // JSON sections renderer
 function ProposalJSONContent({ sectionsJson, proposal }) {
@@ -51,35 +50,7 @@ export default function ProposalView({
     )
   }
 
-  // Normalize field names (API returns camelCase, some places have snake_case)
-  const totalAmount = proposal.totalAmount || (proposal.total_amount ? parseFloat(proposal.total_amount) : null)
   const sectionsJson = proposal.sectionsJson || proposal.sections_json
-  const rawTimeline = proposal.timeline || '6-weeks'
-  const rawPaymentTerms = proposal.paymentTerms || proposal.payment_terms || '50-50'
-
-  // Deposit info
-  const depositPercentage = proposal.depositPercentage || proposal.deposit_percentage || 50
-  const depositAmount = proposal.depositAmount || proposal.deposit_amount || (totalAmount * depositPercentage / 100)
-  const depositPaidAt = proposal.depositPaidAt || proposal.deposit_paid_at
-
-  // Parse timeline into readable format
-  const formatTimeline = (value) => {
-    if (!value) return '6 weeks'
-    const match = value.match(/^(\d+)-?weeks?$/i)
-    if (match) {
-      const num = parseInt(match[1])
-      return num === 1 ? '1 week' : `${num} weeks`
-    }
-    const monthMatch = value.match(/^(\d+)-?months?$/i)
-    if (monthMatch) {
-      const num = parseInt(monthMatch[1])
-      return num === 1 ? '1 month' : `${num} months`
-    }
-    if (value.toLowerCase() === 'ongoing') return 'Ongoing'
-    return value.replace(/-/g, ' ')
-  }
-
-  const timeline = formatTimeline(rawTimeline)
 
   const clientEmail =
     proposal.contact?.email ||
@@ -134,7 +105,6 @@ export default function ProposalView({
 
   return (
     <div className={`max-w-6xl mx-auto ${className}`}>
-      {/* Back Button - only show when onBack is provided (internal views) */}
       {onBack && (
         <div className="mb-6">
           <Button variant="ghost" onClick={onBack} className="gap-2">
@@ -144,43 +114,24 @@ export default function ProposalView({
         </div>
       )}
 
-      {/* Content — JSON sections via ProposalBlockRegistry */}
       <div className="mb-8">
         <ProposalJSONContent sectionsJson={sectionsJson} proposal={proposal} />
       </div>
 
-      {/* Signature Section - for public client view */}
       {isPublicView && showSignature && (
-        <>
-          {/* Terms & Conditions - Only show if not yet signed */}
-          {!['signed', 'accepted'].includes(proposal.status) && (
-            <ProposalTerms
-              proposalTitle={proposal.title}
-              depositPercentage={depositPercentage}
-              timeline={timeline}
-            />
-          )}
-
-          {/* Signature — component handles its own glass styling */}
-          <ProposalSignature
-            proposalId={proposal.id}
-            proposalSlug={proposal.slug}
-            proposalTitle={proposal.title}
-            clientName={proposal.contact?.name || proposal.recipient_name || proposal.recipientName}
-            clientEmail={clientEmail}
-            clientSignature={clientSignatureNorm}
-            clientSignedBy={proposal.clientSignedBy || proposal.client_signed_by}
-            clientSignedAt={clientSignedAtNorm}
-            status={proposal.status}
-            depositPercentage={depositPercentage}
-            depositAmount={depositAmount}
-            totalAmount={totalAmount}
-            depositPaidAt={depositPaidAt}
-          />
-        </>
+        <ProposalSignature
+          proposalId={proposal.id}
+          proposalSlug={proposal.slug}
+          proposalTitle={proposal.title}
+          clientName={proposal.contact?.name || proposal.recipient_name || proposal.recipientName}
+          clientEmail={clientEmail}
+          clientSignature={clientSignatureNorm}
+          clientSignedBy={proposal.clientSignedBy || proposal.client_signed_by}
+          clientSignedAt={clientSignedAtNorm}
+          status={proposal.status}
+        />
       )}
 
-      {/* Bottom padding */}
       <div className="pb-8" />
     </div>
   )

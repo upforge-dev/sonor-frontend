@@ -9,12 +9,57 @@ export default function ProposalGate() {
   const [proposal, setProposal] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(null)
-  const fetchAttempted = useRef(false)
   const viewIdRef = useRef(null)
   const viewStartedAtRef = useRef(null)
 
   useEffect(() => {
-    fetchProposal()
+    let cancelled = false
+
+    const run = async () => {
+      setIsLoading(true)
+      setError(null)
+      setProposal(null)
+      viewIdRef.current = null
+      viewStartedAtRef.current = null
+
+      try {
+        const response = await proposalsApi.getBySlug(slug)
+        if (cancelled) return
+
+        const data = response.data
+        const pendingPath = data?.pendingPaymentPath
+        if (pendingPath && typeof pendingPath === 'string' && pendingPath.startsWith('/')) {
+          window.location.replace(`${window.location.origin}${pendingPath}`)
+          return
+        }
+
+        const proposalData = data?.proposal ?? data
+        if (proposalData?.id) {
+          setProposal(proposalData)
+          viewIdRef.current = data?.viewId ?? null
+          viewStartedAtRef.current = Date.now()
+        } else {
+          setError('Proposal not found')
+        }
+      } catch (err) {
+        if (cancelled) return
+        console.error('[ProposalGate] Failed to fetch proposal:', err)
+        const raw = err.response?.data?.error
+        const message = typeof raw === 'object' && raw !== null && 'message' in raw
+          ? String(raw.message)
+          : typeof raw === 'string'
+            ? raw
+            : 'Failed to load proposal'
+        setError(message)
+      } finally {
+        if (!cancelled) setIsLoading(false)
+      }
+    }
+
+    run()
+    return () => {
+      cancelled = true
+    }
   }, [slug])
 
   const sendViewTimeBeacon = (clearRefs = false) => {
@@ -42,7 +87,6 @@ export default function ProposalGate() {
     }
   }
 
-  // On exit (visibility hidden / pagehide): send time and clear refs so we don't double-send
   useEffect(() => {
     const handleExit = () => sendViewTimeBeacon(true)
     const onVisibilityChange = () => {
@@ -57,7 +101,6 @@ export default function ProposalGate() {
     }
   }, [])
 
-  // Heartbeat: send time on page every 20s so we record duration even if user never triggers exit
   useEffect(() => {
     const viewId = viewIdRef.current
     const startedAt = viewStartedAtRef.current
@@ -67,39 +110,6 @@ export default function ProposalGate() {
     }, 20_000)
     return () => clearInterval(interval)
   }, [proposal?.id])
-
-  const fetchProposal = async () => {
-    if (fetchAttempted.current) return
-    fetchAttempted.current = true
-
-    try {
-      setIsLoading(true)
-      setError(null)
-
-      const response = await proposalsApi.getBySlug(slug)
-
-      const data = response.data
-      const proposalData = data?.proposal ?? data
-      if (proposalData?.id) {
-        setProposal(proposalData)
-        viewIdRef.current = data?.viewId ?? null
-        viewStartedAtRef.current = Date.now()
-      } else {
-        setError('Proposal not found')
-      }
-    } catch (err) {
-      console.error('[ProposalGate] Failed to fetch proposal:', err)
-      const raw = err.response?.data?.error
-      const message = typeof raw === 'object' && raw !== null && 'message' in raw
-        ? String(raw.message)
-        : typeof raw === 'string'
-          ? raw
-          : 'Failed to load proposal'
-      setError(message)
-    } finally {
-      setIsLoading(false)
-    }
-  }
 
   if (isLoading) {
     return <UptradeLoading />
@@ -117,7 +127,5 @@ export default function ProposalGate() {
     )
   }
 
-  // Pass isPublicView=true since this is the client-facing route
-  // Clients should always see the signature section
   return <ProposalTemplate proposal={proposal} proposalSlug={slug} isPublicView={true} />
 }
