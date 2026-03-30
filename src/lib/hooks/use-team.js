@@ -30,8 +30,10 @@ export function useTeamMembers(options = {}) {
     queryFn: async () => {
       const response = await adminApi.listTeamMembers()
       const data = response.data || response
+      const raw = data.teamMembers || data.members || data || []
+      const members = Array.isArray(raw) ? raw : []
       return {
-        members: data.teamMembers || data.members || data || [],
+        members,
         summary: data.summary || null,
       }
     },

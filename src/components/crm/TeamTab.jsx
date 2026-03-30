@@ -478,7 +478,7 @@ export default function TeamTab() {
   const resendInviteMutation = useResendInvite()
   const setStatusMutation = useSetTeamMemberStatus()
   
-  const teamMembers = teamData?.members || []
+  const teamMembers = Array.isArray(teamData?.members) ? teamData.members : []
   const summary = teamData?.summary || null
   
   const [showAddDialog, setShowAddDialog] = useState(false)

@@ -713,6 +713,21 @@ function OverviewTab({ prospect, brandColors, onStageChange, onConvert, isConver
     }
   }
 
+  /** Deal value / probability / close date use PATCH .../deal (UpdateDealDto), not PUT prospect — those fields are omitted from UpdateProspectDto. */
+  const handleDealFieldUpdate = async (patch) => {
+    try {
+      const response = await crmApi.updateProspectDeal(prospect.id, patch)
+      const updated = response.data?.prospect ?? response.data
+      if (updated) {
+        toast.success('Updated successfully')
+        onUpdate?.(updated)
+      }
+    } catch (err) {
+      console.error('Failed to update deal:', err)
+      toast.error('Failed to update')
+    }
+  }
+
   const handleCustomFieldUpdate = async (fieldKey, value) => {
     try {
       const updatedFields = {
@@ -930,7 +945,7 @@ function OverviewTab({ prospect, brandColors, onStageChange, onConvert, isConver
                       ? Number(prospect.deal_value)
                       : null
                   if (next !== prev) {
-                    handleFieldUpdate('deal_value', next)
+                    handleDealFieldUpdate({ dealValue: next })
                   }
                 }}
                 className="flex-1"
@@ -957,14 +972,14 @@ function OverviewTab({ prospect, brandColors, onStageChange, onConvert, isConver
                     const v = parseInt(e.target.value, 10)
                     const prev = prospect.probability ?? 50
                     if (v !== prev) {
-                      handleFieldUpdate('probability', v)
+                      handleDealFieldUpdate({ probability: v })
                     }
                   }}
                   onBlur={(e) => {
                     const v = parseInt(e.target.value, 10)
                     const prev = prospect.probability ?? 50
                     if (v !== prev) {
-                      handleFieldUpdate('probability', v)
+                      handleDealFieldUpdate({ probability: v })
                     }
                   }}
                   className="flex-1"
@@ -1020,7 +1035,7 @@ function OverviewTab({ prospect, brandColors, onStageChange, onConvert, isConver
                   const prevRaw = toDateInputValue(prospect.expected_close_date)
                   const prev = prevRaw || null
                   if (next !== prev) {
-                    handleFieldUpdate('expected_close_date', next)
+                    handleDealFieldUpdate({ expectedCloseDate: next })
                   }
                 }}
                 className="flex-1"

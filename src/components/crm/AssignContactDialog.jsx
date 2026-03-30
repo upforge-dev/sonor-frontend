@@ -3,7 +3,6 @@
  * Used in ProspectDetailPanel and bulk assignment
  */
 import { useState, useEffect } from 'react'
-import { cn } from '@/lib/utils'
 import { UserPlus, Users, Loader2, CheckCircle2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
@@ -24,8 +23,7 @@ import {
 } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
 import { GlassAvatar } from './ui'
-import { useTeamMembers, teamKeys } from '@/lib/hooks'
-import { useQueryClient } from '@tanstack/react-query'
+import { useTeamMembers } from '@/lib/hooks'
 
 export default function AssignContactDialog({
   open,
@@ -35,16 +33,16 @@ export default function AssignContactDialog({
   onAssign,
   isLoading = false
 }) {
-  const { data: teamMembers = [] } = useTeamMembers() // React Query auto-fetches
+  const { data: teamData, refetch: refetchTeam } = useTeamMembers()
+  const teamMembers = Array.isArray(teamData?.members) ? teamData.members : []
   const [selectedMemberId, setSelectedMemberId] = useState(null)
   const [sendNotification, setSendNotification] = useState(true)
 
-  // Fetch team members when dialog opens
   useEffect(() => {
     if (open && teamMembers.length === 0) {
-      fetchTeamMembers()
+      void refetchTeam()
     }
-  }, [open])
+  }, [open, teamMembers.length, refetchTeam])
 
   // Set current assignee as default
   useEffect(() => {
