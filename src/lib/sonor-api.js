@@ -688,8 +688,8 @@ export const auditsApi = {
   createInternal: (data) => 
     sonorApi.post('/audits/internal', data),
   
-  getInternalStatus: (id) => 
-    sonorApi.get(`/audits/internal/${id}`),
+  getInternalStatus: (id) =>
+    sonorApi.get(`/audits/internal/${id}/status`),
   
   // Public audit access
   getPublic: (id, token) => 

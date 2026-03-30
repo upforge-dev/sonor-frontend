@@ -165,21 +165,33 @@ export function ComparisonTable({ title, beforeLabel, afterLabel, columns, items
   return (
     <div className="my-10">
       {title && (
-        <h3 className="text-xl font-bold text-[var(--text-primary)] mb-6">{title}</h3>
+        <h2 className="text-2xl md:text-3xl font-bold text-[var(--text-primary)] text-center mb-8">{title}</h2>
       )}
-      <div className="rounded-2xl overflow-hidden border border-[var(--glass-border)]">
-        <div className="grid grid-cols-3 bg-[var(--glass-bg-elevated)]">
-          <div className="p-4 font-medium text-[var(--text-secondary)]">Feature</div>
-          <div className="p-4 font-medium text-[var(--accent-red)] text-center border-l border-[var(--glass-border)]">{colLabels.before}</div>
-          <div className="p-4 font-medium text-[var(--brand-primary)] text-center border-l border-[var(--glass-border)]">{colLabels.after}</div>
+      <div className="relative overflow-hidden bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-xl border border-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.2)] rounded-3xl">
+        {/* Header row */}
+        <div className="grid grid-cols-3">
+          <div className="p-5 font-medium text-sm uppercase tracking-widest text-[var(--text-tertiary)]">Feature</div>
+          <div className="p-5 font-medium text-center border-l border-white/10">
+            <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-500/10 text-red-400 text-sm font-semibold">
+              <AlertCircle className="w-3.5 h-3.5" />
+              {colLabels.before}
+            </span>
+          </div>
+          <div className="p-5 font-medium text-center border-l border-white/10">
+            <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#39bfb0]/10 text-[#39bfb0] text-sm font-semibold">
+              <CheckCircle className="w-3.5 h-3.5" />
+              {colLabels.after}
+            </span>
+          </div>
         </div>
+        {/* Data rows */}
         {resolvedItems.map((item, i) => (
-          <div key={i} className="grid grid-cols-3 border-t border-[var(--glass-border)]">
-            <div className="p-4 text-[var(--text-primary)] font-medium">{item.feature}</div>
-            <div className="p-4 text-center border-l border-[var(--glass-border)] text-[var(--text-secondary)]">
+          <div key={i} className="grid grid-cols-3 border-t border-white/10 group hover:bg-white/5 transition-colors">
+            <div className="p-5 text-[var(--text-primary)] font-medium">{item.feature}</div>
+            <div className="p-5 text-center border-l border-white/10 text-[var(--text-secondary)] text-sm">
               {item.before}
             </div>
-            <div className="p-4 text-center border-l border-[var(--glass-border)] text-[var(--brand-primary)] font-semibold">
+            <div className="p-5 text-center border-l border-white/10 text-[#39bfb0] font-semibold text-sm">
               {item.after}
             </div>
           </div>

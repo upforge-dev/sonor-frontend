@@ -2,7 +2,8 @@
 // Unified Blog Dashboard - uses ModuleLayout for consistent shell
 // Dark theme compatible, brand colors only
 
-import { useState, useEffect, useMemo, useRef } from 'react'
+import { useState, useEffect, useMemo, useRef, lazy, Suspense } from 'react'
+import { Routes, Route, useNavigate } from 'react-router-dom'
 import useAuthStore from '@/lib/auth-store'
 import { useBrandColors } from '@/hooks/useBrandColors'
 import { useSignalAccess } from '@/lib/signal-access'
@@ -17,6 +18,7 @@ import { EmptyState } from '@/components/EmptyState'
 import { MODULE_ICONS } from '@/lib/module-icons'
 import BlogBrain from '@/components/blog/BlogBrain'
 import EchoBlogCreator from '@/components/blog/EchoBlogCreator'
+const BlogPostDetail = lazy(() => import('@/components/blog/BlogPostDetail'))
 import SEOEEATModule from '@/components/seo/SEOEEATModule'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -1639,10 +1641,11 @@ function EditPostDialog({ open, onOpenChange, post, onSave, onRegenerateImage, b
 // MAIN DASHBOARD COMPONENT
 // ============================================================================
 
-export default function BlogDashboard() {
+function BlogDashboard() {
   const { currentProject, currentOrg } = useAuthStore()
   const brandColors = useBrandColors()
   const { hasAccess: hasSignalAccess } = useSignalAccess()
+  const navigate = useNavigate()
 
   const projectId = currentProject?.id
   const projectDomain = currentProject?.domain || currentOrg?.domain || 'example.com'
@@ -1972,8 +1975,8 @@ export default function BlogDashboard() {
                   key={post.id}
                   post={post}
                   isSelected={selectedPost?.id === post.id}
-                  onClick={() => setSelectedPost(post)}
-                  onEdit={handleEdit}
+                  onClick={() => navigate(`posts/${post.id}`)}
+                  onEdit={(post) => navigate(`posts/${post.id}`)}
                   onPublish={handlePublish}
                   onDelete={handleDelete}
                   onToggleFeatured={handleToggleFeatured}
@@ -2222,5 +2225,27 @@ export default function BlogDashboard() {
         </ModuleLayout.Content>
       </ModuleLayout>
     </TooltipProvider>
+  )
+}
+
+// ============================================================================
+// ROUTES WRAPPER — dispatches between list and detail views
+// ============================================================================
+
+import { SonorSpinner } from '@/components/SonorLoading'
+
+export default function BlogModule() {
+  return (
+    <Routes>
+      <Route index element={<BlogDashboard />} />
+      <Route
+        path="posts/:postId"
+        element={
+          <Suspense fallback={<div className="flex items-center justify-center h-64"><SonorSpinner /></div>}>
+            <BlogPostDetail />
+          </Suspense>
+        }
+      />
+    </Routes>
   )
 }

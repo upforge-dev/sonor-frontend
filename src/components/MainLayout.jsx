@@ -389,7 +389,7 @@ const MainLayout = () => {
                 <Route path="billing" element={<BillingModule />} />
                 <Route path="outreach/*" element={<OutreachModule />} />
                 <Route path="email/*" element={<Navigate to="/outreach" replace />} />
-                <Route path="blog" element={<BlogModule />} />
+                <Route path="blog/*" element={<BlogModule />} />
                 <Route path="portfolio/*" element={<PortfolioModule />} />
                 <Route path="settings" element={<SettingsModule />} />
                 <Route path="organization" element={<OrgSettingsModule />} />

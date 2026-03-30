@@ -27,6 +27,8 @@ import {
   GlassTimeline,
   GlassCTA,
   GlassLegal,
+  SitemapPlan,
+  AgencyProfile,
 } from './mdx/proposal-blocks/LiquidGlassBlocks'
 
 // Core
@@ -65,9 +67,9 @@ import {
 export function ProposalMarkdown({ content, className = '' }) {
   if (!content) return null
   return (
+    <div className={`prose-proposal ${className}`}>
     <Markdown
       remarkPlugins={[remarkGfm]}
-      className={`prose-proposal ${className}`}
       components={{
         p: ({ children }) => (
           <div className="mdx-p my-2 text-[var(--text-secondary)]">{children}</div>
@@ -97,6 +99,7 @@ export function ProposalMarkdown({ content, className = '' }) {
     >
       {content}
     </Markdown>
+    </div>
   )
 }
 
@@ -117,6 +120,8 @@ export const PROPOSAL_REGISTRY = {
   GlassTimeline,
   GlassCTA,
   GlassLegal,
+  SitemapPlan,
+  AgencyProfile,
 
   // Core
   ProposalHero,
@@ -205,6 +210,34 @@ export function ProposalSection({ section, proposal }) {
   if (section.source === 'line_items') {
     props.items = proposal?.line_items || proposal?.metadata?.line_items || []
     props.total = proposal?.total_amount || proposal?.totalAmount
+  }
+
+  // Inject agency branding + proposal metadata into GlassHero
+  if (section.type === 'GlassHero' && proposal) {
+    if (!props.agencyName) props.agencyName = proposal.project?.title
+    if (!props.agencyLogo) props.agencyLogo = proposal.project?.logo_url
+    if (!props.totalAmount) {
+      const amt = proposal.totalAmount || proposal.total_amount
+      if (amt) props.totalAmount = parseFloat(amt)
+    }
+    if (!props.heroImage) props.heroImage = proposal.heroImageUrl || proposal.hero_image_url
+  }
+
+  // Inject org-level agency profile data into AgencyProfile
+  if (section.type === 'AgencyProfile' && proposal) {
+    const org = proposal.org || proposal.organization
+    const project = proposal.project
+    const profile = org?.agency_profile || org?.metadata?.agency_profile || {}
+    if (!props.name) props.name = profile.name || org?.name || project?.title
+    if (!props.logo) props.logo = profile.logo || project?.logo_url
+    if (!props.tagline) props.tagline = profile.tagline
+    if (!props.description) props.description = profile.description
+    if (!props.founded) props.founded = profile.founded
+    if (!props.teamSize) props.teamSize = profile.team_size
+    if (!props.projectsCompleted) props.projectsCompleted = profile.projects_completed
+    if (!props.website) props.website = profile.website || org?.website
+    if (!props.highlights?.length && profile.highlights?.length) props.highlights = profile.highlights
+    if (!props.portfolioItems?.length && profile.portfolio_items?.length) props.portfolioItems = profile.portfolio_items
   }
 
   // For sections that contain markdown prose, wrap with ProposalMarkdown

@@ -116,7 +116,6 @@ export default function ProposalEditorMain({
           <ProposalView
             proposal={{
               ...contract,
-              mdxContent: contract.mdxContent || contract.mdx_content,
               totalAmount: contract.totalAmount || contract.total_amount,
             }}
             isPublicView={false}

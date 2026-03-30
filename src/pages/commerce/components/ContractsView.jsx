@@ -640,9 +640,12 @@ export const ContractsView = forwardRef(function ContractsView({
     )
   }
 
-  // If viewing a contract, use JSON renderer for sections_json contracts, else analytics panel
+  // If viewing a contract/proposal, route to the correct renderer based on doc_type
   if (viewingContract) {
-    if (viewingContract.sections_json) {
+    const isContract = viewingContract.doc_type === 'contract'
+
+    if (isContract && viewingContract.sections_json) {
+      // Contracts with JSON sections use ContractView (contract-specific component registry)
       return (
         <div className="space-y-4">
           <div className="flex items-center gap-2">
@@ -660,6 +663,8 @@ export const ContractsView = forwardRef(function ContractsView({
         </div>
       )
     }
+
+    // Proposals (and contracts without sections_json) use ProposalViewWithAnalytics
     return (
       <ProposalViewWithAnalytics
         proposal={viewingContract}

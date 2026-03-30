@@ -1483,28 +1483,7 @@ export default function ProposalAIDialog({
                 </div>
               )}
 
-              {/* Sonor Portal features — optional for site rebuilds when client has own backend */}
-              {['website_rebuild', 'brand_website'].includes(selectedType) && (
-                <div className="p-4 rounded-2xl bg-[var(--surface-secondary)] border border-[var(--glass-border)] space-y-3">
-                  <div className="flex items-start gap-3">
-                    <input
-                      type="checkbox"
-                      id="includePortalFeatures"
-                      checked={formData.includePortalFeatures !== false}
-                      onChange={(e) => setFormData(prev => ({ ...prev, includePortalFeatures: e.target.checked }))}
-                      className="mt-1 rounded border-[var(--glass-border)] text-[var(--brand-primary)] focus:ring-[var(--brand-primary)]"
-                    />
-                    <div>
-                      <Label htmlFor="includePortalFeatures" className="font-medium text-[var(--text-primary)] cursor-pointer">
-                        Include Sonor Portal features
-                      </Label>
-                      <p className="text-sm text-[var(--text-tertiary)] mt-0.5">
-                        CRM, Commerce, Forms, Analytics, SEO tracking, Signal AI, and other Portal modules. Uncheck if this project will use its own backend.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
+              {/* Portal features always included — Sonor is the platform we build on */}
 
               <div className="space-y-2">
                 <Label className="flex items-center gap-2 text-[var(--text-secondary)]"><Target className="w-4 h-4 text-purple-500" />Project Goals *</Label>

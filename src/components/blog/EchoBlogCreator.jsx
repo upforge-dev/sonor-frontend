@@ -383,14 +383,37 @@ export default function EchoBlogCreator({
   }
   
   const handleTopicSelect = async (topic) => {
-    const topicTitle = typeof topic === 'string' ? topic : topic.title
-    const topicData = typeof topic === 'string' ? { title: topic } : topic
-    
+    // For Signal suggestions, topic is an object with .title
+    // For custom user input, topic is a string (possibly multi-line concept)
+    const isCustom = typeof topic === 'string'
+    const fullText = isCustom ? topic : topic.title
+
+    // Extract a short display title: first line, or first sentence, capped at 80 chars
+    let displayTitle = fullText
+    if (isCustom && fullText.length > 80) {
+      // Use first line if multi-line, otherwise first sentence
+      const firstLine = fullText.split('\n')[0].trim()
+      if (firstLine.length <= 80 && firstLine.length > 10) {
+        displayTitle = firstLine
+      } else {
+        // Truncate to nearest word boundary
+        displayTitle = fullText.substring(0, 77).replace(/\s+\S*$/, '') + '...'
+      }
+    }
+
+    const topicData = isCustom
+      ? { title: fullText, displayTitle, isCustomConcept: true }
+      : topic
+
     setSelectedTopic(topicData)
-    addUserMessage(topicTitle)
-    
+    addUserMessage(displayTitle)
+
     simulateTyping(() => {
-      addBotMessage(`Great choice! "${topicTitle}" is a solid topic. Let me analyze the SEO opportunity and build a content strategy...`)
+      if (isCustom) {
+        addBotMessage(`Got it! I'll use your concept to craft a high-impact article. Let me analyze the SEO opportunity and build a content strategy...`)
+      } else {
+        addBotMessage(`Great choice! "${displayTitle}" is a solid topic. Let me analyze the SEO opportunity and build a content strategy...`)
+      }
       setStage(STAGES.STRATEGY)
       generateContentStrategy(topicData)
     })
@@ -399,25 +422,34 @@ export default function EchoBlogCreator({
   const generateContentStrategy = async (topic) => {
     setIsLoading(true)
     const projectId = currentProject?.id
+    // For Signal SEO topics, use the primary keyword directly.
+    // For custom user input (concept text), send it as the topic — Signal derives the keyword.
+    const hasExplicitKeyword = !!topic.primaryKeyword
     const targetKeyword = topic.primaryKeyword || topic.title
 
     try {
       if (projectId && targetKeyword) {
         const brief = await signalSeoApi.generateContentBrief(projectId, { targetKeyword })
+        // The brief should return a refined keyword. For custom concepts (no explicit keyword),
+        // strongly prefer what the brief derived over the raw user input.
+        const derivedKeyword = brief?.targetKeyword ?? brief?.primary_keyword
         const strategy = {
           strategy: {
-            targetKeyword: brief?.targetKeyword ?? brief?.primary_keyword ?? targetKeyword,
+            targetKeyword: derivedKeyword || (hasExplicitKeyword ? targetKeyword : null),
             searchIntent: brief?.searchIntent ?? brief?.intent ?? 'informational',
             suggestedLength: brief?.suggestedLength ?? brief?.word_count ?? '1500-2000 words',
             angle: brief?.angle ?? brief?.content_angle ?? 'In-depth guide',
             tone: brief?.tone ?? 'professional',
           },
+          isCustomConcept: !hasExplicitKeyword,
           ...brief,
         }
         setContentStrategy(strategy)
         simulateTyping(() => {
           let strategyMessage = `Here's your SEO content strategy:\n\n`
-          strategyMessage += `📌 **Target Keyword:** ${strategy.strategy.targetKeyword}\n`
+          if (strategy.strategy.targetKeyword) {
+            strategyMessage += `📌 **Target Keyword:** ${strategy.strategy.targetKeyword}\n`
+          }
           strategyMessage += `👥 **Search Intent:** ${strategy.strategy.searchIntent}\n`
           strategyMessage += `📝 **Suggested Length:** ${strategy.strategy.suggestedLength}\n`
           strategyMessage += `🎯 **Angle:** ${strategy.strategy.angle}\n\n`
@@ -460,41 +492,50 @@ export default function EchoBlogCreator({
     addUserMessage(`Category: ${category.name}`)
     
     simulateTyping(() => {
-      addBotMessage(`Perfect! I'll create your "${selectedTopic.title}" post in the ${category.name} category.\n\nGenerating your blog post now... This typically takes 30-60 seconds. ✨`)
+      addBotMessage(`Perfect! I'll create your "${selectedTopic.title}" post in the ${category.name} category.\n\nGenerating your blog post now... This typically takes 2-4 minutes for a full SEO-optimized article. ✨`)
       setStage(STAGES.GENERATING)
       generateBlogPost()
     })
   }
   
+  const retryCountRef = useRef(0)
+
   const generateBlogPost = async () => {
     setIsLoading(true)
     const projectId = currentProject?.id
     const topic = selectedTopic?.title
+    // Prefer the derived keyword from the content brief. For custom concepts where the brief
+    // couldn't derive a keyword, pass the topic — the pipeline will extract one.
     const targetKeyword = contentStrategy?.strategy?.targetKeyword || selectedTopic?.primaryKeyword || topic
 
     try {
       let result
       // Use new phased pipeline when we have a project (SEO-driven blog creation with E-E-A-T)
-      if (projectId && topic && targetKeyword) {
+      if (projectId && topic) {
         const pipelineResult = await signalSeoApi.generateBlogPipeline(projectId, {
           topic,
           target_keyword: targetKeyword,
           content_type: 'how_to_guide',
           include_faq: includeFAQs,
           citation_level: 'standard',
+          category_id: selectedCategory?.slug,
+        }, {
+          timeout: 600000, // 10 minute timeout — pipeline generates 6 phases with multiple AI calls
         })
-        
+
         // Map pipeline result to expected format
         const post = pipelineResult.post || pipelineResult
-        
+
         // Extract FAQ items from schemas if available
         const faqSchema = post.schemas?.find(s => s.type === 'FAQPage')
         const faqItems = faqSchema?.data?.mainEntity?.map(item => ({
           question: item.name,
           answer: item.acceptedAnswer?.text,
         })) || []
-        
+
         result = {
+          post_id: post.post_id,
+          slug: post.slug,
           title: post.title,
           excerpt: post.excerpt || post.meta_description,
           content: post.content,
@@ -538,6 +579,7 @@ export default function EchoBlogCreator({
         })
       }
 
+      retryCountRef.current = 0
       setGeneratedPost(result)
 
       simulateTyping(() => {
@@ -548,13 +590,24 @@ export default function EchoBlogCreator({
       })
     } catch (error) {
       console.error('Failed to generate blog post:', error)
-      addBotMessage(`Hmm, I ran into an issue generating your post. Let me try again...`)
 
-      // Retry once
-      setTimeout(() => generateBlogPost(), 2000)
-    } finally {
+      if (retryCountRef.current < 1) {
+        retryCountRef.current++
+        addBotMessage(`Hmm, I ran into an issue generating your post. Let me try once more...`)
+        // Don't clear loading — retry immediately keeps the loading state
+        setTimeout(() => generateBlogPost(), 3000)
+        return // Skip finally clearing isLoading
+      }
+
+      // Exhausted retries — let the user know
+      retryCountRef.current = 0
+      addBotMessage(`I wasn't able to generate the post after retrying. This can happen with longer articles. You can try again by selecting a new topic, or reach out if this keeps happening.`)
+      setStage(STAGES.TOPIC)
       setIsLoading(false)
+      return
     }
+
+    setIsLoading(false)
   }
   
   const handleGenerateImage = async () => {
@@ -571,6 +624,7 @@ export default function EchoBlogCreator({
           title: generatedPost.title,
           topic: selectedTopic.title,
           category: selectedCategory?.slug,
+          excerpt: generatedPost.excerpt || generatedPost.metadata?.metaDescription,
           style: 'digital-art',
           aspectRatio: '16:9'
         },
@@ -1099,13 +1153,13 @@ export default function EchoBlogCreator({
             
             {/* Generated Image Preview */}
             {generatedImage && (
-              <div className="mt-4">
-                <img 
-                  src={generatedImage.url} 
+              <div className="mt-4 overflow-hidden">
+                <img
+                  src={generatedImage.url}
                   alt={generatedImage.alt}
-                  className="w-full max-w-md mx-auto rounded-xl border"
+                  className="w-full max-h-[240px] object-cover rounded-xl border border-[var(--glass-border)]"
                 />
-                <p className="text-xs text-muted-foreground mt-2 text-center">
+                <p className="text-xs text-[var(--text-tertiary)] mt-2 text-center">
                   {generatedImage.alt}
                 </p>
               </div>
@@ -1153,24 +1207,42 @@ export default function EchoBlogCreator({
         {/* Input Area */}
         {stage !== STAGES.COMPLETE && (
           <form onSubmit={handleSendMessage} className="p-4 border-t shrink-0">
-            <div className="flex gap-2">
-              <Input
-                ref={inputRef}
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder={
-                  stage === STAGES.TOPIC ? "Enter a topic or pick from suggestions..." :
-                  stage === STAGES.IMAGE ? "Type 'generate' or 'skip'..." :
-                  stage === STAGES.REVIEW ? "Type 'publish' or 'save as draft'..." :
-                  "Type a message..."
-                }
-                disabled={isLoading || isTyping}
-                className="flex-1"
-              />
-              <Button 
-                type="submit" 
+            <div className="flex gap-2 items-end">
+              {stage === STAGES.TOPIC ? (
+                <Textarea
+                  ref={inputRef}
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault()
+                      handleSendMessage(e)
+                    }
+                  }}
+                  placeholder="Describe your article concept, or pick from suggestions above..."
+                  disabled={isLoading || isTyping}
+                  className="flex-1 !min-h-[80px] max-h-[160px] resize-none"
+                  rows={3}
+                />
+              ) : (
+                <Input
+                  ref={inputRef}
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  placeholder={
+                    stage === STAGES.IMAGE ? "Type 'generate' or 'skip'..." :
+                    stage === STAGES.REVIEW ? "Type 'publish' or 'save as draft'..." :
+                    "Type a message..."
+                  }
+                  disabled={isLoading || isTyping}
+                  className="flex-1"
+                />
+              )}
+              <Button
+                type="submit"
                 size="icon"
                 disabled={!input.trim() || isLoading || isTyping}
+                className="shrink-0"
               >
                 <Send className="w-4 h-4" />
               </Button>

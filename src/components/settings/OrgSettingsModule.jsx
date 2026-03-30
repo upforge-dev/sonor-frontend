@@ -27,6 +27,7 @@ import {
 } from 'lucide-react'
 import OrganizationUsersPanel from './OrganizationUsersPanel'
 import RolesPermissionsPanel from './RolesPermissionsPanel'
+import AgencyProfileSection from './AgencyProfileSection'
 import useAuthStore from '@/lib/auth-store'
 import { adminApi } from '@/lib/sonor-api'
 import { toast } from 'sonner'
@@ -248,8 +249,18 @@ export default function OrgSettings() {
                         <Label>Domain</Label>
                         <Input
                           value={orgDetails?.domain || ''}
-                          disabled
-                          className="bg-[var(--surface-secondary)]"
+                          onChange={(e) => setOrgDetails(prev => ({ ...prev, domain: e.target.value }))}
+                          placeholder="youragency.com"
+                          onBlur={async () => {
+                            if (orgDetails?.domain !== orgDetails?._originalDomain) {
+                              try {
+                                await adminApi.updateOrganization(currentOrg.id, { domain: orgDetails.domain })
+                                setOrgDetails(prev => ({ ...prev, _originalDomain: prev.domain }))
+                                toast.success('Domain updated')
+                              } catch { toast.error('Failed to update domain') }
+                            }
+                          }}
+                          onFocus={() => setOrgDetails(prev => ({ ...prev, _originalDomain: prev.domain }))}
                         />
                       </div>
                     </div>
@@ -262,30 +273,17 @@ export default function OrgSettings() {
                         className="bg-[var(--surface-secondary)] font-mono text-sm"
                       />
                     </div>
-
-                    {orgDetails?.website && (
-                      <div className="space-y-2">
-                        <Label>Website</Label>
-                        <div className="flex items-center gap-2">
-                          <Input
-                            value={orgDetails.website}
-                            disabled
-                            className="bg-[var(--surface-secondary)]"
-                          />
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => window.open(orgDetails.website, '_blank')}
-                          >
-                            <ExternalLink className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    )}
                   </>
                 )}
               </CardContent>
             </Card>
+
+            {/* Agency Profile — for proposals */}
+            <AgencyProfileSection
+              orgDetails={orgDetails}
+              orgId={currentOrg?.id}
+              onSaved={(profile) => setOrgDetails(prev => ({ ...prev, agency_profile: profile }))}
+            />
           </TabsContent>
         </Tabs>
         </div>

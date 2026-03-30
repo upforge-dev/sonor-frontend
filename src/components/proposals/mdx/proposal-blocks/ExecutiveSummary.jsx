@@ -1,11 +1,21 @@
 import { Children, isValidElement } from 'react'
-import Section from './Section'
+import { FileText } from 'lucide-react'
 
 /**
- * Executive Summary Block
- * Theme-compatible: Uses CSS custom properties
+ * Executive Summary Block — Liquid Glass Design
+ * Matches the premium glass aesthetic used across all proposal sections.
  */
-export function ExecutiveSummary({ children }) {
+
+const liquidGlassBase = `
+  relative
+  bg-gradient-to-br from-white/10 to-white/5
+  backdrop-blur-xl
+  border border-white/20
+  shadow-[0_8px_32px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.2)]
+  rounded-3xl
+`
+
+export function ExecutiveSummary({ children, title = 'Executive Summary' }) {
   const childArray = Children.toArray(children)
 
   // Group consecutive StatCards so they can render side-by-side
@@ -19,7 +29,6 @@ export function ExecutiveSummary({ children }) {
   }
 
   for (const child of childArray) {
-    // Detect stat-like components by displayName or type name
     const typeName = isValidElement(child) && (
       child.type?.displayName || child.type?.name || ''
     )
@@ -35,11 +44,21 @@ export function ExecutiveSummary({ children }) {
   flushStatCards()
 
   return (
-    <Section bg="transparent">
-      <h2 className="text-2xl sm:text-3xl font-bold text-[var(--text-primary)] mb-6 sm:mb-8">
-        Executive Summary
-      </h2>
-      <div className="bg-[var(--brand-primary)]/10 border-l-4 border-[var(--brand-primary)] rounded-xl p-6 sm:p-8">
+    <div className={`${liquidGlassBase} p-8 md:p-10 my-10`}>
+      {/* Subtle brand glow */}
+      <div className="absolute -top-10 -left-10 w-40 h-40 bg-[#39bfb0]/10 rounded-full blur-3xl" />
+
+      <div className="relative z-10">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-12 h-12 rounded-2xl bg-[#39bfb0]/20 border border-[#39bfb0]/30 flex items-center justify-center">
+            <FileText className="w-6 h-6 text-[#39bfb0]" />
+          </div>
+          <div>
+            <span className="text-sm uppercase tracking-widest text-[#39bfb0] block">Overview</span>
+            <h2 className="text-2xl md:text-3xl font-bold text-[var(--text-primary)]">{title}</h2>
+          </div>
+        </div>
+
         <div className="text-[var(--text-secondary)] leading-relaxed space-y-4">
           {blocks.map((block, idx) => {
             if (block.type === 'stat-grid') {
@@ -64,7 +83,7 @@ export function ExecutiveSummary({ children }) {
           })}
         </div>
       </div>
-    </Section>
+    </div>
   )
 }
 

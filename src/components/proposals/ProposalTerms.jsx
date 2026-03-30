@@ -1,161 +1,120 @@
-import { FileText, Scale, Clock, Shield, AlertCircle } from 'lucide-react'
+import { FileText, Scale, Clock, Shield, AlertCircle, DollarSign } from 'lucide-react'
+
+const liquidGlassBase = `
+  relative
+  bg-gradient-to-br from-white/10 to-white/5
+  backdrop-blur-xl
+  border border-white/20
+  shadow-[0_8px_32px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.2)]
+  rounded-3xl
+`
+
+function TermsSection({ icon: Icon, iconColor = 'text-[#39bfb0]', title, children }) {
+  return (
+    <div className="p-5 rounded-2xl bg-white/5 border border-white/10">
+      <h4 className="font-semibold text-[var(--text-primary)] mb-3 flex items-center gap-2">
+        <Icon className={`h-4 w-4 ${iconColor}`} />
+        {title}
+      </h4>
+      <div className="text-sm text-[var(--text-secondary)] leading-relaxed space-y-2">
+        {children}
+      </div>
+    </div>
+  )
+}
 
 export default function ProposalTerms({ proposalTitle, depositPercentage = 50, timeline }) {
   return (
-    <div id="terms" className="scroll-mt-24 bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl overflow-hidden">
-      <div className="bg-[var(--surface-page-secondary)] p-4 border-b border-[var(--glass-border)]">
-        <div className="flex items-center gap-2">
-          <Scale className="h-5 w-5 text-[var(--text-secondary)]" />
-          <h3 className="font-semibold text-[var(--text-primary)]">Terms & Conditions</h3>
+    <div id="terms" className={`${liquidGlassBase} p-8 md:p-10 my-10 scroll-mt-24`}>
+      <div className="relative z-10">
+        {/* Header */}
+        <div className="flex items-center gap-3 mb-8">
+          <div className="w-12 h-12 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center">
+            <Scale className="w-6 h-6 text-[#39bfb0]" />
+          </div>
+          <div>
+            <span className="text-sm uppercase tracking-widest text-[#39bfb0] block">Legal</span>
+            <h2 className="text-2xl md:text-3xl font-bold text-[var(--text-primary)]">Terms & Conditions</h2>
+          </div>
         </div>
-      </div>
-      
-      <div className="p-6 space-y-6 text-sm text-[var(--text-secondary)]">
-        {/* Agreement */}
-        <section>
-          <h4 className="font-semibold text-[var(--text-primary)] mb-2 flex items-center gap-2">
-            <FileText className="h-4 w-4 text-[var(--brand-primary)]" />
-            Agreement
-          </h4>
-          <p className="leading-relaxed">
-            By signing this proposal, you ("Client") agree to engage Upforge LLC ("Company") 
-            to provide the services described herein. This document, once signed, constitutes a 
-            legally binding agreement between both parties.
-          </p>
-        </section>
 
-        {/* Payment Terms */}
-        <section>
-          <h4 className="font-semibold text-[var(--text-primary)] mb-2 flex items-center gap-2">
-            <Clock className="h-4 w-4 text-[var(--brand-primary)]" />
-            Payment Terms
-          </h4>
-          <ul className="list-disc list-inside space-y-1 leading-relaxed">
-            <li>
-              A deposit of <strong>{depositPercentage}%</strong> of the total project cost is due 
-              upon signing this agreement before work commences.
-            </li>
-            {depositPercentage < 100 && (
+        <div className="space-y-4">
+          <TermsSection icon={FileText} title="Agreement">
+            <p>
+              By signing this proposal, you ("Client") agree to engage Upforge LLC ("Company")
+              to provide the services described herein. This document, once signed, constitutes a
+              legally binding agreement between both parties.
+            </p>
+          </TermsSection>
+
+          <TermsSection icon={DollarSign} title="Payment Terms">
+            <ul className="list-disc list-inside space-y-1">
               <li>
-                The remaining balance ({100 - depositPercentage}%) is due upon project completion 
-                and final deliverable handoff.
+                A deposit of <strong className="text-[var(--text-primary)]">{depositPercentage}%</strong> of the total project cost is due
+                upon signing before work commences.
               </li>
-            )}
-            <li>
-              All payments are processed securely via Square. Invoices are payable within 14 days 
-              of receipt.
-            </li>
-            <li>
-              Late payments may incur a fee of 1.5% per month on the outstanding balance.
-            </li>
-          </ul>
-        </section>
-
-        {/* Scope & Timeline */}
-        <section>
-          <h4 className="font-semibold text-[var(--text-primary)] mb-2 flex items-center gap-2">
-            <Clock className="h-4 w-4 text-[var(--brand-primary)]" />
-            Scope & Timeline
-          </h4>
-          <ul className="list-disc list-inside space-y-1 leading-relaxed">
-            <li>
-              The scope of work is limited to the services explicitly described in this proposal. 
-              Additional requests may require a change order.
-            </li>
-            {timeline && (
+              {depositPercentage < 100 && (
+                <li>
+                  The remaining balance ({100 - depositPercentage}%) is due upon project completion
+                  and final deliverable handoff.
+                </li>
+              )}
               <li>
-                Estimated project timeline: <strong>{timeline}</strong>. This timeline begins after 
-                deposit payment and receipt of all required client materials.
+                All payments are processed securely via Square. Invoices are payable within 14 days.
               </li>
-            )}
-            <li>
-              Client is responsible for providing requested content, assets, and feedback within 
-              5 business days to maintain project timeline.
-            </li>
-            <li>
-              Project timelines may be extended due to delays in client feedback or content delivery.
-            </li>
-          </ul>
-        </section>
+              <li>
+                Late payments may incur a fee of 1.5% per month on the outstanding balance.
+              </li>
+            </ul>
+          </TermsSection>
 
-        {/* Revisions & Approvals */}
-        <section>
-          <h4 className="font-semibold text-[var(--text-primary)] mb-2">Revisions & Approvals</h4>
-          <ul className="list-disc list-inside space-y-1 leading-relaxed">
-            <li>
-              Two rounds of revisions are included for each deliverable unless otherwise specified.
-            </li>
-            <li>
-              Additional revisions beyond the included rounds will be billed at our standard hourly rate.
-            </li>
-            <li>
-              Final approval is required within 7 days of deliverable presentation. Silence will be 
-              considered approval.
-            </li>
-          </ul>
-        </section>
+          <TermsSection icon={Clock} title="Scope & Timeline">
+            <ul className="list-disc list-inside space-y-1">
+              <li>
+                The scope of work is limited to the services explicitly described in this proposal.
+                Additional requests may require a change order.
+              </li>
+              {timeline && (
+                <li>
+                  Estimated project timeline: <strong className="text-[var(--text-primary)]">{timeline}</strong>. Begins after
+                  deposit payment and receipt of all required client materials.
+                </li>
+              )}
+              <li>
+                Client is responsible for providing requested content, assets, and feedback within
+                5 business days to maintain project timeline.
+              </li>
+            </ul>
+          </TermsSection>
 
-        {/* Intellectual Property */}
-        <section>
-          <h4 className="font-semibold text-[var(--text-primary)] mb-2 flex items-center gap-2">
-            <Shield className="h-4 w-4 text-[var(--brand-primary)]" />
-            Intellectual Property
-          </h4>
-          <ul className="list-disc list-inside space-y-1 leading-relaxed">
-            <li>
-              Upon full payment, Client receives full ownership and rights to all custom deliverables 
-              created specifically for this project.
-            </li>
-            <li>
-              Company retains the right to display completed work in portfolio and marketing materials 
-              unless otherwise agreed in writing.
-            </li>
-            <li>
-              Third-party assets (stock images, fonts, plugins) remain subject to their respective licenses.
-            </li>
-          </ul>
-        </section>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <TermsSection icon={Shield} title="Intellectual Property">
+              <ul className="list-disc list-inside space-y-1">
+                <li>Upon full payment, Client receives full ownership of all custom deliverables.</li>
+                <li>Company retains the right to display completed work in portfolio materials.</li>
+                <li>Third-party assets remain subject to their respective licenses.</li>
+              </ul>
+            </TermsSection>
 
-        {/* Cancellation */}
-        <section>
-          <h4 className="font-semibold text-[var(--text-primary)] mb-2 flex items-center gap-2">
-            <AlertCircle className="h-4 w-4 text-[var(--accent-orange)]" />
-            Cancellation Policy
-          </h4>
-          <ul className="list-disc list-inside space-y-1 leading-relaxed">
-            <li>
-              Either party may terminate this agreement with 14 days written notice.
-            </li>
-            <li>
-              Upon cancellation, Client is responsible for payment of all work completed to date.
-            </li>
-            <li>
-              Deposits are non-refundable once work has commenced.
-            </li>
-          </ul>
-        </section>
+            <TermsSection icon={AlertCircle} iconColor="text-amber-400" title="Cancellation Policy">
+              <ul className="list-disc list-inside space-y-1">
+                <li>Either party may terminate with 14 days written notice.</li>
+                <li>Client is responsible for payment of all work completed to date.</li>
+                <li>Deposits are non-refundable once work has commenced.</li>
+              </ul>
+            </TermsSection>
+          </div>
 
-        {/* Limitation of Liability */}
-        <section>
-          <h4 className="font-semibold text-[var(--text-primary)] mb-2">Limitation of Liability</h4>
-          <p className="leading-relaxed">
-            Company's total liability under this agreement shall not exceed the total fees paid by 
-            Client. Company is not liable for any indirect, incidental, or consequential damages 
-            arising from the use of deliverables.
-          </p>
-        </section>
-
-        {/* Electronic Signature */}
-        <section className="bg-[var(--glass-bg-inset)] rounded-lg p-4 border border-[var(--glass-border)]">
-          <h4 className="font-semibold text-[var(--text-primary)] mb-2">Electronic Signature Consent</h4>
-          <p className="leading-relaxed text-xs">
-            By signing below, you consent to the use of electronic signatures and agree that your 
-            electronic signature is the legal equivalent of your manual signature. This agreement 
-            is governed by the laws of the State of Texas. Electronic signatures are legally binding 
-            under the Electronic Signatures in Global and National Commerce Act (ESIGN) and the 
-            Uniform Electronic Transactions Act (UETA).
-          </p>
-        </section>
+          {/* Electronic Signature Consent */}
+          <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
+            <p className="text-xs text-[var(--text-tertiary)] leading-relaxed">
+              <strong className="text-[var(--text-secondary)]">Electronic Signature Consent:</strong>{' '}
+              By signing below, you consent to electronic signatures and agree they are the legal
+              equivalent of manual signatures. This agreement is governed by the laws of the State
+              of Texas. Electronic signatures are legally binding under the ESIGN Act and UETA.
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   )

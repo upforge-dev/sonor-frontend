@@ -76,39 +76,80 @@ const brandGradientText = 'text-[#39bfb0]'
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /**
- * GlassHero - Stunning liquid glass hero section
- * Use as the opening visual for premium proposals
+ * GlassHero - Premium liquid glass hero with agency branding
+ * The opening visual for all proposals — sets the tone for the entire document.
  */
-export function GlassHero({ 
-  title, 
-  subtitle, 
+export function GlassHero({
+  title,
+  subtitle,
   clientName,
   proposalType, // 'new-brand' | 'rebuild' | 'app-development' | 'ai-automation'
-  stats = []
+  stats = [],
+  agencyName,
+  agencyLogo,
+  totalAmount,
+  heroImage,
 }) {
   const typeLabels = {
     'new-brand': 'New Website',
     'rebuild': 'Website Rebuild',
     'app-development': 'Application Development',
-    'ai-automation': 'AI & Automations'
+    'ai-automation': 'AI & Automations',
   }
 
   const typeIcons = {
     'new-brand': Palette,
     'rebuild': Layers,
     'app-development': Smartphone,
-    'ai-automation': Bot
+    'ai-automation': Bot,
   }
 
   const TypeIcon = typeIcons[proposalType] || Sparkles
+  const displayName = agencyName || ''
+  const displayLogo = agencyLogo || ''
 
   return (
-    <div className={`${liquidGlassClipped} p-8 md:p-12 mb-10`}>
+    <div className={`${liquidGlassClipped} mt-8 mb-10 min-h-[360px]`}>
+      {/* Hero background image */}
+      {heroImage && (
+        <div className="absolute inset-0 z-0">
+          <img src={heroImage} alt="" className="w-full h-full object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/60 to-black/40" />
+        </div>
+      )}
+
       {/* Animated gradient orbs */}
       <div className="absolute -top-20 -right-20 w-60 h-60 bg-[#39bfb0]/30 rounded-full blur-3xl animate-pulse" />
       <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-[#39bfb0]/20 rounded-full blur-2xl animate-pulse" style={{ animationDelay: '1s' }} />
-      
-      <div className="relative z-10">
+
+      <div className="relative z-10 p-8 md:p-12">
+        {/* Top row: Agency logo + Total investment */}
+        {(displayName || displayLogo || totalAmount) && (
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-3">
+              {displayLogo && (
+                <img
+                  src={displayLogo}
+                  alt={displayName}
+                  className="w-10 h-10 rounded-lg object-contain"
+                  onError={(e) => { e.target.style.display = 'none' }}
+                />
+              )}
+              {displayName && (
+                <span className="text-sm font-medium text-white/70">{displayName}</span>
+              )}
+            </div>
+            {totalAmount && (
+              <div className="text-right">
+                <div className="text-xs uppercase tracking-wider text-white/40">Total Investment</div>
+                <div className={`text-3xl font-bold ${brandGradientText}`}>
+                  ${typeof totalAmount === 'number' ? totalAmount.toLocaleString() : totalAmount}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Type badge */}
         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 mb-6">
           <TypeIcon className="w-4 h-4 text-[#39bfb0]" />
@@ -119,7 +160,7 @@ export function GlassHero({
         <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 leading-tight">
           {title}
         </h1>
-        
+
         {/* Subtitle */}
         {subtitle && (
           <p className="text-xl md:text-2xl text-white/70 max-w-3xl mb-8">
@@ -155,26 +196,26 @@ export function GlassHero({
 // PORTAL MODULES SHOWCASE - Visual display of Portal features
 // ═══════════════════════════════════════════════════════════════════════════════
 
-const portalModules = {
-  crm: { icon: Users, label: 'CRM & Pipelines', color: '#39bfb0' },
-  commerce: { icon: ShoppingCart, label: 'Commerce', color: '#39bfb0' },
-  forms: { icon: FileText, label: 'Forms & Intake', color: '#39bfb0' },
-  analytics: { icon: BarChart3, label: 'Analytics', color: '#39bfb0' },
-  seo: { icon: Search, label: 'SEO Tracking', color: '#39bfb0' },
-  engage: { icon: Bell, label: 'Engage', color: '#39bfb0' },
-  outreach: { icon: Mail, label: 'Outreach', color: '#39bfb0' },
-  sync: { icon: Calendar, label: 'Sync', color: '#39bfb0' },
-  signal: { icon: Bot, label: 'Signal AI', color: '#39bfb0' }
-}
+// Fixed 9 Sonor platform tiles — always the same, always 9
+const SONOR_MODULES = [
+  { id: 'crm', icon: Users, label: 'CRM & Pipelines', description: 'Track every lead from first touch to close with visual pipelines and automated follow-ups' },
+  { id: 'forms', icon: FileText, label: 'Smart Forms', description: 'Capture and qualify leads with conditional forms that route submissions to the right pipeline' },
+  { id: 'analytics', icon: BarChart3, label: 'Analytics & Heatmaps', description: 'See which pages drive conversions, where visitors drop off, and what CTAs actually work' },
+  { id: 'seo', icon: Search, label: 'SEO & Rankings', description: 'Monitor keyword rankings, run audits, and find opportunities to grow organic traffic' },
+  { id: 'blog', icon: Layers, label: 'Blog & Content', description: 'Publish and manage SEO-optimized content directly from your dashboard' },
+  { id: 'signal', icon: Bot, label: 'AI Chat Widget', description: 'A 24/7 AI assistant on your site that answers questions, qualifies leads, and books meetings' },
+  { id: 'outreach', icon: Mail, label: 'Email Campaigns', description: 'Send targeted campaigns, automate follow-up sequences, and track opens and clicks' },
+  { id: 'sync', icon: Calendar, label: 'Bookings & Calendar', description: 'Let visitors schedule consultations with calendar sync and automated reminders' },
+  { id: 'reputation', icon: Shield, label: 'Reviews & Reputation', description: 'Collect, manage, and showcase client reviews to build trust and social proof' },
+]
 
 /**
- * PortalModulesGrid - Shows which Portal modules benefit their business
- * Highlight specific modules with descriptions of how they help
+ * PortalModulesGrid — Fixed 9-tile Sonor platform showcase.
+ * Always shows the same 9 modules. AI only provides the subtitle.
  */
-export function PortalModulesGrid({ 
-  title = "Your Sonor",
+export function PortalModulesGrid({
+  title = "Built-In Business Tools",
   subtitle,
-  modules = [] // [{ id: 'crm', benefit: 'Track all leads...' }, ...]
 }) {
   return (
     <div className="my-10">
@@ -184,42 +225,49 @@ export function PortalModulesGrid({
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {modules.map((mod, i) => {
-          const moduleInfo = portalModules[mod.id] || { icon: Sparkles, label: mod.id, color: '#39bfb0' }
-          const Icon = moduleInfo.icon
+        {SONOR_MODULES.map((mod, i) => {
+          const Icon = mod.icon
 
           return (
-            <div 
-              key={i}
+            <div
+              key={mod.id}
               className={`${liquidGlassBase} ${liquidGlassHover} p-6 group cursor-default`}
             >
-              {/* Glow effect on hover */}
-              <div 
+              <div
                 className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-3xl"
-                style={{ 
-                  background: `radial-gradient(circle at center, ${moduleInfo.color}15 0%, transparent 70%)`
-                }}
+                style={{ background: `radial-gradient(circle at center, #39bfb015 0%, transparent 70%)` }}
               />
 
               <div className="relative z-10">
-                <div 
-                  className="w-12 h-12 rounded-2xl flex items-center justify-center mb-4"
-                  style={{ background: `linear-gradient(135deg, ${moduleInfo.color}20, ${moduleInfo.color}10)` }}
-                >
-                  <Icon className="w-6 h-6" style={{ color: moduleInfo.color }} />
+                <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-4 bg-[#39bfb0]/10">
+                  <Icon className="w-6 h-6 text-[#39bfb0]" />
                 </div>
 
                 <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2">
-                  {moduleInfo.label}
+                  {mod.label}
                 </h3>
 
                 <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
-                  {mod.benefit}
+                  {mod.description}
                 </p>
               </div>
             </div>
           )
         })}
+      </div>
+
+      {/* Subtle platform attribution with link */}
+      <div className="mt-6 text-center">
+        <a
+          href="https://sonor.io"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all text-sm text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]"
+        >
+          <span>Powered by</span>
+          <span className="font-semibold text-[#39bfb0]">Sonor</span>
+          <ArrowRight className="w-3.5 h-3.5 text-[#39bfb0]" />
+        </a>
       </div>
     </div>
   )
@@ -433,16 +481,20 @@ export function SiteAnalysisCard({
         {/* Left: Screenshot or placeholder */}
         <div className="lg:w-1/3">
           {screenshot ? (
-            <img 
-              src={screenshot} 
+            <img
+              src={screenshot}
               alt={`Screenshot of ${url}`}
               className="w-full rounded-2xl border border-white/20 shadow-lg"
+              onError={(e) => {
+                // Fallback to placeholder if image fails to load
+                e.target.style.display = 'none'
+                e.target.nextElementSibling?.classList.remove('hidden')
+              }}
             />
-          ) : (
-            <div className="w-full aspect-video rounded-2xl bg-gradient-to-br from-white/5 to-white/10 border border-white/20 flex items-center justify-center">
-              <Globe className="w-12 h-12 text-white/30" />
-            </div>
-          )}
+          ) : null}
+          <div className={`w-full aspect-video rounded-2xl bg-gradient-to-br from-white/5 to-white/10 border border-white/20 flex items-center justify-center ${screenshot ? 'hidden' : ''}`}>
+            <Globe className="w-12 h-12 text-white/30" />
+          </div>
           <div className="mt-3 text-center">
             <a href={url} target="_blank" rel="noopener noreferrer" className="text-sm text-[#39bfb0] hover:underline">
               {url?.replace(/^https?:\/\//, '')}
@@ -785,6 +837,236 @@ export function GlassLegal({
   )
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// SITEMAP PLAN - What we're actually building
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * SitemapPlan - The deliverables section that shows exactly what pages we're building.
+ * This is the "here's what you get" section that closes deals.
+ *
+ * pages: [{ name, purpose, status, features[] }]
+ *   status: "rebuild" | "new" | "optimize" | "migrate"
+ */
+export function SitemapPlan({
+  title = "Your New Website",
+  subtitle,
+  pages = [],
+  totalPages,
+}) {
+  const statusConfig = {
+    rebuild: { label: 'Rebuild', bg: 'bg-amber-500/10', text: 'text-amber-400', border: 'border-amber-500/20' },
+    new:     { label: 'New Page', bg: 'bg-[#39bfb0]/10', text: 'text-[#39bfb0]', border: 'border-[#39bfb0]/20' },
+    optimize:{ label: 'Optimize', bg: 'bg-blue-500/10', text: 'text-blue-400', border: 'border-blue-500/20' },
+    migrate: { label: 'Migrate', bg: 'bg-purple-500/10', text: 'text-purple-400', border: 'border-purple-500/20' },
+  }
+
+  const pageCount = totalPages || pages.length
+
+  return (
+    <div className={`${liquidGlassBase} p-8 md:p-10 my-10`}>
+      {/* Subtle glow */}
+      <div className="absolute -top-10 -right-10 w-40 h-40 bg-[#39bfb0]/10 rounded-full blur-3xl" />
+
+      <div className="relative z-10">
+        <div className="flex items-center gap-3 mb-2">
+          <div className="w-12 h-12 rounded-2xl bg-[#39bfb0]/20 border border-[#39bfb0]/30 flex items-center justify-center">
+            <Layout className="w-6 h-6 text-[#39bfb0]" />
+          </div>
+          <div>
+            <span className="text-sm uppercase tracking-widest text-[#39bfb0] block">Deliverables</span>
+            <h2 className="text-2xl md:text-3xl font-bold text-[var(--text-primary)]">{title}</h2>
+          </div>
+        </div>
+        {subtitle && (
+          <p className="text-[var(--text-secondary)] mb-6 ml-15">{subtitle}</p>
+        )}
+
+        {/* Page count summary */}
+        <div className="flex items-center gap-4 mb-8 p-4 rounded-2xl bg-white/5 border border-white/10">
+          <div className="text-3xl font-bold text-[#39bfb0]">{pageCount}</div>
+          <div>
+            <div className="font-medium text-[var(--text-primary)]">Pages & Experiences</div>
+            <div className="text-sm text-[var(--text-secondary)]">Custom-built for your business</div>
+          </div>
+        </div>
+
+        {/* Page cards */}
+        <div className="space-y-3">
+          {pages.map((page, i) => {
+            const status = statusConfig[page.status] || statusConfig.new
+            return (
+              <div
+                key={i}
+                className="p-5 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/[0.07] transition-colors"
+              >
+                <div className="flex items-start justify-between gap-4 mb-2">
+                  <h3 className="font-semibold text-[var(--text-primary)] text-lg">{page.name}</h3>
+                  <span className={`flex-shrink-0 px-3 py-0.5 rounded-full text-xs font-medium ${status.bg} ${status.text} border ${status.border}`}>
+                    {status.label}
+                  </span>
+                </div>
+                <p className="text-sm text-[var(--text-secondary)] mb-3">{page.purpose}</p>
+                {page.features?.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {page.features.map((f, j) => (
+                      <span key={j} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/5 text-xs text-[var(--text-tertiary)]">
+                        <CheckCircle className="w-3 h-3 text-[#39bfb0]" />
+                        {f}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// AGENCY PROFILE - Trust builder before the pricing ask
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * AgencyProfile - "Who we are" section auto-populated from org data.
+ * Placed after deliverables and analysis, before timeline/pricing.
+ *
+ * All props are auto-injected from the org record by ProposalBlockRegistry.
+ * The AI just places { "type": "AgencyProfile" } in the sections array.
+ */
+export function AgencyProfile({
+  name,
+  logo,
+  tagline,
+  description,
+  founded,
+  teamSize,
+  projectsCompleted,
+  website,
+  portfolioItems = [], // [{ title, url, image }]
+  highlights = [],     // ["150+ Projects", "5-Star Google Rating", "Next.js Experts"]
+}) {
+  // Don't render if we have no meaningful data
+  if (!name && !description && highlights.length === 0) return null
+
+  const statItems = [
+    founded && { value: founded, label: 'Founded' },
+    teamSize && { value: teamSize, label: 'Team Members' },
+    projectsCompleted && { value: projectsCompleted, label: 'Projects Delivered' },
+  ].filter(Boolean)
+
+  return (
+    <div className={`${liquidGlassBase} p-8 md:p-10 my-10`}>
+      <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-[#39bfb0]/10 rounded-full blur-3xl" />
+
+      <div className="relative z-10">
+        {/* Agency identity */}
+        <div className="flex items-center gap-4 mb-6">
+          {logo && (
+            <img
+              src={logo}
+              alt={name}
+              className="w-14 h-14 rounded-2xl object-contain border border-white/20"
+              onError={(e) => { e.target.style.display = 'none' }}
+            />
+          )}
+          <div>
+            {name && (
+              <h2 className="text-2xl md:text-3xl font-bold text-[var(--text-primary)]">{name}</h2>
+            )}
+            {tagline && (
+              <p className="text-[#39bfb0] font-medium">{tagline}</p>
+            )}
+          </div>
+        </div>
+
+        {/* Description */}
+        {description && (
+          <p className="text-[var(--text-secondary)] leading-relaxed mb-8 max-w-3xl">
+            {description}
+          </p>
+        )}
+
+        {/* Stats row */}
+        {statItems.length > 0 && (
+          <div className="grid grid-cols-3 gap-4 mb-8">
+            {statItems.map((stat, i) => (
+              <div key={i} className="text-center p-4 rounded-2xl bg-white/5 border border-white/10">
+                <div className="text-2xl font-bold text-[#39bfb0]">{stat.value}</div>
+                <div className="text-xs text-[var(--text-tertiary)]">{stat.label}</div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Highlight badges */}
+        {highlights.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-6">
+            {highlights.map((h, i) => (
+              <span
+                key={i}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-sm text-[var(--text-secondary)]"
+              >
+                <CheckCircle className="w-3.5 h-3.5 text-[#39bfb0]" />
+                {h}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* Portfolio preview */}
+        {portfolioItems.length > 0 && (
+          <div>
+            <h3 className="text-sm uppercase tracking-widest text-[var(--text-tertiary)] mb-4">Recent Work</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {portfolioItems.slice(0, 3).map((item, i) => (
+                <a
+                  key={i}
+                  href={item.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group rounded-2xl overflow-hidden border border-white/10 hover:border-[#39bfb0]/30 transition-colors"
+                >
+                  {item.image ? (
+                    <img src={item.image} alt={item.title} className="w-full aspect-video object-cover" />
+                  ) : (
+                    <div className="w-full aspect-video bg-white/5 flex items-center justify-center">
+                      <Globe className="w-8 h-8 text-white/20" />
+                    </div>
+                  )}
+                  <div className="p-3 bg-white/5">
+                    <div className="text-sm font-medium text-[var(--text-primary)] group-hover:text-[#39bfb0] transition-colors">
+                      {item.title}
+                    </div>
+                  </div>
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Website link */}
+        {website && (
+          <div className="mt-6 text-center">
+            <a
+              href={website.startsWith('http') ? website : `https://${website}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 text-sm text-[#39bfb0] hover:underline"
+            >
+              {website.replace(/^https?:\/\//, '')}
+              <ArrowRight className="w-3.5 h-3.5" />
+            </a>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export default {
   GlassHero,
   PortalModulesGrid,
@@ -796,5 +1078,7 @@ export default {
   GlassPricing,
   GlassTimeline,
   GlassCTA,
-  GlassLegal
+  GlassLegal,
+  SitemapPlan,
+  AgencyProfile,
 }

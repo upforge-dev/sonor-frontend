@@ -196,64 +196,80 @@ export default function ProposalSignature({
     setShowPayment(false)
   }
 
+  const glassBase = 'relative bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-xl border border-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.2)] rounded-3xl'
+
   // Show inline signature block if already signed
   if (signed) {
     return (
-      <div id="signature" className="space-y-6 scroll-mt-24">
+      <div id="signature" className="space-y-6 scroll-mt-24 my-10">
         {/* Client Signature Block */}
-        <div className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-xl p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <CheckCircle className="h-5 w-5 text-[var(--brand-primary)]" />
-            <h3 className="font-semibold text-[var(--text-primary)]">Contract Signed</h3>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Signature Image */}
-            <div className="bg-white rounded-lg border border-gray-200 p-4">
-              {signatureData ? (
-                <img 
-                  src={signatureData} 
-                  alt="Client Signature" 
-                  className="max-h-24 mx-auto"
-                />
-              ) : (
-                <div className="h-24 flex items-center justify-center text-gray-400">
-                  Signature on file
-                </div>
-              )}
-            </div>
-            
-            {/* Signature Details */}
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 text-sm">
-                <User className="h-4 w-4 text-[var(--text-tertiary)]" />
-                <span className="text-[var(--text-secondary)]">Signed by:</span>
-                <span className="font-medium text-[var(--text-primary)]">{printedName}</span>
+        <div className={`${glassBase} p-8 md:p-10`}>
+          <div className="relative z-10">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-12 h-12 rounded-2xl bg-[#39bfb0]/20 border border-[#39bfb0]/30 flex items-center justify-center">
+                <CheckCircle className="w-6 h-6 text-[#39bfb0]" />
               </div>
-              <div className="flex items-center gap-2 text-sm">
-                <Calendar className="h-4 w-4 text-[var(--text-tertiary)]" />
-                <span className="text-[var(--text-secondary)]">Date:</span>
-                <span className="font-medium text-[var(--text-primary)]">{formatDate(signedDate)}</span>
+              <div>
+                <span className="text-sm uppercase tracking-widest text-[#39bfb0] block">Complete</span>
+                <h2 className="text-2xl font-bold text-[var(--text-primary)]">Contract Signed</h2>
               </div>
-              {clientEmail && (
-                <div className="flex items-center gap-2 text-sm">
-                  <Mail className="h-4 w-4 text-[var(--text-tertiary)]" />
-                  <span className="text-[var(--text-secondary)]">Email:</span>
-                  <span className="font-medium text-[var(--text-primary)]">{clientEmail}</span>
-                </div>
-              )}
             </div>
-          </div>
-          
-          <div className="mt-4 p-3 bg-[var(--brand-primary)]/10 rounded-lg">
-            <p className="text-sm text-[var(--brand-primary)] font-medium">
-              ✓ This contract is fully executed and legally binding
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Signature Image */}
+              <div className="bg-white rounded-2xl border border-white/20 p-6">
+                {signatureData ? (
+                  <img
+                    src={signatureData}
+                    alt="Client Signature"
+                    className="max-h-24 mx-auto"
+                  />
+                ) : (
+                  <div className="h-24 flex items-center justify-center text-gray-400">
+                    Signature on file
+                  </div>
+                )}
+              </div>
+
+              {/* Signature Details */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/10">
+                  <User className="h-4 w-4 text-[#39bfb0]" />
+                  <div>
+                    <span className="text-xs text-[var(--text-tertiary)] block">Signed by</span>
+                    <span className="font-medium text-[var(--text-primary)]">{printedName}</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/10">
+                  <Calendar className="h-4 w-4 text-[#39bfb0]" />
+                  <div>
+                    <span className="text-xs text-[var(--text-tertiary)] block">Date</span>
+                    <span className="font-medium text-[var(--text-primary)]">{formatDate(signedDate)}</span>
+                  </div>
+                </div>
+                {clientEmail && (
+                  <div className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/10">
+                    <Mail className="h-4 w-4 text-[#39bfb0]" />
+                    <div>
+                      <span className="text-xs text-[var(--text-tertiary)] block">Email</span>
+                      <span className="font-medium text-[var(--text-primary)]">{clientEmail}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="mt-6 p-4 rounded-2xl bg-[#39bfb0]/10 border border-[#39bfb0]/20">
+              <p className="text-sm text-[#39bfb0] font-medium flex items-center gap-2">
+                <CheckCircle className="h-4 w-4" />
+                This contract is fully executed and legally binding
+              </p>
+            </div>
+
+            <p className="text-xs text-[var(--text-tertiary)] mt-4">
+              Electronically signed and legally binding under the ESIGN Act and UETA.
             </p>
           </div>
-          
-          <p className="text-xs text-[var(--text-tertiary)] mt-4">
-            Electronically signed and legally binding under the ESIGN Act and UETA.
-          </p>
         </div>
 
         {/* Payment Section */}
@@ -270,16 +286,20 @@ export default function ProposalSignature({
 
         {/* Payment Complete Confirmation */}
         {paymentComplete && (
-          <div className="bg-[var(--brand-primary)]/10 border border-[var(--brand-primary)]/30 rounded-xl p-6">
-            <div className="flex items-center gap-2 mb-2">
-              <CheckCircle className="h-5 w-5 text-[var(--brand-primary)]" />
-              <h3 className="font-semibold text-[var(--brand-primary)]">Thank You!</h3>
+          <div className={`${glassBase} p-8`}>
+            <div className="relative z-10 flex items-start gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-[#39bfb0]/20 border border-[#39bfb0]/30 flex items-center justify-center flex-shrink-0">
+                <CheckCircle className="w-6 h-6 text-[#39bfb0]" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-[#39bfb0] mb-1">Thank You!</h3>
+                <p className="text-sm text-[var(--text-secondary)]">
+                  Your contract has been signed and your deposit payment has been received.
+                  We're excited to get started on your project! Check your email for next steps
+                  and project timeline details.
+                </p>
+              </div>
             </div>
-            <p className="text-sm text-[var(--text-secondary)]">
-              Your contract has been signed and your deposit payment has been received. 
-              We're excited to get started on your project! Check your email for next steps 
-              and project timeline details.
-            </p>
           </div>
         )}
       </div>
@@ -288,118 +308,129 @@ export default function ProposalSignature({
 
   // Show signature form
   return (
-    <div id="signature" className="scroll-mt-24 bg-[var(--glass-bg)] border-2 border-[var(--brand-primary)] rounded-xl overflow-hidden">
-      <div className="bg-[var(--brand-primary)]/10 p-4 border-b border-[var(--brand-primary)]/20">
-        <div className="flex items-center gap-2">
-          <Pen className="h-5 w-5 text-[var(--brand-primary)]" />
-          <h3 className="font-semibold text-[var(--text-primary)]">Sign to Accept Proposal</h3>
-        </div>
-        <p className="text-sm text-[var(--text-secondary)] mt-1">
-          By signing below, you agree to the terms and pricing outlined in this proposal.
-        </p>
-      </div>
-      
-      <div className="p-6 space-y-6">
-        {error && (
-          <Alert variant="destructive">
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
+    <div id="signature" className={`${glassBase} overflow-hidden my-10 scroll-mt-24 border-[#39bfb0]/40`}>
+      {/* Subtle brand glow */}
+      <div className="absolute -top-10 -right-10 w-40 h-40 bg-[#39bfb0]/15 rounded-full blur-3xl" />
 
-        {/* Legal Notice */}
-        <div className="bg-[var(--glass-bg-inset)] rounded-lg p-4 space-y-3">
-          <div className="flex items-start space-x-3">
-            <CheckCircle className="h-5 w-5 text-[var(--brand-primary)] mt-0.5 flex-shrink-0" />
+      <div className="relative z-10">
+        {/* Header */}
+        <div className="p-8 pb-0">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-12 h-12 rounded-2xl bg-[#39bfb0]/20 border border-[#39bfb0]/30 flex items-center justify-center">
+              <Pen className="w-6 h-6 text-[#39bfb0]" />
+            </div>
             <div>
-              <p className="font-medium text-sm text-[var(--text-primary)]">Legally Binding</p>
-              <p className="text-xs text-[var(--text-secondary)]">Electronic signatures are legally enforceable under the ESIGN Act.</p>
+              <span className="text-sm uppercase tracking-widest text-[#39bfb0] block">Accept</span>
+              <h2 className="text-2xl font-bold text-[var(--text-primary)]">Sign to Accept Proposal</h2>
             </div>
           </div>
-          <div className="flex items-start space-x-3">
-            <Mail className="h-5 w-5 text-[var(--brand-primary)] mt-0.5 flex-shrink-0" />
-            <div>
-              <p className="font-medium text-sm text-[var(--text-primary)]">Email Confirmation</p>
-              <p className="text-xs text-[var(--text-secondary)]">You'll receive a signed PDF copy via email once fully executed.</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Printed Name Field */}
-        <div className="space-y-2">
-          <Label htmlFor="printedName" className="text-[var(--text-primary)]">
-            Your Full Legal Name <span className="text-[var(--accent-red)]">*</span>
-          </Label>
-          <Input
-            id="printedName"
-            type="text"
-            value={printedName}
-            onChange={(e) => setPrintedName(e.target.value)}
-            placeholder="Type your full legal name"
-            className="bg-[var(--surface-page-secondary)] border-[var(--glass-border)] text-[var(--text-primary)]"
-            disabled={signing}
-          />
-        </div>
-
-        {/* Signature Canvas */}
-        <div className="space-y-2">
-          <Label className="text-[var(--text-primary)]">
-            Your Signature <span className="text-[var(--accent-red)]">*</span>
-          </Label>
-          <div className="border-2 border-[var(--glass-border-strong)] rounded-lg bg-white overflow-hidden">
-            <SignatureCanvas
-              ref={sigPad}
-              onBegin={handleBegin}
-              canvasProps={{
-                className: 'w-full h-40 cursor-crosshair',
-                style: { touchAction: 'none' }
-              }}
-              backgroundColor="rgb(255, 255, 255)"
-            />
-          </div>
-          <p className="text-xs text-[var(--text-tertiary)]">
-            Sign above using your mouse, trackpad, or touch screen
+          <p className="text-sm text-[var(--text-secondary)] ml-15 mb-6">
+            By signing below, you agree to the terms and pricing outlined in this proposal.
           </p>
         </div>
 
-        {/* Action Buttons */}
-        <div className="flex flex-col sm:flex-row gap-3">
-          <Button
-            variant="outline"
-            onClick={handleClear}
-            disabled={signing}
-            className="flex-1 border-[var(--glass-border-strong)]"
-          >
-            <X className="h-4 w-4 mr-2" />
-            Clear Signature
-          </Button>
-          <Button
-            onClick={handleSign}
-            disabled={signing || isEmpty || !printedName.trim()}
-            className="flex-1 bg-[var(--brand-primary)] hover:bg-[var(--brand-primary)]/90 text-white"
-          >
-            {signing ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Processing...
-              </>
-            ) : (
-              <>
-                <CheckCircle className="h-4 w-4 mr-2" />
-                Sign & Accept Proposal
-              </>
-            )}
-          </Button>
-        </div>
+        <div className="p-8 pt-0 space-y-6">
+          {error && (
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
 
-        {/* Signature Details Preview */}
-        <div className="pt-4 border-t border-[var(--glass-border)] text-xs text-[var(--text-tertiary)] space-y-1">
-          <p><strong>Proposal:</strong> {proposalTitle}</p>
-          {clientEmail && <p><strong>Email:</strong> {clientEmail}</p>}
-          <p><strong>Date:</strong> {new Date().toLocaleDateString('en-US', { 
-            year: 'numeric', 
-            month: 'long', 
-            day: 'numeric' 
-          })}</p>
+          {/* Legal Notice */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="flex items-start gap-3 p-4 rounded-2xl bg-white/5 border border-white/10">
+              <CheckCircle className="h-5 w-5 text-[#39bfb0] mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="font-medium text-sm text-[var(--text-primary)]">Legally Binding</p>
+                <p className="text-xs text-[var(--text-secondary)]">Enforceable under the ESIGN Act.</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3 p-4 rounded-2xl bg-white/5 border border-white/10">
+              <Mail className="h-5 w-5 text-[#39bfb0] mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="font-medium text-sm text-[var(--text-primary)]">Email Confirmation</p>
+                <p className="text-xs text-[var(--text-secondary)]">Signed PDF copy sent via email.</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Printed Name Field */}
+          <div className="space-y-2">
+            <Label htmlFor="printedName" className="text-[var(--text-primary)]">
+              Your Full Legal Name <span className="text-red-400">*</span>
+            </Label>
+            <Input
+              id="printedName"
+              type="text"
+              value={printedName}
+              onChange={(e) => setPrintedName(e.target.value)}
+              placeholder="Type your full legal name"
+              className="bg-white/5 border-white/20 text-[var(--text-primary)] rounded-xl h-12"
+              disabled={signing}
+            />
+          </div>
+
+          {/* Signature Canvas */}
+          <div className="space-y-2">
+            <Label className="text-[var(--text-primary)]">
+              Your Signature <span className="text-red-400">*</span>
+            </Label>
+            <div className="border-2 border-white/20 rounded-2xl bg-white overflow-hidden">
+              <SignatureCanvas
+                ref={sigPad}
+                onBegin={handleBegin}
+                canvasProps={{
+                  className: 'w-full h-40 cursor-crosshair',
+                  style: { touchAction: 'none' }
+                }}
+                backgroundColor="rgb(255, 255, 255)"
+              />
+            </div>
+            <p className="text-xs text-[var(--text-tertiary)]">
+              Sign above using your mouse, trackpad, or touch screen
+            </p>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Button
+              variant="outline"
+              onClick={handleClear}
+              disabled={signing}
+              className="flex-1 border-white/20 hover:bg-white/5 rounded-xl h-12"
+            >
+              <X className="h-4 w-4 mr-2" />
+              Clear
+            </Button>
+            <Button
+              onClick={handleSign}
+              disabled={signing || isEmpty || !printedName.trim()}
+              className="flex-1 bg-[#39bfb0] hover:bg-[#39bfb0]/90 text-white rounded-xl h-12 shadow-lg shadow-[#39bfb0]/20"
+            >
+              {signing ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  Sign & Accept Proposal
+                </>
+              )}
+            </Button>
+          </div>
+
+          {/* Signature Details Preview */}
+          <div className="pt-4 border-t border-white/10 text-xs text-[var(--text-tertiary)] space-y-1">
+            <p><strong>Proposal:</strong> {proposalTitle}</p>
+            {clientEmail && <p><strong>Email:</strong> {clientEmail}</p>}
+            <p><strong>Date:</strong> {new Date().toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric'
+            })}</p>
+          </div>
         </div>
       </div>
     </div>

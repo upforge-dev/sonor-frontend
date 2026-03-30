@@ -361,6 +361,10 @@ export default function ProspectSelector({
             type="text"
             value={search}
             disabled={disabled}
+            autoComplete="new-password"
+            data-form-type="other"
+            data-lpignore="true"
+            name={`prospect-search-${Math.random().toString(36).slice(2, 6)}`}
             onChange={(e) => {
               setSearch(e.target.value)
               if (!open) setOpen(true)
