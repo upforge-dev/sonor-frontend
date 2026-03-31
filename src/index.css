@@ -523,6 +523,115 @@ h1, h2, h3, h4, h5, h6 {
   --color-orange-500: #f97316;
   --color-teal-500: #14b8a6;
   --color-sky-500: #0ea5e9;
+  --color-gray-500: #6b7280;
+  --color-slate-500: #64748b;
+  --color-green-500: #22c55e;
+  --color-lime-500: #84cc16;
+  --color-yellow-500: #eab308;
+}
+
+/*
+ * Light theme — Tremor/Recharts chart fills
+ * Tremor applies utilities like fill-emerald-500 from JS; Tailwind often does not emit them
+ * (not present in app source scans), so SVG paths default to black. Mirror dark-mode fixes.
+ */
+.fill-tremor-brand-default,
+[class*="fill-tremor-brand"] {
+  fill: var(--brand-primary) !important;
+}
+.bg-tremor-brand-default {
+  background-color: var(--brand-primary) !important;
+}
+.stroke-tremor-brand-default {
+  stroke: var(--brand-primary) !important;
+}
+.text-tremor-brand-default {
+  color: var(--brand-primary) !important;
+}
+
+.fill-emerald-500,
+[class*="fill-emerald"] {
+  fill: var(--color-emerald-500) !important;
+}
+.fill-blue-500,
+[class*="fill-blue"] {
+  fill: var(--color-blue-500) !important;
+}
+.fill-amber-500,
+[class*="fill-amber"] {
+  fill: var(--color-amber-500) !important;
+}
+.fill-violet-500,
+[class*="fill-violet"] {
+  fill: var(--color-violet-500) !important;
+}
+.fill-cyan-500,
+[class*="fill-cyan"] {
+  fill: var(--color-cyan-500) !important;
+}
+.fill-indigo-500,
+[class*="fill-indigo"] {
+  fill: var(--color-indigo-500) !important;
+}
+.fill-purple-500,
+[class*="fill-purple"] {
+  fill: var(--color-purple-500) !important;
+}
+.fill-fuchsia-500,
+[class*="fill-fuchsia"] {
+  fill: var(--color-fuchsia-500) !important;
+}
+.fill-pink-500,
+[class*="fill-pink"] {
+  fill: var(--color-pink-500) !important;
+}
+.fill-rose-500,
+[class*="fill-rose"] {
+  fill: var(--color-rose-500) !important;
+}
+.fill-red-500,
+[class*="fill-red"] {
+  fill: var(--color-red-500) !important;
+}
+.fill-orange-500,
+[class*="fill-orange"] {
+  fill: var(--color-orange-500) !important;
+}
+.fill-teal-500,
+[class*="fill-teal"] {
+  fill: var(--color-teal-500) !important;
+}
+.fill-sky-500,
+[class*="fill-sky"] {
+  fill: var(--color-sky-500) !important;
+}
+.fill-gray-500,
+[class*="fill-gray"] {
+  fill: var(--color-gray-500) !important;
+}
+.fill-slate-500,
+[class*="fill-slate"] {
+  fill: var(--color-slate-500) !important;
+}
+.fill-green-500,
+[class*="fill-green"] {
+  fill: var(--color-green-500) !important;
+}
+.fill-lime-500,
+[class*="fill-lime"] {
+  fill: var(--color-lime-500) !important;
+}
+.fill-yellow-500,
+[class*="fill-yellow"] {
+  fill: var(--color-yellow-500) !important;
+}
+
+/* Donut/pie gap ring — match card/surface so slices separate cleanly */
+.stroke-tremor-background-default {
+  stroke: var(--surface-page-secondary, #ffffff) !important;
+}
+.dark .stroke-tremor-background-default {
+  stroke: var(--surface-page-secondary) !important;
 }
 
 /* Override Tremor default colors globally in dark mode */

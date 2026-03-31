@@ -40,6 +40,7 @@ export function HourlyChart({
   isLoading = false,
   height = 280
 }) {
+  // Tremor "brand" → fill-tremor-brand-default → var(--brand-primary) in index.css (light + dark)
   // Process data into hourly distribution
   const hourlyData = useMemo(() => {
     // Initialize all 24 hours
@@ -84,7 +85,7 @@ export function HourlyChart({
     return (
       <Card>
         <CardContent className="flex items-center justify-center h-80">
-          <Loader2 className="h-8 w-8 animate-spin text-[var(--text-tertiary)]" />
+          <Loader2 className="h-8 w-8 animate-spin text-[var(--brand-primary)]" />
         </CardContent>
       </Card>
     )
@@ -96,7 +97,7 @@ export function HourlyChart({
         <div className="flex items-start justify-between">
           <div>
             <CardTitle className="text-lg flex items-center gap-2">
-              <Clock className="h-5 w-5 text-violet-500" />
+              <Clock className="h-5 w-5 text-[var(--brand-primary)]" />
               Traffic by Hour
             </CardTitle>
             <CardDescription>When your visitors are most active</CardDescription>
@@ -105,7 +106,7 @@ export function HourlyChart({
           {peakHour && peakHour.visits > 0 && (
             <div className="text-right">
               <p className="text-xs text-[var(--text-tertiary)]">Peak Hour</p>
-              <p className="text-lg font-semibold text-violet-500">
+              <p className="text-lg font-semibold text-[var(--brand-primary)]">
                 {peakHour.hour}
               </p>
             </div>
@@ -120,7 +121,7 @@ export function HourlyChart({
               data={hourlyData}
               index="hour"
               categories={["visits"]}
-              colors={["violet"]}
+              colors={['brand']}
               valueFormatter={(v) => v.toLocaleString()}
               showAnimation={true}
               animationDuration={800}
@@ -142,8 +143,19 @@ export function HourlyChart({
         
         {totalVisits > 0 && (
           <div className="flex items-center justify-between pt-4 mt-4 border-t border-[var(--glass-border)] text-sm text-[var(--text-secondary)]">
-            <span>Total: {totalVisits.toLocaleString()} visits</span>
-            <span>Avg/hour: {avgPerHour.toLocaleString()}</span>
+            <span>
+              Total:{' '}
+              <span className="font-medium tabular-nums text-[var(--brand-primary)]">
+                {totalVisits.toLocaleString()}
+              </span>{' '}
+              visits
+            </span>
+            <span>
+              Avg/hour:{' '}
+              <span className="font-medium tabular-nums text-[var(--brand-primary)]">
+                {avgPerHour.toLocaleString()}
+              </span>
+            </span>
           </div>
         )}
       </CardContent>

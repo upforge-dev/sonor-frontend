@@ -70,23 +70,33 @@ export function WelcomeScreen({
   
   return (
     <div className={cn('flex flex-col items-center justify-center h-full p-6 text-center', className)}>
-      {/* Logo/Avatar */}
-      <div className="mb-6">
-        {isEcho ? (
-          <div className="w-20 h-20 rounded-full flex items-center justify-center bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-primary)] shadow-xl shadow-[var(--brand-primary)]/20">
-            <EchoLogo size={48} animated />
-          </div>
-        ) : (
+      {/* Logo/Avatar — Echo uses a small mark inline with the greeting; other tabs keep a large avatar */}
+      {!isEcho && (
+        <div className="mb-6">
           <div className="w-20 h-20 rounded-full flex items-center justify-center bg-[var(--surface-secondary)] border border-[var(--glass-border)]/50">
             <MessageCircle className="h-10 w-10 text-[var(--text-tertiary)]" />
           </div>
-        )}
-      </div>
-      
+        </div>
+      )}
+
       {/* Greeting */}
-      <h2 className="text-xl font-semibold text-[var(--text-primary)] mb-2">
-        {greeting}
-      </h2>
+      {isEcho ? (
+        <div className="flex items-center justify-center gap-2.5 mb-2 w-full max-w-lg">
+          <div
+            className="shrink-0 w-9 h-9 rounded-full flex items-center justify-center bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-primary)] shadow-md shadow-[var(--brand-primary)]/20"
+            aria-hidden
+          >
+            <EchoLogo size={22} animated />
+          </div>
+          <h2 className="text-xl font-semibold text-[var(--text-primary)] text-left leading-snug">
+            {greeting}
+          </h2>
+        </div>
+      ) : (
+        <h2 className="text-xl font-semibold text-[var(--text-primary)] mb-2">
+          {greeting}
+        </h2>
+      )}
       
       {/* Description */}
       {description && (

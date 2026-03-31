@@ -7,6 +7,7 @@
 
 import { User, Mail, Phone, Building2, Star, Clock, ExternalLink } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { formatPipelineStageSlug } from '@/lib/crm/formatPipelineStage'
 import { formatDistanceToNow } from 'date-fns'
 
 export interface ContactCardData {
@@ -90,7 +91,7 @@ export function ContactCard({ contact, onAction, className }: ContactCardProps) 
           <div className="flex flex-wrap items-center gap-2 mt-1.5">
             {contact.stage && (
               <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-[var(--surface-tertiary)] text-[var(--text-secondary)]">
-                {contact.stage}
+                {formatPipelineStageSlug(contact.stage)}
               </span>
             )}
             {contact.source && (

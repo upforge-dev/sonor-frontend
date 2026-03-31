@@ -235,6 +235,8 @@ export const echoApi = {
           skill: params.skill,
           pageContext: params.pageContext,
           attachments: params.attachments,
+          // Ensures TenantGuard scopes Echo even if headers are stripped (some proxies); matches axios interceptor behavior.
+          ...(params.projectId && { projectId: params.projectId }),
         }),
       })
       
@@ -1007,7 +1009,8 @@ export const signalSeoApi = {
     const response = await signalApi.post('/skills/seo/blog-ideas', { 
       projectId,
       topic: params.topic,
-      count: params.count
+      count: params.count,
+      ideasMode: params.ideasMode ?? params.ideas_mode,
     })
     return response.data.data
   },
@@ -1491,6 +1494,8 @@ export const signalSeoApi = {
       tone: params.tone,
       categoryId: params.categoryId || params.category_id,
       publishImmediately: params.publishImmediately ?? false,
+      includeFaq: params.includeFaq ?? params.include_faq,
+      citationLevel: params.citationLevel ?? params.citation_level,
     }, {
       timeout: options.timeout || 600000, // 10 minute timeout — 6-phase pipeline with multiple AI calls needs room
     })
@@ -1511,6 +1516,8 @@ export const signalSeoApi = {
       wordCountTarget: params.targetWordCount || params.wordCountTarget || params.word_count_target || 2000,
       tone: params.tone,
       categoryId: params.categoryId || params.category_id,
+      includeFaq: params.includeFaq ?? params.include_faq,
+      citationLevel: params.citationLevel ?? params.citation_level,
     })
     return response.data.data || response.data
   },

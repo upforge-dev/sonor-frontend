@@ -78,6 +78,7 @@ import {
   Loader2,
 } from 'lucide-react'
 import { format } from 'date-fns'
+import TurndownService from 'turndown'
 
 // ============================================================================
 // CONSTANTS
@@ -108,6 +109,44 @@ function countWords(text) {
   return text.trim().split(/\s+/).filter(Boolean).length
 }
 
+/** Match category Select values (UUID) to API post.category (slug or legacy UUID). */
+function resolveCategoryIdForForm(post, categories = []) {
+  if (!post) return ''
+  const list = Array.isArray(categories) ? categories : []
+  if (post.categoryId) return String(post.categoryId)
+  if (post.category_id) return String(post.category_id)
+  const c = post.category
+  if (c && typeof c === 'object' && c.id) return String(c.id)
+  if (typeof c === 'string' && c) {
+    const byId = list.find((cat) => String(cat.id) === c)
+    if (byId) return String(byId.id)
+    const bySlug = list.find((cat) => cat.slug === c)
+    if (bySlug) return String(bySlug.id)
+  }
+  return ''
+}
+
+function categoryLabelForSidebar(post, categories = []) {
+  const list = Array.isArray(categories) ? categories : []
+  const id = resolveCategoryIdForForm(post, list)
+  if (id) {
+    const found = list.find((cat) => String(cat.id) === id)
+    if (found) return found.name
+  }
+  if (post?.category && typeof post.category === 'object' && post.category.name) {
+    return post.category.name
+  }
+  if (typeof post?.category === 'string' && post.category) {
+    const looksLikeUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+      post.category.trim(),
+    )
+    if (!looksLikeUuid) return post.category
+    const found = list.find((cat) => String(cat.id) === post.category)
+    if (found) return found.name
+  }
+  return 'Uncategorized'
+}
+
 /**
  * Extract markdown from content that may be JSON-wrapped (pipeline artifact).
  * Some posts have content stored as JSON objects like {"heading":"## ...", "content":"..."}
@@ -127,7 +166,23 @@ function extractMarkdownContent(raw) {
         return body.startsWith('#') ? body : `${heading}\n\n${body}`
       }
     } catch {
-      // Not JSON — return as-is
+      // Multiple JSON objects: {...}\n\n{...} (AI pipeline sections)
+      try {
+        const parts = trimmed.split(/(?<=\})\s*\n+\s*(?=\{)/)
+        if (parts.length > 1) {
+          const sections = parts.map((p) => JSON.parse(p.trim()))
+          return sections
+            .map((s) => {
+              if (typeof s === 'string') return s
+              const heading = s.heading || ''
+              const body = s.content || ''
+              return body.startsWith('#') ? body : `${heading}\n\n${body}`
+            })
+            .join('\n\n')
+        }
+      } catch {
+        // fall through
+      }
     }
   }
 
@@ -149,6 +204,34 @@ function extractMarkdownContent(raw) {
   }
 
   return raw
+}
+
+let _htmlToMdTurndown
+function htmlToMarkdown(html) {
+  if (!html || typeof html !== 'string') return ''
+  const t = html.trim()
+  if (!t.startsWith('<')) return ''
+  try {
+    if (!_htmlToMdTurndown) {
+      _htmlToMdTurndown = new TurndownService({
+        headingStyle: 'atx',
+        codeBlockStyle: 'fenced',
+        emDelimiter: '*',
+        strongDelimiter: '**',
+      })
+    }
+    return _htmlToMdTurndown.turndown(t)
+  } catch {
+    return ''
+  }
+}
+
+/** Body for the editor: markdown from content, multi-section JSON, or HTML fallback when content is empty. */
+function bodyFromPost(post) {
+  if (!post) return ''
+  const fromRaw = extractMarkdownContent(post.content || post.body || '')
+  if (fromRaw && String(fromRaw).trim()) return fromRaw
+  return htmlToMarkdown(post.contentHtml || post.content_html || '')
 }
 
 // ============================================================================
@@ -275,7 +358,7 @@ function QualityScore({ label, value }) {
 // RIGHT SIDEBAR
 // ============================================================================
 
-function RightSidebar({ post, form, onPublishToggle, onDelete, isDeleting }) {
+function RightSidebar({ post, form, categories, onPublishToggle, onDelete, isDeleting }) {
   if (!post) return null
 
   const wordCount = post.wordCount || countWords(form.body)
@@ -309,7 +392,7 @@ function RightSidebar({ post, form, onPublishToggle, onDelete, isDeleting }) {
           <div className="flex items-center justify-between py-1.5">
             <span className="text-[var(--text-secondary)] text-sm">Category</span>
             <span className="text-[var(--text-primary)] text-sm font-medium">
-              {typeof post.category === 'string' ? post.category : (post.category?.name || 'Uncategorized')}
+              {categoryLabelForSidebar(post, categories)}
             </span>
           </div>
 
@@ -483,7 +566,7 @@ function RightSidebar({ post, form, onPublishToggle, onDelete, isDeleting }) {
 // CONTENT SECTION
 // ============================================================================
 
-function ContentSection({ form, setField, post }) {
+function ContentSection({ form, setField, post, formReady }) {
   const [previewMode, setPreviewMode] = useState(false)
   const wordCount = post?.wordCount || countWords(form.body)
 
@@ -523,7 +606,7 @@ function ContentSection({ form, setField, post }) {
       {previewMode ? (
         <ContentPreview form={form} post={post} />
       ) : (
-        <ContentEditor form={form} setField={setField} post={post} />
+        <ContentEditor form={form} setField={setField} post={post} formReady={formReady} />
       )}
     </div>
   )
@@ -627,7 +710,7 @@ function TableOfContents({ markdown }) {
   )
 }
 
-function ContentEditor({ form, setField, post }) {
+function ContentEditor({ form, setField, post, formReady }) {
   return (
     <div className="space-y-6">
       {/* Title */}
@@ -649,14 +732,22 @@ function ContentEditor({ form, setField, post }) {
         />
       </div>
 
-      {/* Body */}
+      {/* Body — only mount editor after form.body has been populated from the post to avoid blank-overwrite race */}
       <div className="space-y-2">
         <Label className="text-xs text-[var(--text-tertiary)] uppercase tracking-wider">Content</Label>
-        <MarkdownEditor
-          key={post?.id || 'new'}
-          value={form.body}
-          onChange={(val) => setField('body', val)}
-        />
+        {formReady ? (
+          <MarkdownEditor
+            value={form.body}
+            onChange={(val) => setField('body', val)}
+          />
+        ) : (
+          <div
+            className="border border-[var(--glass-border)] rounded-lg p-4 text-[var(--text-tertiary)] text-sm"
+            style={{ minHeight: '300px' }}
+          >
+            Loading content...
+          </div>
+        )}
       </div>
 
       {/* Featured image */}
@@ -918,7 +1009,8 @@ function AnalyticsSection({ post, analytics }) {
     )
   }
 
-  const data = analytics?.data || analytics || {}
+  const raw = analytics?.data || analytics || {}
+  const gsc = raw.gsc || {}
 
   return (
     <div className="space-y-6">
@@ -926,25 +1018,25 @@ function AnalyticsSection({ post, analytics }) {
       <StatTileGrid columns={4}>
         <StatTile
           label="Views (30d)"
-          value={data.views_30d ?? '--'}
+          value={raw.views ?? '--'}
           icon={Eye}
           color="brand"
         />
         <StatTile
           label="GSC Clicks"
-          value={data.gsc_clicks ?? '--'}
+          value={gsc.clicks_28d ?? '--'}
           icon={Target}
           color="blue"
         />
         <StatTile
           label="GSC Impressions"
-          value={data.gsc_impressions ?? '--'}
+          value={gsc.impressions_28d ?? '--'}
           icon={Globe}
           color="purple"
         />
         <StatTile
           label="Avg Position"
-          value={data.avg_position ? data.avg_position.toFixed(1) : '--'}
+          value={gsc.avg_position_28d != null ? Number(gsc.avg_position_28d).toFixed(1) : '--'}
           icon={Hash}
           color="green"
         />
@@ -954,25 +1046,25 @@ function AnalyticsSection({ post, analytics }) {
       <StatTileGrid columns={4}>
         <StatTile
           label="Avg Scroll Depth"
-          value={data.avg_scroll_depth ? `${Math.round(data.avg_scroll_depth)}%` : '--'}
+          value={raw.avgScrollDepth != null ? `${raw.avgScrollDepth}%` : '--'}
           icon={BookOpen}
           color="orange"
         />
         <StatTile
           label="Avg Time on Page"
-          value={data.avg_time_on_page ? `${Math.round(data.avg_time_on_page)}s` : '--'}
+          value={raw.avgTimeOnPage != null ? `${raw.avgTimeOnPage}s` : '--'}
           icon={Clock}
           color="brand"
         />
         <StatTile
           label="CTR"
-          value={data.ctr ? `${(data.ctr * 100).toFixed(1)}%` : '--'}
+          value={gsc.ctr_28d != null ? `${(Number(gsc.ctr_28d) * 100).toFixed(1)}%` : '--'}
           icon={ExternalLink}
           color="blue"
         />
         <StatTile
           label="Word Count"
-          value={countWords(post?.body).toLocaleString()}
+          value={(post?.wordCount ?? countWords(bodyFromPost(post))).toLocaleString()}
           icon={FileText}
           color="purple"
         />
@@ -1179,14 +1271,16 @@ export default function BlogPostDetail() {
     is_featured: false,
     faqs: [],
   })
+  const [formPostId, setFormPostId] = useState(null)
 
-  // Initialize form from post data (API returns camelCase fields)
+  // Initialize form when navigating to a post (category_id filled when categories are already cached).
   useEffect(() => {
     if (!post) return
+    setFormPostId(post.id)
     setForm({
       title: post.title || '',
       excerpt: post.excerpt || '',
-      body: extractMarkdownContent(post.content || post.body || post.contentHtml || ''),
+      body: bodyFromPost(post),
       meta_title: post.metaTitle || post.meta_title || '',
       meta_description: post.metaDescription || post.meta_description || '',
       focus_keyphrase: post.focusKeyphrase || post.focus_keyphrase || '',
@@ -1194,7 +1288,7 @@ export default function BlogPostDetail() {
       featured_image_url: post.featuredImage || post.featured_image || '',
       featured_image_alt: post.featuredImageAlt || post.featured_image_alt || '',
       author_id: post.authorId || post.author_id || '',
-      category_id: post.category || post.categoryId || '',
+      category_id: resolveCategoryIdForForm(post, categories),
       tags_input: Array.isArray(post.tags) ? post.tags.join(', ') : (post.tags || ''),
       slug: post.slug || '',
       status: post.status || 'draft',
@@ -1206,6 +1300,17 @@ export default function BlogPostDetail() {
     })
   }, [post])
 
+  // When categories load after the post, set Select value once (slug on post → category UUID).
+  useEffect(() => {
+    if (!post || !categories?.length) return
+    const id = resolveCategoryIdForForm(post, categories)
+    if (!id) return
+    setForm((prev) => {
+      if (prev.category_id) return prev
+      return { ...prev, category_id: id }
+    })
+  }, [post?.id, categories])
+
   const setField = useCallback((key, value) => {
     setForm((prev) => ({ ...prev, [key]: value }))
   }, [])
@@ -1213,10 +1318,11 @@ export default function BlogPostDetail() {
   // Dirty tracking — compare form state to API response (camelCase)
   const isDirty = useMemo(() => {
     if (!post) return false
+    const savedCategoryId = resolveCategoryIdForForm(post, categories)
     return (
       form.title !== (post.title || '') ||
       form.excerpt !== (post.excerpt || '') ||
-      form.body !== extractMarkdownContent(post.content || '') ||
+      form.body !== bodyFromPost(post) ||
       form.meta_title !== (post.metaTitle || '') ||
       form.meta_description !== (post.metaDescription || '') ||
       form.focus_keyphrase !== (post.focusKeyphrase || '') ||
@@ -1224,14 +1330,14 @@ export default function BlogPostDetail() {
       form.featured_image_url !== (post.featuredImage || '') ||
       form.featured_image_alt !== (post.featuredImageAlt || '') ||
       form.author_id !== (post.authorId || '') ||
-      form.category_id !== (post.category || '') ||
+      form.category_id !== savedCategoryId ||
       form.tags_input !== (Array.isArray(post.tags) ? post.tags.join(', ') : '') ||
       form.slug !== (post.slug || '') ||
       form.status !== (post.status || 'draft') ||
       form.is_featured !== (post.featured ?? false) ||
       JSON.stringify(form.faqs) !== JSON.stringify(post.faqs || post.faq_items || [])
     )
-  }, [form, post])
+  }, [form, post, categories])
 
   // Unsaved changes dialog state
   const [showUnsavedDialog, setShowUnsavedDialog] = useState(false)
@@ -1265,7 +1371,13 @@ export default function BlogPostDetail() {
     // Compare form state to API response (camelCase) and build update payload
     if (form.title !== (o.title || '')) data.title = form.title
     if (form.excerpt !== (o.excerpt || '')) data.excerpt = form.excerpt
-    if (form.body !== extractMarkdownContent(o.content || '')) data.content = form.body
+    if (form.body !== bodyFromPost(o)) {
+      if (!form.body.trim() && bodyFromPost(o).trim()) {
+        console.warn('[BlogPostDetail] Blocked saving empty body over existing content')
+      } else {
+        data.content = form.body
+      }
+    }
     if (form.meta_title !== (o.metaTitle || '')) data.metaTitle = form.meta_title
     if (form.meta_description !== (o.metaDescription || '')) data.metaDescription = form.meta_description
     if (form.focus_keyphrase !== (o.focusKeyphrase || '')) data.focusKeyphrase = form.focus_keyphrase
@@ -1273,7 +1385,9 @@ export default function BlogPostDetail() {
     if (form.featured_image_url !== (o.featuredImage || '')) data.featuredImage = form.featured_image_url
     if (form.featured_image_alt !== (o.featuredImageAlt || '')) data.featuredImageAlt = form.featured_image_alt
     if (form.author_id !== (o.authorId || '')) data.authorId = form.author_id
-    if (form.category_id !== (o.category || '')) data.category = form.category_id
+    if (form.category_id !== resolveCategoryIdForForm(o, categories)) {
+      data.category = form.category_id
+    }
     if (form.slug !== (o.slug || '')) data.slug = form.slug
     if (form.status !== (o.status || 'draft')) data.status = form.status
     if (form.is_featured !== (o.featured ?? false)) data.featured = form.is_featured
@@ -1297,11 +1411,11 @@ export default function BlogPostDetail() {
 
   const handleSave = useCallback(() => {
     buildAndSave()
-  }, [postId, isDirty, form, post, updatePost])
+  }, [postId, isDirty, form, post, categories, updatePost])
 
   const handleSaveAndThen = useCallback((cb) => {
     buildAndSave(cb)
-  }, [postId, isDirty, form, post, updatePost])
+  }, [postId, isDirty, form, post, categories, updatePost])
 
   // Delete handler
   const handleDelete = useCallback(() => {
@@ -1383,7 +1497,7 @@ export default function BlogPostDetail() {
   const renderSection = () => {
     switch (activeSection) {
       case 'content':
-        return <ContentSection form={form} setField={setField} post={post} />
+        return <ContentSection form={form} setField={setField} post={post} formReady={formPostId === post?.id} />
       case 'seo':
         return <SEOSection form={form} setField={setField} authors={authors} post={post} />
       case 'analytics':
@@ -1419,6 +1533,7 @@ export default function BlogPostDetail() {
         <RightSidebar
           post={post}
           form={form}
+          categories={categories}
           onPublishToggle={handlePublishToggle}
           onDelete={handleDelete}
           isDeleting={deletePost.isPending}

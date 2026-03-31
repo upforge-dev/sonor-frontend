@@ -616,7 +616,10 @@ export function useRunSignalTechnicalAudit() {
 /**
  * Get AI-powered blog topic suggestions
  */
-export function useBlogAiSuggestions(projectId: string, params?: { topic?: string; count?: number }) {
+export function useBlogAiSuggestions(
+  projectId: string,
+  params?: { topic?: string; count?: number; ideasMode?: 'default' | 'answer_engine_listicles' },
+) {
   return useQuery({
     queryKey: [...seoSignalKeys.all, 'blog', 'suggestions', projectId, params],
     queryFn: async () => {

@@ -220,7 +220,30 @@ export function useEchoChat(options: UseEchoChatOptions): UseEchoChatReturn {
   // Load conversation and messages
   const loadThread = useCallback(
     async (id: string) => {
-      if (!enabled || loadedThreadRef.current === id) return
+      if (!enabled) return
+
+      // Placeholder IDs from createThread() are synced to the URL; they are not persisted until
+      // the first message. Never call GET /echo/conversation/:id for them (refresh/deep-link safe).
+      if (id.startsWith('new-')) {
+        loadedThreadRef.current = id
+        setThread({
+          thread_id: id,
+          user_id: '',
+          org_id: '',
+          project_id: projectId ?? null,
+          thread_type: 'echo',
+          title: 'New conversation',
+          unread_count: 0,
+          status: 'active',
+          created_at: new Date().toISOString(),
+        })
+        setMessages([])
+        setError(null)
+        setIsLoading(false)
+        return
+      }
+
+      if (loadedThreadRef.current === id) return
 
       setIsLoading(true)
       setError(null)
@@ -240,7 +263,7 @@ export function useEchoChat(options: UseEchoChatOptions): UseEchoChatReturn {
         setIsLoading(false)
       }
     },
-    [enabled],
+    [enabled, projectId],
   )
 
   // Create a new thread (empty state; real ID comes from first send)
@@ -326,6 +349,7 @@ export function useEchoChat(options: UseEchoChatOptions): UseEchoChatReturn {
           {
             message: messageWithAttachments,
             conversationId,
+            projectId: projectId ?? undefined,
             skill: skill || undefined,
             pageContext: pageContext || (contextId ? { contextId } : undefined),
             attachments: imageAttachments.length > 0 ? imageAttachments : undefined,
@@ -380,7 +404,7 @@ export function useEchoChat(options: UseEchoChatOptions): UseEchoChatReturn {
         setActiveToolCall(null)
       }
     },
-    [thread, createThread, skill, contextId],
+    [thread, createThread, skill, contextId, projectId],
   )
 
   const retryMessage = useCallback(

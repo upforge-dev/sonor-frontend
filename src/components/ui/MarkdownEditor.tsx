@@ -6,10 +6,11 @@ import type { Editor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Link from '@tiptap/extension-link'
 import Image from '@tiptap/extension-image'
-import { useEffect, useCallback, useMemo } from 'react'
+import { useEffect, useCallback, useMemo, useRef } from 'react'
 import { cn } from '@/lib/utils'
 import { Button } from './button'
 import TurndownService from 'turndown'
+import { marked } from 'marked'
 import {
   Bold,
   Italic,
@@ -56,53 +57,11 @@ const createTurndownService = () => {
   return turndown
 }
 
-// Convert markdown to HTML for the editor
-const markdownToHtml = (markdown: string) => {
+marked.setOptions({ gfm: true, breaks: false })
+
+const markdownToHtml = (markdown: string): string => {
   if (!markdown) return ''
-
-  // Basic markdown to HTML conversion
-  let html = markdown
-    // Headers
-    .replace(/^### (.*$)/gim, '<h3>$1</h3>')
-    .replace(/^## (.*$)/gim, '<h2>$1</h2>')
-    .replace(/^# (.*$)/gim, '<h1>$1</h1>')
-    // Bold and italic
-    .replace(/\*\*\*(.*?)\*\*\*/gim, '<strong><em>$1</em></strong>')
-    .replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>')
-    .replace(/\*(.*?)\*/gim, '<em>$1</em>')
-    // Strikethrough
-    .replace(/~~(.*?)~~/gim, '<del>$1</del>')
-    // Code blocks
-    .replace(/```([\s\S]*?)```/gim, '<pre><code>$1</code></pre>')
-    // Inline code
-    .replace(/`(.*?)`/gim, '<code>$1</code>')
-    // Images
-    .replace(/!\[(.*?)\]\((.*?)\)/gim, '<img alt="$1" src="$2" />')
-    // Links
-    .replace(/\[(.*?)\]\((.*?)\)/gim, '<a href="$2">$1</a>')
-    // Horizontal rules
-    .replace(/^---$/gim, '<hr />')
-    // Blockquotes
-    .replace(/^> (.*$)/gim, '<blockquote>$1</blockquote>')
-    // Unordered lists
-    .replace(/^\s*[-*+] (.*$)/gim, '<li>$1</li>')
-    // Ordered lists
-    .replace(/^\s*\d+\. (.*$)/gim, '<li>$1</li>')
-    // Line breaks and paragraphs
-    .replace(/\n\n/gim, '</p><p>')
-    .replace(/\n/gim, '<br />')
-
-  // Wrap list items
-  html = html.replace(/(<li>.*<\/li>)/gim, '<ul>$1</ul>')
-  // Merge consecutive ul tags
-  html = html.replace(/<\/ul>\s*<ul>/gim, '')
-
-  // Wrap in paragraph if not already wrapped
-  if (!html.startsWith('<')) {
-    html = `<p>${html}</p>`
-  }
-
-  return html
+  return marked.parse(markdown, { async: false }) as string
 }
 
 interface MenuButtonProps {
@@ -354,6 +313,8 @@ export function MarkdownEditor({
   // State for source mode
   const [isSourceMode, setIsSourceMode] = React.useState(false)
   const [sourceValue, setSourceValue] = React.useState(value)
+  /** Last markdown emitted by the editor — skips prop sync when parent echo matches (avoids empty flash + cursor fights). */
+  const lastEditorMarkdownRef = useRef<string | null>(null)
 
   const editor = useEditor({
     extensions: [
@@ -387,21 +348,20 @@ export function MarkdownEditor({
       const html = ed.getHTML()
       // Convert HTML to Markdown
       const markdown = turndownService.turndown(html)
+      lastEditorMarkdownRef.current = markdown
       setSourceValue(markdown)
       onChange?.(markdown)
     },
   })
 
-  // Update content when value prop changes externally
+  // When parent value changes (e.g. post loads after mount), push into TipTap. Use emitUpdate: false + ref to avoid fighting typing.
   useEffect(() => {
-    if (editor && !isSourceMode) {
-      const currentMarkdown = turndownService.turndown(editor.getHTML())
-      if (value !== currentMarkdown) {
-        editor.commands.setContent(markdownToHtml(value))
-        setSourceValue(value)
-      }
-    }
-  }, [value, editor, isSourceMode, turndownService])
+    if (!editor || isSourceMode) return
+    if (lastEditorMarkdownRef.current === value) return
+    editor.commands.setContent(markdownToHtml(value || ''), { emitUpdate: false })
+    setSourceValue(value || '')
+    lastEditorMarkdownRef.current = value || ''
+  }, [value, editor, isSourceMode])
 
   // Update editable state when disabled or source mode changes
   useEffect(() => {
@@ -415,7 +375,8 @@ export function MarkdownEditor({
     if (isSourceMode) {
       // Switching back to visual mode - update editor with source
       if (editor) {
-        editor.commands.setContent(markdownToHtml(sourceValue))
+        editor.commands.setContent(markdownToHtml(sourceValue), { emitUpdate: false })
+        lastEditorMarkdownRef.current = sourceValue
       }
     } else {
       // Switching to source mode - get current markdown

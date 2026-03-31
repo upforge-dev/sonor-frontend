@@ -29,6 +29,7 @@ import { EchoActions, extractActions } from './EchoActions'
 import { extractOnboardingBlocks, OnboardingBlockRenderer } from '@/components/onboarding/OnboardingBlocks'
 import type { ChatKitItem, MessageContent, ItemReaction } from './types'
 import EchoLogo from '@/components/EchoLogo'
+import { humanizePipelineStageSlugsInText } from '@/lib/crm/formatPipelineStage'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -384,7 +385,8 @@ export function MessageBubble({
     return extractOnboardingBlocks(src)
   }, [actionsCleanText, statsCleanText, tableCleanText, contactCleanText, chartCleanText, messageText, inlineActions.length, inlineStats.length, inlineTables.length, inlineContacts.length, inlineCharts.length])
 
-  // Highlight @mentions for display (wrap in ** so they render bold)
+  // Highlight @mentions for display (wrap in ** so they render bold).
+  // Do not treat @ inside email addresses (localpart@domain) as mentions — that produced chloe**@gmail.com**.
   const messageTextWithMentions = useMemo(() => {
     const text = onboardingBlocks.length > 0 ? onboardingCleanText
       : inlineActions.length > 0 ? actionsCleanText
@@ -394,8 +396,25 @@ export function MessageBubble({
       : inlineCharts.length > 0 ? chartCleanText
       : messageText
     if (!text) return ''
-    return text.replace(/@[\w.-]+/g, '**$&**')
-  }, [messageText, chartCleanText, contactCleanText, tableCleanText, statsCleanText, actionsCleanText, onboardingCleanText, inlineCharts.length, inlineContacts.length, inlineTables.length, inlineStats.length, inlineActions.length, onboardingBlocks.length])
+    const withStages =
+      isAssistant ? humanizePipelineStageSlugsInText(text) : text
+    return withStages.replace(/(?<![A-Za-z0-9._+-])@[\w.-]+/g, '**$&**')
+  }, [
+    messageText,
+    chartCleanText,
+    contactCleanText,
+    tableCleanText,
+    statsCleanText,
+    actionsCleanText,
+    onboardingCleanText,
+    inlineCharts.length,
+    inlineContacts.length,
+    inlineTables.length,
+    inlineStats.length,
+    inlineActions.length,
+    onboardingBlocks.length,
+    isAssistant,
+  ])
 
   const firstUrl = useMemo(() => extractFirstUrl(messageText), [messageText])
   
@@ -544,7 +563,7 @@ export function MessageBubble({
             /* Normal message content */
             <>
               {/* Markdown Content */}
-              <div className="prose prose-sm dark:prose-invert max-w-none">
+              <div className="echo-md max-w-none text-sm text-[var(--text-primary)] leading-relaxed [&_a]:text-[var(--brand-primary)]">
                 <ReactMarkdown
                   remarkPlugins={[remarkGfm]}
                   components={{
@@ -604,16 +623,77 @@ export function MessageBubble({
                         </a>
                       )
                     },
-                    // Paragraphs with proper spacing
+                    // Paragraphs with proper spacing (same size as list body — avoids “tiny” detail lines)
                     p({ children }) {
-                      return <p className="mb-2 last:mb-0 text-sm leading-relaxed">{children}</p>
+                      return <p className="mb-2 last:mb-0 text-sm leading-relaxed text-[var(--text-primary)]">{children}</p>
                     },
-                    // Lists
+                    strong({ children }) {
+                      return <strong className="font-semibold text-[var(--text-primary)]">{children}</strong>
+                    },
+                    h2({ children }) {
+                      return (
+                        <h2 className="text-sm font-semibold text-[var(--text-primary)] mt-4 mb-2 first:mt-0 border-b border-[var(--glass-border)]/40 pb-1">
+                          {children}
+                        </h2>
+                      )
+                    },
+                    h3({ children }) {
+                      return <h3 className="text-sm font-semibold text-[var(--text-primary)] mt-3 mb-1.5 first:mt-0">{children}</h3>
+                    },
+                    h4({ children }) {
+                      return <h4 className="text-sm font-semibold text-[var(--text-primary)] mt-2 mb-1">{children}</h4>
+                    },
+                    // Lists: list-outside + padding so numbers aren’t oversized vs body; tight li spacing
                     ul({ children }) {
-                      return <ul className="list-disc list-inside mb-2 space-y-1">{children}</ul>
+                      return (
+                        <ul className="list-disc list-outside pl-5 mb-3 space-y-2 text-sm text-[var(--text-primary)] marker:text-[var(--text-secondary)]">
+                          {children}
+                        </ul>
+                      )
                     },
                     ol({ children }) {
-                      return <ol className="list-decimal list-inside mb-2 space-y-1">{children}</ol>
+                      return (
+                        <ol className="list-decimal list-outside pl-5 mb-3 space-y-3 text-sm text-[var(--text-primary)] marker:font-medium marker:text-[var(--text-primary)]">
+                          {children}
+                        </ol>
+                      )
+                    },
+                    li({ children }) {
+                      return (
+                        <li className="text-sm leading-relaxed [&>p]:mb-1.5 [&>p:last-child]:mb-0 [&>ul]:mt-1.5 [&>ol]:mt-1.5">
+                          {children}
+                        </li>
+                      )
+                    },
+                    hr() {
+                      return <hr className="my-3 border-0 border-t border-[var(--glass-border)]/50" />
+                    },
+                    blockquote({ children }) {
+                      return (
+                        <blockquote className="border-l-2 border-[var(--brand-primary)]/40 pl-3 my-2 text-sm text-[var(--text-secondary)]">
+                          {children}
+                        </blockquote>
+                      )
+                    },
+                    table({ children }) {
+                      return (
+                        <div className="overflow-x-auto my-2 rounded-lg border border-[var(--glass-border)]/50">
+                          <table className="w-full text-sm border-collapse">{children}</table>
+                        </div>
+                      )
+                    },
+                    thead({ children }) {
+                      return <thead className="bg-[var(--surface-secondary)]/80">{children}</thead>
+                    },
+                    th({ children }) {
+                      return (
+                        <th className="text-left font-medium px-2 py-1.5 border-b border-[var(--glass-border)]/50">
+                          {children}
+                        </th>
+                      )
+                    },
+                    td({ children }) {
+                      return <td className="px-2 py-1.5 border-b border-[var(--glass-border)]/30">{children}</td>
                     },
                   }}
                 >

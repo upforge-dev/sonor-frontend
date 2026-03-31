@@ -143,8 +143,8 @@ export default function MessagesWidget({ hidden = false }: MessagesWidgetProps) 
               'border border-[var(--glass-border)]/80 rounded-2xl',
               'shadow-2xl shadow-black/20',
               'ring-1 ring-white/10',
-              'bottom-24 right-6 w-[400px] h-[600px] max-h-[calc(100vh-120px)]',
-              'max-md:bottom-0 max-md:right-0 max-md:w-full max-md:h-[80vh] max-md:rounded-b-none',
+              'bottom-24 right-6 w-[400px] h-[720px] max-h-[calc(100vh-120px)]',
+              'max-md:bottom-0 max-md:right-0 max-md:w-full max-md:h-[85vh] max-md:rounded-b-none',
               'animate-in slide-in-from-bottom-4 fade-in duration-200'
             )}
           >

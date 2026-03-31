@@ -46,6 +46,13 @@ const STAGES = {
   COMPLETE: 'complete'
 }
 
+/** Maps UI preset → Signal blog pipeline content_type */
+const PIPELINE_CONTENT_TYPE_BY_PRESET = {
+  guide: 'how_to_guide',
+  listicle: 'listicle',
+  faq_comprehensive: 'faq_comprehensive',
+}
+
 // Format markdown-style text in Echo responses
 const formatMessage = (text) => {
   if (!text) return null
@@ -210,6 +217,11 @@ const TopicCard = ({ topic, onSelect }) => (
               {topic.searchIntent}
             </Badge>
           )}
+          {topic.suggested_content_type === 'listicle' && (
+            <Badge variant="outline" className="text-xs border-violet-500/30 text-violet-600">
+              Listicle
+            </Badge>
+          )}
         </div>
       </div>
       <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-[var(--brand-primary)] shrink-0 mt-1" />
@@ -270,16 +282,29 @@ export default function EchoBlogCreator({
   // Content enhancement options (E-E-A-T generation always used when project is set)
   const [includeFAQs, setIncludeFAQs] = useState(true)
   const [includeRealWorldData, setIncludeRealWorldData] = useState(true)
+  /** guide | listicle | faq_comprehensive */
+  const [contentFormatPreset, setContentFormatPreset] = useState('guide')
+  const [citationLevel, setCitationLevel] = useState('standard')
+  const [topicIdeasMode, setTopicIdeasMode] = useState('default')
+  const [pipelineWordCount, setPipelineWordCount] = useState(2000)
   
-  // Load categories on mount
   useEffect(() => {
     if (open && currentProject?.id) {
       loadCategories()
-      if (!prefillTopic) {
-        loadTopicSuggestions()
-      }
     }
   }, [open, currentProject?.id])
+
+  useEffect(() => {
+    if (open && currentProject?.id && !prefillTopic) {
+      loadTopicSuggestions()
+    }
+  }, [open, currentProject?.id, topicIdeasMode, prefillTopic])
+
+  useEffect(() => {
+    if (contentFormatPreset === 'listicle') setPipelineWordCount(1500)
+    else if (contentFormatPreset === 'faq_comprehensive') setPipelineWordCount(2400)
+    else setPipelineWordCount(2000)
+  }, [contentFormatPreset])
   
   // Handle prefill topic
   useEffect(() => {
@@ -354,7 +379,10 @@ export default function EchoBlogCreator({
   const loadTopicSuggestions = async () => {
     if (!currentProject?.id) return
     try {
-      const data = await signalSeoApi.getBlogAiSuggestions(currentProject.id, { count: 5 })
+      const data = await signalSeoApi.getBlogAiSuggestions(currentProject.id, {
+        count: 5,
+        ideasMode: topicIdeasMode === 'answer_engine_listicles' ? 'answer_engine_listicles' : undefined,
+      })
       const raw = data?.ideas ?? data?.topics ?? (Array.isArray(data) ? data : [])
       const topics = raw.map((t) => ({
         title: t.title ?? t.topic ?? t.headline ?? '',
@@ -366,6 +394,7 @@ export default function EchoBlogCreator({
         searchIntent: t.search_intent ?? t.searchIntent ?? null,
         trending: t.trending ?? false,
         trafficPotential: t.trafficPotential ?? t.potential ?? null,
+        suggested_content_type: t.suggested_content_type ?? t.suggestedContentType ?? null,
       })).filter((t) => t.title)
       setTopicSuggestions(topics)
     } catch (error) {
@@ -427,9 +456,25 @@ export default function EchoBlogCreator({
     const hasExplicitKeyword = !!topic.primaryKeyword
     const targetKeyword = topic.primaryKeyword || topic.title
 
+    let briefContentType = 'how_to_guide'
+    if (typeof topic !== 'string' && topic.suggested_content_type === 'listicle') {
+      setContentFormatPreset('listicle')
+      briefContentType = 'listicle'
+    } else if (typeof topic !== 'string' && topic.suggested_content_type === 'faq_comprehensive') {
+      setContentFormatPreset('faq_comprehensive')
+      setIncludeFAQs(true)
+      briefContentType = 'faq_comprehensive'
+    } else if (typeof topic !== 'string' && topic.suggested_content_type === 'how_to_guide') {
+      setContentFormatPreset('guide')
+      briefContentType = 'how_to_guide'
+    }
+
     try {
       if (projectId && targetKeyword) {
-        const brief = await signalSeoApi.generateContentBrief(projectId, { targetKeyword })
+        const brief = await signalSeoApi.generateContentBrief(projectId, {
+          targetKeyword,
+          contentType: briefContentType,
+        })
         // The brief should return a refined keyword. For custom concepts (no explicit keyword),
         // strongly prefer what the brief derived over the raw user input.
         const derivedKeyword = brief?.targetKeyword ?? brief?.primary_keyword
@@ -512,12 +557,18 @@ export default function EchoBlogCreator({
       let result
       // Use new phased pipeline when we have a project (SEO-driven blog creation with E-E-A-T)
       if (projectId && topic) {
+        const pipelineContentType =
+          PIPELINE_CONTENT_TYPE_BY_PRESET[contentFormatPreset] || 'how_to_guide'
+        const includeFaqPipeline =
+          contentFormatPreset === 'faq_comprehensive' ? true : includeFAQs
+
         const pipelineResult = await signalSeoApi.generateBlogPipeline(projectId, {
           topic,
           target_keyword: targetKeyword,
-          content_type: 'how_to_guide',
-          include_faq: includeFAQs,
-          citation_level: 'standard',
+          content_type: pipelineContentType,
+          word_count_target: pipelineWordCount,
+          include_faq: includeFaqPipeline,
+          citation_level: citationLevel,
           category_id: selectedCategory?.slug,
         }, {
           timeout: 600000, // 10 minute timeout — pipeline generates 6 phases with multiple AI calls
@@ -934,6 +985,10 @@ export default function EchoBlogCreator({
     setGeneratedImage(null)
     setIncludeFAQs(true)
     setIncludeRealWorldData(true)
+    setContentFormatPreset('guide')
+    setCitationLevel('standard')
+    setTopicIdeasMode('default')
+    setPipelineWordCount(2000)
     onOpenChange(false)
   }
   
@@ -990,6 +1045,33 @@ export default function EchoBlogCreator({
                 <p className="text-xs text-muted-foreground uppercase tracking-wide">
                   Signal SEO topic ideas
                 </p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-xs text-muted-foreground">Topic mix:</span>
+                  <button
+                    type="button"
+                    onClick={() => setTopicIdeasMode('default')}
+                    className={cn(
+                      'px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors',
+                      topicIdeasMode === 'default'
+                        ? 'border-[var(--brand-primary)] bg-[color-mix(in_srgb,var(--brand-primary)_12%,transparent)]'
+                        : 'border-border bg-[var(--surface-secondary)] hover:bg-[var(--surface-tertiary)]',
+                    )}
+                  >
+                    Balanced
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTopicIdeasMode('answer_engine_listicles')}
+                    className={cn(
+                      'px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors',
+                      topicIdeasMode === 'answer_engine_listicles'
+                        ? 'border-[var(--brand-primary)] bg-[color-mix(in_srgb,var(--brand-primary)_12%,transparent)]'
+                        : 'border-border bg-[var(--surface-secondary)] hover:bg-[var(--surface-tertiary)]',
+                    )}
+                  >
+                    Answer-engine listicles
+                  </button>
+                </div>
                 {topicSuggestions.slice(0, 3).map((topic, i) => (
                   <TopicCard key={i} topic={topic} onSelect={handleTopicSelect} />
                 ))}
@@ -1009,6 +1091,72 @@ export default function EchoBlogCreator({
                     onSelect={handleCategorySelect}
                   />
                 </div>
+
+                <div className="p-4 rounded-xl bg-[var(--surface-secondary)] space-y-3">
+                  <p className="text-xs text-muted-foreground uppercase tracking-wide">
+                    Content format
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { id: 'guide', label: 'Guide' },
+                      { id: 'listicle', label: 'Listicle (AI-citation style)' },
+                      { id: 'faq_comprehensive', label: 'FAQ-heavy' },
+                    ].map((opt) => (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        onClick={() => {
+                          setContentFormatPreset(opt.id)
+                          if (opt.id === 'faq_comprehensive') setIncludeFAQs(true)
+                        }}
+                        className={cn(
+                          'px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors',
+                          contentFormatPreset === opt.id
+                            ? 'border-[var(--brand-primary)] bg-[color-mix(in_srgb,var(--brand-primary)_12%,transparent)]'
+                            : 'border-border bg-[var(--surface-tertiary)] hover:border-[var(--brand-primary)]/40',
+                        )}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2 pt-1">
+                    <span className="text-xs text-muted-foreground shrink-0">Citations:</span>
+                    {[
+                      { id: 'minimal', label: 'Light' },
+                      { id: 'standard', label: 'Standard' },
+                      { id: 'comprehensive', label: 'Heavy' },
+                    ].map((opt) => (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        onClick={() => setCitationLevel(opt.id)}
+                        className={cn(
+                          'px-2.5 py-1 rounded-md text-xs border',
+                          citationLevel === opt.id
+                            ? 'border-[var(--brand-primary)] text-[var(--brand-primary)]'
+                            : 'border-border text-muted-foreground hover:text-foreground',
+                        )}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <label className="text-xs text-muted-foreground shrink-0" htmlFor="pipeline-word-count">
+                      Target length (words)
+                    </label>
+                    <Input
+                      id="pipeline-word-count"
+                      type="number"
+                      min={600}
+                      max={8000}
+                      className="h-8 w-24 text-xs"
+                      value={pipelineWordCount}
+                      onChange={(e) => setPipelineWordCount(Number(e.target.value) || 2000)}
+                    />
+                  </div>
+                </div>
                 
                 {/* Content Enhancement Options */}
                 <div className="p-4 rounded-xl bg-[var(--surface-secondary)] space-y-3">
@@ -1019,8 +1167,9 @@ export default function EchoBlogCreator({
                     <input
                       type="checkbox"
                       checked={includeFAQs}
+                      disabled={contentFormatPreset === 'faq_comprehensive'}
                       onChange={(e) => setIncludeFAQs(e.target.checked)}
-                      className="w-4 h-4 rounded border-border accent-[var(--brand-primary)]"
+                      className="w-4 h-4 rounded border-border accent-[var(--brand-primary)] disabled:opacity-50"
                     />
                     <div className="flex-1">
                       <span className="text-sm font-medium group-hover:text-[var(--brand-primary)]">
