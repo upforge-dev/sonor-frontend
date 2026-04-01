@@ -167,6 +167,61 @@ function OverviewTab({ prospect, onUpdateStage }) {
         </div>
       </GlassCard>
       
+      {/* Quote Submission */}
+      {prospect.quote_data && (
+        <GlassCard padding="md">
+          <div className="flex items-center justify-between mb-4">
+            <h4 className="text-sm font-semibold text-[var(--text-primary)] flex items-center gap-2">
+              <FileText className="h-4 w-4 text-[var(--brand-primary)]" />
+              Quote Submission
+            </h4>
+            {prospect.quote_submitted_at && (
+              <span className="text-xs text-[var(--text-tertiary)]">
+                {formatRelativeTime(prospect.quote_submitted_at)}
+              </span>
+            )}
+          </div>
+          <div className="space-y-2">
+            {Object.entries(prospect.quote_data).map(([key, value]) => {
+              if (!value || typeof value === 'object') return null
+              return (
+                <div key={key} className="flex items-center justify-between py-1.5 border-b border-[var(--glass-border)] last:border-0">
+                  <span className="text-xs text-[var(--text-tertiary)] capitalize">
+                    {key.replace(/([A-Z])/g, ' $1').replace(/_/g, ' ')}
+                  </span>
+                  <span className="text-sm font-medium text-[var(--text-primary)]">{String(value)}</span>
+                </div>
+              )
+            })}
+            {/* Nested objects (e.g. pricing, menu) */}
+            {Object.entries(prospect.quote_data).map(([key, value]) => {
+              if (!value || typeof value !== 'object') return null
+              return (
+                <div key={key} className="mt-3">
+                  <p className="text-xs font-medium text-[var(--text-secondary)] capitalize mb-2">
+                    {key.replace(/([A-Z])/g, ' $1').replace(/_/g, ' ')}
+                  </p>
+                  <div className="p-3 rounded-xl bg-[var(--glass-bg-inset)] space-y-1.5">
+                    {Object.entries(value).map(([k, v]) => (
+                      <div key={k} className="flex items-center justify-between">
+                        <span className="text-xs text-[var(--text-tertiary)] capitalize">
+                          {k.replace(/([A-Z])/g, ' $1').replace(/_/g, ' ')}
+                        </span>
+                        <span className="text-xs font-medium text-[var(--text-primary)]">
+                          {typeof v === 'number' && k.toLowerCase().includes('total')
+                            ? `$${v.toLocaleString('en-US', { minimumFractionDigits: 2 })}`
+                            : String(v)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </GlassCard>
+      )}
+
       {/* Last Call Summary */}
       {prospect.last_call && (
         <GlassCard padding="md">

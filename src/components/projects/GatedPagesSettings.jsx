@@ -11,7 +11,7 @@
  */
 import { useState } from 'react'
 import {
-  Link2, Plus, Trash2, GripVertical, ChevronDown, ChevronUp, Tag, Globe, Type
+  Link2, Plus, Trash2, GripVertical, ChevronDown, ChevronUp, Tag, Globe, Type, Mail
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -118,6 +118,23 @@ function GatedPageEditor({ config, onChange, onRemove, isOnly }) {
                 className="glass-inset"
               />
             </div>
+          </div>
+
+          {/* Notification Email */}
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium flex items-center gap-1.5">
+              <Mail className="h-3 w-3" />
+              Notification Email
+            </Label>
+            <Input
+              value={config.notificationEmail || ''}
+              onChange={(e) => updateField('notificationEmail', e.target.value)}
+              placeholder="e.g. sales@company.com"
+              className="glass-inset"
+            />
+            <p className="text-xs text-muted-foreground">
+              Receives a summary when a prospect submits their selections on this page.
+            </p>
           </div>
 
           {/* Metadata Fields */}
