@@ -13,7 +13,7 @@ import {
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { SonorSpinner } from '@/components/SonorLoading'
-import { GlassCard } from '@/components/crm/ui/GlassCard'
+import GlassCard from '@/components/crm/ui/GlassCard'
 import { StatTileGrid } from '@/components/ui/stat-tile'
 import type { StatTileMetric } from '@/components/ui/stat-tile'
 import { 
