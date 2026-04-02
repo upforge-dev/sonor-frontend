@@ -2,18 +2,20 @@
 // SEO Dashboard - Clean, focused answer to "Are my rankings improving?"
 // REWRITTEN: Jan 31, 2026
 import { useState, useCallback, useEffect, useMemo } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
-import { 
+import {
   Globe, TrendingUp, AlertTriangle, FileText, Target, RefreshCw,
   ExternalLink, Settings, Search, MousePointerClick, Eye, BarChart3,
   ChevronRight, Zap, ArrowUp, ArrowDown, Minus, Link2, Unlink, RotateCcw,
   ShieldCheck, CircleAlert, CheckCircle2
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
-import { UptradeSpinner } from '@/components/UptradeLoading'
+import { SonorSpinner } from '@/components/SonorLoading'
+import { GlassCard } from '@/components/crm/ui/GlassCard'
+import { StatTileGrid } from '@/components/ui/stat-tile'
+import type { StatTileMetric } from '@/components/ui/stat-tile'
 import { 
   useSeoProject, useSeoPages, useSeoOpportunities,
   useSeoGSCOverview, useSeoGSCQueries, seoProjectKeys, seoGSCKeys,
@@ -39,53 +41,10 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 
-interface MetricCardProps {
-  icon: LucideIcon
-  label: string
-  value: string | number
-  change?: number | null
-  loading?: boolean
-  inverseChange?: boolean
-  iconColor?: string
-}
-
-function MetricCard({ icon: Icon, label, value, change, loading = false, inverseChange = false, iconColor = 'text-primary' }: MetricCardProps) {
-  const isPositive = inverseChange ? change < 0 : change > 0
-  const isNegative = inverseChange ? change > 0 : change < 0
-  const showChange = change !== null && change !== undefined && !isNaN(change)
-  
-  return (
-    <Card className="relative overflow-hidden">
-      <CardContent className="pt-5 pb-4">
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-2">
-              <div className={cn("p-2 rounded-lg", iconColor === 'text-primary' ? 'bg-primary/10' : 'bg-muted')}>
-                <Icon className={cn("h-4 w-4", iconColor)} />
-              </div>
-              <span className="text-sm font-medium text-muted-foreground">{label}</span>
-            </div>
-            {loading ? (
-              <Skeleton className="h-9 w-24" />
-            ) : (
-              <div className="flex items-baseline gap-3">
-                <span className="text-3xl font-bold text-foreground">{value}</span>
-                {showChange && (
-                  <div className={cn("flex items-center gap-1 text-sm font-medium",
-                    isPositive && "text-green-500", isNegative && "text-red-500",
-                    !isPositive && !isNegative && "text-muted-foreground"
-                  )}>
-                    {isPositive ? <ArrowUp className="h-3 w-3" /> : isNegative ? <ArrowDown className="h-3 w-3" /> : <Minus className="h-3 w-3" />}
-                    {Math.abs(change).toFixed(1)}%
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  )
+// Derive trend direction from numeric change
+function changeTrend(val: number | null | undefined): 'up' | 'down' | 'neutral' {
+  if (!val || isNaN(val)) return 'neutral'
+  return val > 0 ? 'up' : val < 0 ? 'down' : 'neutral'
 }
 
 interface TrendDataPoint {
@@ -270,16 +229,29 @@ export default function SEODashboard({ onNavigate }: SEODashboardProps) {
     setSyncing(true)
     try {
       await seoApi.syncGsc(projectId)
-      toast.success('GSC data synced')
+      toast.success('GSC data synced successfully')
       queryClient.invalidateQueries({ queryKey: ['seo', 'gsc'] })
     } catch (err) {
       console.error('Sync GSC failed:', err)
+      const errorCode = (err as any)?.response?.data?.error
       const msg = (err as any)?.response?.data?.message || (err as any)?.message || 'Sync failed'
-      toast.error(msg === 'Authentication required' ? 'Session expired. Please log in again.' : msg)
+
+      if (errorCode === 'no_connection') {
+        toast.error('No GSC connection found')
+        setShowGscConnectModal(true)
+      } else if (errorCode === 'no_property') {
+        toast.error('No GSC property selected')
+        if (gscConnectionId) setGscPropertyConnectionId(gscConnectionId)
+      } else if (errorCode === 'auth_expired') {
+        toast.error('Google auth expired — please reconnect')
+        setShowGscConnectModal(true)
+      } else {
+        toast.error(msg)
+      }
     } finally {
       setSyncing(false)
     }
-  }, [projectId, queryClient])
+  }, [projectId, queryClient, gscConnectionId])
 
   const handleConnectGsc = useCallback(() => {
     if (!projectId) return
@@ -320,9 +292,9 @@ export default function SEODashboard({ onNavigate }: SEODashboardProps) {
   const handleNavigate = useCallback((path: string) => { onNavigate ? onNavigate(path) : navigate(path) }, [navigate, onNavigate])
   const formatNumber = (num: number | null | undefined): string => { if (num === null || num === undefined) return '-'; if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`; if (num >= 1000) return `${(num / 1000).toFixed(1)}K`; return num.toString() }
 
-  if (projectLoading) return <div className="p-6 flex items-center justify-center min-h-[400px]"><UptradeSpinner size="md" label="Loading SEO data..." /></div>
-  if (!projectId) return <div className="p-6"><Card className="border-blue-500/30 bg-blue-500/5"><CardContent className="py-12 text-center"><Search className="h-12 w-12 mx-auto mb-4 text-blue-400" /><h3 className="text-lg font-semibold mb-2">Select a Project</h3><p className="text-muted-foreground">Select a project from the sidebar</p></CardContent></Card></div>
-  if (!domain) return <div className="p-6"><Card className="border-yellow-500/30 bg-yellow-500/5"><CardContent className="py-12 text-center"><AlertTriangle className="h-12 w-12 mx-auto mb-4 text-yellow-400" /><h3 className="text-lg font-semibold mb-2">No Domain Configured</h3><p className="text-muted-foreground mb-4">Configure a domain in project settings</p><Button variant="outline" onClick={() => handleNavigate('/settings')}><Settings className="h-4 w-4 mr-2" />Configure Domain</Button></CardContent></Card></div>
+  if (projectLoading) return <div className="p-6 flex items-center justify-center min-h-[400px]"><SonorSpinner size="md" label="Loading SEO data..." /></div>
+  if (!projectId) return <div className="p-6"><GlassCard padding="xl" className="text-center"><Search className="h-12 w-12 mx-auto mb-4 text-blue-400" /><h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>Select a Project</h3><p style={{ color: 'var(--text-secondary)' }}>Select a project from the sidebar</p></GlassCard></div>
+  if (!domain) return <div className="p-6"><GlassCard padding="xl" glow="warning" className="text-center"><AlertTriangle className="h-12 w-12 mx-auto mb-4 text-yellow-400" /><h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>No Domain Configured</h3><p className="mb-4" style={{ color: 'var(--text-secondary)' }}>Configure a domain in project settings</p><Button variant="outline" onClick={() => handleNavigate('/settings')}><Settings className="h-4 w-4 mr-2" />Configure Domain</Button></GlassCard></div>
 
   const openOpportunities = opportunities.filter((o: any) => o.status === 'open')
 
@@ -353,35 +325,48 @@ export default function SEODashboard({ onNavigate }: SEODashboardProps) {
       <SignalSuggestsPanel module="seo" className="mb-4" />
 
       {!gscConnected && !gscLoading && (
-        <Card className="border-amber-500/30 bg-amber-500/5">
-          <CardContent className="py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-amber-500/10"><Link2 className="h-5 w-5 text-amber-500" /></div>
-                <div><p className="font-medium text-foreground">Connect Google Search Console</p><p className="text-sm text-muted-foreground">Get real ranking data, click trends, and keyword insights</p></div>
-              </div>
-              <Button onClick={handleConnectGsc} size="sm">Connect GSC</Button>
+        <GlassCard glow="warning" padding="md">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-amber-500/10"><Link2 className="h-5 w-5 text-amber-500" /></div>
+              <div><p className="font-medium" style={{ color: 'var(--text-primary)' }}>Connect Google Search Console</p><p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Get real ranking data, click trends, and keyword insights</p></div>
             </div>
-          </CardContent>
-        </Card>
+            <Button onClick={handleConnectGsc} size="sm">Connect GSC</Button>
+          </div>
+        </GlassCard>
       )}
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <MetricCard icon={MousePointerClick} label="Clicks (28d)" value={formatNumber(gscMetrics.clicks?.value || currentProject?.total_clicks_28d || 0)} change={gscMetrics.clicks?.change} loading={gscLoading} iconColor="text-blue-500" />
-        <MetricCard icon={Eye} label="Impressions (28d)" value={formatNumber(gscMetrics.impressions?.value || currentProject?.total_impressions_28d || 0)} change={gscMetrics.impressions?.change} loading={gscLoading} iconColor="text-teal-500" />
-        <MetricCard icon={BarChart3} label="Avg Position" value={(gscMetrics.position?.value || currentProject?.avg_position_28d)?.toFixed(1) || '-'} change={gscMetrics.position?.change} loading={gscLoading} inverseChange iconColor="text-orange-500" />
-        <MetricCard icon={Target} label="CTR" value={`${((gscMetrics.ctr?.value || currentProject?.avg_ctr_28d || 0) * 100).toFixed(1)}%`} change={gscMetrics.ctr?.change} loading={gscLoading} iconColor="text-green-500" />
-      </div>
+      <StatTileGrid
+        columns={4}
+        variant="horizontal"
+        isLoading={gscLoading}
+        metrics={[
+          { icon: MousePointerClick, label: 'Clicks (28d)', value: formatNumber(gscMetrics.totalClicks || 0), change: gscMetrics.clicksChange, trend: changeTrend(gscMetrics.clicksChange), color: 'blue' },
+          { icon: Eye, label: 'Impressions (28d)', value: formatNumber(gscMetrics.totalImpressions || 0), change: gscMetrics.impressionsChange, trend: changeTrend(gscMetrics.impressionsChange), color: 'teal' },
+          { icon: BarChart3, label: 'Avg Position', value: (gscMetrics.avgPosition || 0) > 0 ? gscMetrics.avgPosition.toFixed(1) : '-', change: gscMetrics.positionChange, trend: changeTrend(gscMetrics.positionChange), invertTrend: true, color: 'orange' },
+          { icon: Target, label: 'CTR', value: `${(gscMetrics.avgCtr || 0).toFixed(1)}%`, change: gscMetrics.ctrChange, trend: changeTrend(gscMetrics.ctrChange), color: 'green' },
+        ] as StatTileMetric[]}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
-          <Card><CardHeader className="pb-2"><CardTitle className="text-base flex items-center gap-2"><TrendingUp className="h-4 w-4 text-primary" />Click Trend (28 Days)</CardTitle></CardHeader><CardContent><TrendChart data={gscTrend} loading={gscLoading} height={100} /></CardContent></Card>
-          <Card><CardHeader className="pb-2"><div className="flex items-center justify-between"><CardTitle className="text-base flex items-center gap-2"><BarChart3 className="h-4 w-4 text-primary" />Ranking Distribution</CardTitle><Badge variant="outline" className="text-xs">{gscQueries?.length || 0} keywords</Badge></div></CardHeader><CardContent><RankingDistribution queries={gscQueries} loading={queriesLoading} /></CardContent></Card>
-          <Card><CardHeader className="pb-2"><div className="flex items-center justify-between"><CardTitle className="text-base flex items-center gap-2"><Search className="h-4 w-4 text-primary" />Top Keywords</CardTitle><Button variant="ghost" size="sm" onClick={() => handleNavigate('/seo/keywords')}>View All</Button></div></CardHeader><CardContent><TopKeywordsList queries={gscQueries} loading={queriesLoading} onViewAll={() => handleNavigate('/seo/keywords')} /></CardContent></Card>
+          <GlassCard padding="md">
+            <div className="flex items-center gap-2 mb-3"><TrendingUp className="h-4 w-4" style={{ color: 'var(--brand-primary)' }} /><span className="text-base font-semibold" style={{ color: 'var(--text-primary)' }}>Click Trend (28 Days)</span></div>
+            <TrendChart data={gscTrend} loading={gscLoading} height={100} />
+          </GlassCard>
+          <GlassCard padding="md">
+            <div className="flex items-center justify-between mb-3"><div className="flex items-center gap-2"><BarChart3 className="h-4 w-4" style={{ color: 'var(--brand-primary)' }} /><span className="text-base font-semibold" style={{ color: 'var(--text-primary)' }}>Ranking Distribution</span></div><Badge variant="outline" className="text-xs">{gscQueries?.length || 0} keywords</Badge></div>
+            <RankingDistribution queries={gscQueries} loading={queriesLoading} />
+          </GlassCard>
+          <GlassCard padding="md">
+            <div className="flex items-center justify-between mb-3"><div className="flex items-center gap-2"><Search className="h-4 w-4" style={{ color: 'var(--brand-primary)' }} /><span className="text-base font-semibold" style={{ color: 'var(--text-primary)' }}>Top Keywords</span></div><Button variant="ghost" size="sm" onClick={() => handleNavigate('/seo/keywords')}>View All</Button></div>
+            <TopKeywordsList queries={gscQueries} loading={queriesLoading} onViewAll={() => handleNavigate('/seo/keywords')} />
+          </GlassCard>
         </div>
         <div className="space-y-6">
-          <Card><CardHeader className="pb-3"><CardTitle className="text-base flex items-center gap-2"><Zap className="h-4 w-4 text-amber-500" />Quick Actions</CardTitle></CardHeader>
-            <CardContent className="space-y-2">
+          <GlassCard padding="md">
+            <div className="flex items-center gap-2 mb-3"><Zap className="h-4 w-4 text-amber-500" /><span className="text-base font-semibold" style={{ color: 'var(--text-primary)' }}>Quick Actions</span></div>
+            <div className="space-y-2">
               {!gscConnected ? (
                 <Button variant="outline" className="w-full justify-start border-amber-500/30 hover:bg-amber-500/10" onClick={handleConnectGsc}>
                   <Link2 className="h-4 w-4 mr-2 text-amber-500" />Connect GSC<Badge variant="secondary" className="ml-auto text-xs">Required</Badge>
@@ -403,88 +388,83 @@ export default function SEODashboard({ onNavigate }: SEODashboardProps) {
               )}
               <Button variant="outline" className="w-full justify-start" onClick={() => handleNavigate('/seo/pages')}><FileText className="h-4 w-4 mr-2" />View All Pages<Badge variant="secondary" className="ml-auto text-xs">{pages.length}</Badge></Button>
               {openOpportunities.length > 0 && <Button variant="outline" className="w-full justify-start border-primary/30 hover:bg-primary/10" onClick={() => handleNavigate('/seo/pages')}><Target className="h-4 w-4 mr-2 text-primary" />Review Opportunities<Badge className="ml-auto bg-primary/20 text-primary text-xs">{openOpportunities.length}</Badge></Button>}
-            </CardContent>
-          </Card>
-          <Card className={gscHealthData?.issues?.length > 0 ? 'border-amber-500/20' : ''}>
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <ShieldCheck className="h-4 w-4" style={{ color: 'var(--brand-primary)' }} />
-                  Indexing Health
-                </CardTitle>
-                {gscHealthData && (
-                  <Badge variant="outline" className={cn("text-xs",
-                    (gscHealthData.coveragePercent ?? 0) >= 90 ? "border-green-500/30 text-green-500" :
-                    (gscHealthData.coveragePercent ?? 0) >= 70 ? "border-amber-500/30 text-amber-500" :
-                    "border-red-500/30 text-red-500"
-                  )}>
-                    {Math.round(gscHealthData.coveragePercent ?? 0)}% indexed
-                  </Badge>
-                )}
+            </div>
+          </GlassCard>
+          <GlassCard padding="md" glow={gscHealthData?.issues?.length > 0 ? 'warning' : null}>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="h-4 w-4" style={{ color: 'var(--brand-primary)' }} />
+                <span className="text-base font-semibold" style={{ color: 'var(--text-primary)' }}>Indexing Health</span>
               </div>
-            </CardHeader>
-            <CardContent>
-              {pagesLoading ? <Skeleton className="h-20 w-full" /> : (
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Total Pages</span>
-                    <span className="text-lg font-semibold">{gscHealthData?.totalPages ?? pages.length}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5">
-                      <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
-                      <span className="text-sm text-muted-foreground">Indexed</span>
-                    </div>
-                    <span className="text-sm font-medium text-green-500">
-                      {gscHealthData?.indexedPages ?? currentProject?.pages_indexed ?? pages.filter((p: any) => p.index_status === 'indexed' || p.indexing_verdict === 'PASS' || p.is_indexed).length}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5">
-                      <CircleAlert className="h-3.5 w-3.5 text-red-500" />
-                      <span className="text-sm text-muted-foreground">Not Indexed</span>
-                    </div>
-                    <span className="text-sm font-medium text-red-500">
-                      {gscHealthData?.notIndexedPages ?? currentProject?.pages_not_indexed ?? pages.filter((p: any) => !(p.index_status === 'indexed' || p.indexing_verdict === 'PASS' || p.is_indexed)).length}
-                    </span>
-                  </div>
-                  {gscHealthData?.issues?.length > 0 && (
-                    <div className="pt-2 border-t border-border/50">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-amber-500 font-medium flex items-center gap-1">
-                          <AlertTriangle className="h-3 w-3" />
-                          {gscHealthData.issues.length} issue{gscHealthData.issues.length !== 1 ? 's' : ''} detected
-                        </span>
-                      </div>
-                    </div>
-                  )}
-                  {gscHealthData?.coveragePercent != null && (
-                    <div className="pt-1">
-                      <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
-                        <div
-                          className="h-full rounded-full transition-all duration-500"
-                          style={{
-                            width: `${Math.min(100, gscHealthData.coveragePercent)}%`,
-                            backgroundColor: gscHealthData.coveragePercent >= 90 ? '#22c55e' : gscHealthData.coveragePercent >= 70 ? '#f59e0b' : '#ef4444'
-                          }}
-                        />
-                      </div>
-                    </div>
-                  )}
-                  <Button variant="ghost" size="sm" className="w-full mt-1" onClick={() => handleNavigate('/seo/search-console')}>
-                    View Search Console<ChevronRight className="h-4 w-4 ml-1" />
-                  </Button>
-                </div>
+              {gscHealthData && (
+                <Badge variant="outline" className={cn("text-xs",
+                  (gscHealthData.coveragePercent ?? 0) >= 90 ? "border-green-500/30 text-green-500" :
+                  (gscHealthData.coveragePercent ?? 0) >= 70 ? "border-amber-500/30 text-amber-500" :
+                  "border-red-500/30 text-red-500"
+                )}>
+                  {Math.round(gscHealthData.coveragePercent ?? 0)}% indexed
+                </Badge>
               )}
-            </CardContent>
-          </Card>
+            </div>
+            {pagesLoading ? <SonorSpinner size="sm" /> : (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>Total Pages</span>
+                  <span className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>{gscHealthData?.totalPages ?? pages.length}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
+                    <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>Indexed</span>
+                  </div>
+                  <span className="text-sm font-medium text-green-500">
+                    {gscHealthData?.indexedPages ?? currentProject?.pages_indexed ?? pages.filter((p: any) => p.index_status === 'indexed' || p.indexing_verdict === 'PASS' || p.is_indexed).length}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <CircleAlert className="h-3.5 w-3.5 text-red-500" />
+                    <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>Not Indexed</span>
+                  </div>
+                  <span className="text-sm font-medium text-red-500">
+                    {gscHealthData?.notIndexedPages ?? currentProject?.pages_not_indexed ?? pages.filter((p: any) => !(p.index_status === 'indexed' || p.indexing_verdict === 'PASS' || p.is_indexed)).length}
+                  </span>
+                </div>
+                {gscHealthData?.issues?.length > 0 && (
+                  <div className="pt-2" style={{ borderTop: '1px solid var(--glass-border)' }}>
+                    <span className="text-xs text-amber-500 font-medium flex items-center gap-1">
+                      <AlertTriangle className="h-3 w-3" />
+                      {gscHealthData.issues.length} issue{gscHealthData.issues.length !== 1 ? 's' : ''} detected
+                    </span>
+                  </div>
+                )}
+                {gscHealthData?.coveragePercent != null && (
+                  <div className="pt-1">
+                    <div className="h-1.5 w-full rounded-full overflow-hidden" style={{ backgroundColor: 'var(--glass-bg)' }}>
+                      <div
+                        className="h-full rounded-full transition-all duration-500"
+                        style={{
+                          width: `${Math.min(100, gscHealthData.coveragePercent)}%`,
+                          backgroundColor: gscHealthData.coveragePercent >= 90 ? '#22c55e' : gscHealthData.coveragePercent >= 70 ? '#f59e0b' : '#ef4444'
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
+                <Button variant="ghost" size="sm" className="w-full mt-1" onClick={() => handleNavigate('/seo/search-console')}>
+                  View Search Console<ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+              </div>
+            )}
+          </GlassCard>
           {openOpportunities.length > 0 && (
-            <Card className="border-primary/20"><CardHeader className="pb-3"><CardTitle className="text-base flex items-center gap-2"><Zap className="h-4 w-4 text-primary" />Opportunities</CardTitle></CardHeader>
-              <CardContent><div className="space-y-2">
-                {openOpportunities.slice(0, 3).map((opp: any) => <div key={opp.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/30 text-sm"><span className="truncate flex-1">{opp.title}</span><Badge variant="outline" className={cn("ml-2 text-xs", opp.priority === 'critical' && "border-red-500/30 text-red-500", opp.priority === 'high' && "border-orange-500/30 text-orange-500", opp.priority === 'medium' && "border-yellow-500/30 text-yellow-500")}>{opp.priority}</Badge></div>)}
+            <GlassCard padding="md" glow="brand">
+              <div className="flex items-center gap-2 mb-3"><Zap className="h-4 w-4" style={{ color: 'var(--brand-primary)' }} /><span className="text-base font-semibold" style={{ color: 'var(--text-primary)' }}>Opportunities</span></div>
+              <div className="space-y-2">
+                {openOpportunities.slice(0, 3).map((opp: any) => <div key={opp.id} className="flex items-center justify-between p-2 rounded-lg text-sm" style={{ backgroundColor: 'var(--glass-bg)' }}><span className="truncate flex-1" style={{ color: 'var(--text-primary)' }}>{opp.title}</span><Badge variant="outline" className={cn("ml-2 text-xs", opp.priority === 'critical' && "border-red-500/30 text-red-500", opp.priority === 'high' && "border-orange-500/30 text-orange-500", opp.priority === 'medium' && "border-yellow-500/30 text-yellow-500")}>{opp.priority}</Badge></div>)}
                 {openOpportunities.length > 3 && <Button variant="ghost" size="sm" className="w-full" onClick={() => handleNavigate('/seo/pages')}>+{openOpportunities.length - 3} more<ChevronRight className="h-4 w-4 ml-1" /></Button>}
-              </div></CardContent>
-            </Card>
+              </div>
+            </GlassCard>
           )}
         </div>
       </div>

@@ -20,6 +20,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { X } from 'lucide-react'
 import LogoSvg from '@/assets/logo.svg?react'
 import useAuthStore from '@/lib/auth-store'
+import sonorApi, { getSonorApiUrl } from '@/lib/sonor-api'
 import { useEchoChat } from '@/hooks/useEchoChat'
 import { ChatArea } from '@/components/chat/ChatArea'
 import { openOAuthPopup } from '@/lib/oauth-popup'
@@ -63,16 +64,10 @@ export default function OnboardingFlow() {
 
     const fetchState = async () => {
       try {
-        const portalApiUrl = (import.meta.env.VITE_SONOR_API_URL || import.meta.env.VITE_PORTAL_API_URL) || ''
-        const res = await fetch(`${portalApiUrl}/onboarding/${projectId}`, {
-          credentials: 'include',
-        })
-        if (res.ok) {
-          const data = await res.json()
-          setOnboardingState(data)
-        }
+        const { data } = await sonorApi.get(`/onboarding/${projectId}`)
+        setOnboardingState(data)
       } catch {
-        // Non-critical
+        // Non-critical — onboarding state may not exist yet
       } finally {
         setStateLoading(false)
       }
@@ -158,7 +153,6 @@ export default function OnboardingFlow() {
       return
     }
 
-    const portalApiUrl = (import.meta.env.VITE_SONOR_API_URL || import.meta.env.VITE_PORTAL_API_URL) || ''
     const defaultModules: Record<string, string> = {
       google: 'seo,seo_gbp,reputation,analytics',
       facebook: 'social',
@@ -172,17 +166,12 @@ export default function OnboardingFlow() {
     const modules = defaultModules[provider] || ''
 
     try {
-      const response = await fetch(
-        `${portalApiUrl}/oauth/initiate/${provider}?projectId=${projectId}&modules=${modules}&connectionType=business&popupMode=true`,
-        { credentials: 'include' },
+      const { data } = await sonorApi.get(
+        `/oauth/initiate/${provider}`,
+        { params: { projectId, modules, connectionType: 'business', popupMode: true } },
       )
 
-      if (!response.ok) {
-        const err = await response.json().catch(() => ({}))
-        throw new Error(err.message || 'Failed to start OAuth')
-      }
-
-      const { url } = await response.json()
+      const { url } = data
       const result = await openOAuthPopup(url, `oauth-${provider}`)
 
       if (result.success) {
@@ -206,11 +195,7 @@ export default function OnboardingFlow() {
   const handleDismiss = useCallback(async () => {
     if (projectId) {
       try {
-        const portalApiUrl = (import.meta.env.VITE_SONOR_API_URL || import.meta.env.VITE_PORTAL_API_URL) || ''
-        await fetch(`${portalApiUrl}/onboarding/${projectId}/dismiss`, {
-          method: 'POST',
-          credentials: 'include',
-        })
+        await sonorApi.post(`/onboarding/${projectId}/dismiss`)
       } catch {
         // Non-critical
       }
@@ -221,9 +206,8 @@ export default function OnboardingFlow() {
   // Migration context — provides auth + project info to DataMigrationWizard blocks
   const migrationContext = useMemo(() => {
     if (!projectId || !currentOrg?.id) return undefined
-    const portalApiUrl = (import.meta.env.VITE_SONOR_API_URL || import.meta.env.VITE_PORTAL_API_URL) || ''
     return {
-      apiUrl: portalApiUrl,
+      apiUrl: getSonorApiUrl(),
       authToken: '', // Will be resolved per-request via getSession() inside the wizard
       projectId,
       orgId: currentOrg.id,

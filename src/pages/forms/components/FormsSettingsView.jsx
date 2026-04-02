@@ -19,11 +19,9 @@ import {
   AlertTriangle,
   Save,
   X,
-  Users,
   RefreshCw,
 } from 'lucide-react'
 import { toast } from 'sonner'
-import { supabase } from '@/lib/supabase'
 import portalApi from '@/lib/sonor-api'
 
 export default function FormsSettingsView({ projectId }) {
@@ -41,30 +39,20 @@ export default function FormsSettingsView({ projectId }) {
     defaultSubmitButtonText: 'Submit',
   })
   const [emailInput, setEmailInput] = useState('')
-  
+
   const loadSettings = useCallback(async () => {
     if (!projectId) return
-    
+
     try {
-      const { data } = await supabase
-        .from('projects')
-        .select('settings')
-        .eq('id', projectId)
-        .single()
-      
-      if (data?.settings?.forms) {
-        const loadedSettings = { ...settings, ...data.settings.forms }
+      const { data } = await portalApi.get(`/forms/settings?projectId=${projectId}`)
+
+      if (data?.settings) {
+        const loadedSettings = { ...settings, ...data.settings }
         setSettings(loadedSettings)
         setSavedEmails(loadedSettings.defaultNotificationEmails || [])
       }
-      
-      // Load form count for this project
-      const { count } = await supabase
-        .from('managed_forms')
-        .select('id', { count: 'exact', head: true })
-        .eq('project_id', projectId)
-      
-      setFormCount(count || 0)
+
+      setFormCount(data?.formCount || 0)
       setIsLoaded(true)
     } catch (err) {
       console.error('Failed to load settings:', err)
@@ -78,62 +66,20 @@ export default function FormsSettingsView({ projectId }) {
   
   async function handleSave() {
     if (!projectId) return
-    
+
     setIsSaving(true)
     try {
-      // Get current settings
-      const { data: currentData } = await supabase
-        .from('projects')
-        .select('settings')
-        .eq('id', projectId)
-        .single()
-      
-      const currentSettings = currentData?.settings || {}
-      
-      // Update with forms settings
-      const { error } = await supabase
-        .from('projects')
-        .update({
-          settings: {
-            ...currentSettings,
-            forms: settings,
-          },
-        })
-        .eq('id', projectId)
-      
-      if (error) throw error
-      
-      // Also sync notification emails to all existing forms that have empty notification_emails
-      if (settings.defaultNotificationEmails.length > 0) {
-        try {
-          const { data: forms } = await supabase
-            .from('managed_forms')
-            .select('id, notification_emails')
-            .eq('project_id', projectId)
-          
-          const formsToUpdate = (forms || []).filter(
-            f => !f.notification_emails || f.notification_emails.length === 0
-          )
-          
-          if (formsToUpdate.length > 0) {
-            for (const form of formsToUpdate) {
-              await supabase
-                .from('managed_forms')
-                .update({ notification_emails: settings.defaultNotificationEmails })
-                .eq('id', form.id)
-            }
-            toast.success(`Settings saved — synced to ${formsToUpdate.length} form(s)`)
-          } else {
-            toast.success('Settings saved')
-          }
-        } catch (syncErr) {
-          console.error('Failed to sync emails to forms:', syncErr)
-          toast.success('Settings saved (form sync failed)')
-        }
+      const { data } = await portalApi.put('/forms/settings', {
+        projectId,
+        settings,
+      })
+
+      if (data?.syncedCount > 0) {
+        toast.success(`Settings saved — synced to ${data.syncedCount} form(s)`)
       } else {
         toast.success('Settings saved')
       }
-      
+
       setSavedEmails([...settings.defaultNotificationEmails])
     } catch (err) {
       console.error('Failed to save settings:', err)
