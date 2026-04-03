@@ -819,7 +819,9 @@ export function MessagesModuleV2({
         if (activeTab === 'visitor') {
           const response = await engageApi.getChatSessions({ projectId: project?.id })
           const data = response?.data ?? response ?? {}
-          const sessions = Array.isArray(data) ? data : (data?.data ?? [])
+          const rawSessions = Array.isArray(data) ? data : (data?.data ?? [])
+          // Hide AI-phase sessions — visitors still chatting with Echo shouldn't appear here
+          const sessions = rawSessions.filter((s: any) => s.status !== 'ai')
           const formatted: ChatKitThread[] = sessions.map((s: any) => ({
             thread_id: s.id,
             user_id: '',
@@ -990,7 +992,8 @@ export function MessagesModuleV2({
     try {
       const response = await engageApi.getChatSessions({ projectId: project.id })
       const data = response?.data ?? response ?? {}
-      const sessions = Array.isArray(data) ? data : (data?.data ?? [])
+      const rawSessions = Array.isArray(data) ? data : (data?.data ?? [])
+      const sessions = rawSessions.filter((s: any) => s.status !== 'ai')
       const formatted: ChatKitThread[] = sessions.map((s: any) => ({
         thread_id: s.id,
         user_id: '',

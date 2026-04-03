@@ -30,6 +30,23 @@ function playNotificationSound() {
   } catch {}
 }
 
+/** Play an urgent, unmissable notification for live chat handoffs — full volume, twice. */
+function playUrgentNotificationSound() {
+  try {
+    const audio = new Audio('/chatnotification.wav')
+    audio.volume = 1.0
+    audio.currentTime = 0
+    audio.play().catch(() => {})
+    // Second chime after 1.5s to make it impossible to miss
+    setTimeout(() => {
+      const audio2 = new Audio('/chatnotification.wav')
+      audio2.volume = 1.0
+      audio2.currentTime = 0
+      audio2.play().catch(() => {})
+    }, 1500)
+  } catch {}
+}
+
 const PendingHandoffsContext = createContext([])
 export function usePendingHandoffs() {
   return useContext(PendingHandoffsContext)
@@ -106,6 +123,16 @@ export function MessagesProvider({ children }) {
               if (exists) return prev
               return [...prev, { id: session.id, ...session }]
             })
+
+            // Urgent live handoff — play loud sound and force-open the chat widget
+            if (data?.urgent || data?.type === 'live_handoff') {
+              playUrgentNotificationSound()
+              window.dispatchEvent(
+                new CustomEvent('open-livechat', {
+                  detail: { sessionId: session.id, urgent: true },
+                }),
+              )
+            }
           } else {
             setPendingHandoffs((prev) => prev.filter((h) => h.id !== session?.id))
           }

@@ -59,7 +59,7 @@ export default function MessagesWidget({ hidden = false }: MessagesWidgetProps) 
         const data = res?.data?.data ?? res?.data ?? []
         const sessions = Array.isArray(data) ? data : []
         const active = sessions.filter(
-          (s: { status?: string }) => s.status && s.status !== 'closed'
+          (s: { status?: string }) => s.status && s.status !== 'closed' && s.status !== 'ai'
         )
         const count = active.length
 
@@ -120,6 +120,17 @@ export default function MessagesWidget({ hidden = false }: MessagesWidgetProps) 
     }
     window.addEventListener('open-echo', handleOpenEcho as EventListener)
     return () => window.removeEventListener('open-echo', handleOpenEcho as EventListener)
+  }, [])
+
+  // Listen for 'open-livechat' — urgent live chat handoff forces the widget open to Visitor tab
+  useEffect(() => {
+    const handleOpenLiveChat = (e: CustomEvent) => {
+      setOpenWithTab('visitor')
+      setIsOpen(true)
+      setIsMinimized(false)
+    }
+    window.addEventListener('open-livechat', handleOpenLiveChat as EventListener)
+    return () => window.removeEventListener('open-livechat', handleOpenLiveChat as EventListener)
   }, [])
 
   if (hidden || !user) return null
