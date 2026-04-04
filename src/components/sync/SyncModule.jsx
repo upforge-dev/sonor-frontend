@@ -333,13 +333,13 @@ function MiniCalendar({ selectedDate, setSelectedDate, events }) {
                 "relative w-8 h-8 rounded-full text-xs font-medium transition-all",
                 !isCurrentMonth && "text-muted-foreground/40",
                 isCurrentMonth && "hover:bg-muted",
-                isSelected && "bg-emerald-500 text-white hover:bg-emerald-600 shadow-sm",
-                isCurrentDay && !isSelected && "ring-2 ring-emerald-500/50 font-bold text-emerald-600 dark:text-emerald-400"
+                isSelected && "bg-[var(--brand-primary)] text-white hover:bg-[var(--brand-primary-hover)] shadow-sm",
+                isCurrentDay && !isSelected && "ring-2 ring-[var(--brand-primary)]/50 font-bold text-[var(--brand-primary)]"
               )}
             >
               {date.getDate()}
               {hasEvents && !isSelected && (
-                <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-emerald-500" />
+                <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[var(--brand-primary)]" />
               )}
             </button>
           )
@@ -1214,7 +1214,7 @@ export default function SyncModule({ className }) {
         onClick={goToToday}
         className={cn(
           "h-8 px-3",
-          isToday && "bg-emerald-50 dark:bg-emerald-500/10 border-emerald-300 dark:border-emerald-500/30 text-emerald-700 dark:text-emerald-300"
+          isToday && "bg-[var(--brand-primary)]/10 dark:bg-[var(--brand-primary)]/15 border-[var(--brand-primary)]/30 text-[var(--brand-primary)]"
         )}
       >
         Today
@@ -1301,7 +1301,7 @@ export default function SyncModule({ className }) {
                     <div className="space-y-2" data-tour="sync-create">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button className="w-full justify-between gap-2 bg-emerald-600 hover:bg-emerald-700">
+                          <Button className="w-full justify-between gap-2 bg-[var(--brand-primary)] hover:bg-[var(--brand-primary-hover)] text-white">
                             <span className="flex items-center gap-2">
                               <Plus className="h-4 w-4" />
                               Create
@@ -1553,7 +1553,7 @@ export default function SyncModule({ className }) {
                         <div className="flex items-center gap-2 text-xs">
                           <div className={cn(
                             "h-2 w-2 rounded-full",
-                            calendarConnected ? "bg-emerald-500" : "bg-muted-foreground"
+                            calendarConnected ? "bg-[var(--brand-primary)]" : "bg-muted-foreground"
                           )} />
                           <span className={calendarConnected ? "text-foreground" : "text-muted-foreground"}>
                             {calendarConnected ? 'Google Calendar connected' : 'Google Calendar not connected'}
@@ -1579,7 +1579,7 @@ export default function SyncModule({ className }) {
                   Tasks
                 </div>
                 {rightSidebarMode === 'tasks' && (
-                  <motion.div layoutId="sidebarTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-500" />
+                  <motion.div layoutId="sidebarTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--brand-primary)]" />
                 )}
               </button>
               <button
@@ -1594,7 +1594,7 @@ export default function SyncModule({ className }) {
                   Playbooks
                 </div>
                 {rightSidebarMode === 'playbooks' && (
-                  <motion.div layoutId="sidebarTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-500" />
+                  <motion.div layoutId="sidebarTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--brand-primary)]" />
                 )}
               </button>
               <button
@@ -1609,7 +1609,7 @@ export default function SyncModule({ className }) {
                   Calendar
                 </div>
                 {rightSidebarMode === 'calendar' && (
-                  <motion.div layoutId="sidebarTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-500" />
+                  <motion.div layoutId="sidebarTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--brand-primary)]" />
                 )}
               </button>
             </div>
@@ -1891,7 +1891,7 @@ export default function SyncModule({ className }) {
                           key={i}
                           className={cn(
                             "text-center py-3 border-r border-[var(--glass-border)] last:border-r-0",
-                            isCurrentDay && "bg-emerald-50 dark:bg-emerald-500/5"
+                            isCurrentDay && "bg-[var(--brand-primary)]/5 dark:bg-[var(--brand-primary)]/5"
                           )}
                         >
                           <div className="text-xs text-muted-foreground font-medium mb-1">
@@ -1899,7 +1899,7 @@ export default function SyncModule({ className }) {
                           </div>
                           <div className={cn(
                             "inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-semibold transition-colors",
-                            isCurrentDay && "bg-emerald-500 text-white shadow-sm"
+                            isCurrentDay && "bg-[var(--brand-primary)] text-white shadow-sm"
                           )}>
                             {date.getDate()}
                           </div>
@@ -1945,7 +1945,7 @@ export default function SyncModule({ className }) {
                             onClick={() => handleGridClick(date, hour)}
                             className={cn(
                               "border-r border-[var(--glass-border)] last:border-r-0 relative group cursor-pointer transition-colors",
-                              isCurrentDay && "bg-emerald-50/50 dark:bg-emerald-500/5",
+                              isCurrentDay && "bg-[var(--brand-primary)]/5 dark:bg-[var(--brand-primary)]/5",
                               "hover:bg-muted/30"
                             )}
                           >

@@ -50,10 +50,16 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
+import {
+  Dialog,
+  DialogContent,
+} from '@/components/ui/dialog'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
+import { skillsApi } from '@/lib/signal-api'
+import { filesApi } from '@/lib/sonor-api'
 import {
   ArrowLeft,
   Save,
@@ -76,6 +82,7 @@ import {
   Plus,
   X,
   Loader2,
+  RefreshCw,
 } from 'lucide-react'
 import { format } from 'date-fns'
 import TurndownService from 'turndown'
@@ -358,7 +365,7 @@ function QualityScore({ label, value }) {
 // RIGHT SIDEBAR
 // ============================================================================
 
-function RightSidebar({ post, form, categories, onPublishToggle, onDelete, isDeleting }) {
+function RightSidebar({ post, form, categories, onPublishToggle, onDelete, isDeleting, onGenerateImage, isGeneratingImage }) {
   if (!post) return null
 
   const wordCount = post.wordCount || countWords(form.body)
@@ -490,9 +497,20 @@ function RightSidebar({ post, form, categories, onPublishToggle, onDelete, isDel
             variant="outline"
             size="sm"
             className="w-full justify-start gap-2 border-[var(--glass-border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+            onClick={onGenerateImage}
+            disabled={isGeneratingImage}
           >
-            <ImageIcon className="h-4 w-4" />
-            Generate Image
+            {isGeneratingImage ? (
+              <>
+                <RefreshCw className="h-4 w-4 animate-spin" />
+                Generating...
+              </>
+            ) : (
+              <>
+                <ImageIcon className="h-4 w-4" />
+                Generate Image
+              </>
+            )}
           </Button>
 
           <Button
@@ -566,7 +584,7 @@ function RightSidebar({ post, form, categories, onPublishToggle, onDelete, isDel
 // CONTENT SECTION
 // ============================================================================
 
-function ContentSection({ form, setField, post, formReady }) {
+function ContentSection({ form, setField, post, formReady, onGenerateImage, isGeneratingImage, imagePrompt, setImagePrompt, showImagePrompt, setShowImagePrompt }) {
   const [previewMode, setPreviewMode] = useState(false)
   const wordCount = post?.wordCount || countWords(form.body)
 
@@ -606,7 +624,7 @@ function ContentSection({ form, setField, post, formReady }) {
       {previewMode ? (
         <ContentPreview form={form} post={post} />
       ) : (
-        <ContentEditor form={form} setField={setField} post={post} formReady={formReady} />
+        <ContentEditor form={form} setField={setField} post={post} formReady={formReady} onGenerateImage={onGenerateImage} isGeneratingImage={isGeneratingImage} imagePrompt={imagePrompt} setImagePrompt={setImagePrompt} showImagePrompt={showImagePrompt} setShowImagePrompt={setShowImagePrompt} />
       )}
     </div>
   )
@@ -710,7 +728,59 @@ function TableOfContents({ markdown }) {
   )
 }
 
-function ContentEditor({ form, setField, post, formReady }) {
+function ContentEditor({ form, setField, post, formReady, onGenerateImage, isGeneratingImage, imagePrompt, setImagePrompt, showImagePrompt, setShowImagePrompt }) {
+  const [showImageLightbox, setShowImageLightbox] = useState(false)
+  const [isUploadingImage, setIsUploadingImage] = useState(false)
+  const [isDragging, setIsDragging] = useState(false)
+  const fileInputRef = useRef(null)
+
+  const handleImageUpload = useCallback(async (file) => {
+    if (!file || !file.type.startsWith('image/')) {
+      toast.error('Please select an image file')
+      return
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('Image must be under 10 MB')
+      return
+    }
+    setIsUploadingImage(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('folder', 'blog')
+      const { data } = await filesApi.uploadFileForm(formData)
+      const url = data?.data?.url || data?.url
+      if (url) {
+        setField('featured_image_url', url)
+        toast.success('Image uploaded')
+      } else {
+        throw new Error('No URL returned')
+      }
+    } catch (err) {
+      console.error('Image upload failed:', err)
+      toast.error('Failed to upload image')
+    } finally {
+      setIsUploadingImage(false)
+    }
+  }, [setField])
+
+  const handleDrop = useCallback((e) => {
+    e.preventDefault()
+    setIsDragging(false)
+    const file = e.dataTransfer?.files?.[0]
+    if (file) handleImageUpload(file)
+  }, [handleImageUpload])
+
+  const handleDragOver = useCallback((e) => {
+    e.preventDefault()
+    setIsDragging(true)
+  }, [])
+
+  const handleDragLeave = useCallback((e) => {
+    e.preventDefault()
+    setIsDragging(false)
+  }, [])
+
   return (
     <div className="space-y-6">
       {/* Title */}
@@ -756,36 +826,144 @@ function ContentEditor({ form, setField, post, formReady }) {
           Featured Image
         </p>
         {form.featured_image_url ? (
-          <div className="relative group rounded-lg overflow-hidden border border-[var(--glass-border)]">
-            <img
-              src={form.featured_image_url}
-              alt={form.featured_image_alt || 'Featured'}
-              className="w-full h-40 object-cover"
-            />
-            <button
-              onClick={() => setField('featured_image_url', '')}
-              className="absolute top-2 right-2 p-1 rounded-full bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-opacity"
-            >
-              <X className="h-3.5 w-3.5" />
-            </button>
-          </div>
-        ) : (
-          <div className="flex items-center justify-center h-32 rounded-lg border border-dashed border-[var(--glass-border)] bg-[var(--glass-bg)]">
-            <div className="text-center">
-              <ImageIcon className="h-8 w-8 mx-auto text-[var(--text-tertiary)] mb-1" />
-              <p className="text-xs text-[var(--text-tertiary)]">No featured image</p>
+          <>
+            <div className="relative group rounded-lg overflow-hidden border border-[var(--glass-border)]">
+              <img
+                src={form.featured_image_url}
+                alt={form.featured_image_alt || 'Featured'}
+                className="w-full h-40 object-cover cursor-pointer transition-opacity hover:opacity-90"
+                onClick={() => setShowImageLightbox(true)}
+              />
+              <button
+                onClick={() => setField('featured_image_url', '')}
+                className="absolute top-2 right-2 p-1 rounded-full bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
             </div>
-          </div>
+            <Dialog open={showImageLightbox} onOpenChange={setShowImageLightbox}>
+              <DialogContent className="max-w-4xl p-2 bg-black/95 border-[var(--glass-border)]">
+                <img
+                  src={form.featured_image_url}
+                  alt={form.featured_image_alt || 'Featured'}
+                  className="w-full h-auto rounded-lg"
+                />
+              </DialogContent>
+            </Dialog>
+          </>
+        ) : (
+          <>
+            <div
+              onClick={() => !isUploadingImage && fileInputRef.current?.click()}
+              onDrop={handleDrop}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              className={cn(
+                'flex items-center justify-center h-32 rounded-lg border border-dashed cursor-pointer transition-colors',
+                isDragging
+                  ? 'border-[var(--brand-primary)] bg-[var(--brand-primary)]/5'
+                  : 'border-[var(--glass-border)] bg-[var(--glass-bg)] hover:border-[var(--text-tertiary)] hover:bg-[var(--glass-bg)]/80'
+              )}
+            >
+              <div className="text-center">
+                {isUploadingImage ? (
+                  <>
+                    <Loader2 className="h-6 w-6 mx-auto text-[var(--brand-primary)] mb-1 animate-spin" />
+                    <p className="text-xs text-[var(--text-tertiary)]">Uploading...</p>
+                  </>
+                ) : isDragging ? (
+                  <>
+                    <ImageIcon className="h-6 w-6 mx-auto text-[var(--brand-primary)] mb-1" />
+                    <p className="text-xs text-[var(--brand-primary)]">Drop image here</p>
+                  </>
+                ) : (
+                  <>
+                    <ImageIcon className="h-6 w-6 mx-auto text-[var(--text-tertiary)] mb-1" />
+                    <p className="text-xs text-[var(--text-tertiary)]">Click or drag to upload</p>
+                  </>
+                )}
+              </div>
+            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0]
+                if (file) handleImageUpload(file)
+                e.target.value = ''
+              }}
+            />
+          </>
         )}
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-1.5 border-[var(--brand-primary)]/30 text-[var(--brand-primary)] hover:bg-[var(--brand-primary)]/10"
-          >
-            <Star className="h-3.5 w-3.5" />
-            Generate with Signal
-          </Button>
+        <div className="space-y-2">
+          {showImagePrompt && (
+            <div className="space-y-1.5">
+              <Label className="text-xs text-[var(--text-tertiary)]">Image Instructions (optional)</Label>
+              <Textarea
+                value={imagePrompt}
+                onChange={(e) => setImagePrompt(e.target.value)}
+                placeholder='e.g. "feature a red sports car" or "use a modern office setting"'
+                rows={2}
+                className="border-[var(--glass-border)] bg-[var(--glass-bg)] text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] text-sm"
+              />
+            </div>
+          )}
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 border-[var(--brand-primary)]/30 text-[var(--brand-primary)] hover:bg-[var(--brand-primary)]/10"
+              onClick={() => {
+                if (!showImagePrompt) {
+                  setShowImagePrompt(true)
+                } else {
+                  onGenerateImage(imagePrompt || undefined)
+                }
+              }}
+              disabled={isGeneratingImage}
+            >
+              {isGeneratingImage ? (
+                <>
+                  <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Star className="h-3.5 w-3.5" />
+                  {showImagePrompt ? 'Generate' : 'Generate with Signal'}
+                </>
+              )}
+            </Button>
+            {showImagePrompt && (
+              <>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-[var(--text-tertiary)] hover:text-[var(--text-primary)]"
+                  onClick={() => {
+                    onGenerateImage()
+                  }}
+                  disabled={isGeneratingImage}
+                >
+                  Skip prompt
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-[var(--text-tertiary)] hover:text-[var(--text-primary)]"
+                  onClick={() => {
+                    setShowImagePrompt(false)
+                    setImagePrompt('')
+                  }}
+                  disabled={isGeneratingImage}
+                >
+                  <X className="h-3.5 w-3.5" />
+                </Button>
+              </>
+            )}
+          </div>
         </div>
         <div className="space-y-1.5">
           <Label className="text-xs text-[var(--text-tertiary)]">Alt Text</Label>
@@ -1417,6 +1595,50 @@ export default function BlogPostDetail() {
     buildAndSave(cb)
   }, [postId, isDirty, form, post, categories, updatePost])
 
+  // Featured image generation via Signal
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false)
+  const [imagePrompt, setImagePrompt] = useState('')
+  const [showImagePrompt, setShowImagePrompt] = useState(false)
+
+  const handleGenerateImage = useCallback(async (customInstructions) => {
+    if (!projectId) return
+    setIsGeneratingImage(true)
+    try {
+      const result = await skillsApi.invoke('content', 'generate_blog_image', {
+        params: {
+          title: form.title,
+          topic: form.title,
+          category: form.category_id,
+          content: form.body,
+          excerpt: form.excerpt,
+          style: 'photorealistic',
+          aspectRatio: '16:9',
+          ...(customInstructions ? { customInstructions } : {}),
+        },
+        context: {
+          project_id: projectId,
+          org_id: currentOrg?.id,
+        },
+      })
+
+      const imageResult = result?.result || result
+      if (imageResult?.success && imageResult?.imageUrl) {
+        setField('featured_image_url', imageResult.imageUrl)
+        if (imageResult.altText) {
+          setField('featured_image_alt', imageResult.altText)
+        }
+        toast.success('Featured image generated')
+      } else {
+        throw new Error(imageResult?.error || 'Image generation failed')
+      }
+    } catch (error) {
+      console.error('Failed to generate image:', error)
+      toast.error(error?.message || 'Failed to generate featured image')
+    } finally {
+      setIsGeneratingImage(false)
+    }
+  }, [projectId, currentOrg?.id, form.title, form.body, form.excerpt, form.category_id, setField])
+
   // Delete handler
   const handleDelete = useCallback(() => {
     if (!postId) return
@@ -1497,7 +1719,7 @@ export default function BlogPostDetail() {
   const renderSection = () => {
     switch (activeSection) {
       case 'content':
-        return <ContentSection form={form} setField={setField} post={post} formReady={formPostId === post?.id} />
+        return <ContentSection form={form} setField={setField} post={post} formReady={formPostId === post?.id} onGenerateImage={handleGenerateImage} isGeneratingImage={isGeneratingImage} imagePrompt={imagePrompt} setImagePrompt={setImagePrompt} showImagePrompt={showImagePrompt} setShowImagePrompt={setShowImagePrompt} />
       case 'seo':
         return <SEOSection form={form} setField={setField} authors={authors} post={post} />
       case 'analytics':
@@ -1537,6 +1759,8 @@ export default function BlogPostDetail() {
           onPublishToggle={handlePublishToggle}
           onDelete={handleDelete}
           isDeleting={deletePost.isPending}
+          onGenerateImage={handleGenerateImage}
+          isGeneratingImage={isGeneratingImage}
         />
       }
       defaultLeftSidebarOpen={true}

@@ -1,6 +1,6 @@
 /**
  * ImageLibrary - Upload and manage email images
- * Supports drag-drop, Netlify Blobs storage, and image optimization
+ * Supports drag-drop, Supabase Storage, and image optimization
  */
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'

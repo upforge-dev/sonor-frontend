@@ -17,7 +17,6 @@ const POPUP_HEIGHT = 650
  */
 export function openOAuthPopup(url, name = 'oauth') {
   return new Promise((resolve, reject) => {
-    // Calculate center position
     const left = window.screenX + (window.outerWidth - POPUP_WIDTH) / 2
     const top = window.screenY + (window.outerHeight - POPUP_HEIGHT) / 2
     
@@ -39,68 +38,85 @@ export function openOAuthPopup(url, name = 'oauth') {
       return
     }
     
-    // Focus the popup
     popup.focus()
-    
-    // Listen for messages from the popup
+    let settled = false
+
+    const handleResult = (data) => {
+      if (settled) return
+      if (data?.type === 'oauth-success') {
+        settled = true
+        cleanup()
+        resolve({
+          success: true,
+          connectionId: data.connectionId,
+          platform: data.platform,
+          selectProperty: data.selectProperty,
+          selectLocation: data.selectLocation,
+        })
+      } else if (data?.type === 'oauth-error') {
+        settled = true
+        cleanup()
+        resolve({
+          success: false,
+          error: data.error || 'OAuth failed',
+        })
+      }
+    }
+
     const handleMessage = (event) => {
-      // Verify origin matches our API
       const allowedOrigins = [
         'http://localhost:3002',
         'https://api.sonor.io',
         window.location.origin,
       ]
-      
-      if (!allowedOrigins.includes(event.origin)) {
-        return
-      }
-      
-      if (event.data?.type === 'oauth-success') {
-        cleanup()
-        resolve({
-          success: true,
-          connectionId: event.data.connectionId,
-          platform: event.data.platform,
-          selectProperty: event.data.selectProperty,
-          selectLocation: event.data.selectLocation,
-        })
-      } else if (event.data?.type === 'oauth-error') {
-        cleanup()
-        resolve({
-          success: false,
-          error: event.data.error || 'OAuth failed',
-        })
-      }
+      if (!allowedOrigins.includes(event.origin)) return
+      handleResult(event.data)
+    }
+
+    // localStorage fallback — popup writes result when window.opener is lost
+    const handleStorage = (event) => {
+      if (event.key !== 'sonor-oauth-result' || !event.newValue) return
+      try {
+        handleResult(JSON.parse(event.newValue))
+      } catch (_) {}
+      try { localStorage.removeItem('sonor-oauth-result') } catch (_) {}
     }
     
-    // Check if popup was closed without completing
     const checkClosed = setInterval(() => {
       if (popup.closed) {
-        cleanup()
-        resolve({
-          success: false,
-          error: 'OAuth window was closed',
-        })
+        if (!settled) {
+          // Final localStorage check (storage event may not fire for same-tab writes)
+          try {
+            const stored = localStorage.getItem('sonor-oauth-result')
+            if (stored) {
+              handleResult(JSON.parse(stored))
+              localStorage.removeItem('sonor-oauth-result')
+              if (settled) return
+            }
+          } catch (_) {}
+          cleanup()
+          resolve({ success: false, error: 'OAuth window was closed' })
+        }
       }
     }, 500)
     
     const cleanup = () => {
       window.removeEventListener('message', handleMessage)
+      window.removeEventListener('storage', handleStorage)
       clearInterval(checkClosed)
-      if (!popup.closed) {
-        popup.close()
-      }
+      if (!popup.closed) popup.close()
     }
     
+    // Clear any stale result before starting
+    try { localStorage.removeItem('sonor-oauth-result') } catch (_) {}
     window.addEventListener('message', handleMessage)
+    window.addEventListener('storage', handleStorage)
     
-    // Timeout after 5 minutes
     setTimeout(() => {
-      cleanup()
-      resolve({
-        success: false,
-        error: 'OAuth timed out',
-      })
+      if (!settled) {
+        cleanup()
+        resolve({ success: false, error: 'OAuth timed out' })
+      }
     }, 5 * 60 * 1000)
   })
 }

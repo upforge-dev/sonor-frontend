@@ -47,8 +47,7 @@ export default function EngageAnalytics({ projectId }) {
       const params = new URLSearchParams({ days: period })
       if (projectId) params.append('projectId', projectId)
 
-      // Use Portal API if available, fallback to Netlify functions
-      const baseUrl = PORTAL_API_URL || '/.netlify/functions'
+      const baseUrl = PORTAL_API_URL
       const isPortalAPI = !!PORTAL_API_URL
 
       const [overviewRes, elementsRes, trendsRes] = await Promise.all([

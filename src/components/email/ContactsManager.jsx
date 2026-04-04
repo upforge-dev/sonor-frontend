@@ -35,9 +35,6 @@ export default function ContactsManager() {
         })
         .filter(c => c.email)
 
-      // await api.post('/.netlify/functions/email-contacts-import', {
-      //   contacts: importData
-      // })
       toast.success(`Imported ${importData.length} contacts`)
     } catch (err) {
       toast.error('Failed to import CSV')

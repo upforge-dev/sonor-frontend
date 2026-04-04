@@ -30,13 +30,8 @@ export default function TemplatesManager() {
     setIsLoading(true)
     try {
       if (editingId) {
-        // await api.put(`/.netlify/functions/email-template-update`, {
-        //   id: editingId,
-        //   ...formData
-        // })
         toast.success('Template updated')
       } else {
-        // await api.post('/.netlify/functions/email-template-create', formData)
         toast.success('Template created')
       }
       setFormData({ name: '', subject: '', html: '', text: '' })
@@ -50,13 +45,6 @@ export default function TemplatesManager() {
   }
 
   const handleDelete = async (id) => {
-    // if (!confirm('Delete this template?')) return
-    // try {
-    //   await api.delete(`/.netlify/functions/email-template-delete/${id}`)
-    //   toast.success('Template deleted')
-    // } catch (err) {
-    //   toast.error('Failed to delete')
-    // }
   }
 
   return (

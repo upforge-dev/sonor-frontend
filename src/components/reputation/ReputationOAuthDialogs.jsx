@@ -92,7 +92,9 @@ export function GoogleOAuthDialog({ open, onOpenChange, projectId, onSuccess }) 
       intervalRef.current = null
     }
     if (messageHandlerRef.current && typeof window !== 'undefined') {
-      window.removeEventListener('message', messageHandlerRef.current)
+      const { handleMessage, handleStorage } = messageHandlerRef.current
+      if (handleMessage) window.removeEventListener('message', handleMessage)
+      if (handleStorage) window.removeEventListener('storage', handleStorage)
       messageHandlerRef.current = null
     }
     if (popupRef.current && !popupRef.current.closed) {
@@ -148,17 +150,14 @@ export function GoogleOAuthDialog({ open, onOpenChange, projectId, onSuccess }) 
       }
       setStatus('waiting')
 
-      const handleMessage = (event) => {
-        if (event.source !== popup) return
-        const data = event.data
+      let handled = false
+      const handleResult = (data) => {
+        if (handled) return
         if (!data || typeof data !== 'object') return
         if (data.type === 'oauth-success') {
-          if (intervalRef.current) {
-            clearInterval(intervalRef.current)
-            intervalRef.current = null
-          }
-          window.removeEventListener('message', messageHandlerRef.current)
-          messageHandlerRef.current = null
+          handled = true
+          if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null }
+          removeListeners()
           try { popup.close() } catch (_) {}
           popupRef.current = null
           setStatus('success')
@@ -169,32 +168,60 @@ export function GoogleOAuthDialog({ open, onOpenChange, projectId, onSuccess }) 
           })
           onOpenChange?.(false)
         } else if (data.type === 'oauth-error') {
-          if (intervalRef.current) {
-            clearInterval(intervalRef.current)
-            intervalRef.current = null
-          }
-          window.removeEventListener('message', messageHandlerRef.current)
-          messageHandlerRef.current = null
+          handled = true
+          if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null }
+          removeListeners()
           setErrorMessage(data.error || 'Connection failed')
           setStatus('error')
           toast.error(data.error || 'Failed to connect GBP')
         }
       }
 
-      messageHandlerRef.current = handleMessage
+      const handleMessage = (event) => {
+        if (event.source !== popup) return
+        handleResult(event.data)
+      }
+
+      const handleStorage = (event) => {
+        if (event.key !== 'sonor-oauth-result' || !event.newValue) return
+        try {
+          const data = JSON.parse(event.newValue)
+          handleResult(data)
+        } catch (_) {}
+        try { localStorage.removeItem('sonor-oauth-result') } catch (_) {}
+      }
+
+      const removeListeners = () => {
+        window.removeEventListener('message', handleMessage)
+        window.removeEventListener('storage', handleStorage)
+        messageHandlerRef.current = null
+      }
+
+      messageHandlerRef.current = { handleMessage, handleStorage }
       window.addEventListener('message', handleMessage)
+      window.addEventListener('storage', handleStorage)
+      try { localStorage.removeItem('sonor-oauth-result') } catch (_) {}
 
       intervalRef.current = setInterval(() => {
         if (popup.closed) {
-          if (intervalRef.current) {
-            clearInterval(intervalRef.current)
-            intervalRef.current = null
+          if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null }
+          if (!handled) {
+            // Popup closed but no message received — check localStorage as final fallback
+            try {
+              const stored = localStorage.getItem('sonor-oauth-result')
+              if (stored) {
+                handleResult(JSON.parse(stored))
+                localStorage.removeItem('sonor-oauth-result')
+                return
+              }
+            } catch (_) {}
+            removeListeners()
+            cleanup()
+            setStatus((s) => {
+              if (s === 'waiting') onOpenChange?.(false)
+              return 'idle'
+            })
           }
-          cleanup()
-          setStatus((s) => {
-            if (s === 'waiting') onOpenChange?.(false)
-            return 'idle'
-          })
         }
       }, 500)
     } catch (err) {

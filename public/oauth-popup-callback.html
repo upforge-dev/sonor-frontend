@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>OAuth Complete</title>
+  <style>
+    body { font-family: system-ui, sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background: #1a1a2e; color: #e0e0e0; }
+    .message { text-align: center; padding: 2rem; }
+    .spinner { width: 40px; height: 40px; border: 3px solid #333; border-top-color: #3b82f6; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 1rem; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="message">
+    <div class="spinner"></div>
+    <p>Connected! Closing...</p>
+  </div>
+  <script>
+    (function() {
+      var params = new URLSearchParams(window.location.search);
+      var encoded = params.get('payload');
+      if (!encoded) { document.querySelector('p').textContent = 'Missing data.'; return; }
+
+      var data;
+      try {
+        data = JSON.parse(atob(encoded.replace(/-/g, '+').replace(/_/g, '/')));
+      } catch(e) { document.querySelector('p').textContent = 'Invalid data.'; return; }
+
+      if (data.type === 'oauth-error') {
+        document.querySelector('p').textContent = 'Error: ' + (data.error || 'Unknown');
+      }
+
+      // Same origin as parent — both channels work reliably
+      try { localStorage.setItem('sonor-oauth-result', JSON.stringify(data)); } catch(e) {}
+      if (window.opener) {
+        try { window.opener.postMessage(data, window.location.origin); } catch(e) {}
+      }
+      setTimeout(function() { window.close(); }, 600);
+    })();
+  </script>
+</body>
+</html>

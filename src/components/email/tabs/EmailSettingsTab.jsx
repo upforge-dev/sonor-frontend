@@ -46,10 +46,11 @@ import {
 import { toast } from 'sonner'
 import useAuthStore from '@/lib/auth-store'
 import { useEmailPlatformStore } from '@/lib/email-platform-store'
+import { emailApi } from '@/lib/sonor-api'
 import { cn } from '@/lib/utils'
 
 export default function EmailSettingsTab() {
-  const { currentOrg } = useAuthStore()
+  const { currentOrg, currentProject } = useAuthStore()
   const {
     settings: storeSettings,
     settingsLoading,
@@ -74,17 +75,52 @@ export default function EmailSettingsTab() {
   const [apiKeyValid, setApiKeyValid] = useState(null)
   const [validationError, setValidationError] = useState(null)
   const [saveErrors, setSaveErrors] = useState({})
+  const [emailCapability, setEmailCapability] = useState(null)
 
   useEffect(() => {
     fetchSettings()
-  }, [fetchSettings])
+    if (currentProject?.id) {
+      emailApi.checkEmailCapability(currentProject.id)
+        .then(res => setEmailCapability(res.data || res))
+        .catch(() => setEmailCapability(null))
+    }
+  }, [fetchSettings, currentProject?.id])
 
   useEffect(() => {
-    if (storeSettings) {
-      setLocalSettings(storeSettings)
-      setApiKeyValid(storeSettings.resend_api_key_valid ?? null)
+    if (settingsLoading) return
+
+    const s = storeSettings || {}
+    const merged = {
+      resend_api_key: s.resend_api_key || '',
+      default_from_name: s.default_from_name || '',
+      default_from_email: s.default_from_email || '',
+      default_reply_to: s.default_reply_to || '',
+      brand_color: s.brand_color || '#4F46E5',
+      logo_url: s.logo_url || '',
+      business_address: s.company_address || '',
+      track_opens: s.track_opens ?? true,
+      track_clicks: s.track_clicks ?? true,
     }
-  }, [storeSettings])
+
+    if (!merged.brand_color || merged.brand_color === '#4F46E5') {
+      merged.brand_color = currentProject?.brand_primary || '#4F46E5'
+    }
+    if (!merged.logo_url) {
+      merged.logo_url = currentProject?.logo_url || ''
+    }
+    if (!merged.business_address) {
+      const addr = [
+        currentProject?.address_line1,
+        currentProject?.city,
+        currentProject?.state_code,
+        currentProject?.postal_code,
+      ].filter(Boolean).join(', ')
+      merged.business_address = addr || ''
+    }
+
+    setLocalSettings(merged)
+    setApiKeyValid(storeSettings?.resend_api_key_valid ?? null)
+  }, [storeSettings, settingsLoading, currentProject])
 
   // ── Validation ────────────────────────────────────────────────────────
   const handleValidateApiKey = async () => {
@@ -120,7 +156,6 @@ export default function EmailSettingsTab() {
 
   // ── Save ──────────────────────────────────────────────────────────────
   const handleSave = async () => {
-    // Client-side validation
     const errors = {}
     if (!localSettings.business_address?.trim()) {
       errors.business_address = 'Business address is required for CAN-SPAM compliance'
@@ -133,7 +168,17 @@ export default function EmailSettingsTab() {
     setSaveErrors({})
     setIsSaving(true)
     try {
-      await updateSettings(localSettings)
+      await updateSettings({
+        resendApiKey: localSettings.resend_api_key,
+        defaultFromName: localSettings.default_from_name,
+        defaultFromEmail: localSettings.default_from_email,
+        defaultReplyTo: localSettings.default_reply_to,
+        trackOpens: localSettings.track_opens,
+        trackClicks: localSettings.track_clicks,
+        brandColor: localSettings.brand_color,
+        logoUrl: localSettings.logo_url,
+        businessAddress: localSettings.business_address,
+      })
       toast.success('Settings saved!')
     } catch (err) {
       toast.error(err?.message || 'Failed to save settings')
@@ -155,7 +200,7 @@ export default function EmailSettingsTab() {
   }
 
   // ── Derived ───────────────────────────────────────────────────────────
-  const isConfigured = apiKeyValid === true
+  const isConfigured = emailCapability?.enabled || apiKeyValid === true
 
   if (settingsLoading) return <OutreachLoading label="Loading settings..." />
 
@@ -181,10 +226,16 @@ export default function EmailSettingsTab() {
                 </div>
                 <div>
                   <p className="font-medium text-emerald-700">
-                    Email configured via Resend
+                    {emailCapability?.provider === 'gmail'
+                      ? 'Email configured via Gmail'
+                      : emailCapability?.provider === 'resend'
+                        ? 'Email configured via custom domain'
+                        : 'Email configured via Resend'}
                   </p>
                   <p className="text-xs text-emerald-600/70">
-                    Your API key is validated and ready to send
+                    {emailCapability?.email
+                      ? `Sending as ${emailCapability.email}`
+                      : 'Ready to send emails'}
                   </p>
                 </div>
               </>
@@ -198,7 +249,7 @@ export default function EmailSettingsTab() {
                     No email provider configured
                   </p>
                   <p className="text-xs text-amber-600/70">
-                    Add a Resend API key or connect Gmail to start sending emails
+                    Set up a domain, connect Gmail, or add your own Resend API key
                   </p>
                 </div>
               </>
@@ -212,9 +263,11 @@ export default function EmailSettingsTab() {
       {/* ═══════════════════════════════════════════════════════════════ */}
       <GlassCard>
         <GlassCardHeader>
-          <GlassCardTitle>Resend API Configuration</GlassCardTitle>
+          <GlassCardTitle>Resend API Key (Optional)</GlassCardTitle>
           <GlassCardDescription>
-            Connect your Resend account to send emails
+            {emailCapability?.enabled
+              ? 'Your project already sends email via Domain Setup. Only add a key here if you want to use your own Resend account instead.'
+              : 'Connect your own Resend account, or set up a domain in Domain Setup to use Sonor\'s shared infrastructure.'}
           </GlassCardDescription>
         </GlassCardHeader>
         <GlassCardContent className="space-y-4">
