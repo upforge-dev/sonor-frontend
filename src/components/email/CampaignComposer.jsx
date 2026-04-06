@@ -33,6 +33,7 @@ import { useEmailPlatformStore } from '@/lib/email-platform-store'
 import { emailApi } from '@/lib/sonor-api'
 import useAuthStore from '@/lib/auth-store'
 import OfferingSelector from './OfferingSelector'
+import { EmailTemplateCard } from './EmailTemplateCard'
 
 const STEPS = [
   { id: 'details', label: 'Campaign Details', icon: FileText },
@@ -267,15 +268,30 @@ export default function CampaignComposer({ campaign, onSave, onBack, onEditTempl
     }
   }
 
+  const buildPayload = () => ({
+    name: formData.name,
+    subject: formData.subject,
+    previewText: formData.preview_text,
+    fromName: formData.from_name,
+    fromEmail: formData.from_email,
+    replyTo: formData.reply_to,
+    templateId: formData.template_id || undefined,
+    projectId: currentProject?.id || undefined,
+    contentHtml: formData.signal_html || undefined,
+    listIds: audienceMode === 'lists' ? formData.list_ids : undefined,
+    audienceMode,
+    selectedContacts: audienceMode === 'contacts' ? formData.selected_contacts : undefined,
+    manualEmails: audienceMode === 'manual' ? formData.manual_emails : undefined,
+    sendToAll: audienceMode === 'all' || undefined,
+    scheduledAt: formData.schedule_type === 'later' ? formData.scheduled_for : undefined,
+    offeringId: formData.offering_id || undefined,
+    offeringSnapshot: formData.offering_snapshot || undefined,
+  })
+
   const handleSave = async (sendNow = false) => {
     setIsSaving(true)
     try {
-      await onSave({
-        ...formData,
-        audience_mode: audienceMode,
-        send_to_all: audienceMode === 'all',
-        status: sendNow ? 'sending' : (formData.schedule_type === 'later' ? 'scheduled' : 'draft')
-      })
+      await onSave(buildPayload(), sendNow)
       toast.success(sendNow ? 'Campaign sent!' : 'Campaign saved!')
     } catch (error) {
       toast.error(error.message || 'Failed to save campaign')
@@ -351,7 +367,7 @@ export default function CampaignComposer({ campaign, onSave, onBack, onEditTempl
 
       {/* Step Content */}
       <div className="flex-1 overflow-auto p-6">
-        <div className="max-w-2xl mx-auto">
+        <div className={currentStep === 2 ? 'max-w-6xl mx-auto' : 'max-w-2xl mx-auto'}>
           {/* Step 1: Campaign Details */}
           {currentStep === 0 && (
             <div className="space-y-6">
@@ -759,40 +775,36 @@ export default function CampaignComposer({ campaign, onSave, onBack, onEditTempl
               <div>
                 <Label className="text-base font-semibold">Select Template</Label>
                 <p className="text-sm text-[var(--text-secondary)] mb-4">Choose an email template for your campaign</p>
-                
-                {templates.length === 0 ? (
-                  <GlassCard>
-                    <GlassCardContent className="py-8 text-center">
-                      <FileText className="h-8 w-8 mx-auto text-[var(--text-tertiary)] mb-2" />
-                      <p className="text-[var(--text-secondary)]">No templates available</p>
-                      <Button variant="link" size="sm" className="text-[var(--brand-primary)]" onClick={onEditTemplate}>Create a template first</Button>
-                    </GlassCardContent>
-                  </GlassCard>
-                ) : (
-                  <div className="grid grid-cols-2 gap-4">
-                    {templates.map((template) => (
-                      <GlassCard
-                        key={template.id}
-                        className={`cursor-pointer transition-all ${
-                          formData.template_id === template.id 
-                            ? 'border-[var(--brand-primary)] ring-1 ring-[var(--brand-primary)]' 
-                            : 'hover:border-[var(--text-tertiary)]'
-                        }`}
-                        onClick={() => updateField('template_id', template.id)}
-                      >
-                        <div className="aspect-[4/3] bg-[var(--glass-bg-inset)] rounded-t-lg flex items-center justify-center">
-                          <FileText className="h-8 w-8 text-[var(--text-tertiary)]" />
-                        </div>
-                        <GlassCardContent className="p-4">
-                          <p className="font-medium text-[var(--text-primary)] truncate">{template.name}</p>
-                          <Badge variant="outline" className="text-xs mt-1">
-                            {template.category}
-                          </Badge>
+
+                {(() => {
+                  // Filter out transactional/system templates — those can't be sent as campaigns
+                  const campaignTemplates = templates.filter(t => t.category !== 'transactional' && !t.is_system)
+
+                  if (campaignTemplates.length === 0) {
+                    return (
+                      <GlassCard>
+                        <GlassCardContent className="py-8 text-center">
+                          <FileText className="h-8 w-8 mx-auto text-[var(--text-tertiary)] mb-2" />
+                          <p className="text-[var(--text-secondary)]">No campaign templates available</p>
+                          <Button variant="link" size="sm" className="text-[var(--brand-primary)]" onClick={onEditTemplate}>Create a template first</Button>
                         </GlassCardContent>
                       </GlassCard>
-                    ))}
-                  </div>
-                )}
+                    )
+                  }
+
+                  return (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3">
+                      {campaignTemplates.map((template) => (
+                        <EmailTemplateCard
+                          key={template.id}
+                          template={template}
+                          selected={formData.template_id === template.id}
+                          onClick={() => updateField('template_id', template.id)}
+                        />
+                      ))}
+                    </div>
+                  )
+                })()}
               </div>
 
               {selectedTemplate && (

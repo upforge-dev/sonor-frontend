@@ -138,7 +138,14 @@ export const useEmailPlatformStore = create((set, get) => ({
       set(state => ({ campaigns: [campaign, ...state.campaigns] }))
       return campaign
     } catch (error) {
-      throw new Error(error.response?.data?.error || 'Failed to create campaign')
+      const err = error.response?.data?.error
+      const msg =
+        typeof err === 'string'
+          ? err
+          : err?.message && typeof err.message === 'string'
+            ? err.message
+            : 'Failed to create campaign'
+      throw new Error(msg)
     }
   },
 
@@ -163,7 +170,14 @@ export const useEmailPlatformStore = create((set, get) => ({
       get().fetchCampaigns()
       return res.data || res
     } catch (error) {
-      throw new Error(error.response?.data?.error || 'Failed to send campaign')
+      const err = error.response?.data?.error
+      const msg =
+        typeof err === 'string'
+          ? err
+          : err?.message && typeof err.message === 'string'
+            ? err.message
+            : 'Failed to send campaign'
+      throw new Error(msg)
     }
   },
 
@@ -228,12 +242,24 @@ export const useEmailPlatformStore = create((set, get) => ({
 
   createTemplate: async (templateData) => {
     try {
-      const res = await emailApi.createTemplate(templateData)
+      const { currentProject } = useAuthStore.getState()
+      const body = {
+        ...templateData,
+        projectId: templateData.projectId || currentProject?.id || undefined,
+      }
+      const res = await emailApi.createTemplate(body)
       const template = res.data?.template || res.data
       set(state => ({ templates: [template, ...state.templates] }))
       return template
     } catch (error) {
-      throw new Error(error.response?.data?.error || 'Failed to create template')
+      const err = error.response?.data?.error
+      const msg =
+        typeof err === 'string'
+          ? err
+          : err?.message && typeof err.message === 'string'
+            ? err.message
+            : 'Failed to create template'
+      throw new Error(msg)
     }
   },
 

@@ -131,8 +131,12 @@ export default function EmailPlatform({
     setShowCampaignComposer(true)
   }
   const handleEditCampaign = (c) => { setEditingCampaign(c); setShowCampaignComposer(true) }
-  const handleSaveCampaign = async (data) => {
-    await createCampaign(data)
+  const handleSaveCampaign = async (data, sendNow = false) => {
+    const campaign = await createCampaign(data)
+    if (sendNow && campaign?.id) {
+      const { sendCampaign } = useEmailPlatformStore.getState()
+      await sendCampaign(campaign.id, { sendNow: true })
+    }
     fetchCampaigns()
     setShowCampaignComposer(false)
   }

@@ -44,6 +44,7 @@ import {
 } from 'lucide-react'
 import { useEmailPlatformStore } from '@/lib/email-platform-store'
 import { templateGradients, templateCategories } from '@/components/email/utils/constants'
+import { EmailTemplateCard } from '@/components/email/EmailTemplateCard'
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -208,7 +209,7 @@ export default function EmailTemplatesTab({
           {systemTemplates.length > 0 && (
             <div className="space-y-3">
               <OutreachSectionHeader icon={Sparkles} title="STARTER TEMPLATES" />
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3">
                 {systemTemplates.slice(0, 3).map((starter) => (
                   <StarterCard
                     key={starter.id}
@@ -227,7 +228,7 @@ export default function EmailTemplatesTab({
           description="Try a different search or filter"
         />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3">
           {filteredTemplates.map((template) => (
             <TemplateCard
               key={template.id}
@@ -247,7 +248,7 @@ export default function EmailTemplatesTab({
               Choose a pre-built template to customize
             </DialogDescription>
           </DialogHeader>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 py-4 max-h-[60vh] overflow-y-auto">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3 py-4 max-h-[60vh] overflow-y-auto">
             {systemTemplatesLoading ? (
               <div className="col-span-3">
                 <OutreachLoading label="Loading starter templates..." />
@@ -262,41 +263,27 @@ export default function EmailTemplatesTab({
               </div>
             ) : (
               systemTemplates.map((starter) => (
-                <GlassCard
+                <EmailTemplateCard
                   key={starter.id}
-                  hover
-                  className="cursor-pointer group overflow-hidden"
+                  template={starter}
+                  size="compact"
                   onClick={() => handleUseSystemTemplate(starter)}
-                >
-                  {/* Gradient preview */}
-                  <div
-                    className={`h-20 bg-gradient-to-br ${getTemplateGradient(starter)} flex items-center justify-center`}
-                  >
-                    <Mail className="h-8 w-8 text-white/80" />
-                  </div>
-
-                  <GlassCardContent className="p-4">
-                    <div className="flex items-center justify-between mb-1.5">
-                      <h3 className="font-semibold text-sm text-[var(--text-primary)] truncate">
-                        {getCategoryEmoji(starter.category)} {starter.name}
-                      </h3>
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium border border-[var(--glass-border)] text-[var(--text-tertiary)] capitalize">
-                        {starter.category}
-                      </span>
-                    </div>
-                    <p className="text-xs text-[var(--text-secondary)] line-clamp-2 mb-3">
-                      {starter.description}
-                    </p>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full gap-2 text-xs group-hover:bg-[var(--brand-primary)] group-hover:text-white group-hover:border-[var(--brand-primary)] transition-colors"
-                    >
-                      <Plus className="h-3 w-3" />
-                      Use Template
-                    </Button>
-                  </GlassCardContent>
-                </GlassCard>
+                  footer={
+                    <>
+                      <p className="text-xs text-[var(--text-secondary)] line-clamp-2 mb-3 mt-1">
+                        {starter.description}
+                      </p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full gap-2 text-xs group-hover:bg-[var(--brand-primary)] group-hover:text-white group-hover:border-[var(--brand-primary)] transition-colors"
+                      >
+                        <Plus className="h-3 w-3" />
+                        Use Template
+                      </Button>
+                    </>
+                  }
+                />
               ))
             )}
           </div>
@@ -310,50 +297,30 @@ export default function EmailTemplatesTab({
 
 function TemplateCard({ template, onEdit }) {
   return (
-    <GlassCard
-      hover
-      className="cursor-pointer group overflow-hidden"
+    <EmailTemplateCard
+      template={template}
       onClick={() => onEdit(template)}
-    >
-      {/* Gradient preview area */}
-      <div
-        className={`h-24 bg-gradient-to-br ${getTemplateGradient(template)} flex items-center justify-center relative`}
-      >
-        <Mail className="h-10 w-10 text-white/80" />
-      </div>
-
-      <GlassCardContent className="p-4">
-        {/* Name + category */}
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="font-semibold text-[var(--text-primary)] truncate">
-            {getCategoryEmoji(template.category)} {template.name}
-          </h3>
-          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium border border-[var(--glass-border)] text-[var(--text-tertiary)] capitalize flex-shrink-0 ml-2">
-            {template.category || 'custom'}
-          </span>
-        </div>
-
-        {/* Dates + usage */}
-        <div className="flex items-center justify-between text-xs text-[var(--text-tertiary)] mb-3">
-          <span>Created {formatDate(template.created_at)}</span>
-          <span>Used {template.use_count || 0} times</span>
-        </div>
-
-        {/* Always-visible Edit button */}
-        <Button
-          variant="outline"
-          size="sm"
-          className="w-full gap-1.5 text-xs"
-          onClick={(e) => {
-            e.stopPropagation()
-            onEdit(template)
-          }}
-        >
-          <Edit className="h-3.5 w-3.5" />
-          Edit Template
-        </Button>
-      </GlassCardContent>
-    </GlassCard>
+      footer={
+        <>
+          <div className="flex items-center justify-between text-xs text-[var(--text-tertiary)] mb-3 mt-1">
+            <span>Created {formatDate(template.created_at)}</span>
+            <span>Used {template.use_count || 0} times</span>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full gap-1.5 text-xs"
+            onClick={(e) => {
+              e.stopPropagation()
+              onEdit(template)
+            }}
+          >
+            <Edit className="h-3.5 w-3.5" />
+            Edit Template
+          </Button>
+        </>
+      }
+    />
   )
 }
 
@@ -361,34 +328,25 @@ function TemplateCard({ template, onEdit }) {
 
 function StarterCard({ template, onUse }) {
   return (
-    <GlassCard
-      hover
-      className="cursor-pointer group overflow-hidden"
+    <EmailTemplateCard
+      template={template}
+      size="compact"
       onClick={() => onUse(template)}
-    >
-      {/* Gradient preview */}
-      <div
-        className={`h-20 bg-gradient-to-br ${getTemplateGradient(template)} flex items-center justify-center`}
-      >
-        <Mail className="h-8 w-8 text-white/80" />
-      </div>
-
-      <GlassCardContent className="p-4">
-        <h3 className="font-semibold text-sm text-[var(--text-primary)] mb-1">
-          {getCategoryEmoji(template.category)} {template.name}
-        </h3>
-        <p className="text-xs text-[var(--text-secondary)] line-clamp-2 mb-3">
-          {template.description}
-        </p>
-        <Button
-          variant="outline"
-          size="sm"
-          className="w-full gap-2 text-xs group-hover:bg-[var(--brand-primary)] group-hover:text-white group-hover:border-[var(--brand-primary)] transition-colors"
-        >
-          <Plus className="h-3 w-3" />
-          Use Template
-        </Button>
-      </GlassCardContent>
-    </GlassCard>
+      footer={
+        <>
+          <p className="text-xs text-[var(--text-secondary)] line-clamp-2 mb-3 mt-1">
+            {template.description}
+          </p>
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full gap-2 text-xs group-hover:bg-[var(--brand-primary)] group-hover:text-white group-hover:border-[var(--brand-primary)] transition-colors"
+          >
+            <Plus className="h-3 w-3" />
+            Use Template
+          </Button>
+        </>
+      }
+    />
   )
 }
