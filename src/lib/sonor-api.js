@@ -2413,12 +2413,15 @@ export const emailApi = {
   updateCampaign: (id, data) => 
     sonorApi.put(`/email/campaigns/${id}`, data),
   
-  sendCampaign: (id, data = {}) => 
+  sendCampaign: (id, data = {}) =>
     sonorApi.post(`/email/campaigns/${id}/send`, data),
-  
-  scheduleCampaign: (id, data) => 
+
+  scheduleCampaign: (id, data) =>
     sonorApi.post(`/email/campaigns/${id}/schedule`, data),
-  
+
+  getCampaignAnalytics: (id) =>
+    sonorApi.get(`/email/campaigns/${id}/analytics`),
+
   // Templates
   listTemplates: (params = {}) => 
     sonorApi.get('/email/templates', { params }),
