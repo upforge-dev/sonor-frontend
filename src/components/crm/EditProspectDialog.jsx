@@ -42,7 +42,8 @@ export default function EditProspectDialog({
 }) {
   const [isSaving, setIsSaving] = useState(false)
   const [formData, setFormData] = useState({
-    name: '',
+    firstName: '',
+    lastName: '',
     email: '',
     phone: '',
     company: '',
@@ -54,7 +55,8 @@ export default function EditProspectDialog({
   useEffect(() => {
     if (prospect) {
       setFormData({
-        name: prospect.name || '',
+        firstName: prospect.first_name || prospect.name?.split(' ')[0] || '',
+        lastName: prospect.last_name || prospect.name?.split(' ').slice(1).join(' ') || '',
         email: prospect.email || '',
         phone: prospect.phone || '',
         company: prospect.company || '',
@@ -77,7 +79,15 @@ export default function EditProspectDialog({
     try {
       // CRM prospects must use /crm/prospects — admin/clients only maps name/company/phone/status
       // and omits email, website, source entirely.
-      const { data: updated } = await crmApi.updateProspect(prospect.id, formData)
+      const { data: updated } = await crmApi.updateProspect(prospect.id, {
+        first_name: formData.firstName,
+        last_name: formData.lastName || undefined,
+        email: formData.email || undefined,
+        phone: formData.phone || undefined,
+        company: formData.company || undefined,
+        website: formData.website || undefined,
+        source: formData.source || undefined,
+      })
 
       toast.success('Contact updated successfully')
 
@@ -102,16 +112,27 @@ export default function EditProspectDialog({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
-          {/* Name */}
-          <div className="space-y-2">
-            <Label htmlFor="name">Name *</Label>
-            <Input
-              id="name"
-              value={formData.name}
-              onChange={(e) => handleChange('name', e.target.value)}
-              placeholder="Full name"
-              required
-            />
+          {/* First Name & Last Name */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="firstName">First Name *</Label>
+              <Input
+                id="firstName"
+                value={formData.firstName}
+                onChange={(e) => handleChange('firstName', e.target.value)}
+                placeholder="John"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="lastName">Last Name</Label>
+              <Input
+                id="lastName"
+                value={formData.lastName}
+                onChange={(e) => handleChange('lastName', e.target.value)}
+                placeholder="Smith"
+              />
+            </div>
           </div>
 
           {/* Email */}
@@ -192,7 +213,7 @@ export default function EditProspectDialog({
             </Button>
             <Button 
               type="submit" 
-              disabled={isSaving || !formData.name}
+              disabled={isSaving || !formData.firstName}
               className="border-0 text-white shadow-sm hover:opacity-90 disabled:opacity-50"
               style={{ backgroundColor: 'var(--brand-primary)' }}
             >

@@ -33,16 +33,20 @@ export const templateGradients = {
 }
 
 // Category display config
+// campaignAllowed: false means the category is system-only (not available for campaigns/outreach)
 export const templateCategories = [
   { value: 'all', label: 'All Categories' },
-  { value: 'welcome', label: 'Welcome', emoji: '👋' },
-  { value: 'newsletter', label: 'Newsletter', emoji: '📰' },
-  { value: 'promotional', label: 'Promotional', emoji: '🎯' },
-  { value: 'transactional', label: 'Transactional', emoji: '📋' },
-  { value: 'notification', label: 'Notification', emoji: '🔔' },
-  { value: 'announcement', label: 'Announcement', emoji: '📢' },
-  { value: 'custom', label: 'Custom', emoji: '✨' },
+  { value: 'welcome', label: 'Welcome', emoji: '👋', campaignAllowed: true },
+  { value: 'newsletter', label: 'Newsletter', emoji: '📰', campaignAllowed: true },
+  { value: 'promotional', label: 'Promotional', emoji: '🎯', campaignAllowed: true },
+  { value: 'transactional', label: 'Transactional', emoji: '📋', campaignAllowed: false },
+  { value: 'notification', label: 'Notification', emoji: '🔔', campaignAllowed: true },
+  { value: 'announcement', label: 'Announcement', emoji: '📢', campaignAllowed: true },
+  { value: 'custom', label: 'Custom', emoji: '✨', campaignAllowed: true },
 ]
+
+/** Categories available for campaigns/outreach (excludes system-only like transactional) */
+export const campaignCategories = templateCategories.filter(c => c.value === 'all' || c.campaignAllowed !== false)
 
 // Campaign status config for glass badges
 export const campaignStatuses = {

@@ -227,7 +227,7 @@ export default function EmailComposeDialog({
 
   // Generate follow-up content based on original email
   const generateFollowUpContent = (followUpIndex) => {
-    const firstName = contact?.name?.split(' ')[0] || 'there'
+    const firstName = contact?.first_name || contact?.name?.split(' ')[0] || 'there'
     const followUpNumber = followUpIndex + 1
     
     const templates = [
@@ -291,7 +291,7 @@ ${senderFirstName}`
     if (!template) return
 
     // Replace variables
-    const firstName = contact?.name?.split(' ')[0] || 'there'
+    const firstName = contact?.first_name || contact?.name?.split(' ')[0] || 'there'
     const companyName = contact?.company || 'your company'
     
     let newSubject = template.subject
@@ -833,7 +833,7 @@ ${senderFirstName}`
                   )}
                   
                   <p className="text-xs text-amber-600 bg-amber-50 dark:bg-amber-950/30 p-2 rounded">
-                    ⏰ All follow-ups will be sent from {gmailAccount?.email || 'your Gmail'} and cancelled automatically if {contact?.name?.split(' ')[0] || 'they'} replies to any email in this thread.
+                    ⏰ All follow-ups will be sent from {gmailAccount?.email || 'your Gmail'} and cancelled automatically if {contact?.first_name || contact?.name?.split(' ')[0] || 'they'} replies to any email in this thread.
                   </p>
                 </div>
               )}

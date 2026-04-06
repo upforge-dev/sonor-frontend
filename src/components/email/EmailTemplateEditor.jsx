@@ -658,7 +658,7 @@ export default function EmailTemplateEditor({ template, onSave, onBack }) {
         
         <div className="flex items-center gap-2">
           {/* Undo/Redo */}
-          <div className="flex items-center border rounded-lg p-1">
+          <div className="flex items-center rounded-lg p-1" style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)' }}>
             <Button
               variant="ghost"
               size="sm"
@@ -678,7 +678,7 @@ export default function EmailTemplateEditor({ template, onSave, onBack }) {
           </div>
 
           {/* Device Toggle */}
-          <div className="flex items-center border rounded-lg p-1">
+          <div className="flex items-center rounded-lg p-1" style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)' }}>
             <Button
               variant={deviceMode === 'desktop' ? 'secondary' : 'ghost'}
               size="sm"
@@ -722,21 +722,27 @@ export default function EmailTemplateEditor({ template, onSave, onBack }) {
             Images
           </Button>
           
-          {/* Clear Canvas */}
+          {/* Delete Selected / Clear Canvas */}
           <Button
             variant="outline"
             size="sm"
             onClick={() => {
-              if (confirm('Clear all content? This cannot be undone.')) {
-                editorInstance.current?.setComponents('')
+              const editor = editorInstance.current
+              if (!editor) return
+              const selected = editor.getSelected()
+              if (selected) {
+                selected.remove()
+              } else if (window.confirm('No element selected. Clear all content?')) {
+                editor.setComponents('')
               }
             }}
+            title="Delete selected element"
           >
             <Trash2 className="h-4 w-4" />
           </Button>
           
           {/* View Mode Toggle */}
-          <div className="flex items-center border rounded-lg p-1">
+          <div className="flex items-center rounded-lg p-1" style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)' }}>
             <Button
               variant={viewMode === 'editor' ? 'secondary' : 'ghost'}
               size="sm"

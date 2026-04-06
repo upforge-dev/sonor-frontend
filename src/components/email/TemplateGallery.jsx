@@ -200,7 +200,7 @@ function TemplateCard({ template, onSelect, onPreview, isSelected }) {
 }
 
 // Main gallery component
-export function TemplateGallery({ open, onOpenChange, onSelectTemplate }) {
+export function TemplateGallery({ open, onOpenChange, onSelectTemplate, excludeCategories = [] }) {
   const [search, setSearch] = useState('')
   const [activeCategory, setActiveCategory] = useState('all')
   const [selectedTemplate, setSelectedTemplate] = useState(null)
@@ -232,24 +232,35 @@ export function TemplateGallery({ open, onOpenChange, onSelectTemplate }) {
     fetchTemplates()
   }, [open])
   
+  // Filter out excluded categories from the category tabs
+  const visibleCategories = useMemo(() => {
+    if (!excludeCategories.length) return categories
+    return categories.filter(cat => !excludeCategories.includes(cat.id))
+  }, [categories, excludeCategories])
+
   // Filter templates
   const filteredTemplates = useMemo(() => {
     let filtered = templates
-    
+
+    // Always exclude templates from excluded categories
+    if (excludeCategories.length) {
+      filtered = filtered.filter(t => !excludeCategories.includes(t.category))
+    }
+
     if (activeCategory !== 'all') {
       filtered = filtered.filter(t => t.category === activeCategory)
     }
-    
+
     if (search) {
       const searchLower = search.toLowerCase()
-      filtered = filtered.filter(t => 
+      filtered = filtered.filter(t =>
         t.name.toLowerCase().includes(searchLower) ||
         (t.description || '').toLowerCase().includes(searchLower)
       )
     }
-    
+
     return filtered
-  }, [templates, activeCategory, search])
+  }, [templates, activeCategory, search, excludeCategories])
   
   // Handle selection
   const handleSelect = (template) => {
@@ -296,7 +307,7 @@ export function TemplateGallery({ open, onOpenChange, onSelectTemplate }) {
             
             {/* Categories */}
             <div className="flex items-center gap-2 overflow-x-auto">
-              {categories.map(cat => {
+              {visibleCategories.map(cat => {
                 const Icon = categoryIcons[cat.id] || Layout
                 const isActive = activeCategory === cat.id
                 

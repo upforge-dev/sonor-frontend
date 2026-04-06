@@ -25,12 +25,10 @@ export default function EmailConfigWarning({ className = '' }) {
       }
 
       try {
-        // Check if project has email sending configured
-        const result = await emailApi.checkEmailCapability(currentProject.id)
+        const { data: result } = await emailApi.checkEmailCapability(currentProject.id)
         setEmailCapability(result)
       } catch (error) {
         console.error('Failed to check email capability:', error)
-        // Assume not configured on error
         setEmailCapability({ enabled: false })
       } finally {
         setLoading(false)
@@ -40,12 +38,10 @@ export default function EmailConfigWarning({ className = '' }) {
     checkEmailCapability()
   }, [currentProject?.id])
 
-  // Still loading
   if (loading) {
     return null
   }
 
-  // Email is configured - don't show warning
   if (emailCapability?.enabled) {
     return null
   }
@@ -119,7 +115,7 @@ export function EmailConfigWarningCompact({ className = '' }) {
       }
 
       try {
-        const result = await emailApi.checkEmailCapability(currentProject.id)
+        const { data: result } = await emailApi.checkEmailCapability(currentProject.id)
         setEmailCapability(result)
       } catch (error) {
         console.error('Failed to check email capability:', error)
@@ -163,7 +159,7 @@ export function EmailConfigStatus({ className = '' }) {
       }
 
       try {
-        const result = await emailApi.checkEmailCapability(currentProject.id)
+        const { data: result } = await emailApi.checkEmailCapability(currentProject.id)
         setEmailCapability(result)
       } catch (error) {
         console.error('Failed to check email capability:', error)

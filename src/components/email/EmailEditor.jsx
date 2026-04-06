@@ -3400,6 +3400,7 @@ export function EmailEditor({
             open={showTemplateGallery}
             onOpenChange={setShowTemplateGallery}
             onSelect={handleTemplateSelect}
+            excludeCategories={['transactional']}
           />
         </Suspense>
       )}

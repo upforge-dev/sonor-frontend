@@ -39,7 +39,8 @@ export default function AddProspectDialog({ open, onOpenChange, onSuccess, onPro
   const { primary, primaryHover, rgba } = useBrandColors()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [formData, setFormData] = useState({
-    name: '',
+    firstName: '',
+    lastName: '',
     email: '',
     company: '',
     phone: '',
@@ -51,8 +52,8 @@ export default function AddProspectDialog({ open, onOpenChange, onSuccess, onPro
 
   const validate = () => {
     const newErrors = {}
-    if (!formData.name.trim()) {
-      newErrors.name = 'Name is required'
+    if (!formData.firstName.trim()) {
+      newErrors.firstName = 'First name is required'
     }
     if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = 'Invalid email format'
@@ -71,7 +72,8 @@ export default function AddProspectDialog({ open, onOpenChange, onSuccess, onPro
     setIsSubmitting(true)
     try {
       const response = await crmApi.createProspect({
-        name: formData.name,
+        first_name: formData.firstName,
+        last_name: formData.lastName || undefined,
         email: formData.email || undefined,
         company: formData.company || undefined,
         phone: formData.phone || undefined,
@@ -83,7 +85,8 @@ export default function AddProspectDialog({ open, onOpenChange, onSuccess, onPro
       const newProspect = response.data?.prospect || response.data
       toast.success('Prospect added successfully')
       setFormData({
-        name: '',
+        firstName: '',
+        lastName: '',
         email: '',
         company: '',
         phone: '',
@@ -127,34 +130,33 @@ export default function AddProspectDialog({ open, onOpenChange, onSuccess, onPro
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-5">
-          {/* Name & Company Row */}
+          {/* First Name & Last Name Row */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="name" className="flex items-center gap-2 text-xs font-medium text-[var(--text-secondary)]">
+              <Label htmlFor="firstName" className="flex items-center gap-2 text-xs font-medium text-[var(--text-secondary)]">
                 <UserPlus className="h-3.5 w-3.5" />
-                Name *
+                First Name *
               </Label>
               <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => updateField('name', e.target.value)}
-                placeholder="John Smith"
-                className={`glass-inset ${errors.name ? 'border-red-500/50' : ''}`}
+                id="firstName"
+                value={formData.firstName}
+                onChange={(e) => updateField('firstName', e.target.value)}
+                placeholder="John"
+                className={`glass-inset ${errors.firstName ? 'border-red-500/50' : ''}`}
               />
-              {errors.name && (
-                <p className="text-xs text-red-500">{errors.name}</p>
+              {errors.firstName && (
+                <p className="text-xs text-red-500">{errors.firstName}</p>
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="company" className="flex items-center gap-2 text-xs font-medium text-[var(--text-secondary)]">
-                <Building2 className="h-3.5 w-3.5" />
-                Company
+              <Label htmlFor="lastName" className="flex items-center gap-2 text-xs font-medium text-[var(--text-secondary)]">
+                Last Name
               </Label>
               <Input
-                id="company"
-                value={formData.company}
-                onChange={(e) => updateField('company', e.target.value)}
-                placeholder="Acme Corp"
+                id="lastName"
+                value={formData.lastName}
+                onChange={(e) => updateField('lastName', e.target.value)}
+                placeholder="Smith"
                 className="glass-inset"
               />
             </div>
@@ -194,31 +196,28 @@ export default function AddProspectDialog({ open, onOpenChange, onSuccess, onPro
             </div>
           </div>
 
-          {/* Website & Source Row */}
+          {/* Company & Source Row */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="website" className="flex items-center gap-2 text-xs font-medium text-[var(--text-secondary)]">
-                <Globe className="h-3.5 w-3.5" />
-                Website
+              <Label htmlFor="company" className="flex items-center gap-2 text-xs font-medium text-[var(--text-secondary)]">
+                <Building2 className="h-3.5 w-3.5" />
+                Company
               </Label>
               <Input
-                id="website"
-                value={formData.website}
-                onChange={(e) => updateField('website', e.target.value)}
-                placeholder="https://acme.com"
-                className={`glass-inset ${errors.website ? 'border-red-500/50' : ''}`}
+                id="company"
+                value={formData.company}
+                onChange={(e) => updateField('company', e.target.value)}
+                placeholder="Acme Corp"
+                className="glass-inset"
               />
-              {errors.website && (
-                <p className="text-xs text-red-500">{errors.website}</p>
-              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="source" className="flex items-center gap-2 text-xs font-medium text-[var(--text-secondary)]">
                 <Tag className="h-3.5 w-3.5" />
                 Source
               </Label>
-              <Select 
-                value={formData.source} 
+              <Select
+                value={formData.source}
                 onValueChange={(value) => updateField('source', value)}
               >
                 <SelectTrigger className="glass-inset">
@@ -233,6 +232,24 @@ export default function AddProspectDialog({ open, onOpenChange, onSuccess, onPro
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          {/* Website */}
+          <div className="space-y-2">
+            <Label htmlFor="website" className="flex items-center gap-2 text-xs font-medium text-[var(--text-secondary)]">
+              <Globe className="h-3.5 w-3.5" />
+              Website
+            </Label>
+            <Input
+              id="website"
+              value={formData.website}
+              onChange={(e) => updateField('website', e.target.value)}
+              placeholder="https://acme.com"
+              className={`glass-inset ${errors.website ? 'border-red-500/50' : ''}`}
+            />
+            {errors.website && (
+              <p className="text-xs text-red-500">{errors.website}</p>
+            )}
           </div>
 
           {/* Notes */}
