@@ -22,7 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Loader2, UserPlus, Building2, Mail, Phone, Globe, Tag, FileText } from 'lucide-react'
+import { Loader2, UserPlus, Building2, Mail, Phone, Tag, FileText } from 'lucide-react'
 import { crmApi } from '@/lib/sonor-api'
 import { toast } from '@/lib/toast'
 import { useBrandColors } from '@/hooks/useBrandColors'
@@ -44,7 +44,6 @@ export default function AddProspectDialog({ open, onOpenChange, onSuccess, onPro
     email: '',
     company: '',
     phone: '',
-    website: '',
     source: 'outreach',
     notes: ''
   })
@@ -57,9 +56,6 @@ export default function AddProspectDialog({ open, onOpenChange, onSuccess, onPro
     }
     if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = 'Invalid email format'
-    }
-    if (formData.website && !/^https?:\/\/.+/.test(formData.website)) {
-      newErrors.website = 'Website must start with http:// or https://'
     }
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
@@ -77,7 +73,6 @@ export default function AddProspectDialog({ open, onOpenChange, onSuccess, onPro
         email: formData.email || undefined,
         company: formData.company || undefined,
         phone: formData.phone || undefined,
-        website: formData.website || undefined,
         source: formData.source || undefined,
         notes: formData.notes || undefined,
         pipelineStage: 'new_lead',
@@ -90,7 +85,6 @@ export default function AddProspectDialog({ open, onOpenChange, onSuccess, onPro
         email: '',
         company: '',
         phone: '',
-        website: '',
         source: 'outreach',
         notes: ''
       })
@@ -232,24 +226,6 @@ export default function AddProspectDialog({ open, onOpenChange, onSuccess, onPro
                 </SelectContent>
               </Select>
             </div>
-          </div>
-
-          {/* Website */}
-          <div className="space-y-2">
-            <Label htmlFor="website" className="flex items-center gap-2 text-xs font-medium text-[var(--text-secondary)]">
-              <Globe className="h-3.5 w-3.5" />
-              Website
-            </Label>
-            <Input
-              id="website"
-              value={formData.website}
-              onChange={(e) => updateField('website', e.target.value)}
-              placeholder="https://acme.com"
-              className={`glass-inset ${errors.website ? 'border-red-500/50' : ''}`}
-            />
-            {errors.website && (
-              <p className="text-xs text-red-500">{errors.website}</p>
-            )}
           </div>
 
           {/* Notes */}

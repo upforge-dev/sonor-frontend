@@ -33,7 +33,6 @@ import {
 } from 'lucide-react'
 import useAuthStore from '@/lib/auth-store'
 import { adminApi, proposalsApi, crmApi } from '@/lib/sonor-api'
-import { SignalSuggestsPanel } from '@/components/ai/SignalSuggestsPanel'
 import ProposalAIDialog from './ProposalAIDialog'
 import EditProposalDialog from './EditProposalDialog'
 import NewContractModal from './NewContractModal'
@@ -781,8 +780,6 @@ const Proposals = ({ onNavigate }) => {
           }}
         />
       </div>
-
-      <SignalSuggestsPanel module="proposals" className="mb-4" />
 
       <Card>
         <CardContent className="pt-6">

@@ -46,7 +46,6 @@ import { UptradeSpinner } from '@/components/UptradeLoading'
 import SignalIcon from '@/components/ui/SignalIcon'
 import { cn } from '@/lib/utils'
 import Analytics from '@/components/Analytics'
-import { SignalSuggestsPanel } from '@/components/ai/SignalSuggestsPanel'
 import { NaturalLanguageFilter } from '@/components/ai/NaturalLanguageFilter'
 
 // Lazy load view components for code splitting
@@ -460,9 +459,6 @@ export default function AnalyticsDashboard() {
           "p-6",
           showAIPanel && "pr-0"
         )}>
-          {currentView === 'highlights' && (
-            <SignalSuggestsPanel module="analytics" className="mb-4" />
-          )}
           <AnimatePresence mode="wait">
             <motion.div
               key={currentView + (selectedPath || '')}

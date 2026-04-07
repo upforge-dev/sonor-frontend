@@ -117,7 +117,6 @@ import {
   ACTIVE_STAGES,
   mapApiStagesToConfig,
 } from './pipelineStages'
-import { SignalSuggestsPanel } from '@/components/ai/SignalSuggestsPanel'
 import { NaturalLanguageFilter } from '@/components/ai/NaturalLanguageFilter'
 
 // Re-export for consumers that import from CRMModule
@@ -1156,7 +1155,6 @@ export default function CRMDashboard() {
         />
         <ModuleLayout.Content className="flex flex-col">
           <div className="flex flex-col flex-1 min-h-0">
-            <SignalSuggestsPanel module="crm" className="mb-4 mx-4 mt-4 shrink-0" />
             {isLoading ? (
               <div className="flex items-center justify-center py-24">
                 <div className="flex flex-col items-center gap-3">

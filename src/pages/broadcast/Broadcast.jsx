@@ -46,7 +46,6 @@ import { MediaLibrary } from './components/MediaLibrary';
 import { PlatformIcon } from './components/PlatformIcon';
 import { BroadcastOverview } from './components/BroadcastOverview';
 import { toast } from 'sonner';
-import { SignalSuggestsPanel } from '@/components/ai/SignalSuggestsPanel';
 
 // =============================================================================
 // CONSTANTS
@@ -508,9 +507,6 @@ export function Broadcast({ onNavigate }) {
         <ModuleLayout.Header title="Broadcast" icon={MODULE_ICONS.broadcast} actions={headerActions} data-tour="broadcast-overview" />
         <ModuleLayout.Content>
           <div className="bg-[var(--glass-bg)]/30 backdrop-blur-sm">
-            {currentView === 'overview' && (
-              <SignalSuggestsPanel module="broadcast" className="mx-4 mt-4 mb-0" />
-            )}
             {(currentView === 'posts' || currentView === 'library') && (
               <div className="h-12 border-b flex items-center justify-between px-4 bg-[var(--glass-bg)]/50">
                 <div className="relative">

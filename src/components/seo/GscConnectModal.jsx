@@ -50,11 +50,14 @@ export default function GscConnectModal({ open, onOpenChange, projectId, onSucce
     oauthApi.getConnectionStatus(projectId).then((res) => {
       if (cancelled) return
       const google = res?.platforms?.google
-      if (google?.connected && google?.connectionId) {
+      const hasSeoModule = google?.modules?.includes('seo')
+      if (google?.connected && google?.connectionId && hasSeoModule) {
+        // Google connected WITH SEO/GSC scopes — go straight to property selection
         setStep('select_property')
         setConnectionIdForProperty(google.connectionId)
         setStatus('idle')
       } else {
+        // Either not connected, or connected for another module (e.g. reputation) without GSC scopes
         setStep('connect')
         setConnectionIdForProperty(null)
       }
@@ -170,16 +173,20 @@ export default function GscConnectModal({ open, onOpenChange, projectId, onSucce
       window.addEventListener('message', handleMessage)
 
       intervalRef.current = setInterval(() => {
-        if (popup.closed) {
+        let isClosed = false
+        try { isClosed = popup.closed } catch (_) {
+          // COOP blocks popup.closed when navigated to cross-origin (Google OAuth)
+          return
+        }
+        if (isClosed) {
           if (intervalRef.current) {
             clearInterval(intervalRef.current)
             intervalRef.current = null
           }
           cleanup()
-          setStatus((s) => {
-            if (s === 'waiting') onOpenChange?.(false)
-            return 'idle'
-          })
+          setStatus('idle')
+          // Defer parent state update to avoid setState-during-render
+          setTimeout(() => onOpenChange?.(false), 0)
         }
       }, 500)
     } catch (err) {

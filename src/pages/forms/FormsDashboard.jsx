@@ -94,7 +94,6 @@ import HighlightsView from './components/HighlightsView'
 import FormDefaultsView from './components/FormDefaultsView'
 import FormsSettingsView from './components/FormsSettingsView'
 import OrgTemplatesView from './components/OrgTemplatesView'
-import { SignalSuggestsPanel } from '@/components/ai/SignalSuggestsPanel'
 import { NaturalLanguageFilter } from '@/components/ai/NaturalLanguageFilter'
 
 // =============================================================================
@@ -957,7 +956,6 @@ export default function FormsDashboard() {
         <ModuleLayout.Header data-tour="forms-overview" title="Forms" icon={MODULE_ICONS.forms} subtitle={headerSubtitle} actions={headerActions} />
         <ModuleLayout.Content>
           <div className="p-6">
-            <SignalSuggestsPanel module="forms" className="mb-4" />
             {currentView === 'highlights' && (
               <HighlightsView
                 forms={forms}

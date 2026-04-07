@@ -60,8 +60,6 @@ import EngageTargeting from '@/components/engage/EngageTargeting'
 import SignalIcon from '@/components/ui/SignalIcon'
 import { useSignalAccess } from '@/lib/signal-access'
 import { Badge } from '@/components/ui/badge'
-import { SignalSuggestsPanel } from '@/components/ai/SignalSuggestsPanel'
-
 // Element type configurations
 const ELEMENT_TYPES = {
   popup: { label: 'Popup', icon: MessageSquare, color: 'blue' },
@@ -423,7 +421,6 @@ export default function EngageDashboard() {
         <ModuleLayout.Header data-tour="engage-overview" title="Engage" icon={MODULE_ICONS.engage} subtitle={headerSubtitle} actions={headerActions} />
         <ModuleLayout.Content>
           <div className="p-6">
-            <SignalSuggestsPanel module="engage" className="mb-4" />
             {renderMainContent()}
           </div>
         </ModuleLayout.Content>

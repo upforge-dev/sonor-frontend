@@ -99,8 +99,6 @@ import {
   YelpApiKeyDialog,
 } from '@/components/reputation/ReputationOAuthDialogs'
 import GbpLocationSelector from '@/components/projects/GbpLocationSelector'
-import { SignalSuggestsPanel } from '@/components/ai/SignalSuggestsPanel'
-
 // ============================================================================
 // SIDEBAR SECTIONS
 // ============================================================================
@@ -3010,7 +3008,6 @@ export default function ReputationModule({ onNavigate }) {
 
             {/* Content Area */}
             <div className="p-6">
-              <SignalSuggestsPanel module="reputation" className="mb-4" />
               {renderContent()}
             </div>
         </ModuleLayout.Content>

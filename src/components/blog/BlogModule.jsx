@@ -108,8 +108,6 @@ import {
 import { cn } from '@/lib/utils'
 import { format, formatDistanceToNow } from 'date-fns'
 import { toast } from 'sonner'
-import { SignalSuggestsPanel } from '@/components/ai/SignalSuggestsPanel'
-
 // ============================================================================
 // SIDEBAR SECTIONS
 // ============================================================================
@@ -2202,7 +2200,6 @@ function BlogDashboard() {
           actions={headerActions}
         />
         <ModuleLayout.Content noPadding={false}>
-          <SignalSuggestsPanel module="blog" className="mb-4" />
           <div className="px-4 py-3 border-b border-[var(--glass-border)] bg-muted/5 mb-6 -mx-4 -mt-4">
             <div className="flex items-center gap-6 text-sm">
               <span className="text-[var(--text-secondary)]">

@@ -113,8 +113,6 @@ import usePageContextStore from '@/lib/page-context-store'
 import { cn } from '@/lib/utils'
 import { format, subDays } from 'date-fns'
 import { toast } from '@/lib/toast'
-import { SignalSuggestsPanel } from '@/components/ai/SignalSuggestsPanel'
-
 async function getOfferings(projectId, params) {
   const res = await commerceApi.getOfferings(projectId, params)
   return res?.data ?? res ?? []
@@ -1557,9 +1555,6 @@ export default function CommerceDashboard({ onNavigate }) {
             ? ''
             : 'px-6 py-4 pb-6'
         }>
-          {currentView === 'highlights' && (
-            <SignalSuggestsPanel module="commerce" className="mb-4" />
-          )}
           {currentView === 'offering' && offeringId ? (
             offeringMode === 'edit' ? (
               <OfferingEdit
