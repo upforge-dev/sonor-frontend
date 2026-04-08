@@ -27,7 +27,7 @@ const SIGNAL_API_URL = import.meta.env.VITE_SIGNAL_API_URL || 'https://signal.so
 // Create Signal API axios instance
 const signalApi = axios.create({
   baseURL: SIGNAL_API_URL,
-  timeout: 30000,
+  timeout: 120_000, // 2 min — bulk operations (indexing, auto-fix) can process 200 URLs
   withCredentials: true,
   headers: { 'Content-Type': 'application/json' }
 })
