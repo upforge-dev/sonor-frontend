@@ -3,13 +3,14 @@
 // Integrated into Blog module (moved from SEO module for better workflow)
 // Supports embedded mode when used from BlogDashboard (hides header and tabs)
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   useBlogTopicRecommendations,
   useAnalyzeAllBlogPosts,
   useFixBlogPostEmDashes,
   useOptimizeBlogPost
 } from '@/lib/hooks/use-seo'
+import { seoApi } from '@/lib/sonor-api'
 import { useSignalAccess } from '@/lib/signal-access'
 import SignalUpgradeCard from '@/components/seo/signal/SignalUpgradeCard'
 import SignalIcon from '@/components/ui/SignalIcon'
@@ -448,19 +449,97 @@ function OptimizeContent({ blogPostAnalysis, copiedId, setCopiedId }) {
 // GUIDELINES CONTENT
 // ============================================================================
 
-function GuidelinesContent() {
+function GuidelinesContent({ projectId }) {
+  const [guidelines, setGuidelines] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [editing, setEditing] = useState(false)
+  const [editData, setEditData] = useState(null)
+
+  // Load guidelines from API
+  useEffect(() => {
+    if (!projectId) return
+    seoApi.getWritingGuidelines(projectId)
+      .then(data => {
+        setGuidelines(data.writing_guidelines || data)
+        setLoading(false)
+      })
+      .catch(() => setLoading(false))
+  }, [projectId])
+
+  const handleEdit = () => {
+    setEditData(JSON.parse(JSON.stringify(guidelines)))
+    setEditing(true)
+  }
+
+  const handleSave = async () => {
+    setSaving(true)
+    try {
+      await seoApi.updateWritingGuidelines(projectId, { writing_guidelines: editData })
+      setGuidelines(editData)
+      setEditing(false)
+    } catch (err) {
+      console.error('Failed to save guidelines:', err)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const addItem = (list) => {
+    setEditData(prev => ({
+      ...prev,
+      [list]: [...(prev[list] || []), ''],
+    }))
+  }
+
+  const updateItem = (list, index, value) => {
+    setEditData(prev => ({
+      ...prev,
+      [list]: prev[list].map((item, i) => i === index ? value : item),
+    }))
+  }
+
+  const removeItem = (list, index) => {
+    setEditData(prev => ({
+      ...prev,
+      [list]: prev[list].filter((_, i) => i !== index),
+    }))
+  }
+
+  const wg = editing ? editData : guidelines
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <BookOpen className="w-5 h-5" style={{ color: 'var(--brand-primary)' }} />
-          Writing Guidelines
-        </CardTitle>
-        <CardDescription>
-          Style rules enforced by Blog Signal Brain
-        </CardDescription>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <BookOpen className="w-5 h-5" style={{ color: 'var(--brand-primary)' }} />
+              Writing Guidelines
+            </CardTitle>
+            <CardDescription>
+              Style rules enforced by Signal when generating blog content
+            </CardDescription>
+          </div>
+          {!editing ? (
+            <Button variant="outline" size="sm" onClick={handleEdit} disabled={loading}>
+              Edit
+            </Button>
+          ) : (
+            <div className="flex gap-2">
+              <Button variant="ghost" size="sm" onClick={() => setEditing(false)}>Cancel</Button>
+              <Button size="sm" onClick={handleSave} disabled={saving}
+                style={{ backgroundColor: 'var(--brand-primary)', color: 'white' }}>
+                {saving ? 'Saving...' : 'Save'}
+              </Button>
+            </div>
+          )}
+        </div>
       </CardHeader>
       <CardContent>
+        {loading ? (
+          <p className="text-sm text-muted-foreground">Loading guidelines...</p>
+        ) : (
         <div className="space-y-6">
           {/* Never Use */}
           <div>
@@ -469,27 +548,25 @@ function GuidelinesContent() {
               Never Use
             </h4>
             <ul className="space-y-2">
-              <li className="flex items-start gap-2 text-sm text-muted-foreground">
-                <span className="text-red-500 font-bold">×</span>
-                Em dashes (—) or en dashes (–) except in number ranges
-              </li>
-              <li className="flex items-start gap-2 text-sm text-muted-foreground">
-                <span className="text-red-500 font-bold">×</span>
-                Generic openers like "In today's digital landscape..."
-              </li>
-              <li className="flex items-start gap-2 text-sm text-muted-foreground">
-                <span className="text-red-500 font-bold">×</span>
-                Overly formal or academic language
-              </li>
-              <li className="flex items-start gap-2 text-sm text-muted-foreground">
-                <span className="text-red-500 font-bold">×</span>
-                Sales-heavy or pushy language
-              </li>
-              <li className="flex items-start gap-2 text-sm text-muted-foreground">
-                <span className="text-red-500 font-bold">×</span>
-                Passive voice when active is clearer
-              </li>
+              {(wg?.never_use || []).map((item, i) => (
+                <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
+                  <span className="text-red-500 font-bold mt-0.5">×</span>
+                  {editing ? (
+                    <div className="flex-1 flex gap-1">
+                      <input
+                        value={item}
+                        onChange={(e) => updateItem('never_use', i, e.target.value)}
+                        className="flex-1 bg-transparent border-b border-red-300 dark:border-red-700 focus:outline-none text-sm"
+                      />
+                      <button onClick={() => removeItem('never_use', i)} className="text-red-400 text-xs">×</button>
+                    </div>
+                  ) : item}
+                </li>
+              ))}
             </ul>
+            {editing && (
+              <button onClick={() => addItem('never_use')} className="text-xs text-red-500 mt-2">+ Add rule</button>
+            )}
           </div>
 
           {/* Always Do */}
@@ -499,31 +576,25 @@ function GuidelinesContent() {
               Always Do
             </h4>
             <ul className="space-y-2">
-              <li className="flex items-start gap-2 text-sm text-muted-foreground">
-                <span className="text-green-500 font-bold">✓</span>
-                Write like teaching a smart friend
-              </li>
-              <li className="flex items-start gap-2 text-sm text-muted-foreground">
-                <span className="text-green-500 font-bold">✓</span>
-                Cite credible sources with specific data
-              </li>
-              <li className="flex items-start gap-2 text-sm text-muted-foreground">
-                <span className="text-green-500 font-bold">✓</span>
-                Use contractions naturally (you'll, we've, it's)
-              </li>
-              <li className="flex items-start gap-2 text-sm text-muted-foreground">
-                <span className="text-green-500 font-bold">✓</span>
-                Keep paragraphs to 2-3 sentences max
-              </li>
-              <li className="flex items-start gap-2 text-sm text-muted-foreground">
-                <span className="text-green-500 font-bold">✓</span>
-                Start with a compelling hook, not generic intro
-              </li>
-              <li className="flex items-start gap-2 text-sm text-muted-foreground">
-                <span className="text-green-500 font-bold">✓</span>
-                Include real examples and case studies
-              </li>
+              {(wg?.always_do || []).map((item, i) => (
+                <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
+                  <span className="text-green-500 font-bold mt-0.5">✓</span>
+                  {editing ? (
+                    <div className="flex-1 flex gap-1">
+                      <input
+                        value={item}
+                        onChange={(e) => updateItem('always_do', i, e.target.value)}
+                        className="flex-1 bg-transparent border-b border-green-300 dark:border-green-700 focus:outline-none text-sm"
+                      />
+                      <button onClick={() => removeItem('always_do', i)} className="text-green-400 text-xs">×</button>
+                    </div>
+                  ) : item}
+                </li>
+              ))}
             </ul>
+            {editing && (
+              <button onClick={() => addItem('always_do')} className="text-xs text-green-500 mt-2">+ Add rule</button>
+            )}
           </div>
 
           {/* Tone Examples */}
@@ -535,19 +606,44 @@ function GuidelinesContent() {
             <div className="space-y-3">
               <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
                 <p className="text-xs font-medium text-red-600 dark:text-red-400 mb-1">❌ Wrong</p>
-                <p className="text-sm text-red-700 dark:text-red-300 italic">
-                  "In today's ever-evolving digital marketing landscape — where competition is fierce — businesses must leverage innovative strategies to achieve success."
-                </p>
+                {editing ? (
+                  <textarea
+                    value={wg?.tone_examples?.wrong || ''}
+                    onChange={(e) => setEditData(prev => ({
+                      ...prev,
+                      tone_examples: { ...prev.tone_examples, wrong: e.target.value },
+                    }))}
+                    className="w-full bg-transparent text-sm text-red-700 dark:text-red-300 italic resize-none border-none focus:outline-none"
+                    rows={2}
+                  />
+                ) : (
+                  <p className="text-sm text-red-700 dark:text-red-300 italic">
+                    "{wg?.tone_examples?.wrong || ''}"
+                  </p>
+                )}
               </div>
               <div className="p-3 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
                 <p className="text-xs font-medium text-green-600 dark:text-green-400 mb-1">✅ Right</p>
-                <p className="text-sm text-green-700 dark:text-green-300 italic">
-                  "Here's the truth about digital marketing in 2025: the businesses winning aren't doing more. They're doing less, but doing it better. Let me show you exactly how."
-                </p>
+                {editing ? (
+                  <textarea
+                    value={wg?.tone_examples?.right || ''}
+                    onChange={(e) => setEditData(prev => ({
+                      ...prev,
+                      tone_examples: { ...prev.tone_examples, right: e.target.value },
+                    }))}
+                    className="w-full bg-transparent text-sm text-green-700 dark:text-green-300 italic resize-none border-none focus:outline-none"
+                    rows={2}
+                  />
+                ) : (
+                  <p className="text-sm text-green-700 dark:text-green-300 italic">
+                    "{wg?.tone_examples?.right || ''}"
+                  </p>
+                )}
               </div>
             </div>
           </div>
         </div>
+        )}
       </CardContent>
     </Card>
   )
@@ -679,7 +775,7 @@ export default function BlogBrain({
           />
         )
       case 'guidelines':
-        return <GuidelinesContent />
+        return <GuidelinesContent projectId={projectId} />
       default:
         return null
     }

@@ -1200,13 +1200,24 @@ export const signalSeoApi = {
     return response.data
   },
   
-  // POST /skills/seo/topic-clusters
+  // POST /skills/seo/topic-clusters (legacy)
   generateTopicClusters: async (projectId, seedKeyword = null) => {
-    const response = await signalApi.post('/skills/seo/topic-clusters', { 
+    const response = await signalApi.post('/skills/seo/topic-clusters', {
       projectId,
-      seedKeyword 
+      seedKeyword
     })
     return response.data.data
+  },
+
+  // ── Topic Cluster Pipeline (Plan → Approve → Generate) ──
+  planCluster: async (params) => {
+    const response = await signalApi.post('/skills/seo/clusters/plan', params)
+    return response.data
+  },
+
+  generateCluster: async (params) => {
+    const response = await signalApi.post('/skills/seo/clusters/generate', params)
+    return response.data
   },
   
   // POST /skills/seo/internal-links

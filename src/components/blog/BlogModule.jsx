@@ -18,6 +18,7 @@ import { EmptyState } from '@/components/EmptyState'
 import { MODULE_ICONS } from '@/lib/module-icons'
 import BlogBrain from '@/components/blog/BlogBrain'
 import EchoBlogCreator from '@/components/blog/EchoBlogCreator'
+import TopicClusterWorkspace from '@/components/blog/TopicClusterWorkspace'
 const BlogPostDetail = lazy(() => import('@/components/blog/BlogPostDetail'))
 import SEOEEATModule from '@/components/seo/SEOEEATModule'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -1947,7 +1948,7 @@ function BlogDashboard() {
       case 'feeds':
         return <FeedsView projectDomain={projectDomain} />
       case 'topic-clusters':
-        return <TopicClustersView posts={posts} />
+        return <TopicClusterWorkspace posts={posts} projectId={projectId} orgId={currentOrg?.id} fetchPosts={fetchPosts} />
     }
 
     // Categories management view

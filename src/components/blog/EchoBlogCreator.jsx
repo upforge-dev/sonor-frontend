@@ -17,10 +17,10 @@
  */
 
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { 
-  Sparkles, Send, RefreshCw, ChevronRight, Image as ImageIcon, 
+import {
+  Sparkles, Send, RefreshCw, ChevronRight, Image as ImageIcon,
   Wand2, Eye, Edit3, Check, X, Loader2, ArrowRight, BookOpen,
-  Target, FileText, Palette, Zap, Upload
+  Target, FileText, Palette, Zap, Upload, Layers, Network
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -35,6 +35,7 @@ import { portalApi, filesApi } from '@/lib/sonor-api'
 import useAuthStore from '@/lib/auth-store'
 import SignalIcon from '@/components/ui/SignalIcon'
 import { toast } from 'sonner'
+import { ClusterGenerationWizard } from '@/components/blog/TopicClusterWorkspace'
 
 // Conversation stages
 const STAGES = {
@@ -249,16 +250,19 @@ const CategorySelector = ({ categories, selected, onSelect }) => (
   </div>
 )
 
-export default function EchoBlogCreator({ 
-  open, 
-  onOpenChange, 
+export default function EchoBlogCreator({
+  open,
+  onOpenChange,
   onSuccess,
-  prefillTopic = null 
+  prefillTopic = null
 }) {
   const { currentOrg, currentProject } = useAuthStore()
   const scrollRef = useRef(null)
   const inputRef = useRef(null)
-  
+
+  // Creation mode: null = choosing, 'single' = article, 'cluster' = topic cluster
+  const [creationMode, setCreationMode] = useState(prefillTopic ? 'single' : null)
+
   // State
   const [stage, setStage] = useState(STAGES.TOPIC)
   const [messages, setMessages] = useState([])
@@ -975,6 +979,7 @@ export default function EchoBlogCreator({
   
   const handleClose = () => {
     // Reset state
+    setCreationMode(null)
     setStage(STAGES.TOPIC)
     setMessages([])
     setInput('')
@@ -994,35 +999,97 @@ export default function EchoBlogCreator({
   
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-2xl h-[80vh] p-0 flex flex-col gap-0">
+      <DialogContent className={cn(
+        'p-0 flex flex-col gap-0',
+        creationMode === 'cluster' ? 'max-w-4xl h-[90vh]' : 'max-w-2xl h-[80vh]'
+      )}>
         {/* Header */}
         <DialogHeader className="p-4 border-b shrink-0">
           <DialogTitle className="flex items-center gap-2">
-            <div 
+            <div
               className="p-2 rounded-lg"
               style={{ backgroundColor: 'color-mix(in srgb, var(--brand-primary) 15%, transparent)' }}
             >
               <SignalIcon className="w-5 h-5" style={{ color: 'var(--brand-primary)' }} />
             </div>
             <div>
-              <span className="text-lg">Create Blog Post with Signal</span>
-              <div className="flex gap-2 mt-1">
-                {Object.values(STAGES).slice(0, -1).map((s, i) => (
-                  <div 
-                    key={s}
-                    className={cn(
-                      'h-1 w-8 rounded-full transition-all',
-                      Object.values(STAGES).indexOf(stage) >= i
-                        ? 'bg-[var(--brand-primary)]'
-                        : 'bg-[var(--surface-secondary)]'
-                    )}
-                  />
-                ))}
-              </div>
+              <span className="text-lg">
+                {creationMode === 'cluster' ? 'Create Topic Cluster with Signal' : 'Create Blog Post with Signal'}
+              </span>
+              {creationMode === 'single' && (
+                <div className="flex gap-2 mt-1">
+                  {Object.values(STAGES).slice(0, -1).map((s, i) => (
+                    <div
+                      key={s}
+                      className={cn(
+                        'h-1 w-8 rounded-full transition-all',
+                        Object.values(STAGES).indexOf(stage) >= i
+                          ? 'bg-[var(--brand-primary)]'
+                          : 'bg-[var(--surface-secondary)]'
+                      )}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           </DialogTitle>
         </DialogHeader>
-        
+
+        {/* Mode Selector — shown when no mode is chosen yet */}
+        {!creationMode && (
+          <div className="flex-1 flex items-center justify-center p-8">
+            <div className="grid grid-cols-2 gap-4 w-full max-w-lg">
+              <button
+                onClick={() => setCreationMode('single')}
+                className="flex flex-col items-center gap-3 p-6 rounded-xl border border-[var(--glass-border)] bg-[var(--glass-bg)] hover:border-[var(--brand-primary)]/40 hover:bg-[var(--brand-primary)]/5 transition-all text-left"
+              >
+                <div className="h-12 w-12 rounded-xl bg-blue-500/10 flex items-center justify-center">
+                  <FileText className="h-6 w-6 text-blue-500" />
+                </div>
+                <div className="text-center">
+                  <h3 className="text-sm font-semibold text-[var(--text-primary)]">Single Article</h3>
+                  <p className="text-xs text-[var(--text-tertiary)] mt-1">
+                    One SEO-optimized blog post with AI-driven topic selection and content generation
+                  </p>
+                </div>
+              </button>
+
+              <button
+                onClick={() => setCreationMode('cluster')}
+                className="flex flex-col items-center gap-3 p-6 rounded-xl border border-[var(--glass-border)] bg-[var(--glass-bg)] hover:border-[var(--brand-primary)]/40 hover:bg-[var(--brand-primary)]/5 transition-all text-left"
+              >
+                <div className="h-12 w-12 rounded-xl bg-[var(--brand-primary)]/10 flex items-center justify-center">
+                  <Network className="h-6 w-6 text-[var(--brand-primary)]" />
+                </div>
+                <div className="text-center">
+                  <h3 className="text-sm font-semibold text-[var(--text-primary)]">Topic Cluster</h3>
+                  <p className="text-xs text-[var(--text-tertiary)] mt-1">
+                    Pillar article + 5-12 supporting posts for full topical authority
+                  </p>
+                </div>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Cluster Mode — full wizard inline */}
+        {creationMode === 'cluster' && (
+          <div className="flex-1 overflow-y-auto p-6">
+            <ClusterGenerationWizard
+              projectId={currentProject?.id}
+              orgId={currentOrg?.id}
+              onBack={() => setCreationMode(null)}
+              onComplete={(clusterId) => {
+                handleClose()
+                onSuccess?.()
+              }}
+            />
+          </div>
+        )}
+
+        {/* Single Article Mode — existing flow */}
+        {creationMode === 'single' && (
+        <>
         {/* Messages Area */}
         <div className="flex-1 overflow-hidden">
           <ScrollArea className="h-full p-4" ref={scrollRef}>
@@ -1397,6 +1464,8 @@ export default function EchoBlogCreator({
               </Button>
             </div>
           </form>
+        )}
+        </>
         )}
       </DialogContent>
     </Dialog>

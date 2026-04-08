@@ -269,26 +269,26 @@ export default function SEOReportingPage({ projectId }: SEOReportingPageProps) {
                     Indexing Health
                   </CardTitle>
                   <Badge variant="outline" className={cn("text-xs",
-                    (gscHealthData.coveragePercent ?? 0) >= 90 ? "border-green-500/30 text-green-500" :
-                    (gscHealthData.coveragePercent ?? 0) >= 70 ? "border-amber-500/30 text-amber-500" :
+                    (gscHealthData.coverage?.coverageRate ?? 0) >= 90 ? "border-green-500/30 text-green-500" :
+                    (gscHealthData.coverage?.coverageRate ?? 0) >= 70 ? "border-amber-500/30 text-amber-500" :
                     "border-red-500/30 text-red-500"
                   )}>
-                    {Math.round(gscHealthData.coveragePercent ?? 0)}% coverage
+                    {Math.round(gscHealthData.coverage?.coverageRate ?? 0)}% coverage
                   </Badge>
                 </div>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-3 gap-4 mb-3">
                   <div className="text-center p-3 rounded-lg bg-muted/30">
-                    <p className="text-2xl font-bold">{gscHealthData.totalPages ?? 0}</p>
+                    <p className="text-2xl font-bold">{gscHealthData.coverage?.totalCanonical ?? 0}</p>
                     <p className="text-xs text-muted-foreground">Total Pages</p>
                   </div>
                   <div className="text-center p-3 rounded-lg bg-green-500/10">
-                    <p className="text-2xl font-bold text-green-500">{gscHealthData.indexedPages ?? 0}</p>
+                    <p className="text-2xl font-bold text-green-500">{gscHealthData.coverage?.indexed ?? 0}</p>
                     <p className="text-xs text-muted-foreground">Indexed</p>
                   </div>
                   <div className="text-center p-3 rounded-lg bg-red-500/10">
-                    <p className="text-2xl font-bold text-red-500">{gscHealthData.notIndexedPages ?? 0}</p>
+                    <p className="text-2xl font-bold text-red-500">{gscHealthData.coverage?.notIndexed ?? 0}</p>
                     <p className="text-xs text-muted-foreground">Not Indexed</p>
                   </div>
                 </div>

@@ -83,6 +83,7 @@ import {
   X,
   Loader2,
   RefreshCw,
+  Layers,
 } from 'lucide-react'
 import { format } from 'date-fns'
 import TurndownService from 'turndown'
@@ -497,7 +498,7 @@ function RightSidebar({ post, form, categories, onPublishToggle, onDelete, isDel
             variant="outline"
             size="sm"
             className="w-full justify-start gap-2 border-[var(--glass-border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
-            onClick={onGenerateImage}
+            onClick={() => onGenerateImage()}
             disabled={isGeneratingImage}
           >
             {isGeneratingImage ? (
@@ -1037,6 +1038,101 @@ function SEOSection({ form, setField, authors, post }) {
         </div>
       </GlassCard>
 
+      {/* Topic Cluster */}
+      {(post?.clusterId || post?.cluster_id || post?.articleType || post?.article_type) && (
+        <GlassCard className="p-5 space-y-4">
+          <GlassCardTitle className="text-base flex items-center gap-2">
+            <Layers className="h-4 w-4 text-[var(--brand-primary)]" />
+            Cluster
+          </GlassCardTitle>
+
+          {(post?.clusterId || post?.cluster_id) && (
+            <div className="text-xs text-[var(--text-tertiary)]">
+              Cluster ID: <span className="text-[var(--text-secondary)] font-mono">{post.clusterId || post.cluster_id}</span>
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <Label className="text-xs text-[var(--text-tertiary)] uppercase tracking-wider">Article Type</Label>
+            <Select
+              value={form.article_type || ''}
+              onValueChange={(val) => setField('article_type', val)}
+            >
+              <SelectTrigger className="border-[var(--glass-border)] bg-[var(--glass-bg)] text-[var(--text-primary)]">
+                <SelectValue placeholder="Not set" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="pillar">Pillar</SelectItem>
+                <SelectItem value="support">Support</SelectItem>
+                <SelectItem value="comparison">Comparison</SelectItem>
+                <SelectItem value="faq">FAQ</SelectItem>
+                <SelectItem value="glossary">Glossary</SelectItem>
+                <SelectItem value="checklist">Checklist</SelectItem>
+                <SelectItem value="case-study-adjacent">Case Study</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label className="text-xs text-[var(--text-tertiary)] uppercase tracking-wider">Relationship to Pillar</Label>
+            <Input
+              value={form.relationship_to_pillar || ''}
+              onChange={(e) => setField('relationship_to_pillar', e.target.value)}
+              placeholder="e.g., Expands cost section"
+              className="border-[var(--glass-border)] bg-[var(--glass-bg)] text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)]"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label className="text-xs text-[var(--text-tertiary)] uppercase tracking-wider">Search Intent</Label>
+              <Select
+                value={form.search_intent || ''}
+                onValueChange={(val) => setField('search_intent', val)}
+              >
+                <SelectTrigger className="border-[var(--glass-border)] bg-[var(--glass-bg)] text-[var(--text-primary)]">
+                  <SelectValue placeholder="Not set" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="informational">Informational</SelectItem>
+                  <SelectItem value="navigational">Navigational</SelectItem>
+                  <SelectItem value="commercial">Commercial</SelectItem>
+                  <SelectItem value="transactional">Transactional</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-xs text-[var(--text-tertiary)] uppercase tracking-wider">Funnel Stage</Label>
+              <Select
+                value={form.funnel_stage || ''}
+                onValueChange={(val) => setField('funnel_stage', val)}
+              >
+                <SelectTrigger className="border-[var(--glass-border)] bg-[var(--glass-bg)] text-[var(--text-primary)]">
+                  <SelectValue placeholder="Not set" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="awareness">Awareness</SelectItem>
+                  <SelectItem value="consideration">Consideration</SelectItem>
+                  <SelectItem value="decision">Decision</SelectItem>
+                  <SelectItem value="retention">Retention</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label className="text-xs text-[var(--text-tertiary)] uppercase tracking-wider">AI Summary (GEO)</Label>
+            <Textarea
+              value={form.ai_summary || ''}
+              onChange={(e) => setField('ai_summary', e.target.value)}
+              placeholder="1-2 sentence factual summary for AI citation..."
+              className="min-h-[60px] resize-none border-[var(--glass-border)] bg-[var(--glass-bg)] text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)]"
+            />
+          </div>
+        </GlassCard>
+      )}
+
       {/* Author & FAQ */}
       <GlassCard className="p-5 space-y-5">
         <GlassCardTitle className="text-base">Author & FAQ</GlassCardTitle>
@@ -1448,6 +1544,12 @@ export default function BlogPostDetail() {
     scheduled_at: '',
     is_featured: false,
     faqs: [],
+    // Cluster fields
+    article_type: '',
+    search_intent: '',
+    funnel_stage: '',
+    relationship_to_pillar: '',
+    ai_summary: '',
   })
   const [formPostId, setFormPostId] = useState(null)
 
@@ -1475,6 +1577,12 @@ export default function BlogPostDetail() {
         : '',
       is_featured: post.featured ?? post.is_featured ?? false,
       faqs: post.faqItems || post.faq_items || [],
+      // Cluster fields
+      article_type: post.articleType || post.article_type || '',
+      search_intent: post.searchIntent || post.search_intent || '',
+      funnel_stage: post.funnelStage || post.funnel_stage || '',
+      relationship_to_pillar: post.relationshipToPillar || post.relationship_to_pillar || '',
+      ai_summary: post.aiSummary || post.ai_summary || '',
     })
   }, [post])
 
@@ -1578,6 +1686,13 @@ export default function BlogPostDetail() {
 
     // FAQs
     if (JSON.stringify(form.faqs) !== JSON.stringify(o.faqItems || [])) data.faqItems = form.faqs
+
+    // Cluster fields
+    if (form.article_type !== (o.articleType || o.article_type || '')) data.articleType = form.article_type || undefined
+    if (form.search_intent !== (o.searchIntent || o.search_intent || '')) data.searchIntent = form.search_intent || undefined
+    if (form.funnel_stage !== (o.funnelStage || o.funnel_stage || '')) data.funnelStage = form.funnel_stage || undefined
+    if (form.relationship_to_pillar !== (o.relationshipToPillar || o.relationship_to_pillar || '')) data.relationshipToPillar = form.relationship_to_pillar || undefined
+    if (form.ai_summary !== (o.aiSummary || o.ai_summary || '')) data.aiSummary = form.ai_summary || undefined
 
     if (Object.keys(data).length === 0) {
       toast.info('No changes to save')

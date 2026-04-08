@@ -34,9 +34,10 @@ import { cn } from '@/lib/utils';
 import { useBroadcastStore } from '@/stores/broadcastStore';
 import useAuthStore from '@/lib/auth-store';
 import { BroadcastCalendar } from './components/BroadcastCalendar';
-import { PostComposerPage } from './components/PostComposerPage';
-import { ReelComposer } from './components/ReelComposer';
-import { StoryComposer } from './components/StoryComposer';
+// Old composers removed — replaced by UnifiedComposer
+// import { PostComposerPage } from './components/PostComposerPage';
+// import { ReelComposer } from './components/ReelComposer';
+// import { StoryComposer } from './components/StoryComposer';
 import { PostsList } from './components/PostsList';
 import { BroadcastSettings } from './components/BroadcastSettings';
 import { UnifiedInbox } from './components/UnifiedInbox';
@@ -45,6 +46,8 @@ import { BulkSchedule } from './components/BulkSchedule';
 import { MediaLibrary } from './components/MediaLibrary';
 import { PlatformIcon } from './components/PlatformIcon';
 import { BroadcastOverview } from './components/BroadcastOverview';
+import { UnifiedComposer } from './components/UnifiedComposer';
+import { BrandMentions } from './components/BrandMentions';
 import { toast } from 'sonner';
 
 // =============================================================================
@@ -54,14 +57,13 @@ import { toast } from 'sonner';
 const NAV_ITEMS = {
   overview: { id: 'overview', label: 'Overview', icon: Sparkles },
   create: [
-    { id: 'post', label: 'Post', icon: PenSquare },
-    { id: 'reel', label: 'Reel', icon: Film },
-    { id: 'story', label: 'Story', icon: CircleDot },
+    { id: 'compose', label: 'Compose', icon: PenSquare },
   ],
   manage: [
     { id: 'calendar', label: 'Calendar', icon: Calendar },
     { id: 'posts', label: 'Posts', icon: FileText },
     { id: 'inbox', label: 'Inbox', icon: MessageSquare },
+    { id: 'brand-mentions', label: 'Mentions', icon: Radio },
     { id: 'analytics', label: 'Analytics', icon: BarChart3 },
     { id: 'library', label: 'Library', icon: Library },
   ],
@@ -70,12 +72,11 @@ const NAV_ITEMS = {
 // Keyboard shortcuts
 const SHORTCUTS = {
   'o': 'overview',
-  'n': 'post',
-  'r': 'reel',
-  't': 'story',
+  'n': 'compose',
   'c': 'calendar',
   'p': 'posts',
   'i': 'inbox',
+  'm': 'brand-mentions',
   'a': 'analytics',
   'l': 'library',
   's': 'settings',
@@ -252,29 +253,12 @@ export function Broadcast({ onNavigate }) {
             }}
           />
         );
+      case 'compose':
       case 'post':
-        return (
-          <PostComposerPage
-            editPost={editingPost}
-            defaults={composerDefaults}
-            onComplete={handleComposerComplete}
-            onCancel={handleComposerCancel}
-            connections={connections}
-          />
-        );
       case 'reel':
-        return (
-          <ReelComposer
-            editPost={editingPost}
-            defaults={composerDefaults}
-            onComplete={handleComposerComplete}
-            onCancel={handleComposerCancel}
-            connections={connections}
-          />
-        );
       case 'story':
         return (
-          <StoryComposer
+          <UnifiedComposer
             editPost={editingPost}
             defaults={composerDefaults}
             onComplete={handleComposerComplete}
@@ -302,6 +286,8 @@ export function Broadcast({ onNavigate }) {
         );
       case 'inbox':
         return <UnifiedInbox />;
+      case 'brand-mentions':
+        return <BrandMentions />;
       case 'analytics':
         return (
           <div className="p-6">

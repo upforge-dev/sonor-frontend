@@ -217,7 +217,7 @@ export default function SEOTechnicalAudit({
   const { refetch: refetchCwv } = useCwvSummary(projectId, { enabled: false })
 
   // Pull seo_pages from API when parent didn't pass any (e.g. site-kit already posted pages)
-  const { data: pagesFromApi, isLoading: pagesLoading } = useSeoPages(projectId, { limit: 500 })
+  const { data: pagesFromApi, isLoading: pagesLoading } = useSeoPages(projectId, { limit: 2000 })
 
   const [activeTab, setActiveTab] = useState<string>('overview')
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false)
@@ -540,6 +540,10 @@ export default function SEOTechnicalAudit({
             <Link2 className="h-4 w-4" />
             Internal Links
           </TabsTrigger>
+          <TabsTrigger value="content" className="gap-2">
+            <FileCode className="h-4 w-4" />
+            Content
+          </TabsTrigger>
         </TabsList>
 
         {/* Overview Tab */}
@@ -652,6 +656,11 @@ export default function SEOTechnicalAudit({
         {/* Internal Links Tab */}
         <TabsContent value="links" className="space-y-4">
           <InternalLinksSection data={auditData?.internalLinks} pages={pageList} />
+        </TabsContent>
+
+        {/* Content Tab */}
+        <TabsContent value="content" className="space-y-4">
+          <ContentAnalysisSection data={auditData?.content} totalPages={pageList.length} />
         </TabsContent>
       </Tabs>
     </div>
@@ -1029,6 +1038,91 @@ function IndexingSummaryCard({ data }: IndexingSummaryCardProps) {
           </Button>
         </CardContent>
       </Card>
+    </div>
+  )
+}
+
+function ContentAnalysisSection({ data, totalPages }: { data: AuditData['content'] | undefined; totalPages: number }) {
+  if (!data) return null
+
+  const sections = [
+    { label: 'Missing Titles', items: data.missingTitles, icon: AlertTriangle, color: 'red' },
+    { label: 'Missing Meta Descriptions', items: data.missingDescriptions, icon: AlertTriangle, color: 'amber' },
+    { label: 'Missing H1 Tags', items: data.missingH1, icon: AlertCircle, color: 'amber' },
+    { label: 'Thin Content (< 300 words)', items: data.thinContent, icon: FileX, color: 'amber' },
+  ]
+
+  return (
+    <div className="space-y-4">
+      {/* Summary cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {sections.map(({ label, items, icon: Icon, color }) => (
+          <Card key={label} className={items.length > 0 ? `border-${color}-500/30` : ''}>
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className={`p-2 rounded-lg ${items.length > 0 ? `bg-${color}-500/20` : 'bg-green-500/20'}`}>
+                  {items.length > 0
+                    ? <Icon className={`h-5 w-5 text-${color}-400`} />
+                    : <CheckCircle className="h-5 w-5 text-green-400" />}
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-foreground">{items.length}</p>
+                  <p className="text-xs text-muted-foreground">{label}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Duplicate titles */}
+      {data.duplicateTitles > 0 && (
+        <Card className="border-amber-500/30">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2 text-amber-400">
+              <AlertCircle className="h-5 w-5" />
+              {data.duplicateTitles} Duplicate Title{data.duplicateTitles !== 1 ? 's' : ''}
+            </CardTitle>
+            <CardDescription>Pages sharing the same title tag reduce SEO distinctiveness</CardDescription>
+          </CardHeader>
+        </Card>
+      )}
+
+      {/* Issue lists */}
+      {sections.filter(s => s.items.length > 0).map(({ label, items }) => (
+        <Card key={label}>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">{label}</CardTitle>
+            <CardDescription>{items.length} of {totalPages} pages affected</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2 max-h-64 overflow-y-auto">
+              {items.slice(0, 20).map((page: any, i: number) => (
+                <div key={page.id || i} className="flex items-center justify-between p-2 bg-muted/30 rounded">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-foreground truncate">{page.title || page.path || page.url}</p>
+                    <p className="text-xs text-muted-foreground truncate">{page.path || page.url}</p>
+                  </div>
+                </div>
+              ))}
+              {items.length > 20 && (
+                <p className="text-sm text-muted-foreground text-center pt-2">+{items.length - 20} more</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+
+      {/* All passed */}
+      {sections.every(s => s.items.length === 0) && data.duplicateTitles === 0 && (
+        <Card className="border-green-500/30">
+          <CardContent className="py-8 text-center">
+            <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-3" />
+            <h3 className="text-lg font-semibold text-foreground">Content Health: Excellent</h3>
+            <p className="text-muted-foreground mt-1">All pages have titles, descriptions, H1 tags, and sufficient content.</p>
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }

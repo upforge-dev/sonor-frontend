@@ -1620,6 +1620,13 @@ export const seoApi = {
   // ==================== TOPIC CLUSTERS ====================
   getTopicClusters: (projectId) =>
     sonorApi.get(`/seo/projects/${projectId}/topic-clusters`),
+
+  // Writing Guidelines
+  getWritingGuidelines: (projectId) =>
+    sonorApi.get(`/seo/projects/${projectId}/writing-guidelines`).then(res => res.data),
+
+  updateWritingGuidelines: (projectId, data) =>
+    sonorApi.put(`/seo/projects/${projectId}/writing-guidelines`, data).then(res => res.data),
   
   generateTopicClusters: (projectId, data = {}) =>
     sonorApi.post(`/seo/projects/${projectId}/topic-clusters`, data),
@@ -2791,6 +2798,42 @@ export const blogApi = {
   // Post Analytics
   getPostAnalytics: (postId) =>
     sonorApi.get(`/blog/posts/${postId}/analytics`).then(res => res.data),
+
+  // ── Topic Clusters ──────────────────────────────────────────────────────
+  listClusters: (params = {}) =>
+    sonorApi.get('/blog/clusters', { params }).then(res => res.data),
+
+  getCluster: (id) =>
+    sonorApi.get(`/blog/clusters/${id}`).then(res => res.data),
+
+  createCluster: (data) =>
+    sonorApi.post('/blog/clusters', data).then(res => res.data),
+
+  updateCluster: (id, data) =>
+    sonorApi.put(`/blog/clusters/${id}`, data).then(res => res.data),
+
+  deleteCluster: (id) =>
+    sonorApi.delete(`/blog/clusters/${id}`).then(res => res.data),
+
+  assignPostToCluster: (clusterId, data) =>
+    sonorApi.post(`/blog/clusters/${clusterId}/assign-post`, data).then(res => res.data),
+
+  removePostFromCluster: (clusterId, postId) =>
+    sonorApi.delete(`/blog/clusters/${clusterId}/posts/${postId}`).then(res => res.data),
+
+  // Cluster Generation (Plan → Approve → Generate)
+  planCluster: (data) =>
+    sonorApi.post('/blog/clusters/generate/plan', data).then(res => res.data),
+
+  generateClusterFromPlan: (data) =>
+    sonorApi.post('/blog/clusters/generate/execute', data).then(res => res.data),
+
+  getClusterGenerationJob: (jobId) =>
+    sonorApi.get(`/blog/clusters/generate/jobs/${jobId}`).then(res => res.data),
+
+  // Cluster Scheduling
+  scheduleCluster: (clusterId, data) =>
+    sonorApi.post(`/blog/clusters/${clusterId}/schedule`, data).then(res => res.data),
 }
 
 // ============================================================================

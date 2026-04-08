@@ -6,6 +6,7 @@ import { useSeoHeatmap, useSeoLocalGrids, useSeoHeatMapData, seoLocalKeys } from
 import { seoApi } from '@/lib/sonor-api'
 import { useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase-auth'
+import { ensureGoogleMapsBootstrap } from '@/lib/google-maps-bootstrap'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -77,55 +78,53 @@ export default function LocalSeoHeatMap({ projectId }) {
   const rank = (d) => d?.ranking_position ?? d?.position ?? null
   const heatMapList = Array.isArray(heatMapData) ? heatMapData : []
 
-  // Load Google Maps script with API key from backend
+  // Load Google Maps once per app (deduped; see google-maps-bootstrap.js — Strict Mode safe)
   useEffect(() => {
-    if (window.google?.maps) {
+    if (window.google?.maps?.Map) {
       setGoogleMapsLoaded(true)
       return
     }
 
+    let cancelled = false
+
     const loadGoogleMaps = async () => {
       try {
-        // Get Supabase session token
         const { data: { session } } = await supabase.auth.getSession()
         if (!session?.access_token) {
           console.error('No auth session available')
           return
         }
 
-        // Fetch API key from backend (more secure than env var)
         const apiUrl = (import.meta.env.VITE_SONOR_API_URL || import.meta.env.VITE_PORTAL_API_URL) || 'https://api.sonor.io'
         const response = await fetch(`${apiUrl}/seo/config/maps-api-key`, {
           headers: {
-            'Authorization': `Bearer ${session.access_token}`
-          }
+            Authorization: `Bearer ${session.access_token}`,
+          },
         })
-        
+
         if (!response.ok) {
           console.warn('Maps API key not available, heat map will be disabled')
           return
         }
-        
+
         const { api_key } = await response.json()
-        
+
         if (!api_key) {
           console.warn('Google Maps API key not configured, heat map will use fallback view')
           return
         }
-        
-        const script = document.createElement('script')
-        script.src = `https://maps.googleapis.com/maps/api/js?key=${api_key}&libraries=visualization`
-        script.async = true
-        script.defer = true
-        script.onload = () => setGoogleMapsLoaded(true)
-        script.onerror = () => console.error('Failed to load Google Maps')
-        document.head.appendChild(script)
+
+        const ok = await ensureGoogleMapsBootstrap(api_key)
+        if (!cancelled && ok) setGoogleMapsLoaded(true)
       } catch (error) {
         console.warn('Error loading Google Maps:', error)
       }
     }
 
     loadGoogleMaps()
+    return () => {
+      cancelled = true
+    }
   }, [])
 
   // Grids are now auto-fetched by React Query useSeoLocalGrids hook

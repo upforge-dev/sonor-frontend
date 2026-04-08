@@ -7,6 +7,7 @@ declare global {
   interface Window {
     google?: {
       maps?: {
+        importLibrary?: (name: string) => Promise<unknown>
         places?: { Autocomplete: new (el: HTMLInputElement, opts: object) => PlacesAutocomplete }
         event?: { clearInstanceListeners: (instance: PlacesAutocomplete) => void }
       }
@@ -21,8 +22,7 @@ import { useRef, useEffect, useState, type ComponentPropsWithoutRef } from 'reac
 import { MapPin } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import portalApi from '@/lib/sonor-api'
-
-const SCRIPT_URL = 'https://maps.googleapis.com/maps/api/js'
+import { ensureGoogleMapsBootstrap, importGoogleMapsLibrary } from '@/lib/google-maps-bootstrap'
 
 function getApiKey(): Promise<string> {
   const env =
@@ -35,33 +35,6 @@ function getApiKey(): Promise<string> {
     .get('/seo/config/maps-api-key')
     .then((r) => r.data?.api_key || '')
     .catch(() => '')
-}
-
-type GoogleMapsNs = NonNullable<typeof window.google>['maps']
-
-const scriptLoadByKey = new Map<string, Promise<GoogleMapsNs | null>>()
-function loadGoogleMapsScript(apiKey: string) {
-  if (typeof window === 'undefined' || !apiKey) return Promise.resolve(null)
-  if (window.google?.maps?.places) return Promise.resolve(window.google.maps)
-  const cached = scriptLoadByKey.get(apiKey)
-  if (cached) return cached
-  const promise = new Promise<GoogleMapsNs | null>((resolve) => {
-    const existing = document.querySelector(`script[src^="${SCRIPT_URL}"]`)
-    if (existing) {
-      if (window.google?.maps?.places) return resolve(window.google.maps)
-      existing.addEventListener('load', () => resolve(window.google?.maps || null))
-      return
-    }
-    const script = document.createElement('script')
-    script.src = `${SCRIPT_URL}?key=${apiKey}&libraries=places`
-    script.async = true
-    script.defer = true
-    script.onload = () => resolve(window.google?.maps || null)
-    script.onerror = () => resolve(null)
-    document.head.appendChild(script)
-  })
-  scriptLoadByKey.set(apiKey, promise)
-  return promise
 }
 
 export type LocationInputProps = Omit<
@@ -84,12 +57,21 @@ export function LocationInput({
   const [scriptReady, setScriptReady] = useState(false)
 
   useEffect(() => {
-    getApiKey().then((key) => {
-      if (!key) return
-      loadGoogleMapsScript(key).then((googleMaps) => {
-        setScriptReady(!!googleMaps?.places)
-      })
+    let cancelled = false
+    getApiKey().then(async (key) => {
+      if (!key || cancelled) return
+      const ok = await ensureGoogleMapsBootstrap(key)
+      if (!ok || cancelled) return
+      try {
+        await importGoogleMapsLibrary('places')
+      } catch {
+        /* Places library unavailable */
+      }
+      if (!cancelled) setScriptReady(!!window.google?.maps?.places)
     })
+    return () => {
+      cancelled = true
+    }
   }, [])
 
   useEffect(() => {

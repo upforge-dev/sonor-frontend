@@ -383,7 +383,7 @@ export default function SEODashboard({ onNavigate }: SEODashboardProps) {
                   </Button>
                 </>
               )}
-              <Button variant="outline" className="w-full justify-start" onClick={() => handleNavigate('/seo/pages')}><FileText className="h-4 w-4 mr-2" />View All Pages<Badge variant="secondary" className="ml-auto text-xs">{pages.length}</Badge></Button>
+              <Button variant="outline" className="w-full justify-start" onClick={() => handleNavigate('/seo/pages')}><FileText className="h-4 w-4 mr-2" />View All Pages<Badge variant="secondary" className="ml-auto text-xs">{pagesData?.total ?? pages.length}</Badge></Button>
               {openOpportunities.length > 0 && <Button variant="outline" className="w-full justify-start border-primary/30 hover:bg-primary/10" onClick={() => handleNavigate('/seo/pages')}><Target className="h-4 w-4 mr-2 text-primary" />Review Opportunities<Badge className="ml-auto bg-primary/20 text-primary text-xs">{openOpportunities.length}</Badge></Button>}
             </div>
           </GlassCard>
@@ -395,11 +395,11 @@ export default function SEODashboard({ onNavigate }: SEODashboardProps) {
               </div>
               {gscHealthData && (
                 <Badge variant="outline" className={cn("text-xs",
-                  (gscHealthData.coveragePercent ?? 0) >= 90 ? "border-green-500/30 text-green-500" :
-                  (gscHealthData.coveragePercent ?? 0) >= 70 ? "border-amber-500/30 text-amber-500" :
+                  (gscHealthData.coverage?.coverageRate ?? 0) >= 90 ? "border-green-500/30 text-green-500" :
+                  (gscHealthData.coverage?.coverageRate ?? 0) >= 70 ? "border-amber-500/30 text-amber-500" :
                   "border-red-500/30 text-red-500"
                 )}>
-                  {Math.round(gscHealthData.coveragePercent ?? 0)}% indexed
+                  {Math.round(gscHealthData.coverage?.coverageRate ?? 0)}% indexed
                 </Badge>
               )}
             </div>
@@ -407,7 +407,7 @@ export default function SEODashboard({ onNavigate }: SEODashboardProps) {
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>Total Pages</span>
-                  <span className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>{gscHealthData?.totalPages ?? pages.length}</span>
+                  <span className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>{gscHealthData?.coverage?.totalCanonical ?? pagesData?.total ?? pages.length}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
@@ -415,7 +415,7 @@ export default function SEODashboard({ onNavigate }: SEODashboardProps) {
                     <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>Indexed</span>
                   </div>
                   <span className="text-sm font-medium text-green-500">
-                    {gscHealthData?.indexedPages ?? currentProject?.pages_indexed ?? pages.filter((p: any) => p.index_status === 'indexed' || p.indexing_verdict === 'PASS' || p.is_indexed).length}
+                    {gscHealthData?.coverage?.indexed ?? currentProject?.pages_indexed ?? pages.filter((p: any) => p.index_status === 'indexed' || p.indexing_verdict === 'PASS' || p.is_indexed).length}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
@@ -424,7 +424,7 @@ export default function SEODashboard({ onNavigate }: SEODashboardProps) {
                     <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>Not Indexed</span>
                   </div>
                   <span className="text-sm font-medium text-red-500">
-                    {gscHealthData?.notIndexedPages ?? currentProject?.pages_not_indexed ?? pages.filter((p: any) => !(p.index_status === 'indexed' || p.indexing_verdict === 'PASS' || p.is_indexed)).length}
+                    {gscHealthData?.coverage?.notIndexed ?? currentProject?.pages_not_indexed ?? pages.filter((p: any) => !(p.index_status === 'indexed' || p.indexing_verdict === 'PASS' || p.is_indexed)).length}
                   </span>
                 </div>
                 {gscHealthData?.issues?.length > 0 && (
@@ -435,14 +435,14 @@ export default function SEODashboard({ onNavigate }: SEODashboardProps) {
                     </span>
                   </div>
                 )}
-                {gscHealthData?.coveragePercent != null && (
+                {gscHealthData?.coverage?.coverageRate != null && (
                   <div className="pt-1">
                     <div className="h-1.5 w-full rounded-full overflow-hidden" style={{ backgroundColor: 'var(--glass-bg)' }}>
                       <div
                         className="h-full rounded-full transition-all duration-500"
                         style={{
-                          width: `${Math.min(100, gscHealthData.coveragePercent)}%`,
-                          backgroundColor: gscHealthData.coveragePercent >= 90 ? '#22c55e' : gscHealthData.coveragePercent >= 70 ? '#f59e0b' : '#ef4444'
+                          width: `${Math.min(100, gscHealthData.coverage.coverageRate)}%`,
+                          backgroundColor: gscHealthData.coverage.coverageRate >= 90 ? '#22c55e' : gscHealthData.coverage.coverageRate >= 70 ? '#f59e0b' : '#ef4444'
                         }}
                       />
                     </div>

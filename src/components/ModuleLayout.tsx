@@ -634,18 +634,20 @@ function ModuleHeader({ title, subtitle, breadcrumbs = [], actions, icon, classN
                   {breadcrumbs.map((item, i) => {
                     const isLast = i === breadcrumbs.length - 1
                     return (
-                      <BreadcrumbItem key={i} className="">
-                        {i > 0 && <BreadcrumbSeparator className="" children={undefined} />}
-                        {item.href != null ? (
-                          <BreadcrumbLink asChild className="text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
-                            <Link to={item.href}>{item.label}</Link>
-                          </BreadcrumbLink>
-                        ) : (
-                          <BreadcrumbPage className="text-[var(--text-primary)]" aria-current={isLast ? 'page' : undefined}>
-                            {item.label}
-                          </BreadcrumbPage>
-                        )}
-                      </BreadcrumbItem>
+                      <React.Fragment key={i}>
+                        {i > 0 ? <BreadcrumbSeparator /> : null}
+                        <BreadcrumbItem>
+                          {item.href != null ? (
+                            <BreadcrumbLink asChild className="text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
+                              <Link to={item.href}>{item.label}</Link>
+                            </BreadcrumbLink>
+                          ) : (
+                            <BreadcrumbPage className="text-[var(--text-primary)]" aria-current={isLast ? 'page' : undefined}>
+                              {item.label}
+                            </BreadcrumbPage>
+                          )}
+                        </BreadcrumbItem>
+                      </React.Fragment>
                     )
                   })}
                 </BreadcrumbList>

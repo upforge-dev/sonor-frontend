@@ -77,7 +77,7 @@ export default function SEOModule() {
   const { data: currentProject } = useSeoProject(orgId, projectId)
   
   // Fetch all pages for bulk optimization (sorted parent/children by path)
-  const { data: pagesData } = useSeoPages(projectId, { limit: 500 })
+  const { data: pagesData } = useSeoPages(projectId, { limit: 2000 })
   const rawPages = pagesData?.pages ?? pagesData?.data ?? []
   const allPages: SeoPage[] = (Array.isArray(rawPages) ? rawPages : []).slice().sort((a, b) => {
     const pathA = a.path || (a.url ? new URL(a.url, 'https://x').pathname : '') || ''
