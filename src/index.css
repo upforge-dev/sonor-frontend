@@ -287,6 +287,17 @@ h1, h2, h3, h4, h5, h6 {
   stroke: #ffffff !important;
 }
 
+/*
+ * Muted text with opacity modifiers inside dark chrome — plain CSS avoids Lightning CSS
+ * choking on Tailwind arbitrary variants like dark:[&_.text-muted-foreground\\/30]:…
+ */
+.dark .sonor-sidebar-chrome .text-muted-foreground\/30,
+.dark .sonor-sidebar-chrome .text-muted-foreground\/50,
+.dark .sonor-top-header-dark .text-muted-foreground\/30,
+.dark .sonor-top-header-dark .text-muted-foreground\/50 {
+  color: #71717a !important; /* zinc-500 */
+}
+
 /* ------------------------------------------------
    GLASS UTILITIES - Ultra Glassmorphism
    ------------------------------------------------ */

@@ -311,7 +311,7 @@ const MainLayout = () => {
               onClick={() => setIsMobileSidebarOpen(false)}
             />
             <aside
-              className="lg:hidden fixed inset-y-0 left-0 z-[101] w-64 overflow-y-auto border-r border-border/50 bg-background text-foreground shadow-xl [backdrop-filter:none] [-webkit-backdrop-filter:none] dark:bg-black dark:text-white dark:[&_.text-muted-foreground]:!text-zinc-400 dark:[&_.text-muted-foreground\\/50]:!text-zinc-500 dark:[&_.text-muted-foreground\\/30]:!text-zinc-500 dark:[&_.text-foreground]:!text-white"
+              className="sonor-sidebar-chrome lg:hidden fixed inset-y-0 left-0 z-[101] w-64 overflow-y-auto border-r border-border/50 bg-background text-foreground shadow-xl [backdrop-filter:none] [-webkit-backdrop-filter:none] dark:bg-black dark:text-white dark:[&_.text-muted-foreground]:!text-zinc-400 dark:[&_.text-foreground]:!text-white"
               role="navigation"
               aria-label="Main navigation"
             >

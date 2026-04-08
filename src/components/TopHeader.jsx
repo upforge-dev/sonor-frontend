@@ -573,7 +573,7 @@ export default function TopHeader({ onNavigate, onOpenSearch, className }) {
     <TooltipProvider>
       <header
         className={cn(
-          'relative z-[60] flex h-12 items-center justify-between border-b border-border/50 bg-background text-foreground dark:bg-black dark:text-white dark:[&_.text-muted-foreground]:!text-zinc-400 dark:[&_.text-muted-foreground\\/50]:!text-zinc-500 dark:[&_.text-muted-foreground\\/30]:!text-zinc-500 dark:[&_.text-foreground]:!text-white [backdrop-filter:none] [-webkit-backdrop-filter:none]',
+          'sonor-top-header-dark relative z-[60] flex h-12 items-center justify-between border-b border-border/50 bg-background text-foreground dark:bg-black dark:text-white dark:[&_.text-muted-foreground]:!text-zinc-400 dark:[&_.text-foreground]:!text-white [backdrop-filter:none] [-webkit-backdrop-filter:none]',
           className
         )}
         role="banner"

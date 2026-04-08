@@ -372,7 +372,6 @@ export default function ProspectSelector({
             onFocus={() => { setOpen(true); loadData() }}
             onKeyDown={handleKeyDown}
             placeholder={placeholder}
-            autoComplete="off"
             className={cn(
               'w-full h-10 pl-9 pr-3 rounded-lg border text-sm outline-none transition-colors',
               'glass-bg border-[var(--glass-border)] text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)]',

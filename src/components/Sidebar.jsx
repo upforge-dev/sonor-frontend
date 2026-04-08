@@ -59,7 +59,7 @@ import { getStaggerListVariants } from '@/lib/animation-variants'
 
 /** Dark chrome + hook class for index.css hover (ghost/tw-merge otherwise keeps labels grey on hover). */
 const SIDEBAR_DARK_CHROME =
-  'sonor-sidebar-chrome dark:bg-black dark:text-white dark:[&_.text-muted-foreground]:!text-zinc-400 dark:[&_.text-muted-foreground\\/50]:!text-zinc-500 dark:[&_.text-muted-foreground\\/30]:!text-zinc-500 dark:[&_.text-foreground]:!text-white'
+  'sonor-sidebar-chrome dark:bg-black dark:text-white dark:[&_.text-muted-foreground]:!text-zinc-400 dark:[&_.text-foreground]:!text-white'
 
 // Custom Signal icon based on signalicon.svg design - uses currentColor like lucide icons
 const SignalIcon = ({ className }) => (
