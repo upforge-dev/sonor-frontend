@@ -36,7 +36,8 @@ import {
   FileX,
   CheckCircle2,
   AlertCircle,
-  ChevronRight
+  ChevronRight,
+  Info
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { UptradeSpinner } from '@/components/UptradeLoading'
@@ -255,19 +256,25 @@ export default function SEOTechnicalAudit({
     const errorPages = pageList.filter(p => p.http_status && p.http_status >= 400)
     const redirectPages = pageList.filter(p => p.http_status && p.http_status >= 300 && p.http_status < 400)
 
-    // Content Analysis
+    // Content Analysis — only flag pages that have been crawled (last_crawled_at set).
+    // Pages with no crawl data have NULL for meta_description/h1/word_count — that's
+    // "not yet scraped," not "missing." Flagging uncrawled pages as missing is a false positive.
+    const crawledPages = pageList.filter(p => p.last_crawled_at || p.word_count || p.h1 || p.meta_description)
+    const uncrawledCount = pageList.length - crawledPages.length
     const missingTitles = pageList.filter(p => !p.title || p.title.trim() === '')
-    const missingDescriptions = pageList.filter(p => !p.meta_description || p.meta_description.trim() === '')
-    const missingH1 = pageList.filter(p => !p.h1)
+    const missingDescriptions = crawledPages.filter(p => !p.meta_description || p.meta_description.trim() === '')
+    const missingH1 = crawledPages.filter(p => !p.h1)
     const duplicateTitles = findDuplicates(pageList.map(p => p.title).filter(Boolean) as string[])
-    const thinContent = pageList.filter(p => p.word_count && p.word_count < 300)
+    const thinContent = crawledPages.filter(p => p.word_count != null && p.word_count < 300)
 
     // Schema Analysis
     const pagesWithSchema = pageList.filter(p => p.has_schema || p.schema_types?.length > 0)
     const schemaTypes = [...new Set(pageList.flatMap(p => p.schema_types || []))]
 
-    // Internal Linking Analysis
-    const orphanPages = pageList.filter(p => (p.internal_links_in || 0) === 0)
+    // Internal Linking Analysis — only flag as orphans if we have link graph data
+    // (internal_links_in stays 0 until the link graph is populated via analytics page views)
+    const hasLinkData = pageList.some(p => (p.internal_links_in || 0) > 0)
+    const orphanPages = hasLinkData ? pageList.filter(p => (p.internal_links_in || 0) === 0) : []
     const avgInternalLinks = pageList.length > 0
       ? pageList.reduce((sum, p) => sum + (p.internal_links_in || 0), 0) / pageList.length
       : 0
@@ -309,6 +316,9 @@ export default function SEOTechnicalAudit({
       score -= Math.min(10, orphanPages.length)
       warnings.push({ type: 'orphan', message: `${orphanPages.length} orphan pages (no internal links)`, count: orphanPages.length })
     }
+    if (uncrawledCount > pageList.length * 0.5) {
+      warnings.push({ type: 'description' as any, message: `${uncrawledCount} pages not yet analyzed — visit them or run a build-time sync to populate SEO data`, count: uncrawledCount })
+    }
     if (duplicateTitles > 0) {
       score -= duplicateTitles * 2
       warnings.push({ type: 'duplicate', message: `${duplicateTitles} duplicate page titles`, count: duplicateTitles })
@@ -347,7 +357,9 @@ export default function SEOTechnicalAudit({
         missingDescriptions,
         missingH1,
         duplicateTitles,
-        thinContent
+        thinContent,
+        crawledCount: crawledPages.length,
+        uncrawledCount,
       },
       schema: {
         pagesWithSchema: pagesWithSchema.length,
@@ -1045,15 +1057,28 @@ function IndexingSummaryCard({ data }: IndexingSummaryCardProps) {
 function ContentAnalysisSection({ data, totalPages }: { data: AuditData['content'] | undefined; totalPages: number }) {
   if (!data) return null
 
+  const crawledCount = (data as any).crawledCount || totalPages
+  const uncrawledCount = (data as any).uncrawledCount || 0
+
   const sections = [
-    { label: 'Missing Titles', items: data.missingTitles, icon: AlertTriangle, color: 'red' },
-    { label: 'Missing Meta Descriptions', items: data.missingDescriptions, icon: AlertTriangle, color: 'amber' },
-    { label: 'Missing H1 Tags', items: data.missingH1, icon: AlertCircle, color: 'amber' },
-    { label: 'Thin Content (< 300 words)', items: data.thinContent, icon: FileX, color: 'amber' },
+    { label: 'Missing Titles', items: data.missingTitles, icon: AlertTriangle, color: 'red', denominator: totalPages },
+    { label: 'Missing Meta Descriptions', items: data.missingDescriptions, icon: AlertTriangle, color: 'amber', denominator: crawledCount },
+    { label: 'Missing H1 Tags', items: data.missingH1, icon: AlertCircle, color: 'amber', denominator: crawledCount },
+    { label: 'Thin Content (< 300 words)', items: data.thinContent, icon: FileX, color: 'amber', denominator: crawledCount },
   ]
 
   return (
     <div className="space-y-4">
+      {/* Info: uncrawled pages */}
+      {uncrawledCount > 0 && (
+        <div className="flex items-start gap-3 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg text-sm">
+          <Info className="h-4 w-4 text-blue-400 mt-0.5 flex-shrink-0" />
+          <span className="text-zinc-300">
+            {uncrawledCount} of {totalPages} pages haven't been analyzed yet. Content checks below only cover the {crawledCount} pages with data. Pages are analyzed automatically when visitors browse the site.
+          </span>
+        </div>
+      )}
+
       {/* Summary cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {sections.map(({ label, items, icon: Icon, color }) => (
@@ -1089,11 +1114,11 @@ function ContentAnalysisSection({ data, totalPages }: { data: AuditData['content
       )}
 
       {/* Issue lists */}
-      {sections.filter(s => s.items.length > 0).map(({ label, items }) => (
+      {sections.filter(s => s.items.length > 0).map(({ label, items, denominator }) => (
         <Card key={label}>
           <CardHeader className="pb-3">
             <CardTitle className="text-base">{label}</CardTitle>
-            <CardDescription>{items.length} of {totalPages} pages affected</CardDescription>
+            <CardDescription>{items.length} of {denominator} {denominator < totalPages ? 'analyzed' : ''} pages affected</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-2 max-h-64 overflow-y-auto">
@@ -1130,8 +1155,20 @@ function ContentAnalysisSection({ data, totalPages }: { data: AuditData['content
 function InternalLinksSection({ data, pages = [] }: InternalLinksSectionProps) {
   if (!data) return null
 
+  const hasLinkData = data.orphanPages.length > 0 || Number(data.avgLinks) > 0 || data.wellLinked > 0
+
   return (
     <div className="space-y-4">
+      {/* No link data warning */}
+      {!hasLinkData && pages.length > 0 && (
+        <div className="flex items-start gap-3 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg text-sm">
+          <Info className="h-4 w-4 text-blue-400 mt-0.5 flex-shrink-0" />
+          <span className="text-zinc-300">
+            Internal link data hasn't been collected yet. Links are tracked automatically as visitors browse the site. Check back after the site has received some traffic.
+          </span>
+        </div>
+      )}
+
       {/* Overview */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>

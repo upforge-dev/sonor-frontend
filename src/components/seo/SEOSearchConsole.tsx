@@ -701,15 +701,31 @@ export default function SEOSearchConsole({ projectId }: SEOSearchConsoleProps) {
               {autoFixResults.actions?.length > 0 && (
                 <div className="space-y-1.5 max-h-[200px] overflow-y-auto">
                   {autoFixResults.actions.map((action, idx) => (
-                    <div key={idx} className="flex items-start gap-2 text-xs p-1.5 rounded hover:bg-muted/30">
-                      {action.status === 'success' ? (
-                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 mt-0.5 shrink-0" />
-                      ) : action.status === 'error' ? (
-                        <XCircle className="h-3.5 w-3.5 text-red-500 mt-0.5 shrink-0" />
-                      ) : (
-                        <AlertTriangle className="h-3.5 w-3.5 text-amber-500 mt-0.5 shrink-0" />
+                    <div key={idx} className="text-xs p-1.5 rounded hover:bg-muted/30">
+                      <div className="flex items-start gap-2">
+                        {action.status === 'success' ? (
+                          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 mt-0.5 shrink-0" />
+                        ) : action.status === 'error' ? (
+                          <XCircle className="h-3.5 w-3.5 text-red-500 mt-0.5 shrink-0" />
+                        ) : (
+                          <AlertTriangle className="h-3.5 w-3.5 text-amber-500 mt-0.5 shrink-0" />
+                        )}
+                        <span className="text-muted-foreground">{action.description}</span>
+                      </div>
+                      {/* Show affected pages for orphan/weak link actions */}
+                      {action.pages?.length > 0 && (
+                        <div className="ml-5 mt-1 space-y-0.5">
+                          {action.pages.slice(0, 5).map((p: any, i: number) => (
+                            <div key={i} className="text-[11px] text-zinc-500 flex items-center gap-1.5">
+                              <span className="text-zinc-600">{p.internalLinksIn ?? '?'} links</span>
+                              <span className="truncate">{p.path}</span>
+                            </div>
+                          ))}
+                          {action.pages.length > 5 && (
+                            <span className="text-[11px] text-zinc-600">+{action.pages.length - 5} more</span>
+                          )}
+                        </div>
                       )}
-                      <span className="text-muted-foreground">{action.description}</span>
                     </div>
                   ))}
                 </div>
