@@ -3,6 +3,7 @@
 // Shows canonical vs indexed pages, issues, and auto-fix (Signal-powered)
 
 import { useState, useMemo, useCallback } from 'react'
+import { toast } from 'sonner'
 import { useQueryClient } from '@tanstack/react-query'
 import {
   Globe, Search, CheckCircle2, AlertTriangle, XCircle, RefreshCw,
@@ -120,10 +121,18 @@ interface FixStatusProps {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 const ISSUE_TYPES = {
+  uninspected: {
+    label: 'Not Yet Inspected',
+    icon: Search,
+    description: 'Pages that haven\'t been checked with Google yet — click "Inspect All" to scan',
+    color: 'text-zinc-400',
+    bgColor: 'bg-zinc-500/10',
+    borderColor: 'border-l-zinc-500',
+  },
   not_indexed: {
     label: 'Not Indexed',
     icon: Eye,
-    description: 'Pages not yet in Google\'s index',
+    description: 'Pages confirmed not in Google\'s index',
     color: 'text-amber-500',
     bgColor: 'bg-amber-500/10',
     borderColor: 'border-l-amber-500',
@@ -469,16 +478,44 @@ export default function SEOSearchConsole({ projectId }: SEOSearchConsoleProps) {
     try {
       const result = await autoFix.mutateAsync(projectId)
       setAutoFixResults(result as AutoFixResults)
-    } catch (err) {
+      const failed = result?.summary?.actionsFailed || 0
+      const fixed = result?.summary?.actionsExecuted || 0
+      const flagged = result?.summary?.actionsFlagged || 0
+      if (result?.error || failed > 0 && fixed === 0) {
+        toast.error(result?.error || `Auto-fix encountered ${failed} error(s)`)
+      } else {
+        toast.success(`Auto-fix complete: ${fixed} fixed, ${flagged} flagged`)
+      }
+    } catch (err: any) {
       console.error('Auto-fix failed:', err)
+      const msg = err?.response?.data?.data?.error || err?.response?.data?.message || err?.message || 'Unknown error'
+      toast.error(`Auto-fix failed: ${msg}`)
+      // Show error in results card so user sees what happened
+      setAutoFixResults({
+        summary: { totalIssues: 0, actionsExecuted: 0, actionsFailed: 1, actionsFlagged: 0 },
+        actions: [{ type: 'system_error', status: 'error', description: `Request failed: ${msg}` }],
+      } as AutoFixResults)
     }
   }
 
   const handleReconcile = async (): Promise<void> => {
     try {
-      await reconcile.mutateAsync(projectId)
-    } catch (err) {
+      const result = await reconcile.mutateAsync(projectId)
+      const data = result as any
+      const r = data?.reconciliation || {}
+      const gscIndexed = r.gscIndexedFromAnalytics || 0
+      const inspected = r.inspected || 0
+      const submitted = r.submitted || 0
+      const parts = []
+      if (gscIndexed > 0) parts.push(`${gscIndexed} confirmed indexed from GSC`)
+      if (inspected > 0) parts.push(`${inspected} inspected`)
+      if (submitted > 0) parts.push(`${submitted} submitted`)
+      if (r.sitemapPinged) parts.push('sitemap pinged')
+      toast.success(parts.length > 0 ? `Reconciliation: ${parts.join(', ')}` : 'Reconciliation complete — no new data')
+    } catch (err: any) {
       console.error('Reconcile failed:', err)
+      const msg = err?.response?.data?.message || err?.message || 'Unknown error'
+      toast.error(`Reconciliation failed: ${msg}`)
     }
   }
 

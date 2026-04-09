@@ -256,15 +256,20 @@ export default function SEOTechnicalAudit({
     const errorPages = pageList.filter(p => p.http_status && p.http_status >= 400)
     const redirectPages = pageList.filter(p => p.http_status && p.http_status >= 300 && p.http_status < 400)
 
-    // Content Analysis — only flag pages that have been crawled (last_crawled_at set).
-    // Pages with no crawl data have NULL for meta_description/h1/word_count — that's
-    // "not yet scraped," not "missing." Flagging uncrawled pages as missing is a false positive.
-    const crawledPages = pageList.filter(p => p.last_crawled_at || p.word_count || p.h1 || p.meta_description)
+    // Content Analysis — check both live-scraped AND managed (Portal-set) values.
+    // A page has a title if EITHER title or managed_title is set. Same for description/h1.
+    // Only flag pages where BOTH are missing.
+    const hasTitle = (p: any) => (p.title && p.title.trim()) || (p.managed_title && p.managed_title.trim())
+    const hasDescription = (p: any) => (p.meta_description && p.meta_description.trim()) || (p.managed_meta_description && p.managed_meta_description.trim())
+    const hasH1 = (p: any) => p.h1 || p.managed_h1
+    const hasSomeData = (p: any) => p.last_crawled_at || p.word_count || hasH1(p) || hasDescription(p)
+
+    const crawledPages = pageList.filter(hasSomeData)
     const uncrawledCount = pageList.length - crawledPages.length
-    const missingTitles = pageList.filter(p => !p.title || p.title.trim() === '')
-    const missingDescriptions = crawledPages.filter(p => !p.meta_description || p.meta_description.trim() === '')
-    const missingH1 = crawledPages.filter(p => !p.h1)
-    const duplicateTitles = findDuplicates(pageList.map(p => p.title).filter(Boolean) as string[])
+    const missingTitles = pageList.filter(p => !hasTitle(p))
+    const missingDescriptions = crawledPages.filter(p => !hasDescription(p))
+    const missingH1 = crawledPages.filter(p => !hasH1(p))
+    const duplicateTitles = findDuplicates(pageList.map(p => (p.managed_title || p.title)).filter(Boolean) as string[])
     const thinContent = crawledPages.filter(p => p.word_count != null && p.word_count < 300)
 
     // Schema Analysis

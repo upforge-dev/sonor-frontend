@@ -22,7 +22,10 @@ import {
   Search,
   Target,
   Star,
-  AlertTriangle
+  AlertTriangle,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown
 } from 'lucide-react'
 
 export default function SEOKeywordTracking({ projectId }) {
@@ -40,6 +43,18 @@ export default function SEOKeywordTracking({ projectId }) {
   
   const [newKeyword, setNewKeyword] = useState('')
   const [filter, setFilter] = useState('all')
+  const [sortBy, setSortBy] = useState('impressions') // impressions | position | clicks | change | keyword
+  const [sortDir, setSortDir] = useState('desc') // asc | desc
+
+  const toggleSort = (col) => {
+    if (sortBy === col) {
+      setSortDir(d => d === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortBy(col)
+      // Smart defaults: keyword asc, everything else desc
+      setSortDir(col === 'keyword' ? 'asc' : 'desc')
+    }
+  }
 
   const handleRefresh = () => {
     refreshRankingsMutation.mutate(projectId)
@@ -58,8 +73,10 @@ export default function SEOKeywordTracking({ projectId }) {
   }
 
   const getPositionChange = (keyword) => {
-    const change = (keyword.previous_position || keyword.current_position) - keyword.current_position
-    return change
+    const current = keyword.avg_position_28d || keyword.current_position
+    const previous = keyword.avg_position_prev_28d || keyword.previous_position || current
+    // Lower position number = better, so positive change = improvement
+    return previous - current
   }
 
   const getTrendIcon = (change) => {
@@ -79,14 +96,27 @@ export default function SEOKeywordTracking({ projectId }) {
   // Ensure trackedKeywords is always an array
   const keywordsArray = Array.isArray(trackedKeywords) ? trackedKeywords : []
   
-  const filteredKeywords = keywordsArray.filter(kw => {
-    if (filter === 'all') return true
-    if (filter === 'top10') return kw.current_position && kw.current_position <= 10
-    if (filter === 'striking') return kw.current_position > 10 && kw.current_position <= 20
-    if (filter === 'improving') return getPositionChange(kw) > 0
-    if (filter === 'declining') return getPositionChange(kw) < 0
-    return true
-  })
+  const filteredKeywords = keywordsArray
+    .filter(kw => {
+      const pos = kw.avg_position_28d || kw.current_position
+      if (filter === 'all') return true
+      if (filter === 'top10') return pos && pos <= 10
+      if (filter === 'striking') return pos > 10 && pos <= 20
+      if (filter === 'improving') return getPositionChange(kw) > 0
+      if (filter === 'declining') return getPositionChange(kw) < 0
+      return true
+    })
+    .sort((a, b) => {
+      const dir = sortDir === 'asc' ? 1 : -1
+      switch (sortBy) {
+        case 'keyword': return dir * (a.query || '').localeCompare(b.query || '')
+        case 'position': return dir * ((a.avg_position_28d || 999) - (b.avg_position_28d || 999))
+        case 'change': return dir * (getPositionChange(a) - getPositionChange(b))
+        case 'clicks': return dir * ((a.clicks_28d || 0) - (b.clicks_28d || 0))
+        case 'impressions': return dir * ((a.impressions_28d || 0) - (b.impressions_28d || 0))
+        default: return 0
+      }
+    })
 
   return (
     <div className="space-y-6" data-sonor-help="seo/keywords">
@@ -128,23 +158,23 @@ export default function SEOKeywordTracking({ projectId }) {
             </CardContent>
           </Card>
 
-          <Card className="bg-green-50 border-green-200">
+          <Card className="border-green-500/20">
             <CardContent className="pt-6 text-center">
-              <Star className="h-6 w-6 text-green-600 mx-auto mb-2" />
-              <p className="text-2xl font-bold text-green-600">
+              <Star className="h-6 w-6 text-green-500 mx-auto mb-2" />
+              <p className="text-2xl font-bold text-green-500">
                 {keywordsSummary.top10 || 0}
               </p>
-              <p className="text-sm text-green-600">Top 10</p>
+              <p className="text-sm text-muted-foreground">Top 10</p>
             </CardContent>
           </Card>
 
-          <Card className="bg-yellow-50 border-yellow-200">
+          <Card className="border-amber-500/20">
             <CardContent className="pt-6 text-center">
-              <AlertTriangle className="h-6 w-6 text-yellow-600 mx-auto mb-2" />
-              <p className="text-2xl font-bold text-yellow-600">
+              <AlertTriangle className="h-6 w-6 text-amber-500 mx-auto mb-2" />
+              <p className="text-2xl font-bold text-amber-500">
                 {keywordsSummary.strikingDistance || 0}
               </p>
-              <p className="text-sm text-yellow-600">Striking Distance</p>
+              <p className="text-sm text-muted-foreground">Striking Distance</p>
             </CardContent>
           </Card>
 
@@ -222,50 +252,61 @@ export default function SEOKeywordTracking({ projectId }) {
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {/* Header */}
+              {/* Header — clickable for sorting */}
               <div className="grid grid-cols-12 gap-4 px-3 py-2 bg-muted rounded-lg text-sm font-medium">
-                <div className="col-span-5">Keyword</div>
-                <div className="col-span-2 text-center">Position</div>
-                <div className="col-span-2 text-center">Change</div>
-                <div className="col-span-3 text-center">Metrics</div>
+                <button className="col-span-4 flex items-center gap-1 hover:text-foreground transition-colors text-left" onClick={() => toggleSort('keyword')}>
+                  Keyword {sortBy === 'keyword' ? (sortDir === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : <ArrowUpDown className="h-3 w-3 opacity-30" />}
+                </button>
+                <button className="col-span-2 flex items-center justify-center gap-1 hover:text-foreground transition-colors" onClick={() => toggleSort('position')}>
+                  Position {sortBy === 'position' ? (sortDir === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : <ArrowUpDown className="h-3 w-3 opacity-30" />}
+                </button>
+                <button className="col-span-2 flex items-center justify-center gap-1 hover:text-foreground transition-colors" onClick={() => toggleSort('change')}>
+                  Change {sortBy === 'change' ? (sortDir === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : <ArrowUpDown className="h-3 w-3 opacity-30" />}
+                </button>
+                <button className="col-span-2 flex items-center justify-center gap-1 hover:text-foreground transition-colors" onClick={() => toggleSort('clicks')}>
+                  Clicks {sortBy === 'clicks' ? (sortDir === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : <ArrowUpDown className="h-3 w-3 opacity-30" />}
+                </button>
+                <button className="col-span-2 flex items-center justify-center gap-1 hover:text-foreground transition-colors" onClick={() => toggleSort('impressions')}>
+                  Impr. {sortBy === 'impressions' ? (sortDir === 'asc' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />) : <ArrowUpDown className="h-3 w-3 opacity-30" />}
+                </button>
               </div>
 
               {/* Rows */}
               {filteredKeywords.map((keyword, i) => {
                 const change = getPositionChange(keyword)
                 return (
-                  <div 
+                  <div
                     key={keyword.id || i}
                     className="grid grid-cols-12 gap-4 px-3 py-3 border rounded-lg hover:bg-muted/50 transition-colors items-center"
                   >
-                    <div className="col-span-5">
-                      <p className="font-medium truncate">{keyword.keyword}</p>
-                      {keyword.ranking_url && (
+                    <div className="col-span-4">
+                      <p className="font-medium truncate">{keyword.query || keyword.keyword}</p>
+                      {(keyword.primary_page?.url || keyword.ranking_url) && (
                         <p className="text-xs text-muted-foreground truncate">
-                          {keyword.ranking_url?.replace('https://', '')}
+                          {(keyword.primary_page?.url || keyword.ranking_url)?.replace('https://', '')}
                         </p>
                       )}
                     </div>
                     <div className="col-span-2 text-center">
-                      {getPositionBadge(keyword.current_position)}
+                      {getPositionBadge(keyword.avg_position_28d || keyword.current_position)}
                     </div>
                     <div className="col-span-2 text-center">
                       <div className="flex items-center justify-center gap-1">
                         {getTrendIcon(change)}
                         <span className={`text-sm font-medium ${
-                          change > 0 ? 'text-green-600' : 
-                          change < 0 ? 'text-red-600' : 
-                          'text-gray-500'
+                          change > 0 ? 'text-green-500' :
+                          change < 0 ? 'text-red-500' :
+                          'text-zinc-500'
                         }`}>
-                          {change > 0 ? '+' : ''}{change || 0}
+                          {change > 0 ? '+' : ''}{change ? change.toFixed(1) : '0'}
                         </span>
                       </div>
                     </div>
-                    <div className="col-span-3 text-center text-sm text-muted-foreground">
-                      <div className="flex justify-center gap-4">
-                        <span>{keyword.clicks_28d || 0} clicks</span>
-                        <span>{keyword.impressions_28d || 0} imp</span>
-                      </div>
+                    <div className="col-span-2 text-center text-sm text-muted-foreground">
+                      {keyword.clicks_28d || 0}
+                    </div>
+                    <div className="col-span-2 text-center text-sm text-muted-foreground">
+                      {(keyword.impressions_28d || 0).toLocaleString()}
                     </div>
                   </div>
                 )

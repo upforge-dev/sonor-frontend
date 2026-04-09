@@ -264,14 +264,23 @@ export default function SEOReconciliation({ projectId }) {
   // ─── Trigger on-demand reconciliation ─────────────────────────────
   const triggerMutation = useMutation({
     mutationFn: () => seoApi.triggerReconciliation(projectId),
-    onSuccess: () => {
-      toast.success('Signal reconciliation started. Results will appear shortly.')
-      // Poll for updated results after a short delay
-      setTimeout(() => {
-        queryClient.invalidateQueries({
-          queryKey: ['seo', 'reconciliation', projectId],
-        })
-      }, 3000)
+    onSuccess: (response) => {
+      const data = response?.data ?? response
+      const actionsCount = data?.actions_taken?.length || 0
+      const reviewCount = data?.needs_review?.length || 0
+
+      if (actionsCount > 0) {
+        toast.success(`Reconciliation complete: ${actionsCount} action${actionsCount !== 1 ? 's' : ''} executed, ${reviewCount} flagged for review`)
+      } else if (reviewCount > 0) {
+        toast.success(`Reconciliation complete: ${reviewCount} item${reviewCount !== 1 ? 's' : ''} flagged for review`)
+      } else {
+        toast.success('Reconciliation complete — no issues found. Site health looks good.')
+      }
+
+      // Refetch report to show updated data
+      queryClient.invalidateQueries({
+        queryKey: ['seo', 'reconciliation', projectId],
+      })
     },
     onError: (err) => {
       const msg = err?.response?.data?.message || err?.message || 'Failed to trigger reconciliation'

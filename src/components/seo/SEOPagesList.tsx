@@ -144,7 +144,7 @@ export default function SEOPagesList({ site, projectId }: SEOPagesListProps) {
     refetch: refetchPages
   } = useSeoPages(siteId || '', {
     page,
-    limit: 50,
+    limit: 500,
     search: searchQuery || undefined,
     status: pageStatusFilter,
     indexingStatus: statusFilter !== 'all' ? (statusFilter === 'not-indexed' ? 'not_indexed' : statusFilter) : undefined,

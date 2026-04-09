@@ -5,6 +5,7 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import { seoApi } from '../../lib/sonor-api'
 
 export const seoKeywordKeys = {
@@ -23,7 +24,10 @@ export const seoKeywordKeys = {
 export function useSeoTrackedKeywords(projectId: string) {
   return useQuery({
     queryKey: seoKeywordKeys.tracked(projectId),
-    queryFn: () => seoApi.getTrackedKeywords(projectId),
+    queryFn: async () => {
+      const res = await seoApi.getTrackedKeywords(projectId)
+      return res?.data ?? res
+    },
     enabled: !!projectId,
     staleTime: 5 * 60 * 1000,
   })
@@ -35,7 +39,10 @@ export function useSeoTrackedKeywords(projectId: string) {
 export function useSeoKeywordsSummary(projectId: string) {
   return useQuery({
     queryKey: seoKeywordKeys.summary(projectId),
-    queryFn: () => seoApi.getKeywordsSummary(projectId),
+    queryFn: async () => {
+      const res = await seoApi.getKeywordsSummary(projectId)
+      return res?.data ?? res
+    },
     enabled: !!projectId,
     staleTime: 5 * 60 * 1000,
   })
@@ -47,11 +54,13 @@ export function useSeoKeywordsSummary(projectId: string) {
 export function useSeoRankingHistory(projectId: string, keywordId?: string, options?: { limit?: number }) {
   return useQuery({
     queryKey: seoKeywordKeys.history(projectId, keywordId),
-    queryFn: () =>
-      seoApi.getRankingHistory(projectId, {
+    queryFn: async () => {
+      const res = await seoApi.getRankingHistory(projectId, {
         keywordId,
         ...(options ?? {}),
-      }),
+      })
+      return res?.data ?? res
+    },
     enabled: !!projectId,
     staleTime: 10 * 60 * 1000,
   })
@@ -67,12 +76,16 @@ export function useTrackKeywords() {
     mutationFn: ({ projectId, keywords }: { projectId: string; keywords: string[] }) =>
       seoApi.trackKeywords(projectId, keywords),
     onSuccess: (data, variables) => {
-      queryClient.invalidateQueries({ 
-        queryKey: seoKeywordKeys.tracked(variables.projectId) 
+      toast.success(`Tracking ${variables.keywords.length} keyword${variables.keywords.length !== 1 ? 's' : ''}`)
+      queryClient.invalidateQueries({
+        queryKey: seoKeywordKeys.tracked(variables.projectId)
       })
-      queryClient.invalidateQueries({ 
-        queryKey: seoKeywordKeys.summary(variables.projectId) 
+      queryClient.invalidateQueries({
+        queryKey: seoKeywordKeys.summary(variables.projectId)
       })
+    },
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.message || err?.message || 'Failed to track keyword')
     },
   })
 }
@@ -84,11 +97,19 @@ export function useAutoDiscoverKeywords() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (projectId: string) => seoApi.autoDiscoverKeywords(projectId),
-    onSuccess: (data, projectId) => {
-      queryClient.invalidateQueries({ 
-        queryKey: seoKeywordKeys.tracked(projectId) 
+    mutationFn: async (projectId: string) => {
+      const res = await seoApi.autoDiscoverKeywords(projectId)
+      return res?.data ?? res
+    },
+    onSuccess: (data: any, projectId) => {
+      const count = data?.discovered || data?.tracked || 0
+      toast.success(count > 0 ? `Discovered ${count} keywords from GSC` : 'No new keywords to discover')
+      queryClient.invalidateQueries({
+        queryKey: seoKeywordKeys.tracked(projectId)
       })
+    },
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.message || err?.message || 'Auto-discover failed')
     },
   })
 }
@@ -101,13 +122,17 @@ export function useRefreshKeywordRankings() {
 
   return useMutation({
     mutationFn: (projectId: string) => seoApi.refreshKeywordRankings(projectId),
-    onSuccess: (data, projectId) => {
-      queryClient.invalidateQueries({ 
-        queryKey: seoKeywordKeys.tracked(projectId) 
+    onSuccess: (_data, projectId) => {
+      toast.success('Rankings refreshed')
+      queryClient.invalidateQueries({
+        queryKey: seoKeywordKeys.tracked(projectId)
       })
-      queryClient.invalidateQueries({ 
-        queryKey: seoKeywordKeys.history(projectId) 
+      queryClient.invalidateQueries({
+        queryKey: seoKeywordKeys.history(projectId)
       })
+    },
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.message || err?.message || 'Rankings refresh failed')
     },
   })
 }
