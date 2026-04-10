@@ -49,6 +49,7 @@ import {
 } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 import { syncApi } from '@/lib/sonor-api'
+import useAuthStore from '@/lib/auth-store'
 import { toast } from 'sonner'
 
 const ROUTING_STRATEGIES = {
@@ -79,6 +80,7 @@ const ROUTING_STRATEGIES = {
 }
 
 export default function HostRoutingPanel({ isOpen, onClose, bookingType, hosts, onUpdated }) {
+  const { currentProject } = useAuthStore()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [routes, setRoutes] = useState([])
@@ -86,6 +88,8 @@ export default function HostRoutingPanel({ isOpen, onClose, bookingType, hosts, 
   const [showAddHost, setShowAddHost] = useState(false)
   const [selectedHostId, setSelectedHostId] = useState('')
   const [draggedIndex, setDraggedIndex] = useState(null)
+  const [teamCandidates, setTeamCandidates] = useState([])
+  const [loadingCandidates, setLoadingCandidates] = useState(false)
 
   useEffect(() => {
     if (isOpen && bookingType) {
@@ -121,6 +125,25 @@ export default function HostRoutingPanel({ isOpen, onClose, bookingType, hosts, 
     }
   }
 
+  // Fetch org team members when "Add Host" dialog opens so agency users
+  // can assign team members directly without visiting the Hosts tab first
+  const openAddHostDialog = async () => {
+    setShowAddHost(true)
+    setSelectedHostId('')
+    setLoadingCandidates(true)
+    try {
+      const params = {}
+      if (currentProject?.id) params.project_id = currentProject.id
+      const { data } = await syncApi.getHostCandidates(params)
+      setTeamCandidates(Array.isArray(data?.candidates) ? data.candidates : (Array.isArray(data) ? data : []))
+    } catch (err) {
+      console.error('Failed to fetch team candidates:', err)
+      setTeamCandidates([])
+    } finally {
+      setLoadingCandidates(false)
+    }
+  }
+
   const handleAddHost = async () => {
     if (!selectedHostId) return
 
@@ -128,10 +151,22 @@ export default function HostRoutingPanel({ isOpen, onClose, bookingType, hosts, 
     try {
       const existingPriorities = routes.map(r => r.priority || 0)
       const nextPriority = Math.max(0, ...existingPriorities) + 1
+      let hostId = selectedHostId
+
+      // If the selected ID is a team candidate (contact), auto-create the host first
+      const isExistingHost = hosts.some(h => h.id === selectedHostId)
+      if (!isExistingHost) {
+        const { data: newHost } = await syncApi.createHost({
+          contactId: selectedHostId,
+          projectId: currentProject?.id,
+        })
+        hostId = newHost?.id || newHost?.host?.id
+        if (!hostId) throw new Error('Failed to create host')
+      }
 
       await syncApi.createBookingRoute({
         booking_type_id: bookingType.id,
-        host_id: selectedHostId,
+        host_id: hostId,
         priority: nextPriority,
         weight: 1,
         is_active: true
@@ -226,6 +261,13 @@ export default function HostRoutingPanel({ isOpen, onClose, bookingType, hosts, 
 
   const assignedHostIds = routes.map(r => r.host_id)
   const availableHosts = hosts.filter(h => !assignedHostIds.includes(h.id))
+  // Team candidates not yet added as hosts — exclude anyone whose contact_id
+  // matches an existing host's contact_id (already a host in this project)
+  const existingHostContactIds = new Set(hosts.map(h => h.contact_id).filter(Boolean))
+  const newTeamCandidates = teamCandidates.filter(
+    c => !existingHostContactIds.has(c.id) && !assignedHostIds.includes(c.id)
+  )
+  const hasAnyCandidates = availableHosts.length > 0 || newTeamCandidates.length > 0
   const strategyInfo = ROUTING_STRATEGIES[strategy]
   const showStrategyConfig = routes.length > 1
 
@@ -297,8 +339,7 @@ export default function HostRoutingPanel({ isOpen, onClose, bookingType, hosts, 
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => setShowAddHost(true)}
-                disabled={availableHosts.length === 0}
+                onClick={openAddHostDialog}
               >
                 <Plus className="h-4 w-4 mr-1" />
                 Add Host
@@ -452,34 +493,89 @@ export default function HostRoutingPanel({ isOpen, onClose, bookingType, hosts, 
             <DialogHeader>
               <DialogTitle>Add Host</DialogTitle>
               <DialogDescription>
-                Select a host to assign to "{bookingType.name}"
+                Select a team member to assign to "{bookingType.name}"
               </DialogDescription>
             </DialogHeader>
 
             <div className="py-4">
-              <Select value={selectedHostId} onValueChange={setSelectedHostId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a host..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableHosts.map((host) => (
-                    <SelectItem key={host.id} value={host.id}>
-                      <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center overflow-hidden">
-                          {host.avatar_url ? (
-                            <img src={host.avatar_url} alt={host.name} className="w-full h-full object-cover" />
-                          ) : (
-                            <span className="text-white text-xs font-semibold">
-                              {host.name?.[0]?.toUpperCase()}
-                            </span>
-                          )}
-                        </div>
-                        <span>{host.name}</span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {loadingCandidates ? (
+                <div className="flex items-center justify-center py-6">
+                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                  <span className="ml-2 text-sm text-muted-foreground">Loading team members...</span>
+                </div>
+              ) : !hasAnyCandidates ? (
+                <div className="text-center py-6 text-muted-foreground">
+                  <Users className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">No team members available</p>
+                  <p className="text-xs mt-1">Add team members to this organization first</p>
+                </div>
+              ) : (
+                <Select value={selectedHostId} onValueChange={setSelectedHostId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a team member..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {/* Existing hosts not yet assigned to this booking type */}
+                    {availableHosts.length > 0 && (
+                      <>
+                        {newTeamCandidates.length > 0 && (
+                          <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
+                            Existing Hosts
+                          </div>
+                        )}
+                        {availableHosts.map((host) => (
+                          <SelectItem key={host.id} value={host.id}>
+                            <div className="flex items-center gap-2">
+                              <div className="w-6 h-6 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center overflow-hidden">
+                                {host.avatar_url ? (
+                                  <img src={host.avatar_url} alt={host.name} className="w-full h-full object-cover" />
+                                ) : (
+                                  <span className="text-white text-xs font-semibold">
+                                    {host.name?.[0]?.toUpperCase()}
+                                  </span>
+                                )}
+                              </div>
+                              <span>{host.name}</span>
+                              {host.calendar_connected && (
+                                <Calendar className="h-3 w-3 text-emerald-500 ml-auto" />
+                              )}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </>
+                    )}
+                    {/* Team members not yet added as hosts */}
+                    {newTeamCandidates.length > 0 && (
+                      <>
+                        {availableHosts.length > 0 && (
+                          <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground border-t mt-1 pt-1.5">
+                            Team Members
+                          </div>
+                        )}
+                        {newTeamCandidates.map((candidate) => (
+                          <SelectItem key={candidate.id} value={candidate.id}>
+                            <div className="flex items-center gap-2">
+                              <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center overflow-hidden">
+                                {candidate.avatar ? (
+                                  <img src={candidate.avatar} alt={candidate.name} className="w-full h-full object-cover" />
+                                ) : (
+                                  <span className="text-white text-xs font-semibold">
+                                    {candidate.name?.[0]?.toUpperCase()}
+                                  </span>
+                                )}
+                              </div>
+                              <span>{candidate.name}</span>
+                              {candidate.hasCalendar && (
+                                <Calendar className="h-3 w-3 text-emerald-500 ml-auto" />
+                              )}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </>
+                    )}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
 
             <DialogFooter>

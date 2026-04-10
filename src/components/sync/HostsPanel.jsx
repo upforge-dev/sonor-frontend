@@ -451,62 +451,89 @@ export default function HostsPanel({ isOpen, onClose, inline = false }) {
 
         {/* Add Team Member Modal */}
         <Dialog open={showAddTeamMember} onOpenChange={setShowAddTeamMember}>
-          <DialogContent className="sm:max-w-[560px] max-h-[85vh] overflow-hidden flex flex-col">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <UserPlus className="h-5 w-5" />
-                Add Team Member as Host
-              </DialogTitle>
-              <DialogDescription>
-                Select a team member with Google Calendar connected to accept bookings
-              </DialogDescription>
-            </DialogHeader>
+          <DialogContent className="sm:max-w-[520px] max-h-[85vh] overflow-hidden flex flex-col p-0">
+            <div className="px-6 pt-6 pb-4 space-y-4">
+              <DialogHeader className="p-0">
+                <DialogTitle className="flex items-center gap-2 text-lg">
+                  <div className="w-8 h-8 rounded-lg bg-[var(--brand-primary)]/10 flex items-center justify-center">
+                    <UserPlus className="h-4 w-4 text-[var(--brand-primary)]" />
+                  </div>
+                  Add Host
+                </DialogTitle>
+                <DialogDescription>
+                  Select a team member to accept bookings for this project
+                </DialogDescription>
+              </DialogHeader>
 
-            {/* Search */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search by name, email, or role..."
-                value={candidateSearch}
-                onChange={(e) => setCandidateSearch(e.target.value)}
-                className="pl-9"
-              />
+              {/* Search */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-tertiary)]" />
+                <Input
+                  placeholder="Search by name or email..."
+                  value={candidateSearch}
+                  onChange={(e) => setCandidateSearch(e.target.value)}
+                  className="pl-9 bg-[var(--glass-bg)] border-[var(--glass-border)]"
+                />
+              </div>
             </div>
 
             {/* Candidates list */}
-            <ScrollArea className="flex-1 -mx-6 px-6 min-h-[300px] max-h-[400px]">
+            <ScrollArea className="flex-1 px-6 min-h-[280px] max-h-[400px]">
               {candidatesLoading ? (
                 <div className="flex items-center justify-center py-12">
-                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  <Loader2 className="h-5 w-5 animate-spin text-[var(--text-tertiary)]" />
                 </div>
               ) : filteredCandidates.length === 0 ? (
                 <div className="text-center py-12">
-                  <User className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
-                  <p className="text-sm text-muted-foreground">
+                  <div className="w-12 h-12 rounded-full bg-[var(--glass-bg)] flex items-center justify-center mx-auto mb-3">
+                    <User className="h-6 w-6 text-[var(--text-tertiary)]" />
+                  </div>
+                  <p className="text-sm font-medium text-[var(--text-secondary)] mb-1">
                     {candidates.length === 0
-                      ? 'No team members found in your organization'
+                      ? 'No team members found'
                       : candidateSearch
-                        ? 'No team members match your search'
-                        : 'All team members are already added as hosts'
+                        ? 'No results'
+                        : 'All members are already hosts'
+                    }
+                  </p>
+                  <p className="text-xs text-[var(--text-tertiary)]">
+                    {candidates.length === 0
+                      ? 'Add contacts to this organization to get started'
+                      : candidateSearch
+                        ? 'Try a different search term'
+                        : 'Everyone in this org is already a booking host'
                     }
                   </p>
                 </div>
               ) : (
-                <div className="space-y-2 py-2">
-                  {filteredCandidates.map((candidate) => (
+                <div className="space-y-1.5 pb-4">
+                  {/* Sort: calendar-connected first */}
+                  {[...filteredCandidates]
+                    .sort((a, b) => (b.hasCalendar ? 1 : 0) - (a.hasCalendar ? 1 : 0))
+                    .map((candidate) => (
                     <div
                       key={candidate.id}
                       className={cn(
-                        "flex items-center gap-3 p-3 rounded-lg border transition-colors",
-                        "bg-[var(--glass-bg)] hover:bg-accent/50"
+                        "group flex items-center gap-3 p-3 rounded-xl border transition-all",
+                        candidate.hasCalendar
+                          ? "border-[var(--glass-border)] bg-[var(--glass-bg)] hover:border-[var(--brand-primary)]/30 hover:bg-[var(--brand-primary)]/5"
+                          : "border-transparent bg-[var(--glass-bg)]/50 opacity-70 hover:opacity-90"
                       )}
                     >
                       {/* Avatar */}
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shrink-0 overflow-hidden">
+                      <div className={cn(
+                        "w-9 h-9 rounded-full flex items-center justify-center shrink-0 overflow-hidden",
+                        candidate.hasCalendar
+                          ? "bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-primary)]/70"
+                          : "bg-[var(--glass-bg)] border border-[var(--glass-border)]"
+                      )}>
                         {candidate.avatar ? (
                           <img src={candidate.avatar} alt={candidate.name} className="w-full h-full object-cover" />
                         ) : (
-                          <span className="text-white font-semibold">
+                          <span className={cn(
+                            "text-sm font-semibold",
+                            candidate.hasCalendar ? "text-white" : "text-[var(--text-tertiary)]"
+                          )}>
                             {candidate.name?.[0]?.toUpperCase() || '?'}
                           </span>
                         )}
@@ -514,53 +541,46 @@ export default function HostsPanel({ isOpen, onClose, inline = false }) {
 
                       {/* Info */}
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <p className="font-medium text-sm truncate">{candidate.name}</p>
-                          {(candidate.role || candidate.title) && (
-                            <Badge variant="outline" className="text-xs font-normal">
-                              {candidate.title || candidate.role}
-                            </Badge>
-                          )}
-                        </div>
-                        <p className="text-xs text-muted-foreground truncate">{candidate.email}</p>
+                        <p className="font-medium text-sm text-[var(--text-primary)] truncate">
+                          {candidate.name}
+                        </p>
+                        <p className="text-xs text-[var(--text-tertiary)] truncate">{candidate.email}</p>
                       </div>
 
-                      {/* Calendar status + action */}
+                      {/* Status + action — stacked layout to prevent overflow */}
                       <div className="flex items-center gap-2 shrink-0">
                         {candidate.hasCalendar ? (
                           <>
-                            <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-xs font-normal">
-                              <CheckCircle2 className="h-3 w-3 mr-1" />
-                              Calendar Connected
-                            </Badge>
+                            <span className="hidden sm:flex items-center gap-1 text-xs text-emerald-500">
+                              <CheckCircle2 className="h-3.5 w-3.5" />
+                              Ready
+                            </span>
                             <Button
                               size="sm"
+                              className="h-8 px-3 text-xs"
                               onClick={() => handleAddAsHost(candidate)}
                               disabled={addingHostId === candidate.id}
                             >
                               {addingHostId === candidate.id ? (
-                                <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
                               ) : (
-                                <Plus className="h-4 w-4 mr-1" />
+                                <>
+                                  <Plus className="h-3.5 w-3.5 mr-1" />
+                                  Add
+                                </>
                               )}
-                              Add as Host
                             </Button>
                           </>
                         ) : (
-                          <>
-                            <Badge className="bg-red-500/10 text-red-600 border-red-500/20 text-xs font-normal">
-                              <XCircle className="h-3 w-3 mr-1" />
-                              No Calendar
-                            </Badge>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={handleConnectCalendar}
-                            >
-                              <ExternalLink className="h-4 w-4 mr-1" />
-                              Connect Calendar
-                            </Button>
-                          </>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-8 px-3 text-xs text-[var(--text-tertiary)] hover:text-[var(--text-primary)]"
+                            onClick={handleConnectCalendar}
+                          >
+                            <Calendar className="h-3.5 w-3.5 mr-1" />
+                            Connect
+                          </Button>
                         )}
                       </div>
                     </div>
@@ -569,11 +589,11 @@ export default function HostsPanel({ isOpen, onClose, inline = false }) {
               )}
             </ScrollArea>
 
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setShowAddTeamMember(false)}>
-                Close
+            <div className="px-6 py-4 border-t border-[var(--glass-border)]">
+              <Button variant="outline" className="w-full" onClick={() => setShowAddTeamMember(false)}>
+                Done
               </Button>
-            </DialogFooter>
+            </div>
           </DialogContent>
         </Dialog>
 

@@ -42,6 +42,42 @@ export default function MessagesWidget({ hidden = false }: MessagesWidgetProps) 
   const [openWithTab, setOpenWithTab] = useState<'echo' | 'user' | 'visitor'>('echo')
   const prevCountRef = useRef(0)
 
+  // ── Draggable position ────────────────────────────────────
+  const [pos, setPos] = useState({ bottom: 16, right: 24 }) // px, matches original bottom-4 right-6
+  const dragRef = useRef<{ startX: number; startY: number; startRight: number; startBottom: number; moved: boolean } | null>(null)
+
+  const onPointerDown = useCallback((e: React.PointerEvent) => {
+    dragRef.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      startRight: pos.right,
+      startBottom: pos.bottom,
+      moved: false,
+    }
+    ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
+  }, [pos])
+
+  const onPointerMove = useCallback((e: React.PointerEvent) => {
+    if (!dragRef.current) return
+    const dx = e.clientX - dragRef.current.startX
+    const dy = e.clientY - dragRef.current.startY
+    if (Math.abs(dx) > 4 || Math.abs(dy) > 4) dragRef.current.moved = true
+    if (!dragRef.current.moved) return
+    setPos({
+      right: Math.max(8, Math.min(window.innerWidth - 64, dragRef.current.startRight - dx)),
+      bottom: Math.max(8, Math.min(window.innerHeight - 64, dragRef.current.startBottom + dy)),
+    })
+  }, [])
+
+  const onPointerUp = useCallback((e: React.PointerEvent) => {
+    const wasDrag = dragRef.current?.moved
+    dragRef.current = null
+    if (wasDrag) {
+      e.preventDefault()
+      e.stopPropagation()
+    }
+  }, [])
+
   const user = useAuthStore((state) => state.user)
   const project = useAuthStore((state) => state.currentProject)
   const brandColors = useBrandColors()
@@ -222,8 +258,9 @@ export default function MessagesWidget({ hidden = false }: MessagesWidgetProps) 
       {isOpen && isMinimized && (
         <button
           onClick={() => setIsMinimized(false)}
+          style={{ bottom: pos.bottom + 8, right: pos.right + 64 }}
           className={cn(
-            'fixed bottom-6 right-24 z-50',
+            'fixed z-50',
             'h-12 px-4 rounded-full',
             'flex items-center gap-2',
             'bg-[var(--surface-primary)]/90 backdrop-blur-xl',
@@ -248,7 +285,8 @@ export default function MessagesWidget({ hidden = false }: MessagesWidgetProps) 
       {/* New live chat notification */}
       {showLiveNotification && !isOpen && (
         <div
-          className="fixed bottom-24 right-6 z-50 animate-in slide-in-from-right-5 fade-in duration-300 cursor-pointer"
+          style={{ bottom: pos.bottom + 64, right: pos.right }}
+          className="fixed z-50 animate-in slide-in-from-right-5 fade-in duration-300 cursor-pointer"
           onClick={() => {
             setIsOpen(true)
             setIsMinimized(false)
@@ -280,20 +318,24 @@ export default function MessagesWidget({ hidden = false }: MessagesWidgetProps) 
         </div>
       )}
 
-      {/* Launcher button */}
+      {/* Launcher button — click-and-draggable */}
       <button
-        onClick={handleToggle}
+        onClick={(e) => { if (!dragRef.current?.moved) handleToggle() }}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
         type="button"
+        style={{ bottom: pos.bottom, right: pos.right }}
         className={cn(
-          'fixed bottom-4 right-6 z-50',
+          'fixed z-50 touch-none select-none',
           'w-14 h-14 rounded-full',
           'flex items-center justify-center',
-          'transition-all duration-300 ease-out',
+          'transition-shadow duration-300 ease-out',
           'hover:scale-105 active:scale-95',
           'focus:outline-none focus:ring-2 focus:ring-offset-2',
           'bg-[var(--brand-primary)] hover:bg-[var(--brand-primary-hover)]',
           'shadow-xl shadow-[var(--brand-primary)]/40 focus:ring-[var(--brand-primary)]',
-          'text-white',
+          'text-white cursor-grab active:cursor-grabbing',
           hasLiveSessions && !isOpen && 'ring-4 ring-amber-500/50 animate-pulse'
         )}
         aria-label={isOpen ? 'Close messages' : 'Open messages'}
