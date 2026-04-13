@@ -584,7 +584,12 @@ export default function HostRoutingPanel({ isOpen, onClose, bookingType, hosts, 
               </Button>
               <Button onClick={handleAddHost} disabled={!selectedHostId || saving}>
                 {saving && <Loader2 className="h-4 w-4 animate-spin mr-1" />}
-                Add Host
+                {/* Show "Add & Invite" when selecting a team candidate without calendar */}
+                {!saving && selectedHostId && !hosts.some(h => h.id === selectedHostId) &&
+                 newTeamCandidates.find(c => c.id === selectedHostId && !c.hasCalendar)
+                  ? 'Add & Invite'
+                  : 'Add Host'
+                }
               </Button>
             </DialogFooter>
           </DialogContent>

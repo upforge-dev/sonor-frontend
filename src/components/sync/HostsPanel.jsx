@@ -383,9 +383,9 @@ export default function HostsPanel({ isOpen, onClose, inline = false }) {
                             Calendar Connected
                           </Badge>
                         ) : (
-                          <Badge className="bg-red-500/10 text-red-600 border-red-500/20 text-xs font-normal">
-                            <XCircle className="h-3 w-3 mr-1" />
-                            No Calendar
+                          <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/20 text-xs font-normal">
+                            <Clock className="h-3 w-3 mr-1" />
+                            Pending Calendar
                           </Badge>
                         )
                       )}
@@ -414,16 +414,22 @@ export default function HostsPanel({ isOpen, onClose, inline = false }) {
                       <Link2 className="h-4 w-4 mr-1.5" />
                       Calendars
                     </Button>
-                    {/* Reconnect button if calendar is disconnected */}
+                    {/* Resend calendar invite if not connected */}
                     {host.calendar_connected === false && (
                       <Button
                         variant="outline"
                         size="sm"
-                        className="text-amber-600 border-amber-300 hover:bg-amber-50"
-                        onClick={handleConnectCalendar}
+                        onClick={async () => {
+                          try {
+                            await syncApi.sendCalendarInvite(host.id)
+                            toast.success(`Calendar invite resent to ${host.email}`)
+                          } catch (err) {
+                            toast.error('Failed to send invite')
+                          }
+                        }}
                       >
-                        <RefreshCw className="h-4 w-4 mr-1.5" />
-                        Reconnect
+                        <Mail className="h-4 w-4 mr-1.5" />
+                        Resend Invite
                       </Button>
                     )}
                     <Button
@@ -451,7 +457,7 @@ export default function HostsPanel({ isOpen, onClose, inline = false }) {
 
         {/* Add Team Member Modal */}
         <Dialog open={showAddTeamMember} onOpenChange={setShowAddTeamMember}>
-          <DialogContent className="sm:max-w-[520px] max-h-[85vh] overflow-hidden flex flex-col p-0">
+          <DialogContent className="sm:max-w-[520px] h-[min(85vh,640px)] overflow-hidden flex flex-col p-0">
             <div className="px-6 pt-6 pb-4 space-y-4">
               <DialogHeader className="p-0">
                 <DialogTitle className="flex items-center gap-2 text-lg">
@@ -478,7 +484,7 @@ export default function HostsPanel({ isOpen, onClose, inline = false }) {
             </div>
 
             {/* Candidates list */}
-            <ScrollArea className="flex-1 px-6 min-h-[280px] max-h-[400px]">
+            <ScrollArea className="flex-1 min-h-0 px-6">
               {candidatesLoading ? (
                 <div className="flex items-center justify-center py-12">
                   <Loader2 className="h-5 w-5 animate-spin text-[var(--text-tertiary)]" />
@@ -547,7 +553,7 @@ export default function HostsPanel({ isOpen, onClose, inline = false }) {
                         <p className="text-xs text-[var(--text-tertiary)] truncate">{candidate.email}</p>
                       </div>
 
-                      {/* Status + action — stacked layout to prevent overflow */}
+                      {/* Status + action */}
                       <div className="flex items-center gap-2 shrink-0">
                         {candidate.hasCalendar ? (
                           <>
@@ -574,12 +580,19 @@ export default function HostsPanel({ isOpen, onClose, inline = false }) {
                         ) : (
                           <Button
                             size="sm"
-                            variant="ghost"
-                            className="h-8 px-3 text-xs text-[var(--text-tertiary)] hover:text-[var(--text-primary)]"
-                            onClick={handleConnectCalendar}
+                            variant="outline"
+                            className="h-8 px-3 text-xs"
+                            onClick={() => handleAddAsHost(candidate)}
+                            disabled={addingHostId === candidate.id}
                           >
-                            <Calendar className="h-3.5 w-3.5 mr-1" />
-                            Connect
+                            {addingHostId === candidate.id ? (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            ) : (
+                              <>
+                                <Mail className="h-3.5 w-3.5 mr-1" />
+                                Add & Invite
+                              </>
+                            )}
                           </Button>
                         )}
                       </div>

@@ -3670,7 +3670,11 @@ export const syncApi = {
   /** Delete a host (pass project_id to scope: only deletes if host belongs to that project) */
   deleteHost: (id, params = {}) =>
     sonorApi.delete(`/sync/admin/hosts/${id}`, { params }),
-  
+
+  /** Send (or resend) calendar connection invite email to a host */
+  sendCalendarInvite: (hostId) =>
+    sonorApi.post(`/sync/admin/hosts/${hostId}/send-calendar-invite`),
+
   /** Assign host to booking type */
   assignHostToType: (hostId, typeId, priority = 1) =>
     sonorApi.post(`/sync/admin/hosts/${hostId}/booking-types/${typeId}?priority=${priority}`),
