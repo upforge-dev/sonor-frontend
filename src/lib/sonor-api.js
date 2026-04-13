@@ -2515,7 +2515,11 @@ export const emailApi = {
   // Gmail integration
   sendGmail: (data) =>
     sonorApi.post('/email/gmail/send', data),
-  
+
+  // Quick send (template → Resend, uses project email settings)
+  quickSend: (data) =>
+    sonorApi.post('/email/quick-send', data),
+
   // Email capability check (for showing warnings)
   checkEmailCapability: (projectId) =>
     sonorApi.get(`/email/capability`, { params: { project_id: projectId } }),

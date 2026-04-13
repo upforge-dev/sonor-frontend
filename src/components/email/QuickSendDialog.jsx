@@ -1,12 +1,7 @@
 /**
  * QuickSendDialog — lightweight "Send Now" modal for email templates.
- * Lets a user fire off a template to one or more addresses without
- * creating a full campaign.
- *
- * Resolution order:
- *   1. Fetch the project's email_settings (Resend domain, from name/email, reply-to)
- *   2. POST /email/gmail/send with fromEmail from settings
- *      → API tries Gmail first (if connected), falls back to Resend
+ * Sends raw template HTML via POST /email/quick-send.
+ * The API resolves from/replyTo from the org's email_settings (Resend domain).
  */
 
 import { useState, useEffect } from 'react'
@@ -20,32 +15,14 @@ import {
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import { Send, Loader2, Plus, X, Mail, AlertCircle } from 'lucide-react'
+import { Send, Loader2, Plus, X, Mail } from 'lucide-react'
 import { emailApi } from '@/lib/sonor-api'
-import useAuthStore from '@/lib/auth-store'
 import { toast } from 'sonner'
 
 export function QuickSendDialog({ template, open, onOpenChange }) {
-  const { user, currentProject } = useAuthStore()
-
   const [recipients, setRecipients] = useState([''])
   const [subject, setSubject] = useState('')
   const [sending, setSending] = useState(false)
-  const [emailSettings, setEmailSettings] = useState(null)
-  const [settingsLoading, setSettingsLoading] = useState(false)
-
-  // Fetch project email settings when dialog opens
-  useEffect(() => {
-    if (!open) return
-    setSettingsLoading(true)
-    emailApi.getSettings()
-      .then((res) => setEmailSettings(res.data))
-      .catch((err) => {
-        console.warn('[QuickSend] Could not load email settings:', err)
-        setEmailSettings(null)
-      })
-      .finally(() => setSettingsLoading(false))
-  }, [open])
 
   // Reset form when template changes
   useEffect(() => {
@@ -56,13 +33,8 @@ export function QuickSendDialog({ template, open, onOpenChange }) {
     }
   }, [template, open])
 
-  const fromName = emailSettings?.default_from_name || ''
-  const fromEmail = emailSettings?.default_from_email || ''
-  const replyTo = emailSettings?.default_reply_to || ''
-  const hasEmailConfig = !!fromEmail
-
   const validEmails = recipients.filter((e) => e && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.trim()))
-  const canSend = validEmails.length > 0 && subject.trim() && hasEmailConfig && !settingsLoading
+  const canSend = validEmails.length > 0 && subject.trim()
 
   function addRecipient() {
     setRecipients((prev) => [...prev, ''])
@@ -83,14 +55,10 @@ export function QuickSendDialog({ template, open, onOpenChange }) {
     try {
       const results = await Promise.allSettled(
         validEmails.map((email) =>
-          emailApi.sendGmail({
+          emailApi.quickSend({
             to: email.trim(),
             subject: subject.trim(),
-            content: template.html,
-            projectId: currentProject?.id,
-            fromEmail,
-            replyTo: replyTo || fromEmail,
-            includeSignature: true,
+            html: template.html,
           })
         )
       )
@@ -133,27 +101,6 @@ export function QuickSendDialog({ template, open, onOpenChange }) {
         </DialogHeader>
 
         <div className="space-y-4 pt-2">
-          {/* Sender info from settings */}
-          {settingsLoading ? (
-            <div className="flex items-center gap-2 text-xs text-[var(--text-tertiary)]">
-              <Loader2 className="h-3 w-3 animate-spin" />
-              Loading email settings...
-            </div>
-          ) : hasEmailConfig ? (
-            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--glass-bg)] border border-[var(--glass-border)] text-xs">
-              <Mail className="h-3.5 w-3.5 text-[var(--text-tertiary)] shrink-0" />
-              <span className="text-[var(--text-secondary)]">
-                From: <span className="text-[var(--text-primary)] font-medium">{fromName}</span>
-                {' '}&lt;{fromEmail}&gt;
-              </span>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-red-500/10 border border-red-500/20 text-xs text-red-400">
-              <AlertCircle className="h-3.5 w-3.5 shrink-0" />
-              No email sender configured. Set up a from address in Email Settings first.
-            </div>
-          )}
-
           {/* Recipients */}
           <div className="space-y-2">
             <Label className="text-xs font-medium text-[var(--text-secondary)]">To</Label>
