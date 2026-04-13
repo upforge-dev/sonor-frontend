@@ -32,6 +32,12 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import {
   Search,
   Plus,
   Edit,
@@ -41,10 +47,13 @@ import {
   Layout,
   FileText,
   Sparkles,
+  MoreVertical,
+  Send,
 } from 'lucide-react'
 import { useEmailPlatformStore } from '@/lib/email-platform-store'
 import { templateGradients, templateCategories } from '@/components/email/utils/constants'
 import { EmailTemplateCard } from '@/components/email/EmailTemplateCard'
+import { QuickSendDialog } from '@/components/email/QuickSendDialog'
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -90,6 +99,7 @@ export default function EmailTemplatesTab({
   const [showStarterGallery, setShowStarterGallery] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('all')
+  const [quickSendTemplate, setQuickSendTemplate] = useState(null)
 
   useEffect(() => {
     fetchTemplates()
@@ -234,6 +244,7 @@ export default function EmailTemplatesTab({
               key={template.id}
               template={template}
               onEdit={onEditTemplate}
+              onQuickSend={setQuickSendTemplate}
             />
           ))}
         </div>
@@ -289,13 +300,20 @@ export default function EmailTemplatesTab({
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Quick Send Dialog */}
+      <QuickSendDialog
+        template={quickSendTemplate}
+        open={!!quickSendTemplate}
+        onOpenChange={(open) => { if (!open) setQuickSendTemplate(null) }}
+      />
     </div>
   )
 }
 
 // ─── Template Card (user-created) ───────────────────────────────────────────
 
-function TemplateCard({ template, onEdit }) {
+function TemplateCard({ template, onEdit, onQuickSend }) {
   return (
     <EmailTemplateCard
       template={template}
@@ -306,18 +324,42 @@ function TemplateCard({ template, onEdit }) {
             <span>Created {formatDate(template.created_at)}</span>
             <span>Used {template.use_count || 0} times</span>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-full gap-1.5 text-xs"
-            onClick={(e) => {
-              e.stopPropagation()
-              onEdit(template)
-            }}
-          >
-            <Edit className="h-3.5 w-3.5" />
-            Edit Template
-          </Button>
+          <div className="flex items-center gap-1.5">
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1 gap-1.5 text-xs"
+              onClick={(e) => {
+                e.stopPropagation()
+                onEdit(template)
+              }}
+            >
+              <Edit className="h-3.5 w-3.5" />
+              Edit
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8 shrink-0"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <MoreVertical className="h-3.5 w-3.5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                <DropdownMenuItem onClick={() => onQuickSend(template)}>
+                  <Send className="h-4 w-4 mr-2" />
+                  Send Now
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onEdit(template)}>
+                  <Edit className="h-4 w-4 mr-2" />
+                  Edit Template
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </>
       }
     />

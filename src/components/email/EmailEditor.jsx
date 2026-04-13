@@ -580,6 +580,7 @@ const TEMPLATE_CATEGORIES = [
   { value: 'newsletter', label: '📰 Newsletter', description: 'Regular newsletters and updates' },
   { value: 'promotional', label: '🎁 Promotional', description: 'Sales, offers, and promotions' },
   { value: 'announcement', label: '📢 Announcement', description: 'Company news and updates' },
+  { value: 'outreach', label: '📨 Outreach', description: 'Cold outreach and prospecting' },
   { value: 'marketing', label: '📈 Marketing', description: 'General marketing emails' },
   { value: 'custom', label: '⚙️ Custom', description: 'Custom category' }
 ]
@@ -2098,18 +2099,18 @@ export function EmailEditor({
       >
         <div className="flex items-center gap-3">
           {!isFullscreen && onBack && (
-            <Button variant="ghost" size="sm" onClick={onBack} className="text-white hover:bg-white/20">
+            <Button variant="ghost" size="sm" onClick={onBack} className="text-gray-900 hover:bg-white/40">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back
             </Button>
           )}
           {isFullscreen && (
-            <Button variant="ghost" size="sm" onClick={() => setIsFullscreen(false)} className="text-white hover:bg-white/20">
+            <Button variant="ghost" size="sm" onClick={() => setIsFullscreen(false)} className="text-gray-900 hover:bg-white/40">
               <Minimize2 className="h-4 w-4 mr-2" />
               Exit Fullscreen
             </Button>
           )}
-          <div className="h-5 w-px bg-white/30" />
+          <div className="h-5 w-px bg-black/10" />
           
           {/* Template mode: name + category inputs */}
           {mode === 'template' ? (
@@ -2118,10 +2119,10 @@ export function EmailEditor({
                 value={templateNameValue}
                 onChange={(e) => setTemplateNameValue(e.target.value)}
                 placeholder="Template name..."
-                className="h-8 w-48 bg-white/90 border-white/30 text-foreground placeholder:text-muted-foreground"
+                className="h-8 w-48 bg-white/90 border-white/30 !text-gray-900 placeholder:text-gray-400"
               />
               <Select value={templateCategoryValue} onValueChange={setTemplateCategoryValue}>
-                <SelectTrigger className="h-8 w-36 bg-white/90 border-white/30">
+                <SelectTrigger className="h-8 w-36 bg-white/90 border-white/30 !text-gray-900">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -2133,40 +2134,40 @@ export function EmailEditor({
             </div>
           ) : (
             <div>
-              <h2 className="text-sm font-semibold text-white">{title}</h2>
-              {description && <p className="text-xs text-white/80">{description}</p>}
+              <h2 className="text-sm font-semibold text-gray-900">{title}</h2>
+              {description && <p className="text-xs text-gray-600">{description}</p>}
             </div>
           )}
         </div>
         
         {/* Center - Device + Undo/Redo */}
         <div className="flex items-center gap-1">
-          <div className="flex items-center border border-white/30 rounded-lg p-0.5 bg-white/10">
-            <Button 
-              variant={previewDevice === 'desktop' ? 'secondary' : 'ghost'} 
-              size="sm" 
-              className={`h-7 px-2 ${previewDevice === 'desktop' ? 'bg-white/90 text-foreground' : 'text-white hover:bg-white/20'}`}
+          <div className="flex items-center border border-black/10 rounded-lg p-0.5 bg-white/60">
+            <Button
+              variant={previewDevice === 'desktop' ? 'secondary' : 'ghost'}
+              size="sm"
+              className={`h-7 px-2 ${previewDevice === 'desktop' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-700 hover:bg-white/80'}`}
               onClick={() => handleDeviceChange('desktop')}
             >
               <Monitor className="h-4 w-4" />
             </Button>
-            <Button 
-              variant={previewDevice === 'mobile' ? 'secondary' : 'ghost'} 
-              size="sm" 
-              className={`h-7 px-2 ${previewDevice === 'mobile' ? 'bg-white/90 text-foreground' : 'text-white hover:bg-white/20'}`}
+            <Button
+              variant={previewDevice === 'mobile' ? 'secondary' : 'ghost'}
+              size="sm"
+              className={`h-7 px-2 ${previewDevice === 'mobile' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-700 hover:bg-white/80'}`}
               onClick={() => handleDeviceChange('mobile')}
             >
               <Smartphone className="h-4 w-4" />
             </Button>
           </div>
-          <div className="h-5 w-px bg-white/30 mx-2" />
-          <Button variant="ghost" size="sm" className="h-7 px-2 text-white hover:bg-white/20" onClick={handleUndo}>
+          <div className="h-5 w-px bg-black/10 mx-2" />
+          <Button variant="ghost" size="sm" className="h-7 px-2 text-gray-700 hover:bg-white/40" onClick={handleUndo}>
             <Undo className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="sm" className="h-7 px-2 text-white hover:bg-white/20" onClick={handleRedo}>
+          <Button variant="ghost" size="sm" className="h-7 px-2 text-gray-700 hover:bg-white/40" onClick={handleRedo}>
             <Redo className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="sm" className="h-7 px-2 text-red-200 hover:text-red-100 hover:bg-white/20" onClick={handleDeleteSelected}>
+          <Button variant="ghost" size="sm" className="h-7 px-2 text-red-700 hover:text-red-800 hover:bg-white/40" onClick={handleDeleteSelected}>
             <Trash2 className="h-4 w-4" />
           </Button>
         </div>
@@ -2174,26 +2175,26 @@ export function EmailEditor({
         {/* Right - Actions */}
         <div className="flex items-center gap-2">
           <Tabs value={activeTab} onValueChange={handleTabChange} className="h-8">
-            <TabsList className="h-8 bg-white/10 border-white/30">
-              <TabsTrigger value="visual" className="h-7 px-3 text-xs text-white data-[state=active]:bg-white/90 data-[state=active]:text-foreground">
+            <TabsList className="h-8 bg-white/60 border border-black/10">
+              <TabsTrigger value="visual" className="h-7 px-3 text-xs text-gray-700 data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm">
                 <Layout className="h-3.5 w-3.5 mr-1.5" />
                 Design
               </TabsTrigger>
-              <TabsTrigger value="html" className="h-7 px-3 text-xs text-white data-[state=active]:bg-white/90 data-[state=active]:text-foreground">
+              <TabsTrigger value="html" className="h-7 px-3 text-xs text-gray-700 data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm">
                 <Code className="h-3.5 w-3.5 mr-1.5" />
                 Code
               </TabsTrigger>
-              <TabsTrigger value="preview" className="h-7 px-3 text-xs text-white data-[state=active]:bg-white/90 data-[state=active]:text-foreground">
+              <TabsTrigger value="preview" className="h-7 px-3 text-xs text-gray-700 data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm">
                 <Eye className="h-3.5 w-3.5 mr-1.5" />
                 Preview
               </TabsTrigger>
             </TabsList>
           </Tabs>
-          <div className="h-5 w-px bg-white/30" />
-          
+          <div className="h-5 w-px bg-black/10" />
+
           {/* Template mode buttons */}
           {showGallery && (
-            <Button variant="outline" size="sm" className="h-7 bg-white/90 border-white/30 hover:bg-white" onClick={() => setShowTemplateGallery(true)}>
+            <Button variant="outline" size="sm" className="h-7 bg-white/90 border-black/10 text-gray-900 hover:bg-white" onClick={() => setShowTemplateGallery(true)}>
               <LayoutTemplate className="h-3.5 w-3.5 mr-1.5" />
               Templates
             </Button>
@@ -2202,7 +2203,7 @@ export function EmailEditor({
             <Button
               variant="outline"
               size="sm"
-              className="h-7 bg-white/90 border-white/30 hover:bg-white"
+              className="h-7 bg-white/90 border-black/10 text-gray-900 hover:bg-white"
               onClick={handleOpenImageLibrary}
               disabled={!currentProject?.id}
             >
@@ -2210,19 +2211,19 @@ export function EmailEditor({
               Images
             </Button>
           )}
-          
+
           {!isFullscreen && (
-            <Button variant="ghost" size="sm" className="h-7 px-2 text-white hover:bg-white/20" onClick={() => setIsFullscreen(true)}>
+            <Button variant="ghost" size="sm" className="h-7 px-2 text-gray-700 hover:bg-white/40" onClick={() => setIsFullscreen(true)}>
               <Maximize2 className="h-4 w-4" />
             </Button>
           )}
           {showReset && onReset && (
-            <Button variant="outline" size="sm" className="h-7 bg-white/90 border-white/30 hover:bg-white" onClick={onReset} disabled={loading}>
+            <Button variant="outline" size="sm" className="h-7 bg-white/90 border-black/10 text-gray-900 hover:bg-white" onClick={onReset} disabled={loading}>
               <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
               Reset
             </Button>
           )}
-          <Button size="sm" className="h-7 bg-white text-foreground hover:bg-white/90" onClick={handleSave} disabled={loading || (mode === 'template' ? !templateNameValue : !hasChanges)}>
+          <Button size="sm" className="h-7 bg-white text-gray-900 hover:bg-white/90 shadow-sm" onClick={handleSave} disabled={loading || (mode === 'template' ? !templateNameValue : !hasChanges)}>
             {loading ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Check className="h-3.5 w-3.5 mr-1.5" />}
             {saveLabel}
           </Button>
