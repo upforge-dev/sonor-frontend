@@ -8,10 +8,10 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { 
-  ArrowLeft, 
-  Eye, 
-  Clock, 
+import {
+  ArrowLeft,
+  Eye,
+  Clock,
   MousePointer,
   Timer,
   TrendingUp,
@@ -26,10 +26,31 @@ import {
   ChevronDown,
   ChevronUp,
   ExternalLink,
-  Send
+  Send,
+  Mail,
+  DollarSign
 } from 'lucide-react'
+import { toast } from 'sonner'
 import ProposalView from './ProposalView'
 import SendProposalDialog from './SendProposalDialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { proposalsApi } from '@/lib/sonor-api'
 import { cn } from '@/lib/utils'
 
@@ -164,7 +185,117 @@ export default function ProposalViewWithAnalytics({ proposal, onBack, onEdit }) 
   const [loadingAnalytics, setLoadingAnalytics] = useState(true)
   const [showAnalyticsPanel, setShowAnalyticsPanel] = useState(true)
   const [showSendDialog, setShowSendDialog] = useState(false)
+  const [showResendDialog, setShowResendDialog] = useState(false)
+  const [resendEmail, setResendEmail] = useState('')
+  const [resending, setResending] = useState(false)
+  const [showMarkPaidDialog, setShowMarkPaidDialog] = useState(false)
+  const [markPaidForm, setMarkPaidForm] = useState({
+    paymentMethod: 'check',
+    reference: '',
+    paidByName: '',
+    paidByEmail: '',
+  })
+  const [markingPaid, setMarkingPaid] = useState(false)
   const [currentProposal, setCurrentProposal] = useState(proposal)
+
+  const isSigned =
+    Boolean(currentProposal?.client_signature_url) ||
+    currentProposal?.status === 'accepted'
+
+  // Best-effort check: show the "Mark Paid Offline" button whenever the proposal
+  // is signed and doesn't already have a deposit_paid_at stamp. Backend will
+  // reject with a clear message if there's actually no pending payment record.
+  const depositAlreadyPaid = Boolean(currentProposal?.deposit_paid_at)
+  const canMarkPaidOffline = isSigned && !depositAlreadyPaid
+
+  const handleOpenResend = () => {
+    // Pre-fill with the best-guess recipient so the user just hits "Send"
+    const defaultEmail =
+      currentProposal?.contact?.email ||
+      currentProposal?.recipient_email ||
+      currentProposal?.client_email ||
+      ''
+    setResendEmail(defaultEmail)
+    setShowResendDialog(true)
+  }
+
+  const handleConfirmResend = async () => {
+    if (!currentProposal?.id) return
+    setResending(true)
+    try {
+      const { data } = await proposalsApi.resendSignedPdf(
+        currentProposal.id,
+        resendEmail?.trim() || undefined,
+      )
+      toast.success(
+        `Signed copy sent to ${data?.to || resendEmail || 'the client'}${
+          data?.regenerated ? ' (regenerated)' : ''
+        }`,
+      )
+      setShowResendDialog(false)
+    } catch (err) {
+      const message =
+        err?.response?.data?.message ||
+        err?.response?.data?.error?.message ||
+        err?.message ||
+        'Failed to resend signed copy'
+      toast.error(typeof message === 'string' ? message : 'Failed to resend signed copy')
+    } finally {
+      setResending(false)
+    }
+  }
+
+  const handleOpenMarkPaid = () => {
+    setMarkPaidForm({
+      paymentMethod: 'check',
+      reference: '',
+      paidByName:
+        currentProposal?.client_signed_name ||
+        currentProposal?.contact?.name ||
+        currentProposal?.recipient_name ||
+        '',
+      paidByEmail:
+        currentProposal?.contact?.email ||
+        currentProposal?.client_email ||
+        currentProposal?.recipient_email ||
+        '',
+    })
+    setShowMarkPaidDialog(true)
+  }
+
+  const handleConfirmMarkPaid = async () => {
+    if (!currentProposal?.id) return
+    setMarkingPaid(true)
+    try {
+      const payload = {
+        paymentMethod: markPaidForm.paymentMethod,
+        reference: markPaidForm.reference?.trim() || undefined,
+        paidByName: markPaidForm.paidByName?.trim() || undefined,
+        paidByEmail: markPaidForm.paidByEmail?.trim() || undefined,
+      }
+      await proposalsApi.markPaidOffline(currentProposal.id, payload)
+      toast.success(
+        `Deposit marked paid via ${markPaidForm.paymentMethod}${
+          markPaidForm.reference ? ` (${markPaidForm.reference})` : ''
+        }`,
+      )
+      setShowMarkPaidDialog(false)
+      // Refresh the proposal so the button hides and the new state shows up
+      proposalsApi
+        .get(currentProposal.id)
+        .then((res) => setCurrentProposal(res.data.proposal || res.data))
+        .catch(() => {})
+    } catch (err) {
+      const message =
+        err?.response?.data?.message ||
+        err?.response?.data?.error?.message ||
+        err?.message ||
+        'Failed to mark deposit as paid'
+      toast.error(typeof message === 'string' ? message : 'Failed to mark deposit as paid')
+    } finally {
+      setMarkingPaid(false)
+    }
+  }
 
   // Fetch analytics data
   useEffect(() => {
@@ -256,6 +387,34 @@ export default function ProposalViewWithAnalytics({ proposal, onBack, onEdit }) 
               <ExternalLink className="w-4 h-4 mr-2" />
               Open Public Link
             </Button>
+
+            {isSigned && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleOpenResend}
+                title={
+                  currentProposal?.signed_pdf_sent_at
+                    ? `Last sent ${new Date(currentProposal.signed_pdf_sent_at).toLocaleString()}`
+                    : 'Signed copy has not been sent yet'
+                }
+              >
+                <Mail className="w-4 h-4 mr-2" />
+                Resend Signed Copy
+              </Button>
+            )}
+
+            {canMarkPaidOffline && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleOpenMarkPaid}
+                title="Mark deposit as paid outside Sonor (check, wire, cash, external Stripe link, etc.)"
+              >
+                <DollarSign className="w-4 h-4 mr-2" />
+                Mark Paid Offline
+              </Button>
+            )}
 
             <Button
               size="sm"
@@ -384,6 +543,191 @@ export default function ProposalViewWithAnalytics({ proposal, onBack, onEdit }) 
             .catch(() => {})
         }}
       />
+
+      <Dialog
+        open={showMarkPaidDialog}
+        onOpenChange={(open) => {
+          if (!markingPaid) setShowMarkPaidDialog(open)
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Mark deposit paid offline</DialogTitle>
+            <DialogDescription>
+              Record that the deposit for{' '}
+              <span className="font-medium text-[var(--text-primary)]">
+                {currentProposal?.title || 'this proposal'}
+              </span>{' '}
+              was paid outside Sonor. This fires the same "Deposit Paid" team
+              notification as a real payment and kicks off project setup.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="markpaid-method">Payment method</Label>
+              <Select
+                value={markPaidForm.paymentMethod}
+                onValueChange={(value) =>
+                  setMarkPaidForm((prev) => ({ ...prev, paymentMethod: value }))
+                }
+                disabled={markingPaid}
+              >
+                <SelectTrigger id="markpaid-method">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="check">Check</SelectItem>
+                  <SelectItem value="wire">Wire transfer</SelectItem>
+                  <SelectItem value="cash">Cash</SelectItem>
+                  <SelectItem value="external">External card / Stripe link</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="markpaid-reference">
+                Reference <span className="text-[var(--text-tertiary)]">(optional)</span>
+              </Label>
+              <Input
+                id="markpaid-reference"
+                value={markPaidForm.reference}
+                onChange={(e) =>
+                  setMarkPaidForm((prev) => ({ ...prev, reference: e.target.value }))
+                }
+                placeholder={
+                  markPaidForm.paymentMethod === 'check'
+                    ? 'e.g. Check #1234'
+                    : markPaidForm.paymentMethod === 'wire'
+                      ? 'e.g. Wire confirmation ABC123'
+                      : 'Short note to identify this payment'
+                }
+                disabled={markingPaid}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-2">
+                <Label htmlFor="markpaid-name">Paid by (name)</Label>
+                <Input
+                  id="markpaid-name"
+                  value={markPaidForm.paidByName}
+                  onChange={(e) =>
+                    setMarkPaidForm((prev) => ({ ...prev, paidByName: e.target.value }))
+                  }
+                  disabled={markingPaid}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="markpaid-email">Paid by (email)</Label>
+                <Input
+                  id="markpaid-email"
+                  type="email"
+                  value={markPaidForm.paidByEmail}
+                  onChange={(e) =>
+                    setMarkPaidForm((prev) => ({ ...prev, paidByEmail: e.target.value }))
+                  }
+                  disabled={markingPaid}
+                />
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowMarkPaidDialog(false)}
+              disabled={markingPaid}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleConfirmMarkPaid}
+              disabled={markingPaid}
+              className="bg-[var(--brand-primary)] hover:bg-[var(--brand-primary-hover)] gap-2"
+            >
+              {markingPaid ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Saving…
+                </>
+              ) : (
+                <>
+                  <DollarSign className="w-4 h-4" />
+                  Mark as Paid
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={showResendDialog}
+        onOpenChange={(open) => {
+          if (!resending) setShowResendDialog(open)
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Resend signed copy</DialogTitle>
+            <DialogDescription>
+              Email the signed PDF of{' '}
+              <span className="font-medium text-[var(--text-primary)]">
+                {currentProposal?.title || 'this proposal'}
+              </span>
+              . Leave the address as-is to send to the original client, or change
+              it to forward to a different recipient.
+              {currentProposal?.signed_pdf_sent_at && (
+                <span className="block mt-2 text-xs text-[var(--text-tertiary)]">
+                  Last sent{' '}
+                  {new Date(currentProposal.signed_pdf_sent_at).toLocaleString()}
+                </span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-2">
+            <Label htmlFor="resend-email">Recipient email</Label>
+            <Input
+              id="resend-email"
+              type="email"
+              value={resendEmail}
+              onChange={(e) => setResendEmail(e.target.value)}
+              placeholder="client@example.com"
+              disabled={resending}
+            />
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowResendDialog(false)}
+              disabled={resending}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleConfirmResend}
+              disabled={resending || !resendEmail?.trim()}
+              className="bg-[var(--brand-primary)] hover:bg-[var(--brand-primary-hover)] gap-2"
+            >
+              {resending ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Sending…
+                </>
+              ) : (
+                <>
+                  <Mail className="w-4 h-4" />
+                  Send
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

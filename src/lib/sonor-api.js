@@ -627,8 +627,27 @@ export const proposalsApi = {
 
   sign: (id, data) =>
     sonorApi.post(`/proposals/${id}/sign`, data),
-  
-  decline: (id, data = {}) => 
+
+  /**
+   * Re-send the signed PDF copy to the client. If `email` is provided, sends to
+   * that address instead of the contact/recipient email on the proposal.
+   * Backend reuses the stored PDF when possible, regenerates via Puppeteer when not.
+   */
+  resendSignedPdf: (id, email) =>
+    sonorApi.post(`/proposals/${id}/resend-signed-pdf`, email ? { email } : {}),
+
+  /**
+   * Mark a proposal's deposit as paid outside of Sonor (check, wire, cash, etc.).
+   * Flips the proposal_payments row to completed, updates any linked invoice,
+   * and fires the same admin/team notifications as a real payment.
+   *
+   * @param {string} id - Proposal ID
+   * @param {object} data - { paymentMethod, reference?, paidByName?, paidByEmail?, paidAt? }
+   */
+  markPaidOffline: (id, data) =>
+    sonorApi.post(`/proposals/${id}/mark-paid-offline`, data),
+
+  decline: (id, data = {}) =>
     sonorApi.post(`/proposals/${id}/decline`, data),
   
   trackView: (id) => 

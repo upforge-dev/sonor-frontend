@@ -354,8 +354,8 @@ export default function InvoicePayment() {
     return (
       <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white flex items-center justify-center p-4">
         <div className="max-w-md w-full">
-          <div className="text-center mb-8">
-            <BrandLogo logoUrl={logoUrl} brandName={brandName} className="h-10 mx-auto" />
+          <div className="flex justify-center mb-8">
+            <BrandLogo logoUrl={logoUrl} brandName={brandName} className="h-10" />
           </div>
           
           <div className="bg-white rounded-3xl shadow-xl overflow-hidden">

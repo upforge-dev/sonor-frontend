@@ -1,4 +1,4 @@
-import { useParams } from 'react-router-dom'
+import { useParams, useSearchParams } from 'react-router-dom'
 import { useEffect, useState, useRef } from 'react'
 import { proposalsApi, getPortalApiUrl } from '@/lib/sonor-api'
 import UptradeLoading from './UptradeLoading'
@@ -6,6 +6,12 @@ import ProposalTemplate from './proposals/ProposalTemplate'
 
 export default function ProposalGate() {
   const { slug } = useParams()
+  const [searchParams] = useSearchParams()
+  // When the proposal is rendered for a PDF export (Puppeteer via the
+  // signed-PDF generation/resend flow), we MUST NOT follow the client-side
+  // redirect to the unpaid-deposit pay page — we want the actual signed
+  // proposal to be captured. Callers opt in with `?pdf=1`.
+  const isPdfExport = searchParams.get('pdf') === '1'
   const [proposal, setProposal] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -28,7 +34,12 @@ export default function ProposalGate() {
 
         const data = response.data
         const pendingPath = data?.pendingPaymentPath
-        if (pendingPath && typeof pendingPath === 'string' && pendingPath.startsWith('/')) {
+        if (
+          !isPdfExport &&
+          pendingPath &&
+          typeof pendingPath === 'string' &&
+          pendingPath.startsWith('/')
+        ) {
           window.location.replace(`${window.location.origin}${pendingPath}`)
           return
         }
