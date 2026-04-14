@@ -29,6 +29,7 @@
  */
 
 import { useState, useEffect, useRef, lazy, Suspense } from 'react'
+import juice from 'juice'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -573,6 +574,26 @@ const GRAPESJS_CUSTOM_STYLES = `
   }
 `
 
+/**
+ * Inline CSS from <style> blocks into element style="" attributes.
+ * Email clients (Gmail, Outlook) strip <style> blocks, so all CSS
+ * must be inlined for reliable rendering.
+ */
+function inlineEmailCss(html) {
+  if (!html) return html
+  try {
+    return juice(html, {
+      preserveMediaQueries: true,
+      preserveFontFaces: true,
+      removeStyleTags: true,
+      preserveImportant: true,
+    })
+  } catch (e) {
+    console.warn('[EmailEditor] CSS inline failed, using raw HTML:', e)
+    return html
+  }
+}
+
 // Template categories for template mode
 const TEMPLATE_CATEGORIES = [
   { value: 'transactional', label: '🔔 Transactional', description: 'Automated emails (form confirmations, receipts, etc.)' },
@@ -742,7 +763,7 @@ export function EmailEditor({
           // Check if there's actual content (not just empty body tags)
           const bodyContent = html ? html.replace(/<body[^>]*>|<\/body>/gi, '').trim() : ''
           if (bodyContent) {
-            const fullHtml = css ? `<style>${css}</style>${html}` : html
+            const fullHtml = inlineEmailCss(css ? `<style>${css}</style>${html}` : html)
             setHtmlContent(fullHtml)
             console.log('Synced before destroy:', fullHtml.substring(0, 100))
           }
@@ -773,7 +794,7 @@ export function EmailEditor({
         const html = editor.getHtml()
         const css = editor.getCss()
         if (html) {
-          setHtmlContent(css ? `<style>${css}</style>${html}` : html)
+          setHtmlContent(inlineEmailCss(css ? `<style>${css}</style>${html}` : html))
         }
       } catch (e) {
         console.error('Failed to sync HTML from editor:', e)
@@ -1863,7 +1884,7 @@ export function EmailEditor({
         const css = editor.getCss()
         // Only sync if there's actual content (not just empty body)
         if (html && html.replace(/<body[^>]*>|<\/body>/gi, '').trim()) {
-          const fullHtml = css ? `<style>${css}</style>${html}` : html
+          const fullHtml = inlineEmailCss(css ? `<style>${css}</style>${html}` : html)
           setHtmlContent(fullHtml)
           console.log('Synced HTML:', fullHtml.substring(0, 100))
         }
