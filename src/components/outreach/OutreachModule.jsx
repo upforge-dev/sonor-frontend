@@ -17,6 +17,7 @@ import {
   Lock,
   PenLine,
   Mail,
+  MessageSquareText,
 } from 'lucide-react'
 import { ModuleLayout } from '@/components/ModuleLayout'
 import { MODULE_ICONS } from '@/lib/module-icons'
@@ -36,6 +37,7 @@ const OutreachVerificationTab = lazy(() => import('./tabs/OutreachVerificationTa
 const SignaturesTab = lazy(() => import('./tabs/SignaturesTab'))
 const SignatureAnalytics = lazy(() => import('./tabs/SignatureAnalytics'))
 const OutreachLandingPagesTab = lazy(() => import('./tabs/OutreachLandingPagesTab'))
+const NarrativesTab = lazy(() => import('./tabs/NarrativesTab'))
 const DomainSetup = lazy(() => import('@/components/email/DomainSetup'))
 
 const SIDEBAR_SECTIONS = [
@@ -54,6 +56,7 @@ const SIDEBAR_SECTIONS = [
     label: 'Cold Outreach',
     requiresSignal: true,
     items: [
+      { value: 'narratives', label: 'Narratives', icon: MessageSquareText },
       { value: 'sequences', label: 'Sequences', icon: ListOrdered },
       { value: 'inbox', label: 'Inbox', icon: Inbox, badge: true },
       { value: 'discovery', label: 'Lead Discovery', icon: SearchCode },
@@ -179,6 +182,7 @@ export default function OutreachModule() {
       )
     }
 
+    if (activeTab === 'narratives') return <Suspense fallback={lazyFallback}><NarrativesTab /></Suspense>
     if (activeTab === 'sequences') return <Suspense fallback={lazyFallback}><OutreachSequencesTab /></Suspense>
     if (activeTab === 'inbox') return <Suspense fallback={lazyFallback}><OutreachInboxTab /></Suspense>
     if (activeTab === 'discovery') return <Suspense fallback={lazyFallback}><OutreachDiscoveryTab /></Suspense>

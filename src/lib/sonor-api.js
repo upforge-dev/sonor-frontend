@@ -4576,6 +4576,14 @@ export const outreachApi = {
   listLandingPages: () => sonorApi.get('/outreach/landing-pages'),
   createLandingPage: (data) => sonorApi.post('/outreach/landing-pages', data),
   getLandingPage: (id) => sonorApi.get(`/outreach/landing-pages/${id}`),
+
+  // Narratives (cold outreach personas — gated behind full_signal)
+  listNarratives: () => sonorApi.get('/outreach/narratives'),
+  getNarrative: (id) => sonorApi.get(`/outreach/narratives/${id}`),
+  createNarrative: (data) => sonorApi.post('/outreach/narratives', data),
+  updateNarrative: (id, data) => sonorApi.put(`/outreach/narratives/${id}`, data),
+  setNarrativeEnabled: (id, enabled) => sonorApi.patch(`/outreach/narratives/${id}/enabled`, { enabled }),
+  deleteNarrative: (id) => sonorApi.delete(`/outreach/narratives/${id}`),
 }
 
 // ============================================================================
