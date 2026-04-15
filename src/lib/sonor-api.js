@@ -4627,6 +4627,15 @@ export const outreachApi = {
   ingestLeadCsv: (data) => sonorApi.post('/outreach/lead-sources/ingest-csv', data),
   runPlacesSource: (data) => sonorApi.post('/outreach/lead-sources/run-places', data),
 
+  // M5 — Apollo sourcing, sharing, per-lead enrichment, multi-angle re-route
+  runApolloSource: (data) => sonorApi.post('/outreach/lead-sources/run-apollo', data),
+  setLeadSourceSharing: (id, shared) =>
+    sonorApi.post(`/outreach/lead-sources/${id}/sharing`, { shared }),
+  enrichLead: (id) => sonorApi.post(`/outreach/leads/${id}/enrich`),
+  getLeadTouches: (id) => sonorApi.get(`/outreach/leads/${id}/touches`),
+  reRouteLead: (id) => sonorApi.post(`/outreach/leads/${id}/re-route`),
+  reRouteExpiredLeads: () => sonorApi.post('/outreach/leads/re-route-expired'),
+
   // M4 analytics breakdowns
   getNarrativeBreakdown: (days = 30) =>
     sonorApi.get('/outreach/analytics/narratives', { params: { days } }),

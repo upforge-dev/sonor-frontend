@@ -28,6 +28,9 @@ import {
   MapPin,
   Plus,
   X,
+  Building,
+  Share2,
+  ShareOff,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useSignalTier } from '@/hooks/useSignalTier'
@@ -63,6 +66,90 @@ const BUSINESS_TYPES = [
   'salon',
 ]
 
+const APOLLO_SENIORITIES = [
+  'owner',
+  'founder',
+  'c_suite',
+  'vp',
+  'head',
+  'director',
+  'manager',
+]
+
+const APOLLO_EMPLOYEE_RANGES = [
+  '1,10',
+  '11,50',
+  '51,200',
+  '201,1000',
+  '1000,50000',
+]
+
+function TagInput({ value = [], onChange, placeholder }) {
+  const [draft, setDraft] = useState('')
+  const addTag = () => {
+    const t = draft.trim()
+    if (!t) return
+    if (value.includes(t)) {
+      setDraft('')
+      return
+    }
+    onChange([...value, t])
+    setDraft('')
+  }
+  const removeTag = (t) => onChange(value.filter((x) => x !== t))
+
+  return (
+    <div className="space-y-1.5">
+      <div className="flex flex-wrap gap-1.5">
+        {value.map((t) => (
+          <span
+            key={t}
+            className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] bg-[var(--brand-primary)]/10 text-[var(--brand-primary)] border border-[var(--brand-primary)]/30"
+          >
+            {t}
+            <button
+              type="button"
+              onClick={() => removeTag(t)}
+              className="hover:opacity-70"
+              aria-label={`Remove ${t}`}
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </span>
+        ))}
+      </div>
+      <div className="flex items-center gap-1.5">
+        <Input
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ',') {
+              e.preventDefault()
+              addTag()
+            }
+          }}
+          placeholder={placeholder}
+          className="text-xs"
+        />
+        <Button type="button" size="sm" variant="outline" onClick={addTag}>
+          <Plus className="h-3.5 w-3.5" />
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+const EMPTY_APOLLO_CONFIG = {
+  sourceName: '',
+  api_key: '',
+  person_titles: [],
+  person_seniorities: [],
+  organization_keywords: [],
+  organization_locations: [],
+  organization_num_employees_ranges: [],
+  max_results: 50,
+}
+
 export default function LeadSourcesTab() {
   const { hasFullSignal, upgradeLabel, upgradePath } = useSignalTier()
   const [sources, setSources] = useState([])
@@ -84,6 +171,11 @@ export default function LeadSourcesTab() {
     business_types: ['local_business'],
     sourceName: '',
   })
+
+  // Apollo dialog state
+  const [apolloOpen, setApolloOpen] = useState(false)
+  const [apolloRunning, setApolloRunning] = useState(false)
+  const [apolloConfig, setApolloConfig] = useState(EMPTY_APOLLO_CONFIG)
 
   const fetchSources = useCallback(async () => {
     setLoading(true)
@@ -200,6 +292,86 @@ export default function LeadSourcesTab() {
     }
   }
 
+  const toggleApolloSeniority = (s) => {
+    setApolloConfig((c) => {
+      const has = c.person_seniorities.includes(s)
+      return {
+        ...c,
+        person_seniorities: has
+          ? c.person_seniorities.filter((x) => x !== s)
+          : [...c.person_seniorities, s],
+      }
+    })
+  }
+
+  const toggleApolloEmployeeRange = (r) => {
+    setApolloConfig((c) => {
+      const has = c.organization_num_employees_ranges.includes(r)
+      return {
+        ...c,
+        organization_num_employees_ranges: has
+          ? c.organization_num_employees_ranges.filter((x) => x !== r)
+          : [...c.organization_num_employees_ranges, r],
+      }
+    })
+  }
+
+  const handleRunApollo = async () => {
+    if (!apolloConfig.api_key.trim()) {
+      toast.error('Apollo API key is required')
+      return
+    }
+    setApolloRunning(true)
+    try {
+      const res = await outreachApi.runApolloSource({
+        sourceName: apolloConfig.sourceName || undefined,
+        config: {
+          api_key: apolloConfig.api_key.trim(),
+          person_titles: apolloConfig.person_titles,
+          person_seniorities: apolloConfig.person_seniorities,
+          organization_keywords: apolloConfig.organization_keywords,
+          organization_locations: apolloConfig.organization_locations,
+          organization_num_employees_ranges: apolloConfig.organization_num_employees_ranges,
+          max_results: Number(apolloConfig.max_results) || 50,
+        },
+      })
+      const payload = res.data || {}
+      setLastResult({
+        rowCount: payload.contactsFetched,
+        inserted: payload.inserted,
+        skipped: payload.skipped,
+        unknownHeaders: [],
+        _type: 'apollo',
+        _totalMatching: payload.totalEntriesApollo,
+      })
+      toast.success(
+        `Apollo: ${payload.inserted || 0} new leads added (${payload.contactsFetched || 0} fetched, ${payload.totalEntriesApollo || 0} matching)`,
+      )
+      setApolloOpen(false)
+      setApolloConfig(EMPTY_APOLLO_CONFIG)
+      await fetchSources()
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Apollo run failed')
+    } finally {
+      setApolloRunning(false)
+    }
+  }
+
+  const handleToggleSharing = async (source, e) => {
+    e?.stopPropagation()
+    try {
+      await outreachApi.setLeadSourceSharing(source.id, !source.is_shared_across_org)
+      toast.success(
+        !source.is_shared_across_org
+          ? 'Sharing enabled — visible to sibling projects in this org'
+          : 'Sharing disabled',
+      )
+      await fetchSources()
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Sharing toggle failed')
+    }
+  }
+
   // ─── Plan gate ────────────────────────────────────────────────────────
   if (!hasFullSignal) {
     return (
@@ -240,6 +412,9 @@ export default function LeadSourcesTab() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" onClick={() => setApolloOpen(true)}>
+            <Building className="h-3.5 w-3.5 mr-1.5" /> Run Apollo
+          </Button>
           <Button size="sm" variant="outline" onClick={() => setPlacesOpen(true)}>
             <MapPin className="h-3.5 w-3.5 mr-1.5" /> Run Places
           </Button>
@@ -297,23 +472,73 @@ export default function LeadSourcesTab() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {sources.map((s) => {
             const result = s.last_run_result || {}
+            const owned = s.owned_by_current_project !== false
             return (
               <GlassCard key={s.id}>
                 <GlassCardHeader>
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0 flex-1">
-                      <GlassCardTitle className="text-sm">{s.name}</GlassCardTitle>
+                      <GlassCardTitle className="text-sm flex items-center gap-2">
+                        <span className="truncate">{s.name}</span>
+                        {s.is_shared_across_org && owned && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--brand-primary)]/10 text-[var(--brand-primary)] border border-[var(--brand-primary)]/30">
+                            Shared
+                          </span>
+                        )}
+                      </GlassCardTitle>
                       <GlassCardDescription>
                         {TYPE_LABELS[s.type] || s.type}
                       </GlassCardDescription>
+                      {!owned && (
+                        <p className="text-[10px] text-[var(--text-tertiary)] mt-0.5">
+                          Shared from{' '}
+                          <span className="text-[var(--text-secondary)]">
+                            {s.owning_project_name || 'another project'}
+                          </span>
+                        </p>
+                      )}
                     </div>
-                    <button
-                      onClick={() => handleDelete(s)}
-                      className="text-[var(--text-tertiary)] hover:text-red-500"
-                      aria-label="Delete"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
+                    <div className="flex items-center gap-1">
+                      {owned && (
+                        <button
+                          onClick={(e) => handleToggleSharing(s, e)}
+                          className={`${
+                            s.is_shared_across_org
+                              ? 'text-[var(--brand-primary)]'
+                              : 'text-[var(--text-tertiary)]'
+                          } hover:text-[var(--brand-primary)]`}
+                          title={
+                            s.is_shared_across_org
+                              ? 'Sharing enabled (click to disable)'
+                              : 'Click to share with sibling projects in this org'
+                          }
+                          aria-label="Toggle sharing"
+                        >
+                          {s.is_shared_across_org ? (
+                            <Share2 className="h-3.5 w-3.5" />
+                          ) : (
+                            <ShareOff className="h-3.5 w-3.5" />
+                          )}
+                        </button>
+                      )}
+                      <button
+                        onClick={() => owned && handleDelete(s)}
+                        className={`${
+                          owned
+                            ? 'text-[var(--text-tertiary)] hover:text-red-500'
+                            : 'text-[var(--text-tertiary)]/40 cursor-not-allowed'
+                        }`}
+                        aria-label="Delete"
+                        disabled={!owned}
+                        title={
+                          owned
+                            ? 'Delete source'
+                            : 'Only the owning project can delete a shared source'
+                        }
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
                   </div>
                 </GlassCardHeader>
                 <GlassCardContent className="text-[11px] space-y-1 text-[var(--text-secondary)]">
@@ -341,6 +566,167 @@ export default function LeadSourcesTab() {
           })}
         </div>
       )}
+
+      {/* Apollo run dialog */}
+      <Dialog open={apolloOpen} onOpenChange={setApolloOpen}>
+        <DialogContent className="max-w-xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Run Apollo prospecting</DialogTitle>
+            <DialogDescription>
+              Searches Apollo for people matching the filters below and imports them as leads.
+              Your API key is stored on the lead source record and used for subsequent runs and
+              enrichment. Need a key? Grab it from Apollo's{' '}
+              <a
+                href="https://app.apollo.io/#/settings/integrations/api"
+                target="_blank"
+                rel="noreferrer"
+                className="underline text-[var(--brand-primary)]"
+              >
+                settings → integrations → API
+              </a>
+              .
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <Label>Source name (optional)</Label>
+              <Input
+                value={apolloConfig.sourceName}
+                onChange={(e) =>
+                  setApolloConfig((c) => ({ ...c, sourceName: e.target.value }))
+                }
+                placeholder={`Apollo — ${new Date().toISOString().slice(0, 10)}`}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Apollo API key</Label>
+              <Input
+                type="password"
+                value={apolloConfig.api_key}
+                onChange={(e) =>
+                  setApolloConfig((c) => ({ ...c, api_key: e.target.value }))
+                }
+                placeholder="Paste your Apollo API key"
+                autoComplete="off"
+              />
+              <p className="text-[10px] text-[var(--text-tertiary)]">
+                Stored on the lead source record. Never sent to the browser afterward — only the
+                last 4 digits are shown on subsequent loads.
+              </p>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Person titles</Label>
+              <TagInput
+                value={apolloConfig.person_titles}
+                onChange={(v) => setApolloConfig((c) => ({ ...c, person_titles: v }))}
+                placeholder="CEO, Founder, Head of Marketing…"
+              />
+              <p className="text-[10px] text-[var(--text-tertiary)]">
+                Free-text role titles. Press Enter or comma to add.
+              </p>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Person seniorities</Label>
+              <div className="flex flex-wrap gap-1.5">
+                {APOLLO_SENIORITIES.map((s) => {
+                  const active = apolloConfig.person_seniorities.includes(s)
+                  return (
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={() => toggleApolloSeniority(s)}
+                      className={`inline-flex items-center gap-1 px-2 py-1 rounded text-[11px] border transition-colors ${
+                        active
+                          ? 'bg-[var(--brand-primary)]/10 text-[var(--brand-primary)] border-[var(--brand-primary)]/30'
+                          : 'bg-[var(--glass-bg)] text-[var(--text-secondary)] border-[var(--glass-border)] hover:border-[var(--glass-border-strong)]'
+                      }`}
+                    >
+                      {active ? <X className="h-3 w-3" /> : <Plus className="h-3 w-3" />}
+                      {s.replace(/_/g, ' ')}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Organization industry keywords</Label>
+              <TagInput
+                value={apolloConfig.organization_keywords}
+                onChange={(v) =>
+                  setApolloConfig((c) => ({ ...c, organization_keywords: v }))
+                }
+                placeholder="law firm, real estate, dental…"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Organization locations</Label>
+              <TagInput
+                value={apolloConfig.organization_locations}
+                onChange={(v) =>
+                  setApolloConfig((c) => ({ ...c, organization_locations: v }))
+                }
+                placeholder="Ohio, US"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Organization employee range</Label>
+              <div className="flex flex-wrap gap-1.5">
+                {APOLLO_EMPLOYEE_RANGES.map((r) => {
+                  const active = apolloConfig.organization_num_employees_ranges.includes(r)
+                  const [lo, hi] = r.split(',')
+                  return (
+                    <button
+                      key={r}
+                      type="button"
+                      onClick={() => toggleApolloEmployeeRange(r)}
+                      className={`inline-flex items-center gap-1 px-2 py-1 rounded text-[11px] border transition-colors ${
+                        active
+                          ? 'bg-[var(--brand-primary)]/10 text-[var(--brand-primary)] border-[var(--brand-primary)]/30'
+                          : 'bg-[var(--glass-bg)] text-[var(--text-secondary)] border-[var(--glass-border)] hover:border-[var(--glass-border-strong)]'
+                      }`}
+                    >
+                      {active ? <X className="h-3 w-3" /> : <Plus className="h-3 w-3" />}
+                      {lo}–{hi}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Max results</Label>
+              <Input
+                type="number"
+                min="1"
+                max="500"
+                value={apolloConfig.max_results}
+                onChange={(e) =>
+                  setApolloConfig((c) => ({ ...c, max_results: e.target.value }))
+                }
+              />
+              <p className="text-[10px] text-[var(--text-tertiary)]">
+                Caps per run (1–500). Each result consumes one Apollo credit.
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setApolloOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleRunApollo}
+              disabled={apolloRunning || !apolloConfig.api_key.trim()}
+            >
+              {apolloRunning ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> Running
+                </>
+              ) : (
+                'Run Apollo'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Places run dialog */}
       <Dialog open={placesOpen} onOpenChange={setPlacesOpen}>

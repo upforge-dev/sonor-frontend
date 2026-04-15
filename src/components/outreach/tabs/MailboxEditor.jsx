@@ -54,6 +54,8 @@ const EMPTY_MAILBOX = {
   max_gap_min: 8,
   pause_windows: [{ start: '12:00', end: '13:00', label: 'lunch' }],
   weekday_multiplier: { 0: 0, 1: 1, 2: 1, 3: 1, 4: 1, 5: 0.8, 6: 0 },
+  delivery_mode: 'gmail_direct',
+  apollo_sequence_id: '',
 }
 
 function TimeInput({ value, onChange, ...props }) {
@@ -244,6 +246,11 @@ export default function MailboxEditor({ mailbox, onSaved, onCancelled }) {
         max_gap_min: Number(form.max_gap_min) || 1,
         pause_windows: form.pause_windows,
         weekday_multiplier: form.weekday_multiplier,
+        delivery_mode: form.delivery_mode || 'gmail_direct',
+        apollo_sequence_id:
+          form.delivery_mode === 'apollo_sequences'
+            ? (form.apollo_sequence_id || '').trim() || null
+            : null,
       }
 
       if (isNew) {
@@ -347,6 +354,61 @@ export default function MailboxEditor({ mailbox, onSaved, onCancelled }) {
               </SelectContent>
             </Select>
           </div>
+        </div>
+
+        {/* Delivery mode */}
+        <div className="space-y-3">
+          <h3 className="text-sm font-semibold text-[var(--text-primary)]">Delivery mode</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>How this mailbox sends</Label>
+              <Select
+                value={form.delivery_mode || 'gmail_direct'}
+                onValueChange={(v) => set('delivery_mode', v)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="gmail_direct">
+                    Gmail direct — send via connected Google Workspace
+                  </SelectItem>
+                  <SelectItem value="apollo_sequences">
+                    Apollo Sequences — push to an Apollo sequence
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {form.delivery_mode === 'apollo_sequences' && (
+              <div className="space-y-2">
+                <Label>Apollo sequence ID</Label>
+                <Input
+                  value={form.apollo_sequence_id || ''}
+                  onChange={(e) => set('apollo_sequence_id', e.target.value)}
+                  placeholder="e.g. 654abc123def456789"
+                  className="font-mono"
+                />
+                <p className="text-[11px] text-[var(--text-tertiary)]">
+                  Paste the Apollo sequence UUID from your sequence URL.
+                </p>
+              </div>
+            )}
+          </div>
+          {form.delivery_mode === 'apollo_sequences' && (
+            <p className="text-[11px] text-[var(--text-secondary)] bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-md p-2.5 leading-relaxed">
+              Requires Apollo Organizations plan with Sequences API access. Your Apollo API key
+              must be configured as a lead source on this project. We'll push each prospect into
+              the sequence with the generated subject and body injected as{' '}
+              <code className="text-[10px] font-mono text-[var(--text-primary)]">
+                {'{{sonor_narrative_subject}}'}
+              </code>{' '}
+              and{' '}
+              <code className="text-[10px] font-mono text-[var(--text-primary)]">
+                {'{{sonor_narrative_body}}'}
+              </code>{' '}
+              — wire those variables into your Apollo sequence template.
+            </p>
+          )}
         </div>
 
         {/* Schedule profile */}
