@@ -31,6 +31,8 @@ export const TAB_HEADERS = {
   'drip-dashboard':     { title: 'Drip Dashboard',      subtitle: "Today's send schedule across all mailboxes" },
   mailboxes:            { title: 'Mailboxes',           subtitle: 'Gmail sending identities and schedule profiles' },
   narratives:           { title: 'Narratives',          subtitle: 'Sender personas that steer AI email generation' },
+  leads:                { title: 'Leads',               subtitle: 'Cold prospects flowing through the pipeline' },
+  'lead-sources':       { title: 'Lead Sources',        subtitle: 'CSV upload, Google Places, Apollo adapters' },
   sequences:            { title: 'Sequences',           subtitle: 'Multi-step cold email campaigns' },
   inbox:                { title: 'Inbox',               subtitle: 'Replies from outreach recipients' },
   discovery:            { title: 'Lead Discovery',      subtitle: 'Find prospects via Bright Data + Signal AI' },

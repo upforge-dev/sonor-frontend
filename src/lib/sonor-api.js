@@ -4605,6 +4605,26 @@ export const outreachApi = {
     sonorApi.post(`/outreach/drip/mailboxes/${id}/regenerate-schedule`),
   cancelMailboxSchedule: (id) =>
     sonorApi.delete(`/outreach/drip/mailboxes/${id}/cancel-schedule`),
+
+  // Leads (M3 — cold prospects, narrative-routed, promoted to contacts on reply)
+  listLeads: (params = {}) => sonorApi.get('/outreach/leads', { params }),
+  getLeadCounts: () => sonorApi.get('/outreach/leads/counts'),
+  getLead: (id) => sonorApi.get(`/outreach/leads/${id}`),
+  createLead: (data) => sonorApi.post('/outreach/leads', data),
+  updateLead: (id, data) => sonorApi.put(`/outreach/leads/${id}`, data),
+  setLeadState: (id, state, reason) =>
+    sonorApi.patch(`/outreach/leads/${id}/state`, { state, reason }),
+  routeLead: (id) => sonorApi.post(`/outreach/leads/${id}/route`),
+  routeAllLeads: () => sonorApi.post('/outreach/leads/route-all'),
+  deleteLead: (id) => sonorApi.delete(`/outreach/leads/${id}`),
+
+  // Lead sources (M3 — CSV upload + Apollo/Places adapters)
+  listLeadSources: () => sonorApi.get('/outreach/lead-sources'),
+  getLeadSource: (id) => sonorApi.get(`/outreach/lead-sources/${id}`),
+  createLeadSource: (data) => sonorApi.post('/outreach/lead-sources', data),
+  updateLeadSource: (id, data) => sonorApi.put(`/outreach/lead-sources/${id}`, data),
+  deleteLeadSource: (id) => sonorApi.delete(`/outreach/lead-sources/${id}`),
+  ingestLeadCsv: (data) => sonorApi.post('/outreach/lead-sources/ingest-csv', data),
 }
 
 // ============================================================================
