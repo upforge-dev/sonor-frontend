@@ -34,22 +34,28 @@ export default function OutreachAnalyticsTab() {
   const [sequences, setSequences] = useState([])
   const [selectedSequence, setSelectedSequence] = useState(null)
   const [sequenceAnalytics, setSequenceAnalytics] = useState(null)
+  const [narrativeBreakdown, setNarrativeBreakdown] = useState([])
+  const [mailboxBreakdown, setMailboxBreakdown] = useState([])
   const [days, setDays] = useState('30')
   const [loading, setLoading] = useState(true)
 
   const loadData = async () => {
     setLoading(true)
     try {
-      const [ov, dom, seq] = await Promise.all([
+      const [ov, dom, seq, narrBreak, mailBreak] = await Promise.all([
         outreachApi.getAnalyticsOverview(parseInt(days)),
         outreachApi.getDomainAnalytics(),
         outreachApi.listSequences(),
+        outreachApi.getNarrativeBreakdown(parseInt(days)).catch(() => ({ data: [] })),
+        outreachApi.getMailboxBreakdown(parseInt(days)).catch(() => ({ data: [] })),
       ])
       setOverview(ov?.data || ov)
       setDomainData(dom?.data || dom || [])
       const seqList = seq?.data || seq || []
       setSequences(seqList)
       if (seqList.length > 0 && !selectedSequence) setSelectedSequence(seqList[0].id)
+      setNarrativeBreakdown(narrBreak?.data || narrBreak || [])
+      setMailboxBreakdown(mailBreak?.data || mailBreak || [])
     } catch (err) {
       console.error('Failed to load analytics', err)
     } finally {
@@ -284,6 +290,142 @@ export default function OutreachAnalyticsTab() {
           )}
         </GlassCardContent>
       </GlassCard>
+
+      {/* Narrative breakdown (M4) */}
+      {narrativeBreakdown.length > 0 && (
+        <GlassCard>
+          <GlassCardHeader className="pb-3">
+            <GlassCardTitle className="text-base">Narrative performance</GlassCardTitle>
+            <p className="text-xs text-[var(--text-secondary)]">
+              Leads and slots grouped by narrative — see which personas are converting
+            </p>
+          </GlassCardHeader>
+          <GlassCardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-[var(--glass-border)] text-[var(--text-secondary)] text-xs uppercase">
+                    <th className="text-left py-2 pr-4">Narrative</th>
+                    <th className="text-right py-2 px-2">Leads</th>
+                    <th className="text-right py-2 px-2">Routed</th>
+                    <th className="text-right py-2 px-2">Sent</th>
+                    <th className="text-right py-2 px-2">Replied</th>
+                    <th className="text-right py-2 px-2">Bounced</th>
+                    <th className="text-right py-2 px-2">Reply %</th>
+                    <th className="text-right py-2 px-2">Slots sent</th>
+                    <th className="text-right py-2 px-2">Success %</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {narrativeBreakdown.map((row, i) => (
+                    <tr
+                      key={row.narrative_id || `unassigned-${i}`}
+                      className="border-b border-[var(--glass-border)] last:border-0"
+                    >
+                      <td className="py-2 pr-4">
+                        <div className="flex flex-col">
+                          <span className="font-medium text-[var(--text-primary)]">
+                            {row.name}
+                          </span>
+                          {row.domain_hint && (
+                            <span className="text-[11px] text-[var(--text-tertiary)]">
+                              {row.domain_hint}
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="text-right py-2 px-2 tabular-nums">{row.leads_total}</td>
+                      <td className="text-right py-2 px-2 tabular-nums">
+                        {row.leads_by_state?.routed || 0}
+                      </td>
+                      <td className="text-right py-2 px-2 tabular-nums">
+                        {row.leads_by_state?.sent || 0}
+                      </td>
+                      <td className="text-right py-2 px-2 tabular-nums text-[var(--status-success)]">
+                        {row.leads_by_state?.replied || 0}
+                      </td>
+                      <td className="text-right py-2 px-2 tabular-nums text-[var(--status-error)]">
+                        {row.leads_by_state?.bounced || 0}
+                      </td>
+                      <td className="text-right py-2 px-2 font-semibold text-[var(--brand-primary)]">
+                        {row.reply_rate}%
+                      </td>
+                      <td className="text-right py-2 px-2 tabular-nums">{row.slots_sent}</td>
+                      <td className="text-right py-2 px-2 font-semibold">
+                        {row.send_success_rate}%
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </GlassCardContent>
+        </GlassCard>
+      )}
+
+      {/* Mailbox breakdown (M4) */}
+      {mailboxBreakdown.length > 0 && (
+        <GlassCard>
+          <GlassCardHeader className="pb-3">
+            <GlassCardTitle className="text-base">Mailbox performance</GlassCardTitle>
+            <p className="text-xs text-[var(--text-secondary)]">
+              Slots fired per mailbox — high skipped counts indicate lead starvation
+            </p>
+          </GlassCardHeader>
+          <GlassCardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-[var(--glass-border)] text-[var(--text-secondary)] text-xs uppercase">
+                    <th className="text-left py-2 pr-4">Mailbox</th>
+                    <th className="text-right py-2 px-2">Target/day</th>
+                    <th className="text-right py-2 px-2">Sent today</th>
+                    <th className="text-right py-2 px-2">Slots</th>
+                    <th className="text-right py-2 px-2">Sent</th>
+                    <th className="text-right py-2 px-2">Skipped</th>
+                    <th className="text-right py-2 px-2">Failed</th>
+                    <th className="text-right py-2 px-2">Success %</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {mailboxBreakdown.map((row) => (
+                    <tr
+                      key={row.mailbox_id}
+                      className="border-b border-[var(--glass-border)] last:border-0"
+                    >
+                      <td className="py-2 pr-4">
+                        <div className="flex flex-col">
+                          <span className="font-medium text-[var(--text-primary)]">
+                            {row.display_name}
+                          </span>
+                          <span className="text-[11px] text-[var(--text-tertiary)]">
+                            {row.email_address}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="text-right py-2 px-2 tabular-nums">{row.daily_target}</td>
+                      <td className="text-right py-2 px-2 tabular-nums">{row.sent_today}</td>
+                      <td className="text-right py-2 px-2 tabular-nums">{row.slots_total}</td>
+                      <td className="text-right py-2 px-2 tabular-nums text-[var(--status-success)]">
+                        {row.slots_by_status?.sent || 0}
+                      </td>
+                      <td className="text-right py-2 px-2 tabular-nums text-[var(--status-warning)]">
+                        {row.slots_by_status?.skipped || 0}
+                      </td>
+                      <td className="text-right py-2 px-2 tabular-nums text-[var(--status-error)]">
+                        {row.slots_by_status?.failed || 0}
+                      </td>
+                      <td className="text-right py-2 px-2 font-semibold">
+                        {row.send_success_rate}%
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </GlassCardContent>
+        </GlassCard>
+      )}
     </div>
   )
 }

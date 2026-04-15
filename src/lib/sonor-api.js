@@ -4625,6 +4625,13 @@ export const outreachApi = {
   updateLeadSource: (id, data) => sonorApi.put(`/outreach/lead-sources/${id}`, data),
   deleteLeadSource: (id) => sonorApi.delete(`/outreach/lead-sources/${id}`),
   ingestLeadCsv: (data) => sonorApi.post('/outreach/lead-sources/ingest-csv', data),
+  runPlacesSource: (data) => sonorApi.post('/outreach/lead-sources/run-places', data),
+
+  // M4 analytics breakdowns
+  getNarrativeBreakdown: (days = 30) =>
+    sonorApi.get('/outreach/analytics/narratives', { params: { days } }),
+  getMailboxBreakdown: (days = 30) =>
+    sonorApi.get('/outreach/analytics/mailboxes', { params: { days } }),
 }
 
 // ============================================================================

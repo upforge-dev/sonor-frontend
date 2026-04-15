@@ -25,6 +25,9 @@ import {
   CheckCircle2,
   AlertTriangle,
   Trash2,
+  MapPin,
+  Plus,
+  X,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useSignalTier } from '@/hooks/useSignalTier'
@@ -48,6 +51,18 @@ function formatLocal(iso) {
   return d.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })
 }
 
+const BUSINESS_TYPES = [
+  'local_business',
+  'dentist',
+  'lawyer',
+  'contractor',
+  'med_spa',
+  'real_estate',
+  'restaurant',
+  'gym',
+  'salon',
+]
+
 export default function LeadSourcesTab() {
   const { hasFullSignal, upgradeLabel, upgradePath } = useSignalTier()
   const [sources, setSources] = useState([])
@@ -58,6 +73,17 @@ export default function LeadSourcesTab() {
   const [uploading, setUploading] = useState(false)
   const [lastResult, setLastResult] = useState(null)
   const fileInputRef = useRef(null)
+
+  // Places dialog state
+  const [placesOpen, setPlacesOpen] = useState(false)
+  const [placesRunning, setPlacesRunning] = useState(false)
+  const [placesConfig, setPlacesConfig] = useState({
+    location: '',
+    radius: 10,
+    max_results: 20,
+    business_types: ['local_business'],
+    sourceName: '',
+  })
 
   const fetchSources = useCallback(async () => {
     setLoading(true)
@@ -114,6 +140,55 @@ export default function LeadSourcesTab() {
     }
   }
 
+  const handleRunPlaces = async () => {
+    if (!placesConfig.location.trim()) {
+      toast.error('Location is required')
+      return
+    }
+    setPlacesRunning(true)
+    try {
+      const res = await outreachApi.runPlacesSource({
+        sourceName: placesConfig.sourceName || undefined,
+        config: {
+          location: placesConfig.location.trim(),
+          radius: Number(placesConfig.radius) || 10,
+          max_results: Number(placesConfig.max_results) || 20,
+          business_types: placesConfig.business_types,
+        },
+      })
+      const payload = res.data || {}
+      setLastResult({
+        rowCount: payload.found,
+        inserted: payload.inserted,
+        skipped: payload.skipped,
+        unknownHeaders: [],
+        _type: 'places',
+        _businessTypes: payload.businessTypesUsed,
+      })
+      toast.success(
+        `Discovered ${payload.found || 0} places, added ${payload.inserted || 0} new leads`,
+      )
+      setPlacesOpen(false)
+      await fetchSources()
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Places run failed')
+    } finally {
+      setPlacesRunning(false)
+    }
+  }
+
+  const toggleBusinessType = (type) => {
+    setPlacesConfig((c) => {
+      const has = c.business_types.includes(type)
+      return {
+        ...c,
+        business_types: has
+          ? c.business_types.filter((t) => t !== type)
+          : [...c.business_types, type],
+      }
+    })
+  }
+
   const handleDelete = async (source) => {
     if (!window.confirm(`Delete lead source "${source.name}"?`)) return
     try {
@@ -164,9 +239,14 @@ export default function LeadSourcesTab() {
             Apollo
           </p>
         </div>
-        <Button size="sm" onClick={() => setUploadOpen(true)}>
-          <Upload className="h-3.5 w-3.5 mr-1.5" /> Upload CSV
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" onClick={() => setPlacesOpen(true)}>
+            <MapPin className="h-3.5 w-3.5 mr-1.5" /> Run Places
+          </Button>
+          <Button size="sm" onClick={() => setUploadOpen(true)}>
+            <Upload className="h-3.5 w-3.5 mr-1.5" /> Upload CSV
+          </Button>
+        </div>
       </div>
 
       {lastResult && (
@@ -261,6 +341,123 @@ export default function LeadSourcesTab() {
           })}
         </div>
       )}
+
+      {/* Places run dialog */}
+      <Dialog open={placesOpen} onOpenChange={setPlacesOpen}>
+        <DialogContent className="max-w-xl">
+          <DialogHeader>
+            <DialogTitle>Run Google Places discovery</DialogTitle>
+            <DialogDescription>
+              Searches Google Places near a location for businesses matching the selected types,
+              then creates new leads for every result with a website. Results are deduplicated
+              against existing leads by contact_email and domain.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <Label>Source name (optional)</Label>
+              <Input
+                value={placesConfig.sourceName}
+                onChange={(e) =>
+                  setPlacesConfig((c) => ({ ...c, sourceName: e.target.value }))
+                }
+                placeholder={`Places \u2014 ${placesConfig.location || 'location'} \u2014 ${new Date()
+                  .toISOString()
+                  .slice(0, 10)}`}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Location</Label>
+              <Input
+                value={placesConfig.location}
+                onChange={(e) =>
+                  setPlacesConfig((c) => ({ ...c, location: e.target.value }))
+                }
+                placeholder="Cincinnati, OH"
+              />
+              <p className="text-[10px] text-[var(--text-tertiary)]">
+                Any geocodable location. City + state works, as does ZIP or a specific address.
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>Radius (miles)</Label>
+                <Input
+                  type="number"
+                  min="1"
+                  max="50"
+                  value={placesConfig.radius}
+                  onChange={(e) =>
+                    setPlacesConfig((c) => ({ ...c, radius: e.target.value }))
+                  }
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Max results</Label>
+                <Input
+                  type="number"
+                  min="1"
+                  max="60"
+                  value={placesConfig.max_results}
+                  onChange={(e) =>
+                    setPlacesConfig((c) => ({ ...c, max_results: e.target.value }))
+                  }
+                />
+                <p className="text-[10px] text-[var(--text-tertiary)]">
+                  Google caps per-type at 20; more → cycles types.
+                </p>
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Business types</Label>
+              <div className="flex flex-wrap gap-1.5">
+                {BUSINESS_TYPES.map((type) => {
+                  const active = placesConfig.business_types.includes(type)
+                  return (
+                    <button
+                      key={type}
+                      type="button"
+                      onClick={() => toggleBusinessType(type)}
+                      className={`inline-flex items-center gap-1 px-2 py-1 rounded text-[11px] border transition-colors ${
+                        active
+                          ? 'bg-[var(--brand-primary)]/10 text-[var(--brand-primary)] border-[var(--brand-primary)]/30'
+                          : 'bg-[var(--glass-bg)] text-[var(--text-secondary)] border-[var(--glass-border)] hover:border-[var(--glass-border-strong)]'
+                      }`}
+                    >
+                      {active ? <X className="h-3 w-3" /> : <Plus className="h-3 w-3" />}
+                      {type.replace(/_/g, ' ')}
+                    </button>
+                  )
+                })}
+              </div>
+              <p className="text-[10px] text-[var(--text-tertiary)]">
+                At least one required. Multiple types cycle through to reach max_results.
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPlacesOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleRunPlaces}
+              disabled={
+                placesRunning ||
+                !placesConfig.location.trim() ||
+                placesConfig.business_types.length === 0
+              }
+            >
+              {placesRunning ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> Discovering
+                </>
+              ) : (
+                'Run discovery'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Upload dialog */}
       <Dialog open={uploadOpen} onOpenChange={setUploadOpen}>
