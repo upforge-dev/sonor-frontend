@@ -50,6 +50,9 @@ const SyncOAuthCallback = lazy(() => import('./pages/sync/SyncOAuthCallback'))
 // Public signature install page (no auth)
 const SignatureInstall = lazy(() => import('./pages/public/SignatureInstall'))
 
+// Cold outreach mailbox OAuth popup callback (standalone, loads inside popup)
+const OutreachOAuthCallback = lazy(() => import('./components/outreach/OutreachOAuthCallback'))
+
 export default function App() {
   const { isAuthenticated, checkAuth, isLoading } = useAuthStore()
   const [initialized, setInitialized] = useState(false)
@@ -141,6 +144,12 @@ export default function App() {
 
               {/* Sync OAuth Callback - must be standalone */}
               <Route path="/sync/callback" element={<SyncOAuthCallback />} />
+
+              {/* Cold outreach mailbox OAuth callback - loads in a popup and posts back to opener */}
+              <Route
+                path="/outreach-oauth-callback"
+                element={<OutreachOAuthCallback />}
+              />
               
               {/* ALL authenticated routes go through MainLayout for persistent sidebar/header */}
               <Route

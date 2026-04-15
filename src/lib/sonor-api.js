@@ -4584,6 +4584,27 @@ export const outreachApi = {
   updateNarrative: (id, data) => sonorApi.put(`/outreach/narratives/${id}`, data),
   setNarrativeEnabled: (id, enabled) => sonorApi.patch(`/outreach/narratives/${id}/enabled`, { enabled }),
   deleteNarrative: (id) => sonorApi.delete(`/outreach/narratives/${id}`),
+
+  // Mailboxes (per-mailbox Gmail sending identities — gated behind full_signal)
+  listMailboxes: () => sonorApi.get('/outreach/mailboxes'),
+  getMailbox: (id) => sonorApi.get(`/outreach/mailboxes/${id}`),
+  createMailbox: (data) => sonorApi.post('/outreach/mailboxes', data),
+  updateMailbox: (id, data) => sonorApi.put(`/outreach/mailboxes/${id}`, data),
+  setMailboxPaused: (id, paused, reason) =>
+    sonorApi.patch(`/outreach/mailboxes/${id}/paused`, { paused, reason }),
+  deleteMailbox: (id) => sonorApi.delete(`/outreach/mailboxes/${id}`),
+  initiateMailboxOAuth: (id, redirectUri) =>
+    sonorApi.post(`/outreach/mailboxes/${id}/oauth/initiate`, { redirectUri }),
+  disconnectMailbox: (id) => sonorApi.post(`/outreach/mailboxes/${id}/disconnect`),
+  sendMailboxTestEmail: (id, data) => sonorApi.post(`/outreach/mailboxes/${id}/test-send`, data),
+
+  // Drip scheduler
+  listDripSlots: (params = {}) => sonorApi.get('/outreach/drip/slots', { params }),
+  getMailboxSlotCounts: (id) => sonorApi.get(`/outreach/drip/mailboxes/${id}/slot-counts`),
+  regenerateMailboxSchedule: (id) =>
+    sonorApi.post(`/outreach/drip/mailboxes/${id}/regenerate-schedule`),
+  cancelMailboxSchedule: (id) =>
+    sonorApi.delete(`/outreach/drip/mailboxes/${id}/cancel-schedule`),
 }
 
 // ============================================================================

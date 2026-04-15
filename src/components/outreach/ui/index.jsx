@@ -28,6 +28,8 @@ export const TAB_HEADERS = {
   automations:          { title: 'Automations',         subtitle: 'Trigger-based email workflows' },
   transactional:        { title: 'Transactional',       subtitle: 'System and transactional emails' },
   // Cold Outreach
+  'drip-dashboard':     { title: 'Drip Dashboard',      subtitle: "Today's send schedule across all mailboxes" },
+  mailboxes:            { title: 'Mailboxes',           subtitle: 'Gmail sending identities and schedule profiles' },
   narratives:           { title: 'Narratives',          subtitle: 'Sender personas that steer AI email generation' },
   sequences:            { title: 'Sequences',           subtitle: 'Multi-step cold email campaigns' },
   inbox:                { title: 'Inbox',               subtitle: 'Replies from outreach recipients' },
