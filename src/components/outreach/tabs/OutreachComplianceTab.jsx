@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/dialog'
 import {
   ShieldCheck, Loader2, Ban, Upload, Search, Trash2, Settings, Clock, MapPin, Key, ExternalLink,
-  Eye, EyeOff, CheckCircle2, XCircle,
+  Eye, EyeOff, CheckCircle2, XCircle, Bell, Mail,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { outreachApi } from '@/lib/sonor-api'
@@ -102,6 +102,7 @@ export default function OutreachComplianceTab() {
         {[
           { value: 'api', label: 'API Integration', icon: Key },
           { value: 'settings', label: 'CAN-SPAM Settings', icon: Settings },
+          { value: 'notifications', label: 'Notifications', icon: Bell },
           { value: 'suppressions', label: `Suppression List (${suppressionCount})`, icon: Ban },
           { value: 'sending', label: 'Sending Controls', icon: Clock },
         ].map((t) => (
@@ -191,6 +192,10 @@ export default function OutreachComplianceTab() {
             </GlassCardContent>
           </GlassCard>
         </div>
+      )}
+
+      {tab === 'notifications' && (
+        <ReplyNotificationsSection settings={settings} onUpdate={handleUpdateSetting} setSettings={setSettings} />
       )}
 
       {tab === 'suppressions' && (
@@ -490,5 +495,132 @@ function ImportDialog({ open, onOpenChange, onImport }) {
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Reply notifications (M5.5)
+// ─────────────────────────────────────────────────────────────────────────
+
+const SENTIMENT_OPTIONS = [
+  { value: 'positive', label: 'Positive (qualified)', description: 'Replies that indicate interest' },
+  { value: 'neutral', label: 'Neutral', description: 'Informational replies, questions' },
+  { value: 'out_of_office', label: 'Out of office', description: 'Auto-responders' },
+  { value: 'negative', label: 'Negative', description: 'Not interested' },
+  { value: 'unsubscribe', label: 'Unsubscribe', description: 'Reply-based opt-outs' },
+]
+
+function ReplyNotificationsSection({ settings, onUpdate, setSettings }) {
+  const enabled = settings?.notify_on_reply !== false
+  const recipientEmail = settings?.notify_reply_email || ''
+  const selectedSentiments = Array.isArray(settings?.notify_reply_sentiments)
+    ? settings.notify_reply_sentiments
+    : ['positive']
+
+  const toggleSentiment = (sentiment) => {
+    const next = selectedSentiments.includes(sentiment)
+      ? selectedSentiments.filter((s) => s !== sentiment)
+      : [...selectedSentiments, sentiment]
+    // Require at least one selected — fall back to positive if we'd
+    // otherwise empty it
+    const finalNext = next.length > 0 ? next : ['positive']
+    setSettings((prev) => ({ ...prev, notify_reply_sentiments: finalNext }))
+    onUpdate('notify_reply_sentiments', finalNext)
+  }
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <GlassCard>
+        <GlassCardHeader>
+          <GlassCardTitle className="flex items-center gap-2">
+            <Bell className="h-4 w-4" /> Reply notifications
+          </GlassCardTitle>
+          <GlassCardDescription>
+            Fire a real-time email to your sales inbox when a cold outreach reply lands. Uses the
+            same Resend infrastructure as form submissions — delivery is typically {'<'}2 seconds
+            from reply to notification.
+          </GlassCardDescription>
+        </GlassCardHeader>
+        <GlassCardContent className="space-y-5">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1">
+              <Label>Enable reply notifications</Label>
+              <p className="text-xs text-[var(--text-secondary)] mt-0.5">
+                When off, replies still flow into your CRM and the Sonor inbox — but nobody gets
+                emailed.
+              </p>
+            </div>
+            <Switch
+              checked={enabled}
+              onCheckedChange={(checked) => {
+                setSettings((prev) => ({ ...prev, notify_on_reply: checked }))
+                onUpdate('notify_on_reply', checked)
+              }}
+            />
+          </div>
+
+          <div>
+            <Label className="flex items-center gap-2">
+              <Mail className="h-3.5 w-3.5" /> Notification email
+            </Label>
+            <Input
+              type="email"
+              placeholder="sales@upforge.io"
+              value={recipientEmail}
+              onChange={(e) =>
+                setSettings((prev) => ({ ...prev, notify_reply_email: e.target.value }))
+              }
+              onBlur={(e) => onUpdate('notify_reply_email', e.target.value || null)}
+              disabled={!enabled}
+              className="mt-1"
+            />
+            <p className="text-xs text-[var(--text-secondary)] mt-1">
+              Where qualified replies go. Leave blank to use the project's billing contact as a
+              fallback. Set a different address from your form submission email if you want
+              outreach replies to land in a dedicated sales inbox.
+            </p>
+          </div>
+        </GlassCardContent>
+      </GlassCard>
+
+      <GlassCard>
+        <GlassCardHeader>
+          <GlassCardTitle>Which sentiments trigger a notification</GlassCardTitle>
+          <GlassCardDescription>
+            By default only positive replies fire notifications. Opt into others if you want
+            broader visibility into how prospects are responding.
+          </GlassCardDescription>
+        </GlassCardHeader>
+        <GlassCardContent className="space-y-3">
+          {SENTIMENT_OPTIONS.map((opt) => {
+            const checked = selectedSentiments.includes(opt.value)
+            return (
+              <div
+                key={opt.value}
+                className="flex items-start justify-between gap-3 p-2.5 rounded-md border border-[var(--glass-border)] bg-[var(--glass-bg)]"
+              >
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium text-[var(--text-primary)]">
+                    {opt.label}
+                  </div>
+                  <div className="text-[11px] text-[var(--text-tertiary)]">{opt.description}</div>
+                </div>
+                <Switch
+                  checked={checked}
+                  onCheckedChange={() => toggleSentiment(opt.value)}
+                  disabled={!enabled}
+                />
+              </div>
+            )
+          })}
+          {selectedSentiments.length === 1 && selectedSentiments[0] === 'positive' && (
+            <p className="text-[11px] text-[var(--text-tertiary)] pt-1">
+              Only positive replies selected — this is the recommended default. Upgrade to more
+              sentiments once you're comfortable with the notification volume.
+            </p>
+          )}
+        </GlassCardContent>
+      </GlassCard>
+    </div>
   )
 }
