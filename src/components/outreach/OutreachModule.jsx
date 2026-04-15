@@ -21,6 +21,7 @@ import {
   Activity,
   AtSign,
   Upload,
+  Trophy,
 } from 'lucide-react'
 import { ModuleLayout } from '@/components/ModuleLayout'
 import { MODULE_ICONS } from '@/lib/module-icons'
@@ -45,6 +46,7 @@ const MailboxesTab = lazy(() => import('./tabs/MailboxesTab'))
 const DripDashboardTab = lazy(() => import('./tabs/DripDashboardTab'))
 const LeadsTab = lazy(() => import('./tabs/LeadsTab'))
 const LeadSourcesTab = lazy(() => import('./tabs/LeadSourcesTab'))
+const OnboardingTab = lazy(() => import('./tabs/OnboardingTab'))
 const DomainSetup = lazy(() => import('@/components/email/DomainSetup'))
 
 const SIDEBAR_SECTIONS = [
@@ -63,6 +65,7 @@ const SIDEBAR_SECTIONS = [
     label: 'Cold Outreach',
     requiresSignal: true,
     items: [
+      { value: 'outreach-onboarding', label: 'Get Started', icon: Trophy },
       { value: 'drip-dashboard', label: 'Drip Dashboard', icon: Activity },
       { value: 'mailboxes', label: 'Mailboxes', icon: AtSign },
       { value: 'narratives', label: 'Narratives', icon: MessageSquareText },
@@ -193,6 +196,7 @@ export default function OutreachModule() {
       )
     }
 
+    if (activeTab === 'outreach-onboarding') return <Suspense fallback={lazyFallback}><OnboardingTab /></Suspense>
     if (activeTab === 'drip-dashboard') return <Suspense fallback={lazyFallback}><DripDashboardTab /></Suspense>
     if (activeTab === 'mailboxes') return <Suspense fallback={lazyFallback}><MailboxesTab /></Suspense>
     if (activeTab === 'narratives') return <Suspense fallback={lazyFallback}><NarrativesTab /></Suspense>

@@ -4584,6 +4584,12 @@ export const outreachApi = {
   updateNarrative: (id, data) => sonorApi.put(`/outreach/narratives/${id}`, data),
   setNarrativeEnabled: (id, enabled) => sonorApi.patch(`/outreach/narratives/${id}/enabled`, { enabled }),
   deleteNarrative: (id) => sonorApi.delete(`/outreach/narratives/${id}`),
+  listNarrativeTemplates: () => sonorApi.get('/outreach/narratives/templates'),
+  createNarrativeFromTemplate: (templateId, overrides) =>
+    sonorApi.post('/outreach/narratives/from-template', { templateId, overrides }),
+
+  // Outreach onboarding (M6 — derivable checklist)
+  getOutreachOnboarding: () => sonorApi.get('/outreach/onboarding/status'),
 
   // Mailboxes (per-mailbox Gmail sending identities — gated behind full_signal)
   listMailboxes: () => sonorApi.get('/outreach/mailboxes'),
