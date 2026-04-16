@@ -191,7 +191,7 @@ export default function OutreachModule() {
         <EmailPlatform
           embedded
           activeTab={activeTab}
-          onTabChange={setActiveTab}
+          onTabChange={handleTabChange}
         />
       )
     }

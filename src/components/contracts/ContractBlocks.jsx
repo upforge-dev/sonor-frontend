@@ -1,4 +1,64 @@
+import { createContext, useContext, useMemo, useState, useEffect } from 'react'
 import { format } from 'date-fns'
+
+// ──────────────────────────────────────────────────────────────────────────
+// Shared addon-selection context — lets AddonSelector publish live choices
+// that PricingTable / PaymentTerms / SignatureBlock can read so totals stay
+// in sync as the client toggles options on the signing page.
+// ──────────────────────────────────────────────────────────────────────────
+export const AddonSelectionContext = createContext(null)
+
+export function AddonSelectionProvider({ groups = [], basePrice = 0, taxRate = 0, children, onChange }) {
+  const [selections, setSelections] = useState(() => {
+    const init = {}
+    groups.forEach(g => {
+      init[g.id] = g.selectedOptionId || g.options?.[0]?.id
+    })
+    return init
+  })
+
+  const addonsTotal = useMemo(() => {
+    return groups.reduce((sum, g) => {
+      const opt = g.options?.find(o => o.id === selections[g.id])
+      return sum + (opt ? Number(opt.priceDelta) || 0 : 0)
+    }, 0)
+  }, [groups, selections])
+
+  const subtotal = (Number(basePrice) || 0) + addonsTotal
+  const tax = taxRate > 0 ? Math.round(subtotal * taxRate * 100) / 100 : 0
+  const total = Math.round((subtotal + tax) * 100) / 100
+
+  const selectedList = useMemo(() => groups.map(g => {
+    const opt = g.options?.find(o => o.id === selections[g.id])
+    return opt ? { group: g.label, option: opt.label, priceDelta: Number(opt.priceDelta) || 0 } : null
+  }).filter(Boolean), [groups, selections])
+
+  useEffect(() => {
+    onChange?.({ selections, selectedList, basePrice: Number(basePrice) || 0, addonsTotal, subtotal, tax, total })
+  }, [selections, addonsTotal, total])
+
+  const value = {
+    groups,
+    selections,
+    setSelections,
+    selectedList,
+    basePrice: Number(basePrice) || 0,
+    addonsTotal,
+    subtotal,
+    tax,
+    total,
+  }
+
+  return (
+    <AddonSelectionContext.Provider value={value}>
+      {children}
+    </AddonSelectionContext.Provider>
+  )
+}
+
+export function useAddonSelection() {
+  return useContext(AddonSelectionContext)
+}
 
 function formatCurrency(amount) {
   if (amount == null) return '$0.00'
@@ -107,10 +167,78 @@ export function ScopeOfWork({ items = [], description }) {
   )
 }
 
+export function AddonSelector({ groups, title = 'Customize Your Build', description, readOnly }) {
+  const ctx = useContext(AddonSelectionContext)
+  // If used outside a provider (shouldn't happen in the contract flow), render
+  // a read-only display so the section still makes sense.
+  const groupsToUse = ctx?.groups?.length ? ctx.groups : (groups || [])
+  if (!groupsToUse.length) return null
+
+  return (
+    <div className="mb-6">
+      <h2 className="text-lg font-semibold text-gray-900 mb-1">{title}</h2>
+      {description && <p className="text-sm text-gray-600 mb-4">{description}</p>}
+      <div className="space-y-4">
+        {groupsToUse.map(group => {
+          const selectedId = ctx?.selections?.[group.id] ?? group.selectedOptionId
+          return (
+            <div key={group.id} className="rounded-lg border border-gray-200 overflow-hidden">
+              <div className="bg-gray-50 px-4 py-2 text-sm font-medium text-gray-700">{group.label}</div>
+              <div className="divide-y divide-gray-100">
+                {(group.options || []).map(opt => {
+                  const isSelected = selectedId === opt.id
+                  const delta = Number(opt.priceDelta) || 0
+                  return (
+                    <label
+                      key={opt.id}
+                      className={`flex items-center justify-between px-4 py-3 cursor-pointer transition-colors ${
+                        isSelected ? 'bg-emerald-50' : 'hover:bg-gray-50'
+                      } ${readOnly ? 'cursor-default' : ''}`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="radio"
+                          name={`addon-${group.id}`}
+                          checked={isSelected}
+                          disabled={readOnly}
+                          onChange={() => {
+                            if (readOnly || !ctx) return
+                            ctx.setSelections(prev => ({ ...prev, [group.id]: opt.id }))
+                          }}
+                          className="accent-emerald-600"
+                        />
+                        <span className="text-sm text-gray-900">{opt.label}</span>
+                      </div>
+                      <span className={`text-sm font-medium ${delta > 0 ? 'text-gray-900' : 'text-gray-500'}`}>
+                        {delta > 0 ? `+${formatCurrency(delta)}` : 'Included'}
+                      </span>
+                    </label>
+                  )
+                })}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 export function PricingTable({ items = [], subtotal, tax, total, deposit, source }) {
+  const ctx = useContext(AddonSelectionContext)
   const displayItems = source === 'line_items' ? items : items
-  const calcSubtotal = subtotal ?? displayItems.reduce((sum, i) => sum + (Number(i.amount || i.price || 0) * (i.quantity || 1)), 0)
-  const calcTotal = total ?? calcSubtotal + (Number(tax) || 0)
+  // Live context wins over static props so the table reflects current addon selections.
+  const effectiveSubtotal = ctx?.subtotal != null
+    ? ctx.subtotal
+    : (subtotal ?? displayItems.reduce((sum, i) => sum + (Number(i.amount || i.price || 0) * (i.quantity || 1)), 0))
+  const effectiveTax = ctx?.tax != null ? ctx.tax : (Number(tax) || 0)
+  const effectiveTotal = ctx?.total != null ? ctx.total : (total ?? effectiveSubtotal + effectiveTax)
+  const effectiveItems = ctx ? [
+    { description: 'Base project', amount: ctx.basePrice },
+    ...ctx.selectedList.filter(a => a.priceDelta > 0).map(a => ({ description: `${a.group}: ${a.option}`, amount: a.priceDelta })),
+  ] : displayItems
+  const calcSubtotal = effectiveSubtotal
+  const calcTotal = effectiveTotal
 
   return (
     <div className="mb-6">
@@ -126,7 +254,7 @@ export function PricingTable({ items = [], subtotal, tax, total, deposit, source
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {displayItems.map((item, i) => (
+            {effectiveItems.map((item, i) => (
               <tr key={i}>
                 <td className="px-4 py-3 text-gray-900">
                   {item.description || item.title || item.name}
@@ -147,10 +275,10 @@ export function PricingTable({ items = [], subtotal, tax, total, deposit, source
               <td colSpan={3} className="px-4 py-2 text-right text-gray-600">Subtotal</td>
               <td className="px-4 py-2 text-right font-medium text-gray-900">{formatCurrency(calcSubtotal)}</td>
             </tr>
-            {tax != null && Number(tax) > 0 && (
+            {effectiveTax > 0 && (
               <tr>
                 <td colSpan={3} className="px-4 py-2 text-right text-gray-600">Tax</td>
-                <td className="px-4 py-2 text-right font-medium text-gray-900">{formatCurrency(tax)}</td>
+                <td className="px-4 py-2 text-right font-medium text-gray-900">{formatCurrency(effectiveTax)}</td>
               </tr>
             )}
             <tr className="border-t border-gray-200">
@@ -200,24 +328,35 @@ export function InstallationSchedule({ date, duration, accessRequirements }) {
   )
 }
 
-export function PaymentTerms({ total, deposit, depositDue, balanceDue, methods, text }) {
+export function PaymentTerms({ total, deposit, depositDue, balanceDue, methods, text, depositPercent = 50 }) {
+  const ctx = useContext(AddonSelectionContext)
+  const effectiveTotal = ctx?.total != null ? ctx.total : total
+  const effectiveDeposit = ctx?.total != null
+    ? Math.round(ctx.total * (depositPercent / 100) * 100) / 100
+    : deposit
+
   return (
     <div className="mb-6">
       <h2 className="text-lg font-semibold text-gray-900 mb-3">Payment Terms</h2>
-      {text ? (
-        <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">{text}</p>
-      ) : (
-        <div className="space-y-2 text-sm text-gray-700">
-          {total != null && <p>Total contract amount: <span className="font-semibold">{formatCurrency(total)}</span></p>}
-          {deposit != null && (
-            <p>
-              Deposit due{depositDue ? ` by ${formatDate(depositDue)}` : ' upon signing'}:{' '}
-              <span className="font-semibold">{formatCurrency(deposit)}</span>
-            </p>
-          )}
-          {balanceDue && <p>Balance due: <span className="font-semibold">{balanceDue}</span></p>}
-          {methods && <p>Accepted payment methods: {methods}</p>}
-        </div>
+      <div className="space-y-2 text-sm text-gray-700">
+        {effectiveTotal != null && (
+          <p>Total contract amount: <span className="font-semibold">{formatCurrency(effectiveTotal)}</span></p>
+        )}
+        {effectiveDeposit != null && (
+          <p>
+            Deposit due{depositDue ? ` by ${formatDate(depositDue)}` : ' upon signing'}:{' '}
+            <span className="font-semibold">{formatCurrency(effectiveDeposit)}</span>
+            {depositPercent ? ` (${depositPercent}%)` : ''}
+          </p>
+        )}
+        {effectiveTotal != null && effectiveDeposit != null && (
+          <p>Balance due on completion: <span className="font-semibold">{formatCurrency(effectiveTotal - effectiveDeposit)}</span></p>
+        )}
+        {balanceDue && <p>Balance due: <span className="font-semibold">{balanceDue}</span></p>}
+        {methods && <p>Accepted payment methods: {methods}</p>}
+      </div>
+      {text && (
+        <p className="mt-3 text-sm text-gray-700 leading-relaxed whitespace-pre-line">{text}</p>
       )}
     </div>
   )
@@ -311,10 +450,30 @@ export function SignatureBlock({ requiresBothParties = true, clientName, clientS
   )
 }
 
+export function ProjectImage({ url, caption, alt }) {
+  if (!url) return null
+  return (
+    <figure className="mb-8">
+      <div className="overflow-hidden rounded-2xl border border-gray-200 bg-gray-50">
+        <img
+          src={url}
+          alt={alt || caption || 'Project reference image'}
+          className="w-full h-auto object-cover"
+        />
+      </div>
+      {caption && (
+        <figcaption className="mt-2 text-sm text-gray-500 text-center">{caption}</figcaption>
+      )}
+    </figure>
+  )
+}
+
 export const COMPONENT_REGISTRY = {
   ContractHeader,
   ClientInfo,
   ScopeOfWork,
+  ProjectImage,
+  AddonSelector,
   PricingTable,
   InstallationSchedule,
   PaymentTerms,

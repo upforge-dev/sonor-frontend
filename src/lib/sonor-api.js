@@ -3554,6 +3554,10 @@ export const commerceApi = {
   aiEditContract: (projectId, id, instruction) =>
     sonorApi.post(`/commerce/contracts/${projectId}/${id}/ai/edit`, { instruction }),
 
+  /** AI draft contract sections from intake data (no persistence). Returns { sections_json, raw }. */
+  aiDraftContract: (projectId, payload) =>
+    sonorApi.post(`/commerce/contracts/${projectId}/ai/draft`, payload),
+
   /** Sign contract (public) */
   signContract: (token, signatureData) =>
     sonorApi.post(`/commerce/contracts/sign/${token}`, signatureData),

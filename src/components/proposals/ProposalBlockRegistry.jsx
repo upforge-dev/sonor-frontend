@@ -13,6 +13,7 @@
 import React from 'react'
 import Markdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import { COMPONENT_REGISTRY as CONTRACT_REGISTRY } from '../contracts/ContractBlocks'
 
 // Liquid Glass
 import {
@@ -184,7 +185,9 @@ class SectionErrorBoundary extends React.Component {
 // ---------------------------------------------------------------------------
 
 export function ProposalSection({ section, proposal }) {
-  const Component = PROPOSAL_REGISTRY[section.type]
+  // Proposal registry first, then contract-specific components (contracts share
+  // the /p/:slug public route with proposals via the shared `proposals` table).
+  const Component = PROPOSAL_REGISTRY[section.type] || CONTRACT_REGISTRY[section.type]
 
   if (!Component) {
     if (section.type === 'Custom' && section.props?.html) {
@@ -238,6 +241,59 @@ export function ProposalSection({ section, proposal }) {
     if (!props.website) props.website = profile.website || org?.website
     if (!props.highlights?.length && profile.highlights?.length) props.highlights = profile.highlights
     if (!props.portfolioItems?.length && profile.portfolio_items?.length) props.portfolioItems = profile.portfolio_items
+  }
+
+  // Inject contract-level data into contract components
+  if (proposal && CONTRACT_REGISTRY[section.type]) {
+    const meta = proposal.metadata || {}
+
+    if (section.type === 'ContractHeader') {
+      if (!props.businessName) props.businessName = proposal.project?.title
+      if (!props.logoUrl) props.logoUrl = proposal.project?.logo_url
+      if (!props.clientName) props.clientName = proposal.recipient_name || proposal.recipientName
+      if (!props.effectiveDate) props.effectiveDate = proposal.signed_at || proposal.created_at
+    }
+
+    if (section.type === 'ClientInfo') {
+      if (!props.name) props.name = proposal.recipient_name || proposal.recipientName
+      if (!props.email) props.email = proposal.recipient_email || proposal.recipientEmail
+      if (!props.address) props.address = meta.install_address
+    }
+
+    if (section.type === 'ProjectImage') {
+      if (!props.url) props.url = meta.project_image_url || proposal.hero_image_url
+    }
+
+    if (section.type === 'PricingTable' && !props.items?.length) {
+      const base = meta.base_price
+      const addons = meta.selected_addons || []
+      const items = []
+      if (base != null) {
+        items.push({ label: meta.service?.name || 'Base', amount: Number(base) })
+      }
+      addons.filter(a => (a.priceDelta || 0) > 0).forEach(a => {
+        items.push({ label: `${a.group}: ${a.option}`, amount: Number(a.priceDelta) })
+      })
+      if (items.length) props.items = items
+      if (!props.total) props.total = Number(proposal.total_amount) || 0
+      if (!props.tax && proposal.tax_amount) props.tax = Number(proposal.tax_amount)
+    }
+
+    if (section.type === 'PaymentTerms' && !props.total) {
+      props.total = Number(proposal.total_amount) || 0
+      const schedule = meta.payment_schedule || []
+      const onSign = schedule.find(p => p.trigger === 'on_sign')
+      if (onSign && !props.deposit) {
+        props.deposit = onSign.percent ? (props.total * onSign.percent / 100) : onSign.amount
+      }
+    }
+
+    if (section.type === 'SignatureBlock') {
+      if (!props.clientName) props.clientName = proposal.client_signed_name || proposal.recipient_name
+      if (!props.clientSignedAt) props.clientSignedAt = proposal.signed_at
+      if (!props.clientSignatureUrl) props.clientSignatureUrl = proposal.client_signature_url
+      if (!props.businessName) props.businessName = proposal.project?.title
+    }
   }
 
   // For sections that contain markdown prose, wrap with ProposalMarkdown

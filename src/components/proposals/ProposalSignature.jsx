@@ -5,7 +5,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { CheckCircle, X, Pen, Loader2, Mail, Calendar, User } from 'lucide-react'
-import { proposalsApi } from '@/lib/sonor-api'
+import { proposalsApi, commerceApi } from '@/lib/sonor-api'
 import { supabase } from '@/lib/supabase'
 
 export default function ProposalSignature({
@@ -17,7 +17,11 @@ export default function ProposalSignature({
   clientSignature,
   clientSignedBy,
   clientSignedAt,
+  docType = 'proposal',
+  accessToken,
+  addonSelections,
 }) {
+  const isContract = docType === 'contract'
   const sigPad = useRef(null)
   const [signed, setSigned] = useState(false)
   const [signing, setSigning] = useState(false)
@@ -27,6 +31,10 @@ export default function ProposalSignature({
   const [printedName, setPrintedName] = useState(initialClientName || '')
   const [signatureData, setSignatureData] = useState(null)
   const [signedDate, setSignedDate] = useState(null)
+  // Contracts created in-person may not have an email on file. Give the
+  // client a chance to provide one at sign time so the signed PDF and deposit
+  // invoice can reach them.
+  const [typedEmail, setTypedEmail] = useState(clientEmail || '')
 
   useEffect(() => {
     if (clientSignature || clientSignedAt) {
@@ -93,13 +101,34 @@ export default function ProposalSignature({
         .from('proposal-signatures')
         .getPublicUrl(uploadData.path)
 
-      const response = await proposalsApi.sign(proposalId, {
-        signatureUrl: publicUrl,
-        signerName: printedName.trim(),
-        ...(clientEmail ? { signerEmail: clientEmail } : {}),
-      })
+      const effectiveEmail = (typedEmail || clientEmail || '').trim()
 
-      const data = response.data
+      let data
+      if (isContract) {
+        if (!accessToken) {
+          throw new Error('Missing contract access token — cannot sign.')
+        }
+        const response = await commerceApi.signContract(accessToken, {
+          signature_name: printedName.trim(),
+          signature_url: publicUrl,
+          ...(effectiveEmail ? { signer_email: effectiveEmail } : {}),
+          ...(addonSelections ? {
+            final_addons: addonSelections.selectedList,
+            final_total_amount: addonSelections.total,
+            final_base_price: addonSelections.basePrice,
+            final_tax_amount: addonSelections.tax,
+          } : {}),
+        })
+        data = response.data?.contract || response.data || {}
+        data.payment = response.data?.payment
+      } else {
+        const response = await proposalsApi.sign(proposalId, {
+          signatureUrl: publicUrl,
+          signerName: printedName.trim(),
+          ...(effectiveEmail ? { signerEmail: effectiveEmail } : {}),
+        })
+        data = response.data
+      }
       const signedAt = data.signed_at || new Date().toISOString()
       const payment = data.payment
 
@@ -152,11 +181,11 @@ export default function ProposalSignature({
         <div className={`${glassBase} p-8 md:p-10`}>
           <div className="relative z-10">
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-12 h-12 rounded-2xl bg-[#39bfb0]/20 border border-[#39bfb0]/30 flex items-center justify-center">
-                <CheckCircle className="w-6 h-6 text-[#39bfb0]" />
+              <div className="w-12 h-12 rounded-2xl bg-[var(--brand-primary)]/20 border border-[var(--brand-primary)]/30 flex items-center justify-center">
+                <CheckCircle className="w-6 h-6 text-[var(--brand-primary)]" />
               </div>
               <div>
-                <span className="text-sm uppercase tracking-widest text-[#39bfb0] block">Complete</span>
+                <span className="text-sm uppercase tracking-widest text-[var(--brand-primary)] block">Complete</span>
                 <h2 className="text-2xl font-bold text-[var(--text-primary)]">Contract Signed</h2>
               </div>
             </div>
@@ -178,14 +207,14 @@ export default function ProposalSignature({
 
               <div className="space-y-4">
                 <div className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/10">
-                  <User className="h-4 w-4 text-[#39bfb0]" />
+                  <User className="h-4 w-4 text-[var(--brand-primary)]" />
                   <div>
                     <span className="text-xs text-[var(--text-tertiary)] block">Signed by</span>
                     <span className="font-medium text-[var(--text-primary)]">{printedName}</span>
                   </div>
                 </div>
                 <div className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/10">
-                  <Calendar className="h-4 w-4 text-[#39bfb0]" />
+                  <Calendar className="h-4 w-4 text-[var(--brand-primary)]" />
                   <div>
                     <span className="text-xs text-[var(--text-tertiary)] block">Date</span>
                     <span className="font-medium text-[var(--text-primary)]">{formatDate(signedDate)}</span>
@@ -193,7 +222,7 @@ export default function ProposalSignature({
                 </div>
                 {clientEmail && (
                   <div className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/10">
-                    <Mail className="h-4 w-4 text-[#39bfb0]" />
+                    <Mail className="h-4 w-4 text-[var(--brand-primary)]" />
                     <div>
                       <span className="text-xs text-[var(--text-tertiary)] block">Email</span>
                       <span className="font-medium text-[var(--text-primary)]">{clientEmail}</span>
@@ -203,8 +232,8 @@ export default function ProposalSignature({
               </div>
             </div>
 
-            <div className="mt-6 p-4 rounded-2xl bg-[#39bfb0]/10 border border-[#39bfb0]/20">
-              <p className="text-sm text-[#39bfb0] font-medium flex items-center gap-2">
+            <div className="mt-6 p-4 rounded-2xl bg-[var(--brand-primary)]/10 border border-[var(--brand-primary)]/20">
+              <p className="text-sm text-[var(--brand-primary)] font-medium flex items-center gap-2">
                 <CheckCircle className="h-4 w-4" />
                 This contract is fully executed and legally binding
               </p>
@@ -220,22 +249,24 @@ export default function ProposalSignature({
   }
 
   return (
-    <div id="signature" className={`${glassBase} overflow-hidden my-10 scroll-mt-24 border-[#39bfb0]/40`}>
-      <div className="absolute -top-10 -right-10 w-40 h-40 bg-[#39bfb0]/15 rounded-full blur-3xl" />
+    <div id="signature" className={`${glassBase} overflow-hidden my-10 scroll-mt-24 border-[var(--brand-primary)]/40`}>
+      <div className="absolute -top-10 -right-10 w-40 h-40 bg-[var(--brand-primary)]/15 rounded-full blur-3xl" />
 
       <div className="relative z-10">
         <div className="p-8 pb-0">
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-12 h-12 rounded-2xl bg-[#39bfb0]/20 border border-[#39bfb0]/30 flex items-center justify-center">
-              <Pen className="w-6 h-6 text-[#39bfb0]" />
+            <div className="w-12 h-12 rounded-2xl bg-[var(--brand-primary)]/20 border border-[var(--brand-primary)]/30 flex items-center justify-center">
+              <Pen className="w-6 h-6 text-[var(--brand-primary)]" />
             </div>
             <div>
-              <span className="text-sm uppercase tracking-widest text-[#39bfb0] block">Accept</span>
-              <h2 className="text-2xl font-bold text-[var(--text-primary)]">Sign to Accept Proposal</h2>
+              <span className="text-sm uppercase tracking-widest text-[var(--brand-primary)] block">Accept</span>
+              <h2 className="text-2xl font-bold text-[var(--text-primary)]">
+                {isContract ? 'Sign to Accept Contract' : 'Sign to Accept Proposal'}
+              </h2>
             </div>
           </div>
           <p className="text-sm text-[var(--text-secondary)] ml-15 mb-6">
-            By signing below, you agree to the terms and pricing outlined in this proposal.
+            By signing below, you agree to the terms and pricing outlined in this {isContract ? 'contract' : 'proposal'}.
           </p>
         </div>
 
@@ -248,14 +279,14 @@ export default function ProposalSignature({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="flex items-start gap-3 p-4 rounded-2xl bg-white/5 border border-white/10">
-              <CheckCircle className="h-5 w-5 text-[#39bfb0] mt-0.5 flex-shrink-0" />
+              <CheckCircle className="h-5 w-5 text-[var(--brand-primary)] mt-0.5 flex-shrink-0" />
               <div>
                 <p className="font-medium text-sm text-[var(--text-primary)]">Legally Binding</p>
                 <p className="text-xs text-[var(--text-secondary)]">Enforceable under the ESIGN Act.</p>
               </div>
             </div>
             <div className="flex items-start gap-3 p-4 rounded-2xl bg-white/5 border border-white/10">
-              <Mail className="h-5 w-5 text-[#39bfb0] mt-0.5 flex-shrink-0" />
+              <Mail className="h-5 w-5 text-[var(--brand-primary)] mt-0.5 flex-shrink-0" />
               <div>
                 <p className="font-medium text-sm text-[var(--text-primary)]">Email Confirmation</p>
                 <p className="text-xs text-[var(--text-secondary)]">Signed PDF copy sent via email.</p>
@@ -277,6 +308,26 @@ export default function ProposalSignature({
               disabled={signing}
             />
           </div>
+
+          {!clientEmail && (
+            <div className="space-y-2">
+              <Label htmlFor="signerEmail" className="text-[var(--text-primary)]">
+                Email for signed copy & invoice <span className="text-[var(--text-tertiary)] font-normal">(optional)</span>
+              </Label>
+              <Input
+                id="signerEmail"
+                type="email"
+                value={typedEmail}
+                onChange={(e) => setTypedEmail(e.target.value)}
+                placeholder="you@example.com"
+                className="bg-white/5 border-white/20 text-[var(--text-primary)] rounded-xl h-12"
+                disabled={signing}
+              />
+              <p className="text-xs text-[var(--text-tertiary)]">
+                We'll use this to email the signed {isContract ? 'contract' : 'proposal'} PDF and the deposit invoice.
+              </p>
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label className="text-[var(--text-primary)]">
@@ -311,7 +362,7 @@ export default function ProposalSignature({
             <Button
               onClick={handleSign}
               disabled={signing || isEmpty || !printedName.trim()}
-              className="flex-1 bg-[#39bfb0] hover:bg-[#39bfb0]/90 text-white rounded-xl h-12 shadow-lg shadow-[#39bfb0]/20"
+              className="flex-1 bg-[var(--brand-primary)] hover:bg-[var(--brand-primary)]/90 text-white rounded-xl h-12 shadow-lg shadow-[var(--brand-primary)]/20"
             >
               {signing ? (
                 <>

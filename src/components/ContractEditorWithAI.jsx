@@ -26,6 +26,7 @@ import {
   Loader2, 
   MessageSquare,
   Edit3,
+  Copy,
   Eye,
   Sparkles,
   ExternalLink,
@@ -88,7 +89,27 @@ export default function ContractEditorWithAI({
   const [isAiThinking, setIsAiThinking] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
+  const [isSending, setIsSending] = useState(false)
+  const [sendFeedback, setSendFeedback] = useState(null) // { type: 'success'|'error', text }
   const chatEndRef = useRef(null)
+
+  // Send the (already-created) contract to its recipient via magic link email.
+  const handleSendContract = async () => {
+    if (!currentContract?.id || !effectiveProjectId) return
+    setIsSending(true)
+    setSendFeedback(null)
+    try {
+      await commerceApi.sendContract(effectiveProjectId, currentContract.id)
+      setCurrentContract(prev => ({ ...prev, sent_at: new Date().toISOString() }))
+      setSendFeedback({ type: 'success', text: `Sent to ${currentContract.recipient_email}` })
+    } catch (err) {
+      console.error('Failed to send contract:', err)
+      setSendFeedback({ type: 'error', text: err?.response?.data?.message || 'Send failed' })
+    } finally {
+      setIsSending(false)
+      setTimeout(() => setSendFeedback(null), 4000)
+    }
+  }
 
   // Auto-scroll chat
   useEffect(() => {
@@ -332,17 +353,60 @@ export default function ContractEditorWithAI({
             )}
 
             {currentContract.slug && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => window.open(`/p/${currentContract.slug}`, '_blank')}
-              >
-                <ExternalLink className="w-4 h-4 mr-2" />
-                Preview
-              </Button>
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => window.open(`/p/${currentContract.slug}`, '_blank')}
+                >
+                  <ExternalLink className="w-4 h-4 mr-2" />
+                  View Live
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={async () => {
+                    const url = `${window.location.origin}/p/${currentContract.slug}`
+                    try {
+                      await navigator.clipboard.writeText(url)
+                      setSendFeedback({ type: 'success', text: 'Link copied to clipboard' })
+                    } catch {
+                      setSendFeedback({ type: 'error', text: 'Copy failed — use the browser URL bar' })
+                    }
+                    setTimeout(() => setSendFeedback(null), 2500)
+                  }}
+                >
+                  <Copy className="w-4 h-4 mr-2" />
+                  Copy Link
+                </Button>
+                {currentContract.status !== 'signed' && (
+                  <Button
+                    size="sm"
+                    onClick={handleSendContract}
+                    disabled={isSending || !currentContract.recipient_email}
+                    title={!currentContract.recipient_email ? 'Contract has no recipient email on file' : ''}
+                    className="bg-[var(--brand-primary)] hover:bg-[var(--brand-primary-hover)]"
+                  >
+                    {isSending ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <Send className="w-4 h-4 mr-2" />
+                    )}
+                    {currentContract.sent_at ? 'Resend' : 'Send to Client'}
+                  </Button>
+                )}
+              </>
             )}
           </div>
         </div>
+        {sendFeedback && (
+          <div className={cn(
+            'mt-2 text-xs',
+            sendFeedback.type === 'success' ? 'text-emerald-600' : 'text-red-500',
+          )}>
+            {sendFeedback.text}
+          </div>
+        )}
       </div>
 
       <div className="flex flex-1 overflow-hidden">
