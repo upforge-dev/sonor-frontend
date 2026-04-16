@@ -362,6 +362,11 @@ export default function ContractAIDialog({
         is_custom_offering: isCustom,
         base_price: basePrice,
         selected_addons: selectedAddons,
+        // Signal uses addon_groups presence/absence to decide whether to
+        // emit an AddonSelector section. Pass through the full groups so
+        // it can reference labels/options if it wants, but the actual
+        // interactive picker reads from contract metadata at render time.
+        addon_groups: addonGroups.length ? addonGroups : undefined,
         total_amount: totalPrice,
         deposit_percentage: Number(formData.depositPercentage || 0),
         valid_days: parseInt(formData.validDays),

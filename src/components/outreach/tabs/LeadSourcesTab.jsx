@@ -30,7 +30,6 @@ import {
   X,
   Building,
   Share2,
-  ShareOff,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useSignalTier } from '@/hooks/useSignalTier'
@@ -517,7 +516,7 @@ export default function LeadSourcesTab() {
                           {s.is_shared_across_org ? (
                             <Share2 className="h-3.5 w-3.5" />
                           ) : (
-                            <ShareOff className="h-3.5 w-3.5" />
+                            <Lock className="h-3.5 w-3.5" />
                           )}
                         </button>
                       )}
