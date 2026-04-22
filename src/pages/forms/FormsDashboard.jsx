@@ -117,6 +117,7 @@ const SIDEBAR_SECTIONS = {
     items: [
       { id: 'all', label: 'All Submissions' },
       { id: 'new', label: 'New', filter: { status: 'new' } },
+      { id: 'high-value', label: 'High-Value', filter: { high_value: true }, icon: Target },
       { id: 'high-intent', label: 'High Intent', filter: { quality_tier: 'high' }, icon: Star },
       { id: 'contacted', label: 'Contacted', filter: { status: 'contacted' } },
       { id: 'qualified', label: 'Qualified', filter: { status: 'qualified' } },
@@ -359,16 +360,18 @@ export default function FormsDashboard() {
   }, [forms])
 
   const submissionCounts = useMemo(() => {
-    const counts = { 
-      all: submissions.length, 
-      new: 0, 
-      'high-intent': 0, 
-      contacted: 0, 
-      qualified: 0, 
-      spam: 0 
+    const counts = {
+      all: submissions.length,
+      new: 0,
+      'high-value': 0,
+      'high-intent': 0,
+      contacted: 0,
+      qualified: 0,
+      spam: 0
     }
     submissions.forEach(s => {
       if (s.status === 'new') counts.new++
+      if (s.high_value === true) counts['high-value']++
       if (s.quality_tier === 'high') counts['high-intent']++
       if (s.status === 'contacted') counts.contacted++
       if (s.status === 'qualified') counts.qualified++
@@ -409,6 +412,7 @@ export default function FormsDashboard() {
     let result = submissions
     if (nlFilters.status) result = result.filter(s => s.status === nlFilters.status)
     if (nlFilters.quality_tier) result = result.filter(s => s.quality_tier === nlFilters.quality_tier)
+    if (nlFilters.high_value === true) result = result.filter(s => s.high_value === true)
     if (nlFilters.form_id) result = result.filter(s => s.form_id === nlFilters.form_id)
     return result
   }, [submissions, nlFilters])

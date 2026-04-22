@@ -329,15 +329,29 @@ export function ServiceSkeleton({ viewMode = 'list' }) {
 export function EventCard({ event, brandColors, viewMode = 'list', onOpen, onDuplicate }) {
   const isFree = event.price_type === 'free' || !event.price || event.price === 0
   const priceDisplay = isFree ? 'Free' : `$${Number(event.price || 0).toFixed(2)}`
-  
+
   const ticketsSold = event.sales_count || 0
   const capacity = event.capacity ?? event.schedules?.[0]?.capacity ?? null
   const spotsRemaining = capacity != null ? (event.schedules?.[0]?.spots_remaining ?? capacity - ticketsSold) : null
 
-  // Event date: from next_schedule or first schedule or top-level
-  const startsAt = event.next_schedule?.starts_at ?? event.schedules?.[0]?.starts_at ?? event.starts_at
+  // Multi-date aware: compute upcoming schedules, date range, and pick the soonest upcoming.
+  const now = new Date()
+  const allSchedules = (event.schedules || [])
+    .filter(s => s?.starts_at)
+    .map(s => ({ ...s, _date: new Date(s.starts_at) }))
+    .sort((a, b) => a._date - b._date)
+  const upcomingSchedules = allSchedules.filter(s => s._date >= now)
+  const scheduleCount = upcomingSchedules.length
+  const isMultiDate = scheduleCount > 1
+
+  // Event date: prefer next upcoming, then next_schedule, then first schedule, then top-level.
+  const primarySchedule = upcomingSchedules[0] || (event.next_schedule
+    ? { _date: new Date(event.next_schedule.starts_at), ...event.next_schedule }
+    : allSchedules[0])
+  const startsAt = primarySchedule?.starts_at ?? event.starts_at
   const eventDate = startsAt ? new Date(startsAt) : null
-  const isPast = eventDate && eventDate < new Date()
+  const isPast = eventDate && eventDate < now && scheduleCount === 0
+  const lastUpcoming = upcomingSchedules[upcomingSchedules.length - 1]
   
   const hasImage = event.featured_image || event.images?.length > 0 || event.image_url
   const imageUrl = event.featured_image || event.images?.[0]?.url || event.image_url
@@ -400,6 +414,11 @@ export function EventCard({ event, brandColors, viewMode = 'list', onOpen, onDup
             )}
             {/* Status badges */}
             <div className="absolute top-2 right-2 flex flex-col gap-1">
+              {isMultiDate && (
+                <Badge className="bg-[var(--brand-primary)]/90 text-white border-none text-xs backdrop-blur-md font-semibold">
+                  {scheduleCount} dates
+                </Badge>
+              )}
               {isPast && (
                 <Badge className="bg-[var(--glass-bg-inset)]/90 text-[var(--text-tertiary)] border-none text-xs backdrop-blur-md">
                   Past
@@ -439,7 +458,13 @@ export function EventCard({ event, brandColors, viewMode = 'list', onOpen, onDup
             {eventDate && (
               <p className="text-sm text-[var(--text-secondary)] mt-1 flex items-center gap-1">
                 <Clock className="h-3 w-3" />
-                {format(eventDate, 'MMM d, yyyy')} at {format(eventDate, 'h:mm a')}
+                {isMultiDate && lastUpcoming ? (
+                  <>
+                    {format(eventDate, 'MMM d')} – {format(lastUpcoming._date, 'MMM d, yyyy')}
+                  </>
+                ) : (
+                  <>{format(eventDate, 'MMM d, yyyy')} at {format(eventDate, 'h:mm a')}</>
+                )}
                 {event.location && <span> • {event.location}</span>}
               </p>
             )}
@@ -547,7 +572,11 @@ export function EventCard({ event, brandColors, viewMode = 'list', onOpen, onDup
                   {eventDate && (
                     <span className="flex items-center gap-1">
                       <Clock className="h-3 w-3" />
-                      {format(eventDate, 'MMM d')} at {format(eventDate, 'h:mm a')}
+                      {isMultiDate && lastUpcoming ? (
+                        <>{format(eventDate, 'MMM d')} – {format(lastUpcoming._date, 'MMM d, yyyy')}</>
+                      ) : (
+                        <>{format(eventDate, 'MMM d')} at {format(eventDate, 'h:mm a')}</>
+                      )}
                     </span>
                   )}
                   {event.location && (
@@ -557,9 +586,14 @@ export function EventCard({ event, brandColors, viewMode = 'list', onOpen, onDup
                   )}
                 </div>
               </div>
-              
+
               {/* Status badges */}
               <div className="flex flex-col items-end gap-1">
+                {isMultiDate && (
+                  <Badge className="text-xs bg-[var(--brand-primary)]/10 text-[var(--brand-primary)] border border-[var(--brand-primary)]/20 font-semibold">
+                    {scheduleCount} dates
+                  </Badge>
+                )}
                 {isPast && (
                   <Badge variant="outline" className="text-xs bg-[var(--glass-bg-inset)] border-[var(--glass-border)] text-[var(--text-tertiary)]">
                     Past

@@ -621,11 +621,22 @@ export default function CommerceDashboard({ onNavigate }) {
   // Date-aware filtered events for the current sidebar selection
   const filteredEvents = useMemo(() => {
     if (currentView !== 'events') return events
+    // Soonest-upcoming schedule for a multi-date event; fallback to legacy getEventDate.
+    // Returns Infinity for events with no upcoming schedule so they sink below active ones.
+    const nextUpcomingDate = (e) => {
+      const now = Date.now()
+      const upcoming = (e.schedules || [])
+        .map(s => s?.starts_at ? new Date(s.starts_at).getTime() : null)
+        .filter(t => t != null && t >= now)
+      if (upcoming.length > 0) return Math.min(...upcoming)
+      const fallback = getEventDate(e)
+      return fallback ? new Date(fallback).getTime() : Infinity
+    }
     switch (currentFilter) {
       case 'active': // "Upcoming" — soonest first
         return events
           .filter(e => e.status !== 'draft' && !isEventPast(e))
-          .sort((a, b) => getEventDate(a) - getEventDate(b))
+          .sort((a, b) => nextUpcomingDate(a) - nextUpcomingDate(b))
       case 'archived': { // "Past" — most recent first
         return events
           .filter(e => e.status !== 'draft' && isEventPast(e))
@@ -633,8 +644,20 @@ export default function CommerceDashboard({ onNavigate }) {
       }
       case 'draft':
         return events.filter(e => e.status === 'draft')
-      default: // 'all'
-        return events
+      default: // 'all' — upcoming first (soonest → farthest), then drafts, then past (most-recent first)
+        return [...events].sort((a, b) => {
+          const aPast = isEventPast(a)
+          const bPast = isEventPast(b)
+          const aDraft = a.status === 'draft'
+          const bDraft = b.status === 'draft'
+          // Rank: upcoming (0) < draft (1) < past (2)
+          const rank = (e, past, draft) => past ? 2 : (draft ? 1 : 0)
+          const aRank = rank(a, aPast, aDraft)
+          const bRank = rank(b, bPast, bDraft)
+          if (aRank !== bRank) return aRank - bRank
+          if (aPast) return getEventDate(b) - getEventDate(a) // past: most-recent first
+          return nextUpcomingDate(a) - nextUpcomingDate(b) // upcoming/draft: soonest first
+        })
     }
   }, [events, currentView, currentFilter, isEventPast, getEventDate])
 

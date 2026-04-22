@@ -72,7 +72,8 @@ import {
   ListOrdered,
   Layout,
   Shield,
-  Wrench
+  Wrench,
+  Bell
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -1978,6 +1979,377 @@ function StepManager({ steps, currentStep, onStepChange, onAddStep, onRemoveStep
 }
 
 // =============================================================================
+// NOTIFICATIONS SETTINGS
+//
+// Per-form notification recipients + gating rules. Writes to:
+//   - form.notification_emails (string[])  → recipients merged w/ project default
+//   - form.scoring_config (jsonb)          → { notification_gating, rule_combinator,
+//                                              rules: [{ id, field, operator, value|values, label }] }
+// See sonor-api-nestjs/src/modules/forms/scoring/scoring.service.ts for evaluator semantics.
+// =============================================================================
+
+const OPERATOR_OPTIONS = [
+  { value: 'in', label: 'is one of' },
+  { value: 'eq', label: 'equals' },
+  { value: 'gte', label: 'is at least' },
+  { value: 'gt', label: 'is greater than' },
+  { value: 'lte', label: 'is at most' },
+  { value: 'lt', label: 'is less than' },
+  { value: 'contains', label: 'contains' },
+]
+
+/**
+ * Flatten all step fields into a { slug, label, type, options } list for the
+ * rule-field picker. We reach for options via the same shape the canvas uses
+ * so the builder always matches what's actually renderable.
+ */
+function flattenFormFieldsForScoring(steps) {
+  const out = []
+  for (const step of steps || []) {
+    for (const field of step.fields || []) {
+      if (!field?.slug) continue
+      out.push({
+        slug: field.slug,
+        label: field.label || field.slug,
+        type: field.field_type || 'text',
+        options: Array.isArray(field.options) ? field.options : [],
+      })
+    }
+  }
+  return out
+}
+
+function NotificationsSettings({ form, setForm, steps }) {
+  const scoringConfig = form.scoring_config || {}
+  const gating = scoringConfig.notification_gating || 'all'
+  const combinator = scoringConfig.rule_combinator || 'any'
+  const rules = Array.isArray(scoringConfig.rules) ? scoringConfig.rules : []
+  const availableFields = useMemo(() => flattenFormFieldsForScoring(steps), [steps])
+
+  const updateScoring = (patch) => {
+    setForm((prev) => ({
+      ...prev,
+      scoring_config: { ...(prev.scoring_config || {}), ...patch },
+    }))
+  }
+
+  const updateRules = (nextRules) => {
+    updateScoring({ rules: nextRules })
+  }
+
+  const addRule = () => {
+    const firstField = availableFields[0]
+    updateRules([
+      ...rules,
+      {
+        id: `r_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`,
+        field: firstField?.slug || '',
+        operator: firstField?.options?.length ? 'in' : 'eq',
+        values: [],
+        value: '',
+        label: '',
+      },
+    ])
+  }
+
+  const removeRule = (id) => {
+    updateRules(rules.filter((r) => r.id !== id))
+  }
+
+  const patchRule = (id, patch) => {
+    updateRules(rules.map((r) => (r.id === id ? { ...r, ...patch } : r)))
+  }
+
+  // ── Recipient email list ──────────────────────────────────────────────────
+  const [newRecipient, setNewRecipient] = useState('')
+  const recipients = form.notification_emails || []
+
+  const addRecipient = () => {
+    const email = newRecipient.trim().toLowerCase()
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return
+    if (recipients.includes(email)) return
+    setForm((prev) => ({ ...prev, notification_emails: [...recipients, email] }))
+    setNewRecipient('')
+  }
+
+  const removeRecipient = (email) => {
+    setForm((prev) => ({
+      ...prev,
+      notification_emails: recipients.filter((e) => e !== email),
+    }))
+  }
+
+  return (
+    <div className="space-y-3 p-3 rounded-lg bg-[var(--surface-page)] border border-[var(--glass-border)]">
+      <div className="flex items-center gap-2">
+        <Bell className="h-4 w-4 text-[var(--brand-primary)]" />
+        <Label className="text-[var(--text-primary)] text-xs font-medium">Notifications</Label>
+      </div>
+
+      {/* Recipients ------------------------------------------------------ */}
+      <div className="space-y-2">
+        <Label className="text-[11px] text-[var(--text-secondary)]">Extra recipients for this form</Label>
+        <p className="text-[11px] text-[var(--text-tertiary)]">
+          Merges with the project's default notification email.
+        </p>
+        <div className="flex gap-2">
+          <Input
+            type="email"
+            value={newRecipient}
+            onChange={(e) => setNewRecipient(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault()
+                addRecipient()
+              }
+            }}
+            placeholder="lee@hometown-mtg.co"
+            className="bg-[var(--surface-secondary)] border-[var(--glass-border)] text-xs"
+          />
+          <Button type="button" variant="outline" size="sm" onClick={addRecipient}>
+            Add
+          </Button>
+        </div>
+        {recipients.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 pt-1">
+            {recipients.map((email) => (
+              <Badge
+                key={email}
+                variant="outline"
+                className="pl-2 pr-1 py-0.5 gap-1 text-[11px] font-normal"
+              >
+                {email}
+                <button
+                  type="button"
+                  onClick={() => removeRecipient(email)}
+                  className="rounded hover:bg-[var(--surface-secondary)] p-0.5"
+                  aria-label={`Remove ${email}`}
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </Badge>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <Separator className="bg-[var(--glass-border)]" />
+
+      {/* Gating mode ----------------------------------------------------- */}
+      <div className="space-y-2">
+        <Label className="text-[11px] text-[var(--text-secondary)]">When to send notifications</Label>
+        <Select value={gating} onValueChange={(v) => updateScoring({ notification_gating: v })}>
+          <SelectTrigger className="bg-[var(--surface-secondary)] border-[var(--glass-border)]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Every submission</SelectItem>
+            <SelectItem value="high_value_only">Only high-value (rules below)</SelectItem>
+            <SelectItem value="off">Never (submissions still saved)</SelectItem>
+          </SelectContent>
+        </Select>
+        {gating === 'high_value_only' && rules.length === 0 && (
+          <p className="text-[11px] text-amber-600 flex items-start gap-1.5 pt-1">
+            <AlertCircle className="h-3 w-3 mt-0.5 shrink-0" />
+            <span>No rules configured. Add a rule below or nothing will ever notify.</span>
+          </p>
+        )}
+      </div>
+
+      {/* Rules builder (only visible when gating is high_value_only) ---- */}
+      {gating === 'high_value_only' && (
+        <>
+          <div className="space-y-2 pt-1">
+            <div className="flex items-center justify-between">
+              <Label className="text-[11px] text-[var(--text-secondary)]">Match</Label>
+              <Select value={combinator} onValueChange={(v) => updateScoring({ rule_combinator: v })}>
+                <SelectTrigger className="w-auto h-7 text-[11px] px-2 bg-[var(--surface-secondary)] border-[var(--glass-border)]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="any">Any of these rules</SelectItem>
+                  <SelectItem value="all">All of these rules</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {rules.length === 0 ? (
+              <div className="p-3 rounded-lg border border-dashed border-[var(--glass-border)] text-center">
+                <p className="text-[11px] text-[var(--text-tertiary)]">No scoring rules yet.</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {rules.map((rule) => (
+                  <ScoringRuleRow
+                    key={rule.id}
+                    rule={rule}
+                    availableFields={availableFields}
+                    onChange={(patch) => patchRule(rule.id, patch)}
+                    onRemove={() => removeRule(rule.id)}
+                  />
+                ))}
+              </div>
+            )}
+
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={addRule}
+              disabled={availableFields.length === 0}
+              className="w-full gap-2 text-xs"
+            >
+              <Plus className="h-3 w-3" />
+              Add rule
+            </Button>
+            {availableFields.length === 0 && (
+              <p className="text-[11px] text-[var(--text-tertiary)]">
+                Add at least one field to the form before creating scoring rules.
+              </p>
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
+function ScoringRuleRow({ rule, availableFields, onChange, onRemove }) {
+  const field = availableFields.find((f) => f.slug === rule.field)
+  const hasOptions = field?.options?.length > 0
+  const operator = rule.operator || 'eq'
+  // Operators that read rule.values (multi); everything else reads rule.value (scalar).
+  const usesValues = operator === 'in'
+
+  const onOperatorChange = (op) => {
+    // Sensible defaults when switching operator: "in" wants values[], numeric
+    // operators want a clean value, contains wants a clean string.
+    const patch = { operator: op }
+    if (op === 'in') {
+      patch.values = Array.isArray(rule.values) ? rule.values : []
+      patch.value = undefined
+    } else {
+      patch.value = rule.value ?? ''
+      patch.values = undefined
+    }
+    onChange(patch)
+  }
+
+  const toggleOptionValue = (v) => {
+    const current = Array.isArray(rule.values) ? rule.values : []
+    const next = current.includes(v) ? current.filter((x) => x !== v) : [...current, v]
+    onChange({ values: next })
+  }
+
+  return (
+    <div className="p-2.5 rounded-lg bg-[var(--surface-secondary)] border border-[var(--glass-border)] space-y-2">
+      <div className="flex items-start gap-1.5">
+        <div className="flex-1 space-y-1.5">
+          {/* Field picker */}
+          <Select value={rule.field} onValueChange={(v) => {
+            const nextField = availableFields.find((f) => f.slug === v)
+            // Reset op + values when field changes, since option set differs.
+            onChange({
+              field: v,
+              operator: nextField?.options?.length ? 'in' : 'eq',
+              values: [],
+              value: '',
+            })
+          }}>
+            <SelectTrigger className="h-8 text-xs bg-[var(--surface-page)] border-[var(--glass-border)]">
+              <SelectValue placeholder="Pick a field" />
+            </SelectTrigger>
+            <SelectContent>
+              {availableFields.map((f) => (
+                <SelectItem key={f.slug} value={f.slug}>
+                  {f.label}
+                  <span className="text-[var(--text-tertiary)] ml-1.5 text-[10px]">({f.slug})</span>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {/* Operator picker */}
+          <Select value={operator} onValueChange={onOperatorChange}>
+            <SelectTrigger className="h-8 text-xs bg-[var(--surface-page)] border-[var(--glass-border)]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {OPERATOR_OPTIONS.map((o) => (
+                <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {/* Value input — shape depends on operator + field type */}
+          {usesValues ? (
+            hasOptions ? (
+              <div className="space-y-1 pt-1">
+                {field.options.map((opt) => {
+                  const v = typeof opt === 'string' ? opt : opt.value
+                  const label = typeof opt === 'string' ? opt : (opt.label || opt.value)
+                  const checked = (rule.values || []).includes(v)
+                  return (
+                    <label key={v} className="flex items-center gap-2 text-xs text-[var(--text-primary)] cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => toggleOptionValue(v)}
+                        className="rounded border-[var(--glass-border)]"
+                      />
+                      {label}
+                    </label>
+                  )
+                })}
+              </div>
+            ) : (
+              // Free-form comma-separated values when the field has no options
+              <Input
+                value={(rule.values || []).join(', ')}
+                onChange={(e) => onChange({
+                  values: e.target.value.split(',').map((s) => s.trim()).filter(Boolean),
+                })}
+                placeholder="value1, value2, value3"
+                className="h-8 text-xs bg-[var(--surface-page)] border-[var(--glass-border)]"
+              />
+            )
+          ) : (
+            <Input
+              type={['gte', 'gt', 'lte', 'lt'].includes(operator) ? 'number' : 'text'}
+              value={rule.value ?? ''}
+              onChange={(e) => onChange({ value: e.target.value })}
+              placeholder={
+                ['gte', 'gt', 'lte', 'lt'].includes(operator) ? '250000' : 'value'
+              }
+              className="h-8 text-xs bg-[var(--surface-page)] border-[var(--glass-border)]"
+            />
+          )}
+
+          {/* Optional display label — surfaced in the notification text */}
+          <Input
+            value={rule.label || ''}
+            onChange={(e) => onChange({ label: e.target.value })}
+            placeholder="Label (shown in the notification)"
+            className="h-8 text-xs bg-[var(--surface-page)] border-[var(--glass-border)]"
+          />
+        </div>
+
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          onClick={onRemove}
+          className="h-7 w-7 shrink-0 text-[var(--text-tertiary)] hover:text-red-500"
+          aria-label="Remove rule"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+// =============================================================================
 // MAIN FORM BUILDER COMPONENT
 // =============================================================================
 
@@ -2005,6 +2377,8 @@ export default function FormBuilder({ formId, projectId, initialData, onSave, on
         project_id: initialData.projectId || initialData.project_id || projectId,
         offering_id: initialData.offering_id || null,
         page_paths: initialData.page_paths || [],
+        notification_emails: initialData.notificationEmails || initialData.notification_emails || [],
+        scoring_config: initialData.scoringConfig || initialData.scoring_config || {},
         id: initialData.id
       }
     }
@@ -2020,7 +2394,9 @@ export default function FormBuilder({ formId, projectId, initialData, onSave, on
       is_active: true,
       project_id: projectId,
       offering_id: null,
-      page_paths: []
+      page_paths: [],
+      notification_emails: [],
+      scoring_config: {}
     }
   })
 
@@ -2536,6 +2912,8 @@ export default function FormBuilder({ formId, projectId, initialData, onSave, on
         successMessage: form.success_message,
         submitButtonText: form.submit_text,
         isActive: form.is_active,
+        notificationEmails: form.notification_emails || [],
+        scoringConfig: form.scoring_config || {},
       })
       
       // Reset change tracking after successful save
@@ -3278,6 +3656,21 @@ export default function FormBuilder({ formId, projectId, initialData, onSave, on
                         Link this form to a service for intent categorization and Signal optimization
                       </p>
                     </div>
+
+                    {/* ─────────────────────────────────────────────
+                        Notifications — recipients + submission gating
+
+                        Default notification recipient is the project's "forms
+                        default notification email" setting. Per-form recipients
+                        here merge on top. The gating mode decides whether the
+                        "ping a human" side-effects (email + Echo) fire:
+                          - all              → every submission pings
+                          - high_value_only  → only submissions matching the
+                                               rules below ping
+                          - off              → never ping (submission is still
+                                               recorded + routed to CRM)
+                        ─────────────────────────────────────────── */}
+                    <NotificationsSettings form={form} setForm={setForm} steps={steps} />
 
                     {/* Page Association - Unified Logic */}
                     <div className="space-y-2">

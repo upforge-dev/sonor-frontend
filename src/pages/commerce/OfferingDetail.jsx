@@ -2,7 +2,7 @@
 // View/Edit offering details
 // MIGRATED TO REACT QUERY HOOKS - Jan 29, 2026
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom'
 import { useCommerceOffering, useDeleteCommerceOffering, commerceKeys } from '@/lib/hooks'
 import { useQueryClient } from '@tanstack/react-query'
@@ -1049,11 +1049,15 @@ function isPaidSale(sale) {
   return sale.payment_status === 'paid' || sale.status === 'completed'
 }
 
-// Attendees list component - shows paid registrations only
+// Attendees list component - shows paid registrations only, grouped by schedule date
+const UNSCHEDULED_KEY = '__unscheduled__'
+
 function OfferingAttendees({ offeringId, projectId }) {
   const [sales, setSales] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  // null = "not yet initialized"; the effect below picks the soonest upcoming date once groups are computed.
+  const [selectedScheduleId, setSelectedScheduleId] = useState(null)
 
   useEffect(() => {
     if (offeringId && projectId) {
@@ -1076,6 +1080,59 @@ function OfferingAttendees({ offeringId, projectId }) {
   }
 
   const paidAttendees = sales.filter(isPaidSale)
+
+  // Group by schedule_id. Each group carries a starts_at for sorting/labelling.
+  const groups = useMemo(() => {
+    const map = new Map()
+    for (const sale of paidAttendees) {
+      const key = sale.schedule_id || UNSCHEDULED_KEY
+      if (!map.has(key)) {
+        map.set(key, {
+          scheduleId: sale.schedule_id || null,
+          startsAt: sale.schedule?.starts_at || null,
+          endsAt: sale.schedule?.ends_at || null,
+          sales: [],
+        })
+      }
+      map.get(key).sales.push(sale)
+    }
+    for (const group of map.values()) {
+      group.sales.sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+    }
+    return Array.from(map.values()).sort((a, b) => {
+      if (!a.startsAt && !b.startsAt) return 0
+      if (!a.startsAt) return 1
+      if (!b.startsAt) return -1
+      return new Date(a.startsAt) - new Date(b.startsAt)
+    })
+  }, [paidAttendees])
+
+  // Default to the soonest upcoming date. Fall back to 'all' when nothing upcoming
+  // (e.g. event just has past dates) — don't clobber a user's later manual selection.
+  useEffect(() => {
+    if (selectedScheduleId !== null || groups.length === 0) return
+    const now = Date.now()
+    const soonestUpcoming = groups.find(
+      (g) => g.startsAt && new Date(g.startsAt).getTime() >= now,
+    )
+    setSelectedScheduleId(
+      soonestUpcoming ? (soonestUpcoming.scheduleId || UNSCHEDULED_KEY) : 'all',
+    )
+  }, [groups, selectedScheduleId])
+
+  const effectiveFilter = selectedScheduleId ?? 'all'
+  const visibleGroups = effectiveFilter === 'all'
+    ? groups
+    : groups.filter((g) => (g.scheduleId || UNSCHEDULED_KEY) === effectiveFilter)
+
+  const hasMultipleDates = groups.length > 1
+
+  // Per-group pagination. Reset when the filter changes.
+  const PAGE_SIZE = 10
+  const [pageByGroup, setPageByGroup] = useState({})
+  useEffect(() => {
+    setPageByGroup({})
+  }, [effectiveFilter])
 
   if (loading) {
     return (
@@ -1122,53 +1179,134 @@ function OfferingAttendees({ offeringId, projectId }) {
     )
   }
 
+  const formatGroupLabel = (group) => {
+    if (!group.startsAt) return 'Unscheduled'
+    return format(new Date(group.startsAt), 'EEE, MMM d, yyyy · h:mm a')
+  }
+
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
           <div>
             <CardTitle>Registered Attendees</CardTitle>
-            <CardDescription>Successfully registered and paid ({paidAttendees.length} total)</CardDescription>
+            <CardDescription>
+              Successfully registered and paid ({paidAttendees.length} total
+              {hasMultipleDates ? ` across ${groups.length} dates` : ''})
+            </CardDescription>
           </div>
-          <Badge variant="outline">{paidAttendees.length} registered</Badge>
+          {hasMultipleDates && (
+            <Select value={effectiveFilter} onValueChange={setSelectedScheduleId}>
+              <SelectTrigger className="w-[260px]">
+                <SelectValue placeholder="Filter by date" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All dates ({paidAttendees.length})</SelectItem>
+                {groups.map((group) => {
+                  const key = group.scheduleId || UNSCHEDULED_KEY
+                  const count = group.sales.reduce((n, s) => n + (s.quantity || 1), 0)
+                  return (
+                    <SelectItem key={key} value={key}>
+                      {formatGroupLabel(group)} ({count})
+                    </SelectItem>
+                  )
+                })}
+              </SelectContent>
+            </Select>
+          )}
         </div>
       </CardHeader>
       <CardContent className="p-0">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-muted/50">
-              <tr>
-                <th className="text-left p-3 text-sm font-medium">Name</th>
-                <th className="text-left p-3 text-sm font-medium">Email</th>
-                <th className="text-left p-3 text-sm font-medium hidden md:table-cell">Phone</th>
-                <th className="text-right p-3 text-sm font-medium">Qty</th>
-                <th className="text-left p-3 text-sm font-medium">Registered</th>
-              </tr>
-            </thead>
-            <tbody>
-              {paidAttendees.map((sale) => (
-                <tr key={sale.id} className="border-t">
-                  <td className="p-3">
-                    <p className="font-medium">{sale.customer_name || 'Guest'}</p>
-                  </td>
-                  <td className="p-3">
-                    <p className="text-sm text-muted-foreground">{sale.customer_email}</p>
-                  </td>
-                  <td className="p-3 hidden md:table-cell">
-                    <p className="text-sm text-muted-foreground">{sale.customer_phone || sale.metadata?.phone || '—'}</p>
-                  </td>
-                  <td className="p-3 text-right text-sm">
-                    {sale.quantity}
-                  </td>
-                  <td className="p-3 text-sm text-muted-foreground">
-                    {format(new Date(sale.created_at), 'MMM d, yyyy')}
-                    <span className="ml-1 text-xs">{format(new Date(sale.created_at), 'h:mm a')}</span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        {visibleGroups.map((group, groupIdx) => {
+          const key = group.scheduleId || UNSCHEDULED_KEY
+          const attendeeCount = group.sales.reduce((n, s) => n + (s.quantity || 1), 0)
+          return (
+            <div key={key} className={groupIdx > 0 ? 'border-t' : ''}>
+              {hasMultipleDates && (
+                <div className="flex items-center justify-between px-3 py-2 bg-muted/40 border-b">
+                  <div className="flex items-center gap-2">
+                    <CalendarDays className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm font-medium">{formatGroupLabel(group)}</span>
+                  </div>
+                  <Badge variant="outline">{attendeeCount} attendee{attendeeCount === 1 ? '' : 's'}</Badge>
+                </div>
+              )}
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-muted/50">
+                    <tr>
+                      <th className="text-left p-3 text-sm font-medium">Name</th>
+                      <th className="text-left p-3 text-sm font-medium">Email</th>
+                      <th className="text-left p-3 text-sm font-medium hidden md:table-cell">Phone</th>
+                      <th className="text-right p-3 text-sm font-medium">Qty</th>
+                      <th className="text-left p-3 text-sm font-medium">Registered</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(() => {
+                      const page = pageByGroup[key] || 1
+                      const start = (page - 1) * PAGE_SIZE
+                      return group.sales.slice(start, start + PAGE_SIZE).map((sale) => (
+                        <tr key={sale.id} className="border-t">
+                          <td className="p-3">
+                            <p className="font-medium">{sale.customer_name || 'Guest'}</p>
+                          </td>
+                          <td className="p-3">
+                            <p className="text-sm text-muted-foreground">{sale.customer_email}</p>
+                          </td>
+                          <td className="p-3 hidden md:table-cell">
+                            <p className="text-sm text-muted-foreground">{sale.customer_phone || sale.metadata?.phone || '—'}</p>
+                          </td>
+                          <td className="p-3 text-right text-sm">
+                            {sale.quantity}
+                          </td>
+                          <td className="p-3 text-sm text-muted-foreground">
+                            {format(new Date(sale.created_at), 'MMM d, yyyy')}
+                            <span className="ml-1 text-xs">{format(new Date(sale.created_at), 'h:mm a')}</span>
+                          </td>
+                        </tr>
+                      ))
+                    })()}
+                  </tbody>
+                </table>
+              </div>
+              {group.sales.length > PAGE_SIZE && (() => {
+                const page = pageByGroup[key] || 1
+                const totalPages = Math.ceil(group.sales.length / PAGE_SIZE)
+                const start = (page - 1) * PAGE_SIZE
+                const end = Math.min(start + PAGE_SIZE, group.sales.length)
+                return (
+                  <div className="flex items-center justify-between px-3 py-2 border-t text-sm">
+                    <span className="text-muted-foreground">
+                      Showing {start + 1}–{end} of {group.sales.length}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={page <= 1}
+                        onClick={() => setPageByGroup((m) => ({ ...m, [key]: page - 1 }))}
+                      >
+                        Previous
+                      </Button>
+                      <span className="text-xs text-muted-foreground">
+                        Page {page} of {totalPages}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={page >= totalPages}
+                        onClick={() => setPageByGroup((m) => ({ ...m, [key]: page + 1 }))}
+                      >
+                        Next
+                      </Button>
+                    </div>
+                  </div>
+                )
+              })()}
+            </div>
+          )
+        })}
       </CardContent>
     </Card>
   )
@@ -1353,8 +1491,48 @@ function EventDetailView({
 }) {
   const [showScheduleDialog, setShowScheduleDialog] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [paidSales, setPaidSales] = useState([])
   const navigate = useNavigate()
-  
+
+  // Fetch paid sales once so every tile/section has the ground-truth numbers.
+  // offering.sales_count / schedule.current_enrollment are often stale vs actual paid registrations.
+  useEffect(() => {
+    if (!id || !projectId) return
+    let cancelled = false
+    portalApi
+      .get(`/commerce/sales/${projectId}?offering_id=${id}&limit=500`)
+      .then((res) => {
+        if (cancelled) return
+        const paid = (res.data || []).filter(isPaidSale)
+        setPaidSales(paid)
+      })
+      .catch((err) => console.error('Failed to load sales for event stats:', err))
+    return () => { cancelled = true }
+  }, [id, projectId])
+
+  // Aggregates from real paid sales
+  const attendeesBySchedule = useMemo(() => {
+    const map = new Map()
+    for (const sale of paidSales) {
+      const key = sale.schedule_id || '__unscheduled__'
+      map.set(key, (map.get(key) || 0) + (sale.quantity || 1))
+    }
+    return map
+  }, [paidSales])
+
+  const totalAttendees = useMemo(
+    () => paidSales.reduce((n, s) => n + (s.quantity || 1), 0),
+    [paidSales],
+  )
+  const totalRevenue = useMemo(
+    () => paidSales.reduce((n, s) => {
+      const amount = Number(s.total_amount ?? ((s.quantity || 1) * (s.unit_price || 0)))
+      return n + (Number.isFinite(amount) ? amount : 0)
+    }, 0),
+    [paidSales],
+  )
+  const totalPaidSales = paidSales.length
+
   const handleDelete = async () => {
     try {
       await onDelete()
@@ -1385,7 +1563,10 @@ function EventDetailView({
 
   const capacitySource = upcomingSchedules.length > 0 ? upcomingSchedules : pastSchedules
   const totalCapacity = capacitySource.reduce((sum, s) => sum + (s.capacity ?? s.max_capacity ?? 0), 0)
+  // Prefer paid-sale attendee counts; fall back to schedule.current_enrollment / spots_remaining.
   const totalEnrolled = capacitySource.reduce((sum, s) => {
+    const fromSales = attendeesBySchedule.get(s.id)
+    if (fromSales != null) return sum + fromSales
     const cap = s.capacity ?? s.max_capacity
     const enrolled = s.current_enrollment ?? (cap != null && s.spots_remaining != null ? cap - s.spots_remaining : 0)
     return sum + enrolled
@@ -1576,6 +1757,27 @@ function EventDetailView({
               </CardContent>
             </Card>
 
+            {/* Tabs for Attendees, Sales & Analytics */}
+            <Tabs defaultValue="attendees">
+              <TabsList>
+                <TabsTrigger value="attendees">Attendees</TabsTrigger>
+                <TabsTrigger value="sales">Sales History</TabsTrigger>
+                <TabsTrigger value="analytics">Analytics</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="attendees" className="mt-4">
+                <OfferingAttendees offeringId={id} projectId={projectId} />
+              </TabsContent>
+
+              <TabsContent value="sales" className="mt-4">
+                <OfferingSalesHistory offeringId={id} projectId={projectId} />
+              </TabsContent>
+
+              <TabsContent value="analytics" className="mt-4">
+                <OfferingAnalytics offeringId={id} />
+              </TabsContent>
+            </Tabs>
+
             {/* Description */}
             <Card>
               <CardHeader>
@@ -1616,27 +1818,6 @@ function EventDetailView({
                 </CardContent>
               </Card>
             )}
-
-            {/* Tabs for Analytics & Sales */}
-            <Tabs defaultValue="analytics">
-              <TabsList>
-                <TabsTrigger value="analytics">Analytics</TabsTrigger>
-                <TabsTrigger value="attendees">Attendees</TabsTrigger>
-                <TabsTrigger value="sales">Sales History</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="analytics" className="mt-4">
-                <OfferingAnalytics offeringId={id} />
-              </TabsContent>
-
-              <TabsContent value="attendees" className="mt-4">
-                <OfferingAttendees offeringId={id} projectId={projectId} />
-              </TabsContent>
-
-              <TabsContent value="sales" className="mt-4">
-                <OfferingSalesHistory offeringId={id} projectId={projectId} />
-              </TabsContent>
-            </Tabs>
           </div>
 
           {/* Sidebar - Right column */}
@@ -1712,12 +1893,12 @@ function EventDetailView({
                 {/* Quick Stats */}
                 <div className="grid grid-cols-2 gap-3 mt-6 pt-6 border-t">
                   <div className="text-center">
-                    <p className="text-2xl font-bold">{offering.sales_count || 0}</p>
+                    <p className="text-2xl font-bold">{totalPaidSales}</p>
                     <p className="text-xs text-muted-foreground">Total Sales</p>
                   </div>
                   <div className="text-center">
                     <p className="text-2xl font-bold">
-                      ${((offering.sales_count || 0) * (offering.price || 0)).toLocaleString()}
+                      ${totalRevenue.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                     </p>
                     <p className="text-xs text-muted-foreground">Revenue</p>
                   </div>
@@ -1762,19 +1943,26 @@ function EventDetailView({
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-2">
-                  {upcomingSchedules.slice(0, 5).map(schedule => (
-                    <div key={schedule.id} className="flex items-center justify-between text-sm p-2 rounded hover:bg-muted/50">
-                      <div>
-                        <p className="font-medium">{format(new Date(schedule.starts_at || schedule.start_time), 'MMM d, yyyy')}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {format(new Date(schedule.starts_at || schedule.start_time), 'h:mm a')}
-                        </p>
+                  {upcomingSchedules.slice(0, 5).map(schedule => {
+                    const cap = schedule.capacity ?? schedule.max_capacity ?? offering.capacity ?? null
+                    const fromSales = attendeesBySchedule.get(schedule.id)
+                    const enrolled = fromSales != null
+                      ? fromSales
+                      : (schedule.current_enrollment ?? (cap != null && schedule.spots_remaining != null ? cap - schedule.spots_remaining : 0))
+                    return (
+                      <div key={schedule.id} className="flex items-center justify-between text-sm p-2 rounded hover:bg-muted/50">
+                        <div>
+                          <p className="font-medium">{format(new Date(schedule.starts_at || schedule.start_time), 'MMM d, yyyy')}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {format(new Date(schedule.starts_at || schedule.start_time), 'h:mm a')}
+                          </p>
+                        </div>
+                        <Badge variant="outline" className="text-xs">
+                          {enrolled}/{cap ?? '∞'}
+                        </Badge>
                       </div>
-                      <Badge variant="outline" className="text-xs">
-                        {schedule.current_enrollment || 0}/{schedule.max_capacity || '∞'}
-                      </Badge>
-                    </div>
-                  ))}
+                    )
+                  })}
                   {upcomingSchedules.length > 5 && (
                     <Button
                       variant="ghost"

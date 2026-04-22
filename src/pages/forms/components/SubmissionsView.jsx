@@ -40,6 +40,7 @@ import {
   Trash2,
   ChevronDown,
   X,
+  Target,
 } from 'lucide-react'
 import SignalIcon from '@/components/ui/SignalIcon'
 import { cn } from '@/lib/utils'
@@ -99,7 +100,14 @@ export function SubmissionDetailPanel({ submission, hasSignal, onClose, onUpdate
   const createdAt = rawDate ? new Date(rawDate) : null
   const status = submission.status || 'new'
   const formName = submission.form?.name || 'Unknown Form'
-  
+
+  // High-value scoring from FormScoringService (set at submit time).
+  const isHighValue = submission.high_value === true || submission.highValue === true
+  const scoringMatched =
+    submission.scoring_result?.matched ||
+    submission.scoringResult?.matched ||
+    []
+
   // Build a contact-like object for the email compose dialog
   const contactForEmail = email ? {
     id: submission.id,
@@ -200,6 +208,42 @@ export function SubmissionDetailPanel({ submission, hasSignal, onClose, onUpdate
       {/* Scrollable Content */}
       <ScrollArea className="flex-1 min-h-0 overflow-auto">
         <div className="p-4 space-y-5">
+          {/* High-value banner — deterministic rule match from the form's scoring_config.
+              Shown prominently above Signal analysis because this is what triggered the
+              notification, and the user clicked through specifically to see why. */}
+          {isHighValue && (
+            <div className="p-3 rounded-lg bg-gradient-to-r from-amber-500/10 to-amber-500/5 border border-amber-500/30">
+              <div className="flex items-center gap-2 mb-2">
+                <Target className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                <span className="text-xs font-semibold text-amber-700 dark:text-amber-300 uppercase tracking-wide">
+                  High-value submission
+                </span>
+              </div>
+              {scoringMatched.length > 0 ? (
+                <ul className="space-y-1 text-sm text-[var(--text-primary)]">
+                  {scoringMatched.map((m, i) => (
+                    <li key={m.ruleId || i} className="flex items-start gap-2">
+                      <CheckCircle className="h-3.5 w-3.5 mt-0.5 text-amber-600 dark:text-amber-400 shrink-0" />
+                      <span>
+                        {m.label || (
+                          <>
+                            <span className="font-medium">{m.field}</span>
+                            {' '}matched{' '}
+                            <span className="font-mono text-xs bg-amber-500/10 px-1 py-0.5 rounded">
+                              {Array.isArray(m.fieldValue) ? m.fieldValue.join(', ') : String(m.fieldValue ?? '')}
+                            </span>
+                          </>
+                        )}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-[var(--text-secondary)]">Matched the form's scoring rules.</p>
+              )}
+            </div>
+          )}
+
           {/* Signal Analysis */}
           {hasSignal && (submission.lead_score !== undefined || submission.quality_tier) && (
             <div className="p-3 rounded-lg bg-gradient-to-r from-[var(--brand-primary)]/5 to-[var(--brand-primary)]/5 border border-[var(--glass-border)]">
@@ -412,6 +456,14 @@ function SubmissionRow({ submission, hasSignal, onView, onUpdateStatus, onDelete
   const email = submission.email || fields.email || ''
   const qualityTier = submission.quality_tier || submission.qualityTier || 'medium'
   const status = submission.status || 'new'
+  // high_value is a hard-rule flag set at submit time by FormScoringService.
+  // Different from quality_tier (AI-scored intent): this one is deterministic
+  // and explicitly configured by the form author.
+  const isHighValue = submission.high_value === true || submission.highValue === true
+  const highValueLabel =
+    submission.scoring_result?.matched?.find((m) => m?.label)?.label ||
+    submission.scoringResult?.matched?.find((m) => m?.label)?.label ||
+    'High-value'
   
   return (
     <TableRow 
@@ -440,6 +492,15 @@ function SubmissionRow({ submission, hasSignal, onView, onUpdateStatus, onDelete
               <span className="font-medium text-[var(--text-primary)] truncate">{name}</span>
               {status === 'new' && (
                 <span className="flex h-2 w-2 rounded-full bg-[var(--brand-primary)]" />
+              )}
+              {isHighValue && (
+                <Badge
+                  className="text-[10px] px-1.5 py-0 gap-1 bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30"
+                  title={highValueLabel}
+                >
+                  <Target className="h-2.5 w-2.5" />
+                  High-value
+                </Badge>
               )}
             </div>
             <span className="text-sm text-[var(--text-tertiary)] truncate block">{email || 'No email'}</span>
