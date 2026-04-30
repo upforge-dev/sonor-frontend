@@ -304,17 +304,23 @@ export function SubmissionDetailPanel({ submission, hasSignal, onClose, onUpdate
             </h4>
             <div className="space-y-1.5">
               {email && (
-                <div className="flex items-center gap-3 p-2.5 rounded-lg bg-[var(--glass-bg-hover)]">
+                <div className="flex items-center gap-3 p-2.5 rounded-lg bg-[var(--glass-bg-hover)] min-w-0">
                   <Mail className="h-4 w-4 text-[var(--text-tertiary)] shrink-0" />
-                  <a href={`mailto:${email}`} className="text-sm text-[var(--text-primary)] hover:underline truncate">
+                  <a
+                    href={`mailto:${email}`}
+                    className="text-sm text-[var(--text-primary)] hover:underline min-w-0 flex-1 break-all"
+                  >
                     {email}
                   </a>
                 </div>
               )}
               {phone && (
-                <div className="flex items-center gap-3 p-2.5 rounded-lg bg-[var(--glass-bg-hover)]">
+                <div className="flex items-center gap-3 p-2.5 rounded-lg bg-[var(--glass-bg-hover)] min-w-0">
                   <Phone className="h-4 w-4 text-[var(--text-tertiary)] shrink-0" />
-                  <a href={`tel:${phone}`} className="text-sm text-[var(--text-primary)] hover:underline">
+                  <a
+                    href={`tel:${phone}`}
+                    className="text-sm text-[var(--text-primary)] hover:underline min-w-0 flex-1 break-all"
+                  >
                     {phone}
                   </a>
                 </div>
@@ -338,11 +344,11 @@ export function SubmissionDetailPanel({ submission, hasSignal, onClose, onUpdate
                 }
                 
                 return (
-                  <div key={key} className="p-2.5 rounded-lg bg-[var(--glass-bg-hover)]">
+                  <div key={key} className="p-2.5 rounded-lg bg-[var(--glass-bg-hover)] min-w-0">
                     <p className="text-[10px] text-[var(--text-tertiary)] uppercase tracking-wider mb-0.5">
                       {key.replace(/_/g, ' ').replace(/-/g, ' ')}
                     </p>
-                    <p className="text-sm text-[var(--text-primary)]">
+                    <p className="text-sm text-[var(--text-primary)] whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
                       {typeof value === 'object' ? JSON.stringify(value) : String(value || '—')}
                     </p>
                   </div>

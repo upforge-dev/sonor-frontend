@@ -619,8 +619,18 @@ export const proposalsApi = {
   duplicate: (id) => 
     sonorApi.post(`/proposals/${id}/duplicate`),
   
-  send: (id, data = {}) => 
+  send: (id, data = {}) =>
     sonorApi.post(`/proposals/${id}/send`, data),
+
+  /**
+   * Send a follow-up reminder for a proposal that's already been sent (status
+   * sent or viewed). Backend enforces a 48h minimum between reminders.
+   *
+   * @param {string} id - Proposal ID
+   * @param {object} data - { recipients?: string[], message?: string, cc?: string[] }
+   */
+  remind: (id, data = {}) =>
+    sonorApi.post(`/proposals/${id}/remind`, data),
   
   accept: (id, data = {}) => 
     sonorApi.post(`/proposals/${id}/accept`, data),

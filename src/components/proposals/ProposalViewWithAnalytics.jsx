@@ -28,7 +28,8 @@ import {
   ExternalLink,
   Send,
   Mail,
-  DollarSign
+  DollarSign,
+  BellRing
 } from 'lucide-react'
 import { toast } from 'sonner'
 import ProposalView from './ProposalView'
@@ -197,10 +198,53 @@ export default function ProposalViewWithAnalytics({ proposal, onBack, onEdit }) 
   })
   const [markingPaid, setMarkingPaid] = useState(false)
   const [currentProposal, setCurrentProposal] = useState(proposal)
+  const [showRemindDialog, setShowRemindDialog] = useState(false)
+  const [remindRecipients, setRemindRecipients] = useState('')
+  const [remindMessage, setRemindMessage] = useState('')
+  const [reminding, setReminding] = useState(false)
 
   const isSigned =
     Boolean(currentProposal?.client_signature_url) ||
     currentProposal?.status === 'accepted'
+
+  // Reminder visibility/gating — only meaningful for proposals that are out
+  // the door but not yet acted on. Backend is the source of truth on the
+  // 48h gate; we mirror it here so the button/copy reflects what will happen.
+  const REMINDER_MIN_INTERVAL_HOURS = 48
+  const remindableStatuses = new Set(['sent', 'viewed'])
+  const canShowRemindButton =
+    !isSigned && remindableStatuses.has(currentProposal?.status)
+
+  const lastTouchIso =
+    currentProposal?.last_reminder_sent_at || currentProposal?.sent_at || null
+  const hoursUntilNextReminder = (() => {
+    if (!lastTouchIso) return 0
+    const elapsedMs = Date.now() - new Date(lastTouchIso).getTime()
+    const remainingMs = REMINDER_MIN_INTERVAL_HOURS * 60 * 60 * 1000 - elapsedMs
+    return remainingMs > 0 ? Math.ceil(remainingMs / (60 * 60 * 1000)) : 0
+  })()
+  const remindGated = hoursUntilNextReminder > 0
+  const reminderCount = currentProposal?.reminder_count || 0
+
+  const formatDateTimeShort = (iso) => {
+    if (!iso) return ''
+    const d = new Date(iso)
+    if (Number.isNaN(d.getTime())) return ''
+    return d.toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    })
+  }
+
+  const remindButtonTitle = remindGated
+    ? `Reminders are at least ${REMINDER_MIN_INTERVAL_HOURS}h apart. Next available in ~${hoursUntilNextReminder}h.`
+    : currentProposal?.last_reminder_sent_at
+      ? `Last reminded ${formatDateTimeShort(currentProposal.last_reminder_sent_at)} (${reminderCount} sent)`
+      : currentProposal?.sent_at
+        ? `Originally sent ${formatDateTimeShort(currentProposal.sent_at)}`
+        : 'Send a follow-up reminder'
 
   // Best-effort check: show the "Mark Paid Offline" button whenever the proposal
   // is signed and doesn't already have a deposit_paid_at stamp. Backend will
@@ -294,6 +338,61 @@ export default function ProposalViewWithAnalytics({ proposal, onBack, onEdit }) 
       toast.error(typeof message === 'string' ? message : 'Failed to mark deposit as paid')
     } finally {
       setMarkingPaid(false)
+    }
+  }
+
+  const handleOpenRemind = () => {
+    const defaults =
+      (Array.isArray(currentProposal?.sent_to_recipients) &&
+        currentProposal.sent_to_recipients.length > 0 &&
+        currentProposal.sent_to_recipients) ||
+      [
+        currentProposal?.contact?.email ||
+          currentProposal?.recipient_email ||
+          currentProposal?.client_email,
+      ].filter(Boolean)
+    setRemindRecipients((defaults || []).join(', '))
+    setRemindMessage('')
+    setShowRemindDialog(true)
+  }
+
+  const handleConfirmRemind = async () => {
+    if (!currentProposal?.id) return
+    const recipients = remindRecipients
+      .split(/[,;\n]/)
+      .map((r) => r.trim())
+      .filter(Boolean)
+    if (recipients.length === 0) {
+      toast.error('At least one recipient email is required')
+      return
+    }
+    setReminding(true)
+    try {
+      const { data } = await proposalsApi.remind(currentProposal.id, {
+        recipients,
+        message: remindMessage?.trim() || undefined,
+      })
+      const sentTo = data?.sentTo || recipients
+      toast.success(
+        `Reminder sent to ${sentTo.join(', ')}${
+          data?.reminderCount ? ` (reminder #${data.reminderCount})` : ''
+        }`,
+      )
+      setShowRemindDialog(false)
+      // Refresh so the button reflects the new last_reminder_sent_at + count
+      proposalsApi
+        .get(currentProposal.id)
+        .then((res) => setCurrentProposal(res.data.proposal || res.data))
+        .catch(() => {})
+    } catch (err) {
+      const message =
+        err?.response?.data?.message ||
+        err?.response?.data?.error?.message ||
+        err?.message ||
+        'Failed to send reminder'
+      toast.error(typeof message === 'string' ? message : 'Failed to send reminder')
+    } finally {
+      setReminding(false)
     }
   }
 
@@ -413,6 +512,19 @@ export default function ProposalViewWithAnalytics({ proposal, onBack, onEdit }) 
               >
                 <DollarSign className="w-4 h-4 mr-2" />
                 Mark Paid Offline
+              </Button>
+            )}
+
+            {canShowRemindButton && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleOpenRemind}
+                disabled={remindGated}
+                title={remindButtonTitle}
+              >
+                <BellRing className="w-4 h-4 mr-2" />
+                {reminderCount > 0 ? `Send Reminder (${reminderCount})` : 'Send Reminder'}
               </Button>
             )}
 
@@ -656,6 +768,96 @@ export default function ProposalViewWithAnalytics({ proposal, onBack, onEdit }) 
                 <>
                   <DollarSign className="w-4 h-4" />
                   Mark as Paid
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={showRemindDialog}
+        onOpenChange={(open) => {
+          if (!reminding) setShowRemindDialog(open)
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Send proposal reminder</DialogTitle>
+            <DialogDescription>
+              Send a friendly follow-up for{' '}
+              <span className="font-medium text-[var(--text-primary)]">
+                {currentProposal?.title || 'this proposal'}
+              </span>
+              . Uses a distinct reminder template — branded with this project&rsquo;s
+              logo and color so the client immediately recognizes it as a
+              follow-up, not a duplicate.
+              {currentProposal?.sent_at && (
+                <span className="block mt-2 text-xs text-[var(--text-tertiary)]">
+                  Originally sent {formatDateTimeShort(currentProposal.sent_at)}
+                  {reminderCount > 0 && currentProposal?.last_reminder_sent_at && (
+                    <>
+                      {' · '}Last reminded{' '}
+                      {formatDateTimeShort(currentProposal.last_reminder_sent_at)} ({reminderCount} sent)
+                    </>
+                  )}
+                </span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="remind-recipients">Recipients</Label>
+              <Input
+                id="remind-recipients"
+                value={remindRecipients}
+                onChange={(e) => setRemindRecipients(e.target.value)}
+                placeholder="client@example.com, second@example.com"
+                disabled={reminding}
+              />
+              <p className="text-xs text-[var(--text-tertiary)]">
+                Comma-separated. Defaults to the original recipients.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="remind-message">
+                Personal note <span className="text-[var(--text-tertiary)]">(optional)</span>
+              </Label>
+              <Textarea
+                id="remind-message"
+                value={remindMessage}
+                onChange={(e) => setRemindMessage(e.target.value)}
+                placeholder="Add a short note — appears above the proposal link in the email."
+                rows={4}
+                disabled={reminding}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowRemindDialog(false)}
+              disabled={reminding}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleConfirmRemind}
+              disabled={reminding || !remindRecipients?.trim()}
+              className="bg-[var(--brand-primary)] hover:bg-[var(--brand-primary-hover)] gap-2"
+            >
+              {reminding ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Sending…
+                </>
+              ) : (
+                <>
+                  <BellRing className="w-4 h-4" />
+                  Send Reminder
                 </>
               )}
             </Button>
