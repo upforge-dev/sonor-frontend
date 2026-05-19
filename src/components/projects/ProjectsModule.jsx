@@ -1238,6 +1238,10 @@ export default function ProjectsV2({ onNavigate }) {
                         handleSelectProject(updatedProject)
                         viewType === 'uptrade-admin' ? loadAdminData() : viewType === 'agency' ? loadAgencyData() : fetchProjects()
                       }}
+                      onProjectDelete={() => {
+                        setSelectedProject(null)
+                        viewType === 'uptrade-admin' ? loadAdminData() : viewType === 'agency' ? loadAgencyData() : fetchProjects()
+                      }}
                     />
                   )}
                 </TabsContent>

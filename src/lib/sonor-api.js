@@ -1831,8 +1831,11 @@ export const crmApi = {
   deleteProspect: (id) => 
     sonorApi.delete(`/crm/prospects/${id}`),
   
-  bulkUpdateProspects: (ids, data) => 
+  bulkUpdateProspects: (ids, data) =>
     sonorApi.post('/crm/prospects/bulk-update', { ids, ...data }),
+
+  bulkDeleteProspects: (ids) =>
+    sonorApi.post('/crm/prospects/bulk-delete', { ids }),
   
   getProspectActivity: (contactId) => 
     sonorApi.get(`/crm/prospects/${contactId}/activity`),

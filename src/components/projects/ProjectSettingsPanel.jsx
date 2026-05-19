@@ -8,10 +8,10 @@
  * - Domain & tracking settings
  */
 import { useState, useEffect, useRef } from 'react'
-import { 
+import {
   Palette, Zap, Globe, Save, RotateCcw, Info, Settings2,
   Check, CheckCircle, AlertCircle, Loader2, ShoppingBag, CreditCard, ExternalLink, Mail,
-  Upload, Image as ImageIcon, X, Users, Bell, Building2, MapPin
+  Upload, Image as ImageIcon, X, Users, Bell, Building2, MapPin, Trash2, AlertTriangle
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
@@ -38,6 +38,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogFooter,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogCancel,
+} from '@/components/ui/alert-dialog'
 
 // Stores
 import useAuthStore from '@/lib/auth-store'
@@ -177,7 +186,7 @@ function FeatureToggle({ feature, enabled, onChange, description, isAdmin }) {
   )
 }
 
-export default function ProjectSettingsPanel({ project, isAdmin, onProjectUpdate }) {
+export default function ProjectSettingsPanel({ project, isAdmin, onProjectUpdate, onProjectDelete }) {
   const { currentOrg, setProject } = useAuthStore()
   const { hasCurrentProjectSignal, isAdmin: isSignalAdmin, currentPlan } = useSignalAccess()
   
@@ -218,6 +227,9 @@ export default function ProjectSettingsPanel({ project, isAdmin, onProjectUpdate
   const [isDragging, setIsDragging] = useState(false)
   const [teamMembers, setTeamMembers] = useState([])
   const [loadingMembers, setLoadingMembers] = useState(false)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [deleteConfirmText, setDeleteConfirmText] = useState('')
+  const [isDeleting, setIsDeleting] = useState(false)
   const fileInputRef = useRef(null)
   
   // Update form when project changes
@@ -646,6 +658,26 @@ export default function ProjectSettingsPanel({ project, isAdmin, onProjectUpdate
     }
   }
   
+  // Delete project (admin-only). Backend tears down billing for activated projects.
+  const handleDelete = async () => {
+    if (!project?.id) return
+    setIsDeleting(true)
+    try {
+      await portalApi.delete(`/projects/${project.id}`)
+      toast.success(`${project.title} deleted`)
+      setShowDeleteDialog(false)
+      setDeleteConfirmText('')
+      if (onProjectDelete) {
+        onProjectDelete(project)
+      }
+    } catch (error) {
+      console.error('Failed to delete project:', error)
+      toast.error(error?.response?.data?.message || 'Failed to delete project')
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
   if (!project) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -1461,8 +1493,92 @@ export default function ProjectSettingsPanel({ project, isAdmin, onProjectUpdate
             </CardContent>
           </Card>
         )}
+
+        {/* Danger Zone - Delete Project */}
+        {isAdmin && (
+          <Card className="border-red-500/30">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-red-600 dark:text-red-400">
+                <AlertTriangle className="h-5 w-5" />
+                Danger Zone
+              </CardTitle>
+              <CardDescription>
+                Permanently delete this project and all of its data. This action cannot be undone.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between gap-4 p-4 rounded-lg border border-red-500/30 bg-red-50 dark:bg-red-950/20">
+                <div>
+                  <p className="font-medium text-sm">Delete this project</p>
+                  <p className="text-sm text-muted-foreground">
+                    Removes all SEO, analytics, CRM, and content data. If the project is activated,
+                    its billing is torn down first.
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  onClick={() => {
+                    setDeleteConfirmText('')
+                    setShowDeleteDialog(true)
+                  }}
+                  className="shrink-0"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete Project
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
-      
+
+      {/* Delete Project Confirmation */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={(open) => { if (!isDeleting) setShowDeleteDialog(open) }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-red-600 dark:text-red-400">
+              <AlertTriangle className="h-5 w-5" />
+              Delete {project.title}?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This permanently deletes the project and all associated data (SEO pages, analytics,
+              CRM records, content, API keys). Activated projects have their billing torn down first.
+              This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="delete-confirm">
+              Type <span className="font-mono font-semibold">{project.title}</span> to confirm
+            </Label>
+            <Input
+              id="delete-confirm"
+              value={deleteConfirmText}
+              onChange={(e) => setDeleteConfirmText(e.target.value)}
+              placeholder={project.title}
+              disabled={isDeleting}
+              autoComplete="off"
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={handleDelete}
+              disabled={isDeleting || deleteConfirmText !== project.title}
+            >
+              {isDeleting ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Trash2 className="h-4 w-4 mr-2" />
+              )}
+              Delete Project
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Setup Dialogs */}
       <StripeSetupDialog
         open={showStripeSetup}

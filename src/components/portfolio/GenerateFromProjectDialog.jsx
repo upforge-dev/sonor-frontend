@@ -121,7 +121,9 @@ function DataIndicator({ available, label, color }) {
 }
 
 function ProjectCard({ project, selected, onSelect }) {
-  const hasPortfolio = project.has_portfolio
+  const hasPortfolio = project.hasPortfolioItem
+  const isDraft = !project.activated_at
+  const displayName = project.domain || project.title || project.name
   return (
     <GlassCard
       hover
@@ -149,16 +151,26 @@ function ProjectCard({ project, selected, onSelect }) {
               'font-semibold text-sm truncate',
               selected ? 'text-[var(--brand-primary)]' : 'text-[var(--text-primary)]'
             )}>
-              {project.domain || project.name}
+              {displayName}
             </p>
-            {project.industry && (
-              <Badge
-                variant="secondary"
-                className="mt-1 text-[10px] bg-[var(--glass-bg)] border-[var(--glass-border)] text-[var(--text-secondary)]"
-              >
-                {project.industry}
-              </Badge>
-            )}
+            <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+              {project.industry && (
+                <Badge
+                  variant="secondary"
+                  className="text-[10px] bg-[var(--glass-bg)] border-[var(--glass-border)] text-[var(--text-secondary)]"
+                >
+                  {project.industry}
+                </Badge>
+              )}
+              {isDraft && (
+                <Badge
+                  variant="secondary"
+                  className="text-[10px] bg-amber-500/10 border-amber-500/20 text-amber-600"
+                >
+                  Draft
+                </Badge>
+              )}
+            </div>
           </div>
         </div>
         {selected && (
@@ -167,9 +179,8 @@ function ProjectCard({ project, selected, onSelect }) {
       </div>
 
       <div className="flex items-center gap-3 mt-3 pt-3 border-t border-[var(--glass-border)]">
-        <DataIndicator available={project.has_seo} label="SEO" color="bg-emerald-500" />
-        <DataIndicator available={project.has_analytics} label="Analytics" color="bg-blue-500" />
-        <DataIndicator available={project.has_gsc} label="GSC" color="bg-purple-500" />
+        <DataIndicator available={project.hasSeoData} label="SEO" color="bg-emerald-500" />
+        <DataIndicator available={project.hasAnalytics} label="Analytics" color="bg-blue-500" />
       </div>
 
       {hasPortfolio && (
@@ -327,7 +338,7 @@ export default function GenerateFromProjectDialog({ open, onOpenChange }) {
     const q = searchQuery.toLowerCase()
     return (
       (p.domain || '').toLowerCase().includes(q) ||
-      (p.name || '').toLowerCase().includes(q) ||
+      (p.title || '').toLowerCase().includes(q) ||
       (p.industry || '').toLowerCase().includes(q)
     )
   })
@@ -497,7 +508,7 @@ export default function GenerateFromProjectDialog({ open, onOpenChange }) {
                   <p className="text-xs text-[var(--text-tertiary)] mt-1">
                     {searchQuery
                       ? 'Try a different search term'
-                      : 'Managed projects with active data will appear here'}
+                      : 'Projects from your agency and managed clients will appear here'}
                   </p>
                 </div>
               ) : (
@@ -522,7 +533,7 @@ export default function GenerateFromProjectDialog({ open, onOpenChange }) {
               <div className="flex items-center gap-3 p-3 rounded-lg bg-[var(--brand-primary)]/5 border border-[var(--brand-primary)]/20">
                 <Globe className="w-4 h-4 text-[var(--brand-primary)]" />
                 <span className="text-sm font-medium text-[var(--text-primary)]">
-                  {selectedProject?.domain || selectedProject?.name}
+                  {selectedProject?.domain || selectedProject?.title || selectedProject?.name}
                 </span>
               </div>
 

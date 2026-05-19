@@ -112,6 +112,7 @@ import ClientsView from './ClientsView'
 import EmailComposeDialog from './EmailComposeDialog'
 import SendGatedLinkDialog from './SendGatedLinkDialog'
 import UserGoogleIntegrationPanel from '../integrations/UserGoogleIntegrationPanel'
+import ConfirmDialog from '@/components/ConfirmDialog'
 import {
   DEFAULT_PIPELINE_STAGES,
   ACTIVE_STAGES,
@@ -447,6 +448,8 @@ export default function CRMDashboard() {
   const [selectedProspect, setSelectedProspect] = useState(null)
   const [selectedProspects, setSelectedProspects] = useState([]) // For bulk actions
   const [isDetailDrawerOpen, setIsDetailDrawerOpen] = useState(false)
+  const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false)
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false)
   
   // Dialogs
   const [isAddProspectOpen, setIsAddProspectOpen] = useState(false)
@@ -511,9 +514,10 @@ export default function CRMDashboard() {
     try {
       const params = {
         // CRITICAL: Explicitly pass projectId as query param (like Forms does)
-        projectId: currentProject.id
+        projectId: currentProject.id,
+        limit: 1000,
       }
-      
+
       if (debouncedSearch) params.search = debouncedSearch
       if (sourceFilter !== 'all') params.source = sourceFilter
       if (stageFilters.length > 0) params.stages = stageFilters.join(',')
@@ -609,6 +613,26 @@ export default function CRMDashboard() {
       console.error('Failed to update stage:', err)
       const errorMsg = err.response?.data?.message || 'Failed to update stage'
       toast.error(errorMsg)
+    }
+  }
+
+  // Handle bulk-delete from the floating actions bar
+  const handleBulkDelete = async () => {
+    if (selectedProspects.length === 0) return
+    setIsBulkDeleting(true)
+    const count = selectedProspects.length
+    try {
+      const response = await crmApi.bulkDeleteProspects(selectedProspects)
+      const deletedIds = response.data?.ids || selectedProspects
+      setProspects(prev => prev.filter(p => !deletedIds.includes(p.id)))
+      setSelectedProspects([])
+      setIsBulkDeleteOpen(false)
+      toast.success(`Deleted ${count} prospect${count === 1 ? '' : 's'}`)
+    } catch (err) {
+      console.error('[CRM] Bulk delete failed:', err)
+      toast.error(err.response?.data?.message || 'Failed to delete prospects')
+    } finally {
+      setIsBulkDeleting(false)
     }
   }
 
@@ -1311,6 +1335,57 @@ export default function CRMDashboard() {
           </div>
         </ModuleLayout.Content>
       </ModuleLayout>
+
+        {/* Floating bulk-actions bar — appears when prospects are selected in the kanban */}
+        {selectedProspects.length > 0 && viewMode === 'pipeline' && (
+          <div
+            role="region"
+            aria-label="Bulk actions"
+            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-bottom-4 fade-in duration-200"
+          >
+            <div
+              className="flex items-center gap-2 pl-4 pr-2 py-2 rounded-full border shadow-2xl backdrop-blur-xl"
+              style={{
+                background: 'var(--glass-bg)',
+                borderColor: 'var(--glass-border)',
+              }}
+            >
+              <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                {selectedProspects.length} selected
+              </span>
+              <span className="h-5 w-px" style={{ background: 'var(--glass-border)' }} />
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 rounded-full"
+                onClick={() => setSelectedProspects([])}
+              >
+                <X className="h-3.5 w-3.5 mr-1.5" />
+                Clear
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                className="h-8 rounded-full"
+                onClick={() => setIsBulkDeleteOpen(true)}
+              >
+                <Trash2 className="h-3.5 w-3.5 mr-1.5" />
+                Delete
+              </Button>
+            </div>
+          </div>
+        )}
+
+        <ConfirmDialog
+          open={isBulkDeleteOpen}
+          onOpenChange={setIsBulkDeleteOpen}
+          title={`Delete ${selectedProspects.length} prospect${selectedProspects.length === 1 ? '' : 's'}?`}
+          description="This will permanently remove the selected prospects along with their notes, calls, and activity history. This cannot be undone."
+          confirmText={isBulkDeleting ? 'Deleting…' : `Delete ${selectedProspects.length}`}
+          onConfirm={handleBulkDelete}
+          isLoading={isBulkDeleting}
+        />
+
         {/* Add Prospect Dialog */}
         <AddProspectDialog
           open={isAddProspectOpen}
